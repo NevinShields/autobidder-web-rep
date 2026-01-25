@@ -1287,22 +1287,22 @@ export default function LeadsPage() {
         {/* Filters and Search */}
         <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
           <div className="rounded-2xl border border-slate-200 bg-white dark:bg-gray-800 shadow-sm mb-8 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-slate-100 rounded-lg">
-                    <Filter className="w-4 h-4 text-slate-600" />
+                  <div className="p-2 bg-slate-100 dark:bg-gray-700 rounded-lg">
+                    <Filter className="w-4 h-4 text-slate-600 dark:text-gray-300" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-800">Filters & Search</h3>
-                    <p className="text-xs text-slate-500">Refine your lead list</p>
+                    <h3 className="font-semibold text-slate-800 dark:text-gray-100">Filters & Search</h3>
+                    <p className="text-xs text-slate-500 dark:text-gray-400">Refine your lead list</p>
                   </div>
                 </div>
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="gap-2 text-slate-600 hover:text-slate-900"
+                    className="gap-2 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white"
                     data-testid="button-toggle-filters"
                   >
                     {isFiltersOpen ? (
@@ -1431,7 +1431,7 @@ export default function LeadsPage() {
                   setNewTagColor("#3b82f6");
                   setIsTagDialogOpen(true);
                 }}
-                className="gap-2 border-slate-200 hover:bg-slate-50"
+                className="gap-2 border-slate-200 dark:border-gray-600 hover:bg-slate-50 dark:hover:bg-gray-700"
               >
                 <Tag className="h-4 w-4" />
                 Manage Tags
@@ -1445,8 +1445,8 @@ export default function LeadsPage() {
         {viewMode === "table" ? (
           <>
             {/* Premium Leads Table */}
-            <div className="rounded-2xl border border-slate-200 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     {sortedLeads.length > 0 && (
@@ -1459,14 +1459,14 @@ export default function LeadsPage() {
                       />
                     )}
                     <div>
-                      <h3 className="font-semibold text-slate-800">
+                      <h3 className="font-semibold text-slate-800 dark:text-white">
                         All Leads
-                        <span className="ml-2 text-sm font-normal text-slate-500">
+                        <span className="ml-2 text-sm font-normal text-slate-500 dark:text-gray-400">
                           ({sortedLeads.length})
                         </span>
                       </h3>
                       {selectedLeadIds.length > 0 && (
-                        <p className="text-xs text-blue-600 font-medium">
+                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
                           {selectedLeadIds.length} selected
                         </p>
                       )}
@@ -1503,11 +1503,11 @@ export default function LeadsPage() {
               <div>
             {sortedLeads.length === 0 ? (
               <div className="text-center py-16 px-6">
-                <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-2xl flex items-center justify-center">
-                  <Users className="h-8 w-8 text-slate-400" />
+                <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 dark:bg-gray-700 rounded-2xl flex items-center justify-center">
+                  <Users className="h-8 w-8 text-slate-400 dark:text-gray-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-800 mb-2">No leads found</h3>
-                <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-gray-100 mb-2">No leads found</h3>
+                <p className="text-slate-500 dark:text-gray-400 text-sm max-w-sm mx-auto">
                   {searchTerm || filterBy !== "all"
                     ? "Try adjusting your search or filter criteria"
                     : "Leads will appear here once customers submit quotes"}
@@ -1517,31 +1517,31 @@ export default function LeadsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-slate-50/80">
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider w-12">
+                    <tr className="bg-slate-50/80 dark:bg-gray-800">
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider w-12">
                         <Checkbox
                           data-testid="checkbox-select-all-table"
                           checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
                           onCheckedChange={handleSelectAll}
                           aria-label="Select all leads"
-                          className="border-slate-300"
+                          className="border-slate-300 dark:border-gray-600"
                         />
                       </th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Customer</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Service</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Tags</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                      <th className="text-right px-4 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Service</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Tags</th>
+                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                      <th className="text-right px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
                     {sortedLeads.map((lead) => (
                       <tr
                         key={`${lead.type}-${lead.id}`}
-                        className="group hover:bg-blue-50/50 transition-all cursor-pointer"
+                        className="group hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-all cursor-pointer"
                         onClick={() => handleLeadClick(lead)}
                         data-testid={`lead-row-${lead.type}-${lead.id}`}
                       >
@@ -1629,19 +1629,19 @@ export default function LeadsPage() {
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="dark:bg-gray-700" />
-                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'open', lead.type === 'multi')}>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'open', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
                                 <Circle className="h-4 w-4 mr-2" />
                                 Mark as Open
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'booked', lead.type === 'multi')}>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'booked', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Mark as Booked
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'completed', lead.type === 'multi')}>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'completed', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
                                 <Check className="h-4 w-4 mr-2" />
                                 Mark as Completed
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'lost', lead.type === 'multi')}>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'lost', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
                                 <XCircle className="h-4 w-4 mr-2" />
                                 Mark as Lost
                               </DropdownMenuItem>
@@ -1729,7 +1729,7 @@ export default function LeadsPage() {
             
             <div className="space-y-4">
               {/* Create New Tag Form */}
-              <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50 dark:bg-gray-900">
+              <div className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
                 <h3 className="text-sm font-semibold mb-3">
                   {tagDialogMode === "create" ? "Create New Tag" : "Edit Tag"}
                 </h3>
@@ -1991,24 +1991,24 @@ export default function LeadsPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b bg-gray-50 dark:bg-gray-700/50/50">
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Estimate</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Customer</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Amount</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Progress</th>
-                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                          <th className="text-right px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Estimate</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Amount</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Progress</th>
+                          <th className="text-left px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                          <th className="text-right px-6 py-4 text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                         {allEstimates.map((estimate: any) => {
-                          const currentStage = 
+                          const currentStage =
                             estimate.status === 'accepted' ? 3 :
                             estimate.ownerApprovalStatus === 'approved' ? 2 : 1;
-                          
+
                           return (
-                            <tr key={estimate.id} className="hover:bg-gray-50 dark:bg-gray-700/50/50 transition-colors" data-testid={`estimate-row-${estimate.id}`}>
+                            <tr key={estimate.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors" data-testid={`estimate-row-${estimate.id}`}>
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-2">
                                   <FileText className="h-4 w-4 text-gray-400" />
@@ -2180,7 +2180,7 @@ export default function LeadsPage() {
                       </thead>
                       <tbody>
                         {allWorkOrders.map((workOrder: any) => (
-                          <tr key={workOrder.id} className="border-b hover:bg-gray-50 dark:bg-gray-700/50" data-testid={`work-order-row-${workOrder.id}`}>
+                          <tr key={workOrder.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50" data-testid={`work-order-row-${workOrder.id}`}>
                             <td className="p-3 text-sm font-semibold">{workOrder.workOrderNumber}</td>
                             <td className="p-3 text-sm">{workOrder.customerName}</td>
                             <td className="p-3 text-sm">{workOrder.customerEmail}</td>
@@ -2292,7 +2292,7 @@ export default function LeadsPage() {
                       </thead>
                       <tbody>
                         {allInvoices.map((invoice: any) => (
-                          <tr key={invoice.id} className="border-b hover:bg-gray-50 dark:bg-gray-700/50" data-testid={`invoice-row-${invoice.id}`}>
+                          <tr key={invoice.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50" data-testid={`invoice-row-${invoice.id}`}>
                             <td className="p-3 text-sm font-semibold">{invoice.invoiceNumber}</td>
                             <td className="p-3 text-sm">{invoice.customerName}</td>
                             <td className="p-3 text-sm">{invoice.customerEmail}</td>

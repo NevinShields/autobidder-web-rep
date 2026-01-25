@@ -156,8 +156,8 @@ export default function NotificationDropdown() {
           <DialogHeader className="p-6 pb-4 border-b border-gray-200 pr-14">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
-                <DialogTitle className="text-xl font-semibold text-gray-900">Notifications</DialogTitle>
-                <DialogDescription className="text-sm text-gray-600 mt-1">
+                <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-white">Notifications</DialogTitle>
+                <DialogDescription className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                   {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
                 </DialogDescription>
               </div>

@@ -3879,7 +3879,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await createNotificationForUser(
             businessOwnerId,
             'new_lead',
-            'New Multi-Service Lead Received',
+            'New Lead Received',
             `${lead.name} submitted a quote request for ${lead.services.length} services: ${serviceNames}`,
             { leadId: lead.id, services: lead.services, customerName: lead.name, totalPrice: lead.totalPrice }
           );

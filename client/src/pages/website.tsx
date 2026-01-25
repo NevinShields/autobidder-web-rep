@@ -674,7 +674,7 @@ export default function Website() {
                       <Badge
                         key={tag.id}
                         variant={selectedIndustryTags.includes(tag.id) ? "default" : "outline"}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-[10px] px-2 py-0.5 h-auto min-h-0"
                         style={{
                           backgroundColor: selectedIndustryTags.includes(tag.id) ? tag.color : 'transparent',
                           borderColor: tag.color,

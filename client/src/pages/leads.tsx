@@ -385,7 +385,6 @@ export default function LeadsPage() {
   const [kanbanSelectedLead, setKanbanSelectedLead] = useState<KanbanLead | null>(null);
   const [kanbanDetailDialogOpen, setKanbanDetailDialogOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [useLegacyStages, setUseLegacyStages] = useState(false);
   const [editingEstimate, setEditingEstimate] = useState<any | null>(null);
   const [schedulingWorkOrder, setSchedulingWorkOrder] = useState<any | null>(null);
   const [scheduleDate, setScheduleDate] = useState("");
@@ -1112,7 +1111,7 @@ export default function LeadsPage() {
     setKanbanDetailDialogOpen(true);
   };
   
-  const stages = useLegacyStages ? LEGACY_STAGES : PIPELINE_STAGES;
+  const stages = PIPELINE_STAGES;
   const leadsByStage = stages.reduce((acc, stage) => {
     acc[stage.value] = allLeads.filter(lead => lead.stage === stage.value);
     return acc;
@@ -1660,25 +1659,6 @@ export default function LeadsPage() {
         ) : (
           <>
             {/* Kanban View */}
-            <div className="mb-4 flex justify-end gap-2">
-              <Button
-                variant={useLegacyStages ? "outline" : "default"}
-                size="sm"
-                onClick={() => setUseLegacyStages(false)}
-                data-testid="button-toggle-new-stages"
-              >
-                New Pipeline
-              </Button>
-              <Button
-                variant={useLegacyStages ? "default" : "outline"}
-                size="sm"
-                onClick={() => setUseLegacyStages(true)}
-                data-testid="button-toggle-legacy-stages"
-              >
-                Legacy Pipeline
-              </Button>
-            </div>
-            
             <DndContext
               sensors={sensors}
               onDragStart={handleDragStart}

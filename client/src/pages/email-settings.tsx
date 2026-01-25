@@ -821,7 +821,7 @@ export default function EmailSettingsPage() {
 
             {/* Dynamic Variables Box */}
             <div className="lg:col-span-1">
-              <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-xl sticky top-6">
+              <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border-white/20 dark:border-gray-700 shadow-xl sticky top-6">
                 <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-2">
                     <Plus className="h-5 w-5" />
@@ -829,10 +829,10 @@ export default function EmailSettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     Click to insert dynamic data into your email templates:
                   </p>
-                  
+
                   <div className="space-y-2">
                     {DYNAMIC_VARIABLES.map((item) => {
                       const IconComponent = item.icon;
@@ -841,7 +841,7 @@ export default function EmailSettingsPage() {
                           key={item.variable}
                           variant="outline"
                           size="sm"
-                          className="w-full justify-start gap-2 h-9 text-xs"
+                          className="w-full justify-start gap-2 h-9 text-xs dark:border-gray-600 dark:hover:bg-gray-700"
                           onClick={() => insertVariable(item.variable)}
                           disabled={!selectedTemplate}
                         >
@@ -851,9 +851,9 @@ export default function EmailSettingsPage() {
                       );
                     })}
                   </div>
-                  
+
                   {!selectedTemplate && (
-                    <p className="text-xs text-gray-500 mt-4 text-center">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
                       Click "Show Variables" on any email template to insert data
                     </p>
                   )}

@@ -1,25 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense, memo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 import { apiRequest } from "@/lib/queryClient";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import MeasureMapTerraImproved from "@/components/measure-map-terra-improved";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-measurement";
-import BookingCalendar from "@/components/booking-calendar";
-import ServiceCardDisplay from "@/components/service-card-display";
 import { ChevronDown, ChevronUp, Map } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, CustomForm } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 import { injectCSSVariables } from "@shared/css-variables";
+
+// Lazy load heavy components for better performance
+const MeasureMapTerraImproved = lazy(() => import("@/components/measure-map-terra-improved"));
+const BookingCalendar = lazy(() => import("@/components/booking-calendar-v2"));
 
 interface LeadFormData {
   name: string;
@@ -28,6 +29,7 @@ interface LeadFormData {
   address?: string;
   notes?: string;
   howDidYouHear?: string;
+  uploadedImages?: string[];
 }
 
 interface CustomFormResponse {
@@ -35,18 +37,22 @@ interface CustomFormResponse {
   formulas: Formula[];
 }
 
-// Collapsible Measure Map Component
-function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }: {
+// Collapsible Measure Map Component - Memoized for performance
+const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }: {
   measurementType: string;
   unit: string;
   onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const toggleExpanded = useCallback(() => {
+    setIsExpanded(!isExpanded);
+  }, [isExpanded]);
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={toggleExpanded}
         className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
         data-testid="button-toggle-measure-map"
       >
@@ -64,16 +70,345 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
       </button>
       
       {isExpanded && (
-        <div className="p-0">
-          <MeasureMapTerraImproved
-            measurementType={measurementType as "area" | "distance"}
-            unit={unit as "sqft" | "sqm" | "ft" | "m"}
-            onMeasurementComplete={onMeasurementComplete}
-          />
+        <div className="p-4">
+          <GoogleMapsLoader>
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-64">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  <p className="text-sm text-gray-600">Loading map tool...</p>
+                </div>
+              </div>
+            }>
+              <MeasureMapTerraImproved
+                measurementType={measurementType as "area" | "distance"}
+                unit={unit as "sqft" | "sqm" | "ft" | "m"}
+                onMeasurementComplete={onMeasurementComplete}
+              />
+            </Suspense>
+          </GoogleMapsLoader>
         </div>
       )}
     </div>
   );
+});
+
+// Helper function to render bullet point icons based on type
+function renderBulletIcon(iconType: string = 'checkmark') {
+  const iconMap: Record<string, JSX.Element> = {
+    checkmark: (
+      <path fill="currentColor" d="M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z" />
+    ),
+    star: (
+      <path fill="currentColor" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    ),
+    circle: (
+      <circle cx="12" cy="12" r="5" fill="currentColor" />
+    ),
+    arrow: (
+      <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" />
+    ),
+    plus: (
+      <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+    ),
+    diamond: (
+      <path fill="currentColor" d="M12 2L2 12l10 10 10-10L12 2zm0 3.5L18.5 12 12 18.5 5.5 12 12 5.5z" />
+    ),
+    heart: (
+      <path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    ),
+  };
+
+  return iconMap[iconType] || iconMap.checkmark;
+}
+
+// Helper function to convert hex color + alpha to rgba
+function hexToRgba(hex: string, alpha: number = 100): string {
+  hex = hex.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const a = alpha / 100;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+// Helper type for pricing card props
+interface PricingCardProps {
+  service: any;
+  displayPrice: number;
+  hasPricingIssue: boolean;
+  serviceFeatures: any[];
+  styling: any;
+  componentStyles: any;
+  hasCustomCSS: boolean;
+  renderBulletIconFn: (type: string) => JSX.Element;
+}
+
+// Pricing Card Layout Renderer - renders 4 different layouts
+function renderPricingCardLayout(
+  layout: 'classic' | 'modern' | 'minimal' | 'compact',
+  props: PricingCardProps
+) {
+  const { service, displayPrice, hasPricingIssue, serviceFeatures, styling, componentStyles, hasCustomCSS, renderBulletIconFn } = props;
+  
+  const bulletPoints = service.bulletPoints && service.bulletPoints.length > 0 
+    ? service.bulletPoints 
+    : serviceFeatures.length > 0 
+      ? serviceFeatures.slice(0, 4).map((f: any) => `${f.name}: ${f.value}`)
+      : [
+          `Professional ${service.name.toLowerCase()} service`,
+          'Quality materials and workmanship',
+          'Satisfaction guarantee'
+        ];
+
+  const renderBulletList = (compact = false) => (
+    <ul className={compact ? "space-y-1.5" : "space-y-3"}>
+      {bulletPoints.slice(0, compact ? 3 : 4).map((point: string, index: number) => (
+        <li key={index} className="flex items-center gap-2">
+          <span 
+            className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+            style={hasCustomCSS ? {} : { 
+              backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+              width: `${compact ? 16 : (styling.pricingBulletIconSize || 20)}px`,
+              height: `${compact ? 16 : (styling.pricingBulletIconSize || 20)}px`
+            }}
+          >
+            <svg 
+              className="text-white" 
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ 
+                width: `${(compact ? 16 : (styling.pricingBulletIconSize || 20)) * 0.6}px`, 
+                height: `${(compact ? 16 : (styling.pricingBulletIconSize || 20)) * 0.6}px` 
+              }}
+            >
+              {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
+            </svg>
+          </span>
+          <span className={`ab-pricing-card-bullet-text ${compact ? 'text-xs' : 'text-sm'} font-medium`} style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}>
+            {point}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+
+  switch (layout) {
+    case 'modern':
+      return (
+        <div className="relative p-6 text-center">
+          {/* Large Price Display at Top */}
+          <div 
+            className="ab-pricing-card-price text-3xl font-bold mb-4"
+            style={hasCustomCSS ? {} : { color: styling.primaryColor || '#2563EB' }}
+          >
+            {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
+          </div>
+          
+          {/* Centered Icon */}
+          {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+            <div className="flex justify-center mb-3">
+              <img 
+                src={service.iconUrl} 
+                alt={service.name}
+                className="ab-pricing-card-icon w-16 h-16 object-cover rounded-full border-4 flex-shrink-0"
+                style={hasCustomCSS ? {} : { borderColor: `${styling.primaryColor || '#2563EB'}30` }}
+              />
+            </div>
+          )}
+          
+          {/* Service Title */}
+          <h4 
+            className="ab-pricing-card-title text-xl font-bold mb-2"
+            style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+          >
+            {service.name}
+          </h4>
+          
+          {/* Divider */}
+          <div className="w-16 h-1 mx-auto mb-4 rounded" style={hasCustomCSS ? {} : { backgroundColor: styling.primaryColor || '#2563EB' }} />
+          
+          {/* Description */}
+          <p 
+            className="ab-pricing-card-description text-sm mb-4 leading-relaxed"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}90` : '#4B5563' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service.`}
+          </p>
+          
+          {/* Features List */}
+          <div className="text-left">
+            {renderBulletList()}
+          </div>
+        </div>
+      );
+
+    case 'minimal':
+      return (
+        <div className="relative p-5">
+          {/* Header Row with Icon, Title, and Price */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3 flex-1">
+              {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+                <img 
+                  src={service.iconUrl} 
+                  alt={service.name}
+                  className="ab-pricing-card-icon w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                />
+              )}
+              <h4 
+                className="ab-pricing-card-title text-lg font-semibold"
+                style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+              >
+                {service.name}
+              </h4>
+            </div>
+            <div 
+              className="ab-pricing-card-price text-xl font-bold px-4 py-1 rounded-full"
+              style={hasCustomCSS ? {} : { 
+                color: styling.primaryColor || '#2563EB',
+                backgroundColor: `${styling.primaryColor || '#2563EB'}15`
+              }}
+            >
+              {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
+            </div>
+          </div>
+          
+          {/* Thin Divider */}
+          <div className="border-t mb-4" style={hasCustomCSS ? {} : { borderColor: '#E5E7EB' }} />
+          
+          {/* Description */}
+          <p 
+            className="ab-pricing-card-description text-sm mb-4 leading-relaxed"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}80` : '#6B7280' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service designed to meet your needs.`}
+          </p>
+          
+          {/* Inline Features */}
+          <div className="flex flex-wrap gap-2">
+            {bulletPoints.slice(0, 3).map((point: string, index: number) => (
+              <span 
+                key={index}
+                className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full"
+                style={hasCustomCSS ? {} : { 
+                  backgroundColor: `${styling.primaryColor || '#3B82F6'}10`,
+                  color: styling.textColor || '#1F2937'
+                }}
+              >
+                <svg className="w-3 h-3" viewBox="0 0 24 24" style={{ color: styling.primaryColor || '#3B82F6' }}>
+                  {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
+                </svg>
+                {point.length > 30 ? point.substring(0, 30) + '...' : point}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+
+    case 'compact':
+      return (
+        <div className="relative p-4">
+          {/* Compact Header */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+                <img 
+                  src={service.iconUrl} 
+                  alt={service.name}
+                  className="ab-pricing-card-icon w-8 h-8 object-cover rounded flex-shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <h4 
+                  className="ab-pricing-card-title text-base font-semibold truncate"
+                  style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+                >
+                  {service.name}
+                </h4>
+              </div>
+            </div>
+            <div 
+              className="ab-pricing-card-price text-lg font-bold flex-shrink-0"
+              style={hasCustomCSS ? {} : { color: styling.primaryColor || '#2563EB' }}
+            >
+              {hasPricingIssue ? 'Err' : `$${displayPrice.toLocaleString()}`}
+            </div>
+          </div>
+          
+          {/* Brief Description */}
+          <p 
+            className="ab-pricing-card-description text-xs mb-3 line-clamp-2"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}70` : '#6B7280' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service.`}
+          </p>
+          
+          {/* Compact Features */}
+          {renderBulletList(true)}
+        </div>
+      );
+
+    case 'classic':
+    default:
+      return (
+        <div 
+          className="relative p-5 pt-10"
+          style={hasCustomCSS ? {} : {
+            backgroundColor: hexToRgba(
+              componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
+              Math.max(0, (componentStyles.pricingCard?.backgroundColorAlpha ?? 100) - 85)
+            ),
+            borderRadius: `${Math.max(0, (componentStyles.pricingCard?.borderRadius || 16) - 4)}px`
+          }}
+        >
+          {/* Price positioned absolutely at top-right */}
+          <div 
+            className="ab-pricing-card-price absolute top-0 right-0 flex items-center px-3 py-2 text-xl font-semibold ml-[0px] mr-[0px] mt-[-5px] mb-[-5px]"
+            style={hasCustomCSS ? {} : {
+              backgroundColor: styling.primaryColor ? `${styling.primaryColor}30` : '#3B82F630',
+              color: styling.textColor || '#1F2937',
+              borderRadius: '99em 0 0 99em'
+            }}
+          >
+            <span>
+              {hasPricingIssue ? 'Error' : `$${displayPrice.toLocaleString()}`}
+            </span>
+          </div>
+
+          {/* Service Icon & Title */}
+          <div className="flex items-center gap-3 mb-3">
+            {componentStyles.pricingCard?.showServiceIcon !== false && service.iconUrl && (
+              <img 
+                src={service.iconUrl} 
+                alt={service.name}
+                className="ab-pricing-card-icon w-12 h-12 object-cover rounded-lg flex-shrink-0"
+              />
+            )}
+            
+            <h4 
+              className="ab-pricing-card-title text-xl font-semibold"
+              style={hasCustomCSS ? {} : { color: styling.textColor || '#1F2937' }}
+            >
+              {service.name}
+            </h4>
+          </div>
+
+          {/* Description */}
+          <p 
+            className="ab-pricing-card-description text-sm mb-4 leading-relaxed"
+            style={hasCustomCSS ? {} : { color: styling.textColor ? `${styling.textColor}90` : '#4B5563' }}
+          >
+            {service.title || service.description || `Professional ${service.name.toLowerCase()} service designed to meet your specific needs with quality materials and expert craftsmanship.`}
+          </p>
+
+          {/* Features List */}
+          <div className="mb-5">
+            {renderBulletList()}
+          </div>
+        </div>
+      );
+  }
 }
 
 // Helper function to convert YouTube URLs to embed format
@@ -149,22 +484,34 @@ export default function CustomFormDisplay() {
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [expandedServices, setExpandedServices] = useState<Set<number>>(new Set());
-  const [leadForm, setLeadForm] = useState<LeadFormData>({ 
+  const [leadForm, setLeadForm] = useState<LeadFormData>({
     name: "", 
     email: "", 
     phone: "",
     address: "",
     notes: "",
-    howDidYouHear: ""
+    howDidYouHear: "",
+    uploadedImages: []
   });
+  const [imageUploadLoading, setImageUploadLoading] = useState(false);
   
-  const [distanceInfo, setDistanceInfo] = useState<{
+  const [distanceInfo, setDistanceInfo] = useState<{ 
     distance: number;
     fee: number;
     message: string;
   } | null>(null);
   const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([]);
   const [selectedUpsells, setSelectedUpsells] = useState<string[]>([]);
+  const [photoMeasurements, setPhotoMeasurements] = useState<Array<{ 
+    setupConfig: any;
+    customerImageUrls: string[];
+    estimatedValue: number;
+    estimatedUnit: string;
+    confidence: number;
+    explanation: string;
+    warnings: string[];
+    formulaName?: string;
+  }>>([]);
   const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
@@ -221,6 +568,8 @@ export default function CustomFormDisplay() {
     queryFn: () => fetch(`/api/public/business-settings?userId=${accountId}`).then(res => res.json()),
     enabled: !!accountId && !isLoadingCustomForm,
   });
+
+  const hasCustomCSS = !!designSettings?.customCSS;
 
   // Auto-expand/collapse logic for multi-service flow
   useEffect(() => {
@@ -656,44 +1005,14 @@ export default function CustomFormDisplay() {
   // Services are not auto-selected - users must manually choose them
 
   // Get styling from design settings - map to the format components expect
-  const styling = designSettings?.styling ? {
-    ...designSettings.styling,
-    // Apply defaults only for properties that are undefined
-    serviceSelectorBackgroundColor: designSettings.styling.serviceSelectorBackgroundColor ?? designSettings.styling.backgroundColor ?? '#FFFFFF',
-    serviceSelectorBorderColor: designSettings.styling.serviceSelectorBorderColor ?? '#E5E7EB',
-    serviceSelectorBorderRadius: designSettings.styling.serviceSelectorBorderRadius ?? 16,
-    serviceSelectorBorderWidth: designSettings.styling.serviceSelectorBorderWidth ?? 1,
-    serviceSelectorSelectedBorderColor: designSettings.styling.serviceSelectorSelectedBorderColor ?? designSettings.styling.primaryColor ?? '#3B82F6',
-    serviceSelectorSelectedBgColor: designSettings.styling.serviceSelectorSelectedBgColor ?? '#EFF6FF',
-    serviceSelectorHoverBackgroundColor: designSettings.styling.serviceSelectorHoverBackgroundColor ?? '#F3F4F6',
-    serviceSelectorHoverBorderColor: designSettings.styling.serviceSelectorHoverBorderColor ?? '#D1D5DB',
-    serviceSelectorTextColor: designSettings.styling.serviceSelectorTextColor ?? designSettings.styling.textColor ?? '#374151',
-    serviceSelectorSelectedTextColor: designSettings.styling.serviceSelectorSelectedTextColor ?? designSettings.styling.textColor ?? '#1f2937',
-    serviceSelectorShadow: designSettings.styling.serviceSelectorShadow ?? 'lg',
-    serviceSelectorPadding: designSettings.styling.serviceSelectorPadding ?? 'lg',
-    serviceSelectorGap: designSettings.styling.serviceSelectorGap ?? 'md',
-  } : {
+  const styling = designSettings?.styling || {
     primaryColor: '#2563EB',
     textColor: '#374151',
     backgroundColor: '#FFFFFF',
     containerBorderRadius: 16,
     containerShadow: 'lg',
     buttonBorderRadius: 12,
-    resultBackgroundColor: '#F3F4F6',
-    // Default service selector styling
-    serviceSelectorBackgroundColor: '#FFFFFF',
-    serviceSelectorBorderColor: '#E5E7EB',
-    serviceSelectorBorderRadius: 16,
-    serviceSelectorBorderWidth: 1,
-    serviceSelectorSelectedBorderColor: '#3B82F6',
-    serviceSelectorSelectedBgColor: '#EFF6FF',
-    serviceSelectorHoverBackgroundColor: '#F3F4F6',
-    serviceSelectorHoverBorderColor: '#D1D5DB',
-    serviceSelectorTextColor: '#374151',
-    serviceSelectorSelectedTextColor: '#1f2937',
-    serviceSelectorShadow: 'lg',
-    serviceSelectorPadding: 'lg',
-    serviceSelectorGap: 'md',
+    resultBackgroundColor: '#F3F4F6'
   };
   
   const componentStyles = designSettings?.componentStyles || {
@@ -739,16 +1058,6 @@ export default function CustomFormDisplay() {
       shadow: 'sm',
       padding: 24
     }
-  };
-
-  // Helper function to convert hex color + alpha to rgba
-  const hexToRgba = (hex: string, alpha: number = 100): string => {
-    hex = hex.replace('#', '');
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const a = alpha / 100;
-    return `rgba(${r}, ${g}, ${b}, ${a})`;
   };
 
   // Helper function to get shadow values
@@ -846,21 +1155,30 @@ export default function CustomFormDisplay() {
 
   // Helper function to get complete input styles
   const getInputStyles = () => ({
-    backgroundColor: componentStyles.textInput?.backgroundColor || '#FFFFFF',
+    backgroundColor: hexToRgba(
+      componentStyles.textInput?.backgroundColor || '#FFFFFF',
+      componentStyles.textInput?.backgroundColorAlpha ?? 100
+    ),
     borderRadius: `${componentStyles.textInput?.borderRadius || 8}px`,
     borderWidth: `${componentStyles.textInput?.borderWidth || 1}px`,
-    borderColor: componentStyles.textInput?.borderColor || '#E5E7EB',
+    borderColor: hexToRgba(
+      componentStyles.textInput?.borderColor || '#E5E7EB',
+      componentStyles.textInput?.borderColorAlpha ?? 100
+    ),
     borderStyle: 'solid' as const,
     padding: `${componentStyles.textInput?.padding || 12}px`,
     boxShadow: getShadowValue(componentStyles.textInput?.shadow || 'sm'),
     fontSize: getFontSizeValue(componentStyles.textInput?.fontSize || 'base'),
-    color: componentStyles.textInput?.textColor || '#374151',
+    color: hexToRgba(
+      componentStyles.textInput?.textColor || '#374151',
+      componentStyles.textInput?.textColorAlpha ?? 100
+    ),
     height: `${componentStyles.textInput?.height || 40}px`,
   });
 
   // Submit lead mutation
   const submitMultiServiceLeadMutation = useMutation({
-    mutationFn: async (data: {
+    mutationFn: async (data: { 
       services: ServiceCalculation[];
       totalPrice: number;
       leadInfo: LeadFormData;
@@ -869,14 +1187,14 @@ export default function CustomFormDisplay() {
         fee: number;
         message: string;
       };
-      appliedDiscounts?: Array<{
+      appliedDiscounts?: Array<{ 
         id: string;
         name: string;
         percentage: number;
         amount: number;
       }>;
       bundleDiscountAmount?: number;
-      selectedUpsells?: Array<{
+      selectedUpsells?: Array<{ 
         id: string;
         name: string;
         percentage: number;
@@ -890,11 +1208,13 @@ export default function CustomFormDisplay() {
         address: data.leadInfo.address,
         notes: data.leadInfo.notes,
         howDidYouHear: data.leadInfo.howDidYouHear,
+        uploadedImages: data.leadInfo.uploadedImages || [],
         services: data.services.map(service => ({
           ...service,
           calculatedPrice: Math.round(service.calculatedPrice * 100) // Convert to cents
         })),
         totalPrice: Math.round(data.totalPrice * 100), // Convert to cents for database storage
+        photoMeasurements: photoMeasurements,
         distanceInfo: data.distanceInfo,
         appliedDiscounts: data.appliedDiscounts,
         bundleDiscountAmount: data.bundleDiscountAmount ? Math.round(data.bundleDiscountAmount * 100) : undefined, // Convert to cents
@@ -913,6 +1233,9 @@ export default function CustomFormDisplay() {
       }
       
       // Step change now happens before mutation for instant transition
+      
+      // Clear photo measurements after successful submission
+      setPhotoMeasurements([]);
     },
     onError: () => {
       console.error("Failed to submit quote request");
@@ -956,7 +1279,48 @@ export default function CustomFormDisplay() {
       let formulaExpression = service.formula;
       const variables = serviceVariables[serviceId] || {};
       
+      // First, replace individual option references for multiple-choice with allowMultipleSelection
       service.variables.forEach((variable) => {
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
+          const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
+          
+          variable.options.forEach((option: any) => {
+            // Use option.id if available, otherwise fall back to option.value for formula references
+            const optionId = option.id || option.value?.toString();
+            if (optionId) {
+              const optionReference = `${variable.id}_${optionId}`;
+              const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
+              // Use defaultUnselectedValue if set, otherwise default to 0 (for addition formulas)
+              const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
+              const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
+              
+              formulaExpression = formulaExpression.replace(
+                new RegExp(`\\b${optionReference}\\b`, 'g'),
+                String(optionValue)
+              );
+            }
+          });
+        }
+      });
+      
+      service.variables.forEach((variable) => {
+        // For multiple-choice with allowMultipleSelection, also handle the variable ID itself (sum of selected values)
+        // This is needed when the formula uses variableId directly instead of variableId_optionId
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
+          const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
+          // Calculate sum of selected options' numeric values
+          const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
+            const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue.toString());
+            return total + (option?.numericValue || 0);
+          }, 0);
+          // Replace the variable ID itself with the sum (for formulas that use variableId directly)
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(sumOfSelected)
+          );
+          return; // Skip the rest of this iteration
+        }
+        
         let value = variables[variable.id];
         
         // Check if this variable should be visible based on conditional logic
@@ -1040,7 +1404,23 @@ export default function CustomFormDisplay() {
       });
       
       const result = Function(`"use strict"; return (${formulaExpression})`)();
-      return Math.round(result);
+      let finalPrice = Math.round(result);
+      
+      // Apply min/max price constraints (stored in cents in database)
+      if (service.minPrice !== null && service.minPrice !== undefined) {
+        const minPriceDollars = service.minPrice / 100;
+        if (finalPrice < minPriceDollars) {
+          finalPrice = minPriceDollars;
+        }
+      }
+      if (service.maxPrice !== null && service.maxPrice !== undefined) {
+        const maxPriceDollars = service.maxPrice / 100;
+        if (finalPrice > maxPriceDollars) {
+          finalPrice = maxPriceDollars;
+        }
+      }
+      
+      return Math.round(finalPrice);
     } catch (error) {
       console.error('Formula calculation error:', error);
       console.error('Service ID:', serviceId);
@@ -1245,16 +1625,18 @@ export default function CustomFormDisplay() {
 
   if (isLoadingDesign || isLoadingCustomForm) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <Skeleton className="h-8 w-64 mb-4" />
-        <Skeleton className="h-4 w-96 mb-6" />
-        <div className="space-y-4">
+      <div className="force-light-mode max-w-2xl mx-auto p-2 sm:p-6">
+        <div className="animate-pulse">
+          <div className="h-6 bg-gray-200 rounded w-48 mb-3"></div>
+          <div className="h-4 bg-gray-200 rounded w-72 mb-6"></div>
+          <div className="space-y-3">
           {[1, 2, 3].map(i => (
             <div key={i}>
               <Skeleton className="h-4 w-32 mb-2" />
               <Skeleton className="h-10 w-full" />
             </div>
           ))}
+          </div>
         </div>
       </div>
     );
@@ -1262,7 +1644,7 @@ export default function CustomFormDisplay() {
 
   if (!formData || !businessSettings) {
     return (
-      <div className="max-w-2xl mx-auto p-6 text-center">
+      <div className="force-light-mode max-w-2xl mx-auto p-6 text-center">
         <h2 className="text-2xl font-bold mb-4">Form Not Found</h2>
         <p className="text-gray-600">This custom form doesn't exist or has been disabled.</p>
       </div>
@@ -1443,18 +1825,50 @@ export default function CustomFormDisplay() {
                     <div className="mb-6">
                       <CollapsiblePhotoMeasurement
                         setup={service.photoMeasurementSetup}
+                        formulaName={service.name}
+                        businessOwnerId={accountId || ''}
                         onMeasurementComplete={(measurement) => {
-                          // Find the first area/size variable and auto-populate it
-                          const areaVariable = service.variables.find((v: any) => 
-                            v.name.toLowerCase().includes('size') || 
-                            v.name.toLowerCase().includes('area') || 
-                            v.name.toLowerCase().includes('square') ||
-                            v.name.toLowerCase().includes('sq')
-                          );
-                          
-                          if (areaVariable) {
-                            handleServiceVariableChange(serviceId, areaVariable.id, measurement.value);
-                            console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${areaVariable.name}`);
+                          // Find the best matching variable based on measurement type
+                          const measurementType = service.photoMeasurementSetup?.measurementType || 'area';
+                          let targetVariable;
+
+                          if (measurementType === 'area') {
+                            // For area measurements, look for area/size/square footage variables
+                            targetVariable = service.variables.find((v: any) =>
+                              v.type === 'number' && (
+                                v.name.toLowerCase().includes('size') ||
+                                v.name.toLowerCase().includes('area') ||
+                                v.name.toLowerCase().includes('square') ||
+                                v.name.toLowerCase().includes('sq') ||
+                                v.name.toLowerCase().includes('footage')
+                              )
+                            );
+                          } else if (['length', 'width', 'height', 'perimeter'].includes(measurementType)) {
+                            // For linear measurements, look for matching dimension variables
+                            targetVariable = service.variables.find((v: any) =>
+                              v.type === 'number' && (
+                                v.name.toLowerCase().includes(measurementType) ||
+                                v.name.toLowerCase().includes('distance') ||
+                                v.name.toLowerCase().includes('dimension')
+                              )
+                            );
+                          }
+
+                          // Fallback to first number variable if no match found
+                          if (!targetVariable) {
+                            targetVariable = service.variables.find((v: any) => v.type === 'number');
+                          }
+
+                          if (targetVariable) {
+                            handleServiceVariableChange(serviceId, targetVariable.id, measurement.value);
+                            console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${targetVariable.name}`);
+                          } else {
+                            console.warn('No suitable variable found for photo measurement auto-population');
+                          }
+
+                          // Save full photo measurement data
+                          if (measurement.fullData) {
+                            setPhotoMeasurements(prev => [...prev, measurement.fullData!]);
                           }
                         }}
                       />
@@ -1661,6 +2075,83 @@ export default function CustomFormDisplay() {
                   </select>
                 </div>
               )}
+
+              {/* Image Upload Field - Show only if enabled */}
+              {businessSettings?.styling?.enableImageUpload && (
+                <div className="ab-question-card">
+                  <Label htmlFor="images" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                    Upload Images {businessSettings?.styling?.requireImageUpload ? '*' : ''}
+                  </Label>
+                  <div className="mt-2">
+                    <input
+                      id="images"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
+                        
+                        setImageUploadLoading(true);
+                        const newImages: string[] = [];
+                        
+                        for (const file of files) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const base64 = event.target?.result as string;
+                            newImages.push(base64);
+                            if (newImages.length === files.length) {
+                              setLeadForm(prev => ({
+                                ...prev,
+                                uploadedImages: [...(prev.uploadedImages || []), ...newImages]
+                              }));
+                              setImageUploadLoading(false);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      disabled={imageUploadLoading}
+                      className="ab-input ab-file-input block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      data-testid="input-file-images"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">You can upload multiple images (JPG, PNG, etc.)</p>
+                  </div>
+                  
+                  {/* Display uploaded images */}
+                  {(leadForm.uploadedImages || []).length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium mb-2">Uploaded Images ({leadForm.uploadedImages.length})</p>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {leadForm.uploadedImages.map((image, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={image}
+                              alt={`Uploaded ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border border-gray-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLeadForm(prev => ({
+                                  ...prev,
+                                  uploadedImages: (prev.uploadedImages || []).filter((_, i) => i !== index)
+                                }));
+                              }}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              data-testid="button-remove-image"
+                            >
+                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -1736,7 +2227,7 @@ export default function CustomFormDisplay() {
         );
 
       case "pricing":
-        // Calculate final pricing (exclude negative prices)
+        // Calculate pricing with discounts, distance fees, and tax (exclude negative prices)
         const subtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
         
         // Calculate customer discount amount (if any discounts are selected)
@@ -1788,6 +2279,8 @@ export default function CustomFormDisplay() {
           : 0;
         const finalTotal = discountedSubtotal + taxAmount;
 
+        const hasCustomCSS = !!designSettings?.customCSS;
+
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
@@ -1802,314 +2295,366 @@ export default function CustomFormDisplay() {
               </p>
             </div>
 
-            {/* Service Cards Display */}
-            <ServiceCardDisplay 
-              selectedServices={selectedServices.map(serviceId => {
-                const formula = formulas.find(f => f.id === serviceId);
-                return {
-                  formula: formula!,
-                  calculatedPrice: Math.max(0, serviceCalculations[serviceId] || 0),
-                  variables: serviceVariables[serviceId] || {}
-                };
-              }).filter(s => s.formula)}
-              hasCustomCSS={!!designSettings?.customCSS}
-              styling={{
-                ...styling,
-                // Map componentStyles.pricingCard to flat properties for ServiceCardDisplay
-                pricingCardBackgroundColor: componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
-                pricingCardBorderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
-                pricingCardBorderWidth: componentStyles.pricingCard?.borderWidth || 1,
-                pricingCardBorderRadius: componentStyles.pricingCard?.borderRadius || 12,
-                pricingCardShadow: componentStyles.pricingCard?.shadow || 'lg',
-                pricingCardHeight: componentStyles.pricingCard?.height,
-                pricingCardWidth: componentStyles.pricingCard?.width,
-                pricingCardPadding: componentStyles.pricingCard?.padding || 24,
-                pricingCardMargin: componentStyles.pricingCard?.margin || 0,
-                pricingIconVisible: styling.pricingIconVisible,
-                pricingAccentColor: styling.pricingAccentColor || styling.primaryColor || '#2563EB',
-                pricingTextColor: styling.pricingTextColor || styling.textColor || '#1F2937',
-                pricingTextAlignment: styling.pricingTextAlignment || 'center'
-              } as any}
-              showPricing={true}
-            />
+            {/* Pricing Page Video */}
+            {businessSettings?.guideVideos?.pricingVideo && (
+              <GuideVideo 
+                videoUrl={businessSettings.guideVideos.pricingVideo}
+                title="Understanding Your Quote"
+              />
+            )}
 
-            {/* Detailed Pricing Breakdown */}
-            <div className="border-t border-gray-300 pt-6 space-y-4">
-              <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
-                Pricing Breakdown
-              </h3>
-              
-              {/* Individual Service Line Items */}
-              <div className="space-y-3">
-                {selectedServices.map(serviceId => {
-                  const service = formulas?.find(f => f.id === serviceId);
-                  const price = Math.max(0, serviceCalculations[serviceId] || 0);
-                  
-                  // Use title first, then name as fallback, then service ID
-                  const serviceName = service?.title || service?.name || `Service ${serviceId}`;
-                  
-                  return (
-                    <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-100">
-                      <div className="flex-1">
-                        <span className="text-base" style={{ color: styling.textColor || '#1F2937' }}>
-                          {serviceName}
-                        </span>
-                        {price === 0 && serviceCalculations[serviceId] <= 0 && (
-                          <span className="ml-2 text-sm text-red-500">(Price Error)</span>
-                        )}
-                      </div>
-                      <span className="text-base font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                        ${price.toLocaleString()}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Subtotal */}
-              <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                  Subtotal:
-                </span>
-                <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                  ${subtotal.toLocaleString()}
-                </span>
-              </div>
-
-              {/* Bundle Discount */}
-              {bundleDiscount > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-lg text-green-600">
-                    Bundle Discount ({businessSettings?.styling?.bundleDiscountPercent || 0}%):
-                  </span>
-                  <span className="text-lg font-medium text-green-600">
-                    -${bundleDiscount.toLocaleString()}
-                  </span>
-                </div>
-              )}
-
-              {/* Customer Discounts */}
-              {customerDiscountAmount > 0 && (
-                <div className="space-y-2">
-                  {businessSettings?.discounts?.filter(d => d.isActive && selectedDiscounts.includes(d.id)).map((discount) => (
-                    <div key={discount.id} className="flex justify-between items-center">
-                      <span className="text-lg text-green-600">
-                        {discount.name} ({discount.percentage}%):
-                      </span>
-                      <span className="text-lg font-medium text-green-600">
-                        -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Distance Fee */}
-              {distanceFee > 0 && distanceInfo && (
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg text-orange-600">
-                      Travel Fee:
-                    </span>
-                    <span className="text-lg font-medium text-orange-600">
-                      ${distanceFee.toFixed(2)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-orange-600 leading-tight">
-                    {distanceInfo.message}
-                  </p>
-                </div>
-              )}
-
-              {/* Selected Upsells */}
-              {selectedUpsells.length > 0 && (
-                <div className="space-y-2">
-                  {selectedServices.map(serviceId => {
+            {/* Detailed Pricing Card - REPLACED ServiceCardDisplay with manual rendering */}
+            <div 
+              className="p-8 rounded-lg mb-6"
+              style={{
+                backgroundColor: 'transparent',
+                borderRadius: `${styling.containerBorderRadius || 12}px`,
+                borderWidth: '1px',
+                borderColor: '#E5E7EB',
+                borderStyle: 'solid',
+                boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+                padding: '32px',
+              }}
+            >
+              {/* Service Pricing Cards */}
+              <div className="space-y-6 mb-8">
+                <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8" style={{ color: styling.textColor || '#1F2937' }}>
+                  Your Service Packages
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {selectedServices.map((serviceId) => {
                     const service = formulas?.find(f => f.id === serviceId);
-                    if (!service?.upsellItems) return null;
+                    const servicePrice = serviceCalculations[serviceId] || 0;
+                    const serviceVars = serviceVariables[serviceId] || {};
                     
-                    return service.upsellItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
-                      const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
-                      return (
-                        <div key={upsell.id} className="flex justify-between items-center">
-                          <span className="text-lg text-orange-600">
-                            {upsell.name}:
-                          </span>
-                          <span className="text-lg font-medium text-orange-600">
-                            +${upsellPrice.toLocaleString()}
-                          </span>
-                        </div>
-                      );
-                    });
+                    if (!service) return null;
+                    
+                    // Handle negative or zero prices gracefully
+                    const displayPrice = Math.max(0, servicePrice);
+                    const hasPricingIssue = servicePrice <= 0;
+
+                    // Get service variables for features list
+                    const serviceFeatures = Object.entries(serviceVars)
+                      .filter(([key, value]) => {
+                        if (!value || value === '') return false;
+                        const variable = service.variables?.find(v => v.id === key);
+                        return variable && variable.type !== 'text'; // Exclude basic text inputs
+                      })
+                      .map(([key, value]) => {
+                        const variable = service.variables?.find(v => v.id === key);
+                        if (!variable) return null;
+                        
+                        let displayValue = value;
+                        if (typeof value === 'boolean') {
+                          displayValue = value ? 'Yes' : 'No';
+                        } else if (variable.type === 'multiple-choice' || variable.type === 'dropdown') {
+                          const option = variable.options?.find(opt => opt.value === value);
+                          if (option) displayValue = option.label;
+                        }
+                        
+                        return {
+                          name: variable.name,
+                          value: displayValue
+                        };
+                      })
+                      .filter(Boolean);
+
+                    const cardLayout = (styling.pricingCardLayout || 'classic') as 'classic' | 'modern' | 'minimal' | 'compact';
+
+                    return (
+                      <div 
+                        key={serviceId}
+                        className="ab-pricing-card pricing-card relative overflow-hidden transition-all duration-300 hover:scale-105"
+                        style={hasCustomCSS ? {} : {
+                          borderRadius: `${componentStyles.pricingCard?.borderRadius || 16}px`,
+                          backgroundColor: hexToRgba(
+                            componentStyles.pricingCard?.backgroundColor || '#FFFFFF',
+                            componentStyles.pricingCard?.backgroundColorAlpha ?? 100
+                          ),
+                          borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
+                          borderColor: hexToRgba(
+                            componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                            componentStyles.pricingCard?.borderColorAlpha ?? 100
+                          ),
+                          borderStyle: 'solid',
+                          boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'xl'),
+                          padding: cardLayout === 'classic' ? '10px' : '0'
+                        }}
+                      >
+                        {renderPricingCardLayout(cardLayout, {
+                          service,
+                          displayPrice,
+                          hasPricingIssue,
+                          serviceFeatures: serviceFeatures as any[],
+                          styling,
+                          componentStyles,
+                          hasCustomCSS,
+                          renderBulletIconFn: renderBulletIcon
+                        })}
+                      </div>
+                    );
                   })}
                 </div>
-              )}
-
-              {/* Sales Tax */}
-              {taxAmount > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
-                    Sales Tax ({businessSettings?.styling?.salesTaxRate || 0}%):
-                  </span>
-                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
-                    ${taxAmount.toLocaleString()}
-                  </span>
-                </div>
-              )}
-
-              {/* Final Total */}
-              <div className="border-t border-gray-300 pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
-                    Total:
-                  </span>
-                  <span 
-                    className="text-4xl font-bold"
-                    style={{ color: styling.primaryColor || '#2563EB' }}
-                  >
-                    ${finalTotal.toLocaleString()}
-                  </span>
-                </div>
-                {bundleDiscount > 0 && (
-                  <p className="text-sm text-green-600 font-medium text-right mt-1">
-                    You save ${bundleDiscount.toLocaleString()} with our bundle discount!
-                  </p>
-                )}
               </div>
 
-              {/* Customer Discount Selection */}
-              {businessSettings?.discounts && businessSettings.discounts.length > 0 && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
-                    💰 Available Discounts
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    {businessSettings.styling?.allowMultipleDiscounts ? 
-                      'Select all applicable discounts:' : 
-                      'Select one discount that applies to you:'
-                    }
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {businessSettings.discounts.map((discount) => {
-                      const isSelected = selectedDiscounts.includes(discount.id);
+              {/* Detailed Pricing Breakdown */}
+              <div className="border-t border-gray-300 pt-6 space-y-4">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                  Pricing Breakdown
+                </h3>
+                
+                {/* Individual Service Line Items */}
+                <div className="space-y-3">
+                  {selectedServices.map(serviceId => {
+                    const service = formulas?.find(f => f.id === serviceId);
+                    const price = Math.max(0, serviceCalculations[serviceId] || 0);
+                    
+                    // Use title first, then name as fallback, then service ID
+                    const serviceName = service?.title || service?.name || `Service ${serviceId}`;
+                    
+                    return (
+                      <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <div className="flex-1">
+                          <span className="text-base" style={{ color: styling.textColor || '#1F2937' }}>
+                            {serviceName}
+                          </span>
+                          {price === 0 && serviceCalculations[serviceId] <= 0 && (
+                            <span className="ml-2 text-sm text-red-500">(Price Error)</span>
+                          )}
+                        </div>
+                        <span className="text-base font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                          ${price.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Subtotal */}
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                    Subtotal:
+                  </span>
+                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                    ${subtotal.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Bundle Discount */}
+                {bundleDiscount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg text-green-600">
+                      Bundle Discount ({businessSettings?.styling?.bundleDiscountPercent || 0}%):
+                    </span>
+                    <span className="text-lg font-medium text-green-600">
+                      -${bundleDiscount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Customer Discounts */}
+                {customerDiscountAmount > 0 && (
+                  <div className="space-y-2">
+                    {businessSettings?.discounts?.filter(d => d.isActive && selectedDiscounts.includes(d.id)).map((discount) => (
+                      <div key={discount.id} className="flex justify-between items-center">
+                        <span className="text-lg text-green-600">
+                          {discount.name} ({discount.percentage}%):
+                        </span>
+                        <span className="text-lg font-medium text-green-600">
+                          -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Distance Fee */}
+                {distanceFee > 0 && distanceInfo && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg text-orange-600">
+                        Travel Fee:
+                      </span>
+                      <span className="text-lg font-medium text-orange-600">
+                        ${distanceFee.toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-orange-600 leading-tight">
+                      {distanceInfo.message}
+                    </p>
+                  </div>
+                )}
+
+                {/* Selected Upsells */}
+                {selectedUpsells.length > 0 && (
+                  <div className="space-y-2">
+                    {selectedServices.map(serviceId => {
+                      const service = formulas?.find(f => f.id === serviceId);
+                      if (!service?.upsellItems) return null;
                       
-                      return (
-                        <div
-                          key={discount.id}
-                          onClick={() => {
-                            if (businessSettings.styling?.allowMultipleDiscounts) {
-                              // Multiple discounts allowed
-                              if (isSelected) {
-                                setSelectedDiscounts(prev => prev.filter(id => id !== discount.id));
-                              } else {
-                                setSelectedDiscounts(prev => [...prev, discount.id]);
-                              }
+                      return service.upsellItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
+                        const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                        return (
+                          <div key={upsell.id} className="flex justify-between items-center">
+                            <span className="text-lg text-orange-600">
+                              {upsell.name}:
+                            </span>
+                            <span className="text-lg font-medium text-orange-600">
+                              +${upsellPrice.toLocaleString()}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })}
+                  </div>
+                )}
+
+                {/* Sales Tax */}
+                {taxAmount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
+                      Sales Tax ({businessSettings?.styling?.salesTaxRate || 0}%):
+                    </span>
+                    <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                      ${taxAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Final Total */}
+                <div className="border-t border-gray-300 pt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
+                      Total:
+                    </span>
+                    <span 
+                      className="text-4xl font-bold"
+                      style={{ color: styling.primaryColor || '#2563EB' }}
+                    >
+                      ${finalTotal.toLocaleString()}
+                    </span>
+                  </div>
+                  {bundleDiscount > 0 && (
+                    <p className="text-sm text-green-600 font-medium text-right mt-1">
+                      You save ${bundleDiscount.toLocaleString()} with our bundle discount!
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Discount Selection */}
+            {businessSettings?.discounts && businessSettings.discounts.length > 0 && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                  💰 Available Discounts
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  {businessSettings.styling?.allowMultipleDiscounts ? 
+                    'Select all applicable discounts:' :
+                    'Select one discount that applies to you:'
+                  }
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {businessSettings.discounts.map((discount) => {
+                    const isSelected = selectedDiscounts.includes(discount.id);
+                    
+                    return (
+                      <div
+                        key={discount.id}
+                        onClick={() => {
+                          if (businessSettings.styling?.allowMultipleDiscounts) {
+                            // Toggle selection
+                            if (isSelected) {
+                              setSelectedDiscounts(prev => prev.filter(id => id !== discount.id));
                             } else {
-                              // Single discount only
-                              if (isSelected) {
-                                setSelectedDiscounts([]);
-                              } else {
-                                setSelectedDiscounts([discount.id]);
-                              }
+                              setSelectedDiscounts(prev => [...prev, discount.id]);
                             }
-                          }}
-                          className={`p-3 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                            isSelected
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className="font-medium text-gray-900">{discount.name}</h4>
-                              {discount.description && (
-                                <p className="text-sm text-gray-600 mt-1">{discount.description}</p>
-                              )}
-                              <div className="text-lg font-bold text-blue-600 mt-2">
-                                {discount.percentage}% OFF
+                          } else {
+                            // Toggle single selection
+                            if (isSelected) {
+                              setSelectedDiscounts([]);
+                            } else {
+                              setSelectedDiscounts([discount.id]);
+                            }
+                          }
+                        }}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${ 
+                          isSelected
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="font-medium text-gray-900">
+                              {discount.name}
+                            </div>
+                            {discount.description && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {discount.description}
                               </div>
+                            )}
+                          </div>
+                          <div className="ml-3 text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              {discount.percentage}% OFF
                             </div>
                             {isSelected && (
-                              <div className="text-sm text-blue-600 font-medium">
+                              <div className="text-sm text-green-600 font-medium">
                                 ✓ Applied
                               </div>
                             )}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Show discount savings */}
-                  {selectedDiscounts.length > 0 && (
-                    <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-300">
-                      <div className="text-sm font-medium text-green-800 mb-2">Discount Savings Applied:</div>
-                      {businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id)).map((discount) => (
-                        <div key={discount.id} className="flex justify-between items-center text-sm">
-                          <span className="text-green-700">{discount.name} ({discount.percentage}%):</span>
-                          <span className="font-medium text-green-600">
-                            -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
-                          </span>
-                        </div>
-                      ))}
-                      {customerDiscountAmount > 0 && (
-                        <div className="text-sm font-semibold text-green-800 mt-2 pt-2 border-t border-green-200">
-                          Total Discount Savings: -${customerDiscountAmount.toLocaleString()}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Upsell Items */}
-              {(() => {
-                // Collect all upsells from selected services
-                const allUpsells = selectedServices.reduce((acc, serviceId) => {
-                  const service = formulas?.find(f => f.id === serviceId);
-                  if (service?.upsellItems) {
-                    // Add service context to each upsell for better identification
-                    const serviceUpsells = service.upsellItems.map(upsell => ({
-                      ...upsell,
-                      serviceId: service.id,
-                      serviceName: service.name
-                    }));
-                    acc.push(...serviceUpsells);
-                  }
-                  return acc;
-                }, [] as any[]);
-                
-                return allUpsells.length > 0 && (
-                  <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
-                    <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
-                      ⭐ Recommended Add-Ons
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Enhance your services with these popular add-ons
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {allUpsells.map((upsell) => {
+            {/* Upsell Items - Using logic from styled-calculator.tsx */}
+            {(() => {
+              // Collect all upsells from selected services
+              const allUpsells = selectedServices.reduce((acc, serviceId) => {
+                const service = formulas?.find(f => f.id === serviceId);
+                if (service?.upsellItems) {
+                  const serviceUpsells = service.upsellItems.map(upsell => ({
+                    ...upsell,
+                    serviceId: service.id,
+                    serviceName: service.name
+                  }));
+                  acc.push(...serviceUpsells);
+                }
+                return acc;
+              }, [] as any[]);
+              
+              return allUpsells.length > 0 && (
+                <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
+                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                    ⭐ Recommended Add-Ons
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Enhance your services with these popular add-ons
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {allUpsells.map((upsell) => {
                       const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
                       const isSelected = selectedUpsells.includes(upsell.id);
                       
                       return (
                         <div
                           key={upsell.id}
-                          onClick={() => {
-                            if (isSelected) {
-                              setSelectedUpsells(prev => prev.filter(id => id !== upsell.id));
-                            } else {
-                              setSelectedUpsells(prev => [...prev, upsell.id]);
-                            }
-                          }}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${
+                          onClick={() => handleUpsellToggle(upsell.id)}
+                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${ 
                             isSelected
                               ? 'border-orange-500 bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                           }`}
                         >
                           <div className="flex items-start gap-3">
-                            {/* Icon/Image */}
                             <div className="flex-shrink-0">
                               {upsell.iconUrl ? (
                                 <img 
@@ -2130,7 +2675,6 @@ export default function CustomFormDisplay() {
                               )}
                             </div>
                             
-                            {/* Content */}
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div className="flex-1 min-w-0">
@@ -2143,11 +2687,6 @@ export default function CustomFormDisplay() {
                                     )}
                                   </div>
                                   <p className="text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
-                                  {upsell.category && (
-                                    <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded break-words">
-                                      {upsell.category}
-                                    </span>
-                                  )}
                                 </div>
                                 <div className="text-right flex-shrink-0 sm:ml-3">
                                   <div className="text-lg font-bold text-orange-600 whitespace-nowrap">
@@ -2160,72 +2699,21 @@ export default function CustomFormDisplay() {
                                   )}
                                 </div>
                               </div>
-                              
-                              {upsell.tooltip && (
-                                <div className="mt-2 text-xs text-gray-500 italic break-words leading-relaxed">
-                                  💡 {upsell.tooltip}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                  
-                    {/* Show selected upsells total */}
-                    {selectedUpsells.length > 0 && (
-                      <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
-                        <div className="text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
-                        {allUpsells.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
-                          const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
-                          return (
-                            <div key={upsell.id} className="flex justify-between items-center text-sm">
-                              <span className="text-orange-700">{upsell.name} ({upsell.serviceName}):</span>
-                              <span className="font-medium text-orange-600">
-                                +${upsellPrice.toLocaleString()}
-                              </span>
-                            </div>
-                          );
-                        })}
-                        <div className="text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
-                          Total Add-ons: +${allUpsells.filter(u => selectedUpsells.includes(u.id))
-                            .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
-                            .toLocaleString()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Pricing Disclaimer */}
-              {businessSettings?.styling?.enableDisclaimer && businessSettings.styling.disclaimerText && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4" style={{ borderLeftColor: styling.primaryColor || '#3B82F6' }}>
-                  <p className="text-sm text-gray-600">
-                    <strong className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>Important: </strong>
-                    {businessSettings.styling.disclaimerText}
-                  </p>
                 </div>
-              )}
+              );
+            })()}
 
-              {/* Customer Info Summary */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
-                  Quote for: {leadForm.name}
-                </h4>
-                <p className="text-sm text-gray-600">{leadForm.email}</p>
-                <p className="text-sm text-gray-600">{leadForm.phone}</p>
-                {leadForm.address && <p className="text-sm text-gray-600">{leadForm.address}</p>}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               {businessSettings?.enableBooking && (
                 <Button
                   onClick={() => setCurrentStep("scheduling")}
-                  className="ab-button ab-button-primary button flex-1"
+                  className="button flex-1"
                   data-testid="button-schedule-service"
                   style={getButtonStyles('primary')}
                   onMouseEnter={(e) => {
@@ -2244,69 +2732,6 @@ export default function CustomFormDisplay() {
                   Schedule Service
                 </Button>
               )}
-              {!businessSettings?.enableBooking && businessSettings?.styling?.enableCustomButton ? (
-                <Button
-                  onClick={() => {
-                    if (businessSettings.styling.customButtonUrl) {
-                      window.open(businessSettings.styling.customButtonUrl, '_blank');
-                    } else {
-                      // Default behavior - restart the form
-                      setSelectedServices([]);
-                      setServiceVariables({});
-                      setServiceCalculations({});
-                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
-                      setCurrentStep("selection");
-                    }
-                  }}
-                  variant="outline"
-                  className="ab-button ab-button-outline button flex-1"
-                  data-testid="button-custom-action"
-                  style={getButtonStyles('outline')}
-                  onMouseEnter={(e) => {
-                    const hoverStyles = {
-                      backgroundColor: (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                      color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                    };
-                    Object.assign((e.target as HTMLElement).style, hoverStyles);
-                  }}
-                  onMouseLeave={(e) => {
-                    const normalStyles = getButtonStyles('outline');
-                    Object.assign((e.target as HTMLElement).style, normalStyles);
-                  }}
-                >
-                  {businessSettings.styling.customButtonText || "Get Another Quote"}
-                </Button>
-              ) : !businessSettings?.enableBooking && (
-                <Button
-                  onClick={() => {
-                    // Restart the form
-                    setSelectedServices([]);
-                    setServiceVariables({});
-                    setServiceCalculations({});
-                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
-                    setCurrentStep("selection");
-                  }}
-                  variant="outline"
-                  className="ab-button ab-button-outline button flex-1"
-                  data-testid="button-start-new-quote"
-                  style={getButtonStyles('outline')}
-                  onMouseEnter={(e) => {
-                    const hoverStyles = {
-                      backgroundColor: (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                      color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                    };
-                    Object.assign((e.target as HTMLElement).style, hoverStyles);
-                  }}
-                  onMouseLeave={(e) => {
-                    const normalStyles = getButtonStyles('outline');
-                    Object.assign((e.target as HTMLElement).style, normalStyles);
-                  }}
-                >
-                  Start New Quote
-                </Button>
-              )}
             </div>
           </div>
         );
@@ -2314,50 +2739,10 @@ export default function CustomFormDisplay() {
       case "scheduling":
         // Calculate final pricing for scheduling step (exclude negative prices)
         const schedulingSubtotal = Object.values(serviceCalculations).reduce((sum, price) => sum + Math.max(0, price), 0);
-        
-        // Calculate customer discount amount (if any discounts are selected)
-        const schedulingCustomerDiscountAmount = (() => {
-          if (!businessSettings?.discounts || selectedDiscounts.length === 0) return 0;
-          
-          const activeDiscounts = businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id));
-          if (activeDiscounts.length === 0) return 0;
-          
-          // Handle multiple discounts if enabled
-          if (businessSettings.styling?.allowMultipleDiscounts) {
-            return activeDiscounts.reduce((total, discount) => {
-              return total + (schedulingSubtotal * (discount.percentage / 100));
-            }, 0);
-          } else {
-            // Use the single selected discount
-            const discount = activeDiscounts[0];
-            return discount ? schedulingSubtotal * (discount.percentage / 100) : 0;
-          }
-        })();
-        
-        // Apply customer discounts first
-        const schedulingAfterCustomerDiscounts = schedulingSubtotal - schedulingCustomerDiscountAmount;
-        
-        const schedulingBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length >= (businessSettings.styling.bundleMinServices || 2))
-          ? Math.round(schedulingAfterCustomerDiscounts * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+        const schedulingBundleDiscount = (businessSettings?.styling?.showBundleDiscount && selectedServices.length > 1)
+          ? Math.round(schedulingSubtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
-        
-        // Calculate upsell prices for scheduling
-        const schedulingUpsellTotal = selectedServices.reduce((acc, serviceId) => {
-          const service = formulas?.find(f => f.id === serviceId);
-          if (!service?.upsellItems) return acc;
-          
-          const serviceUpsells = service.upsellItems.filter(upsell => selectedUpsells.includes(upsell.id));
-          const serviceUpsellTotal = serviceUpsells.reduce((sum, upsell) => {
-            return sum + Math.round(schedulingSubtotal * (upsell.percentageOfMain / 100));
-          }, 0);
-          
-          return acc + serviceUpsellTotal;
-        }, 0);
-        
-        // Calculate distance fee for scheduling
-        const schedulingDistanceFee = distanceInfo?.fee || 0;
-        
-        const schedulingDiscountedSubtotal = schedulingAfterCustomerDiscounts - schedulingBundleDiscount + schedulingUpsellTotal + schedulingDistanceFee;
+        const schedulingDiscountedSubtotal = schedulingSubtotal - schedulingBundleDiscount;
         const schedulingTaxAmount = businessSettings?.styling?.enableSalesTax 
           ? Math.round(schedulingDiscountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
           : 0;
@@ -2376,7 +2761,6 @@ export default function CustomFormDisplay() {
                 Choose a convenient time for your service appointment
               </p>
             </div>
-
             {/* Schedule Page Video */}
             {businessSettings?.guideVideos?.scheduleVideo && (
               <GuideVideo 
@@ -2384,15 +2768,20 @@ export default function CustomFormDisplay() {
                 title="How to Schedule Your Appointment"
               />
             )}
-
             {/* Quote Summary */}
             <div 
               className="p-6 rounded-lg mb-6"
               style={{
-                backgroundColor: componentStyles.pricingCard?.backgroundColor || '#F8F9FA',
+                backgroundColor: hexToRgba(
+                  componentStyles.pricingCard?.backgroundColor || '#F8F9FA',
+                  componentStyles.pricingCard?.backgroundColorAlpha ?? 100
+                ),
                 borderRadius: `${componentStyles.pricingCard?.borderRadius || 8}px`,
                 borderWidth: `${componentStyles.pricingCard?.borderWidth || 1}px`,
-                borderColor: componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                borderColor: hexToRgba(
+                  componentStyles.pricingCard?.borderColor || '#E5E7EB',
+                  componentStyles.pricingCard?.borderColorAlpha ?? 100
+                ),
                 borderStyle: 'solid',
               }}
             >
@@ -2410,24 +2799,41 @@ export default function CustomFormDisplay() {
                 </div>
               </div>
             </div>
-
             {!bookingConfirmed ? (
-              /* Booking Calendar */
-              <BookingCalendar
-                onBookingConfirmed={(slotId) => {
-                  setBookingConfirmed(true);
-                }}
-                leadId={submittedLeadId || undefined}
-                businessOwnerId={accountId}
-                customerInfo={{
-                  name: leadForm.name,
-                  email: leadForm.email,
-                  phone: leadForm.phone
-                }}
-              />
+              /* Booking Calendar v2 */
+              (<Suspense fallback={
+                <div className="flex items-center justify-center h-64">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <p className="text-sm text-gray-600">Loading calendar...</p>
+                  </div>
+                </div>
+              }>
+                <BookingCalendar
+                  onBookingConfirmed={(slotId) => {
+                    setBookingConfirmed(true);
+                  }}
+                  leadId={submittedLeadId || undefined}
+                  businessOwnerId={accountId}
+                  customerInfo={{
+                    name: leadForm.name,
+                    email: leadForm.email,
+                    phone: leadForm.phone,
+                    address: leadForm.address
+                  }}
+                  serviceName={
+                    formulas
+                      ? selectedServices
+                          .map(id => formulas.find(f => f.id === id)?.serviceName)
+                          .filter(Boolean)
+                          .join(', ')
+                      : undefined
+                  }
+                />
+              </Suspense>)
             ) : (
               /* Booking Confirmation */
-              <div className="text-center p-8 bg-green-50 rounded-lg">
+              (<div className="text-center p-8 bg-green-50 rounded-lg">
                 <div className="text-green-600 mb-4">
                   <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -2439,47 +2845,52 @@ export default function CustomFormDisplay() {
                 <p className="text-green-700 mb-4">
                   Your appointment has been confirmed. You'll receive a confirmation email at <strong>{leadForm.email}</strong>
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
-                  <Button
-                    onClick={() => {
-                      setSelectedServices([]);
-                      setServiceVariables({});
-                      setServiceCalculations({});
-                      setSelectedDiscounts([]);
-                      setSelectedUpsells([]);
-                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
-                      setSubmittedLeadId(null);
-                      setBookingConfirmed(false);
-                      setCurrentStep("selection");
-                    }}
-                    className="ab-button ab-button-primary button"
-                    data-testid="button-schedule-another"
-                    style={{
-                      ...getButtonStyles('primary'),
-                      padding: '12px 24px',
-                      fontSize: '16px',
-                    }}
-                    onMouseEnter={(e) => {
-                      const hoverStyles = {
-                        backgroundColor: (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
-                        color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                        borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
-                      };
-                      Object.assign((e.target as HTMLElement).style, hoverStyles);
-                    }}
-                    onMouseLeave={(e) => {
-                      const normalStyles = {
+                {businessSettings?.enableCustomButton && (
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                    <Button
+                      className="button"
+                      onClick={() => {
+                        if (businessSettings.customButtonUrl) {
+                          window.open(businessSettings.customButtonUrl, '_blank');
+                        } else {
+                          setSelectedServices([]);
+                          setServiceVariables({});
+                          setServiceCalculations({});
+                          setSelectedDiscounts([]);
+                          setSelectedUpsells([]);
+                          setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                          setSubmittedLeadId(null);
+                          setBookingConfirmed(false);
+                          setCurrentStep("selection");
+                        }
+                      }}
+                      style={{
                         ...getButtonStyles('primary'),
                         padding: '12px 24px',
                         fontSize: '16px',
-                      };
-                      Object.assign((e.target as HTMLElement).style, normalStyles);
-                    }}
-                  >
-                    Schedule Another Service
-                  </Button>
-                </div>
-              </div>
+                      }}
+                      onMouseEnter={(e) => {
+                        const hoverStyles = {
+                          backgroundColor: (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
+                          color: (styling as any).buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+                          borderColor: (styling as any).buttonHoverBorderColor || (styling as any).buttonHoverBackgroundColor || '#1d4ed8',
+                        };
+                        Object.assign((e.target as HTMLElement).style, hoverStyles);
+                      }}
+                      onMouseLeave={(e) => {
+                        const normalStyles = {
+                          ...getButtonStyles('primary'),
+                          padding: '12px 24px',
+                          fontSize: '16px',
+                        };
+                        Object.assign((e.target as HTMLElement).style, normalStyles);
+                      }}
+                    >
+                      {businessSettings.customButtonText || 'Get Another Quote'}
+                    </Button>
+                  </div>
+                )}
+              </div>)
             )}
           </div>
         );
@@ -2489,57 +2900,23 @@ export default function CustomFormDisplay() {
     }
   };
 
-  // Helper function to handle CSS values that could be strings or numbers
-  const getCSSValue = (value: any, defaultValue: string | number, unit: string = 'px'): string => {
-    if (value === undefined || value === null) {
-      return typeof defaultValue === 'number' ? `${defaultValue}${unit}` : defaultValue;
-    }
-    if (typeof value === 'string') {
-      return value; // Use string values as-is (e.g., "24px 12px", "0 auto")
-    }
-    return `${value}${unit}`; // Append unit to numeric values
-  };
-
-  const hasCustomCSS = !!designSettings?.customCSS;
-
   return (
-    <GoogleMapsLoader>
-      <div
-        className="force-light-mode min-h-screen flex items-start justify-center p-1 sm:p-2"
-        style={{ 
-          margin: '0',
-          fontFamily: styling.fontFamily === 'inter' ? '"Inter", sans-serif' :
-                      styling.fontFamily === 'roboto' ? '"Roboto", sans-serif' :
-                      styling.fontFamily === 'opensans' ? '"Open Sans", sans-serif' :
-                      styling.fontFamily === 'lato' ? '"Lato", sans-serif' :
-                      styling.fontFamily === 'montserrat' ? '"Montserrat", sans-serif' :
-                      styling.fontFamily === 'poppins' ? '"Poppins", sans-serif' :
-                      '"Inter", sans-serif'
+    <div className="force-light-mode min-h-screen flex items-start justify-center p-1 sm:p-2" style={{ margin: '0' }}>
+      <div 
+        id="autobidder-form"
+        className="ab-form-container form-container max-w-4xl w-full mx-auto"
+        style={hasCustomCSS ? {} : {
+          backgroundColor: styling.backgroundColor || 'transparent',
+          borderRadius: `${styling.containerBorderRadius || 16}px`,
+          padding: `${styling.containerPadding || 8}px`,
+          margin: `${styling.containerMargin || 0}px`,
+          boxShadow: styling.containerShadow === 'xl' 
+            ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'
+            : '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
         }}
       >
-        <div 
-          id="autobidder-form"
-          className="ab-form-container form-container max-w-4xl w-full mx-auto"
-          style={hasCustomCSS ? {} : {
-            maxWidth: getCSSValue(styling.containerWidth, 896),
-            backgroundColor: (styling as any).containerBackgroundColor || styling.backgroundColor || 'transparent',
-            borderRadius: getCSSValue(styling.containerBorderRadius, 16),
-            borderWidth: getCSSValue((styling as any).containerBorderWidth, 0),
-            borderColor: (styling as any).containerBorderColor || 'transparent',
-            borderStyle: 'solid',
-            padding: getCSSValue(styling.containerPadding, 8),
-            margin: getCSSValue(styling.containerMargin, 0),
-            boxShadow: styling.containerShadow === 'none' ? 'none' :
-                      styling.containerShadow === 'sm' ? '0 1px 2px 0 rgba(0, 0, 0, 0.05)' :
-                      styling.containerShadow === 'md' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' :
-                      styling.containerShadow === 'lg' ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' :
-                      styling.containerShadow === 'xl' ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' :
-                      '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-          }}
-        >
-          {renderCurrentStep()}
-        </div>
+        {renderCurrentStep()}
       </div>
-    </GoogleMapsLoader>
+    </div>
   );
 }

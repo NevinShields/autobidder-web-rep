@@ -1780,12 +1780,13 @@ export default function StyledCalculator(props: any = {}) {
       photoMeasurements: photoMeasurements,
       distanceInfo: distanceInfo ? {
         distance: distanceInfo.distance,
-        fee: distanceFee,
+        fee: Math.round(distanceInfo.fee * 100), // Convert to cents
         message: distanceInfo.message
       } : undefined,
       appliedDiscounts: appliedDiscountData,
       bundleDiscountAmount: Math.round(bundleDiscount * 100), // Convert to cents
-      selectedUpsells: selectedUpsellData
+      selectedUpsells: selectedUpsellData,
+      taxAmount: Math.round(taxAmount * 100)
     };
 
     console.log('Submitting lead data:', submissionData);

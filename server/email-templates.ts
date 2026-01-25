@@ -1925,6 +1925,12 @@ export async function sendBidResponseNotification(
           ${details.quoteMessage || `We've prepared your ${details.serviceName} service quote and it's ready for your review.`}
         </p>
         
+        <div style="text-align: center; margin-bottom: 30px;">
+          <a href="${details.bidResponseLink}" style="display: inline-block; background-color: #7c3aed; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 16px;">
+            View Your Quote
+          </a>
+        </div>
+        
         <div style="background: #f3e8ff; padding: 25px; border-radius: 8px; margin-bottom: 25px; border-left: 4px solid #7c3aed; text-align: center;">
           <h3 style="margin: 0 0 10px 0; color: #5b21b6; font-size: 24px;">Total Quote</h3>
           <p style="margin: 0; font-size: 32px; font-weight: bold; color: #5b21b6;">${(details.totalPrice / 100).toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>

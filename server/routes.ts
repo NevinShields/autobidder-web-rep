@@ -9715,18 +9715,27 @@ The Autobidder Team`;
         // For single service, calculatedPrice is the final total (after discounts, travel fee and tax)
         const calculatedPrice = (lead as any).calculatedPrice || 0;
         const discountAmount = ((lead as any).appliedDiscounts?.reduce((sum: number, d: any) => sum + (d.amount || 0), 0) || 0);
-        const taxAmount = (lead as any).taxAmount || 0;
         const distanceFee = (lead as any).distanceFee || 0;
 
-        // Work backwards to find base service price: calculatedPrice = basePrice + distanceFee - discounts + tax
-        // So: basePrice = calculatedPrice - distanceFee + discounts - tax
-        const basePrice = calculatedPrice - distanceFee + discountAmount - taxAmount;
+        // For single service, calculatedPrice is the final total (after discounts, travel fee and tax)
+        // Work backwards to find base service price before any adjustments
+        const baseServicePrice = calculatedPrice + discountAmount - distanceFee;
 
-        // For estimate: subtotal is sum of service prices (which is just basePrice for single service)
-        const subtotal = basePrice;
+        // For estimate: subtotal is sum of service prices (which is just baseServicePrice for single service)
+        const subtotal = baseServicePrice;
 
-        // totalAmount should match calculatedPrice: subtotal + distanceFee - discounts + tax
-        const totalAmount = subtotal + distanceFee - discountAmount + taxAmount;
+        let finalTaxAmount = 0;
+        let totalAmountIncludingTax = subtotal + distanceFee - discountAmount; // Total before applying sales tax
+
+        const businessSettings = await storage.getBusinessSettingsByUserId(userId);
+        if (businessSettings?.styling?.enableSalesTax && businessSettings.styling.salesTaxRate) {
+            const taxRate = businessSettings.styling.salesTaxRate; // This is a percentage (e.g., 8.25)
+            finalTaxAmount = Math.round(totalAmountIncludingTax * (taxRate / 100)); // Calculate tax in cents
+            totalAmountIncludingTax += finalTaxAmount; // Add tax to total amount
+        }
+        
+        // Final total amount should match the original calculatedPrice + tax if not already included
+        const finalTotalAmount = calculatedPrice + finalTaxAmount; // The original calculatedPrice from the lead already includes discounts and distance fee. We just need to add the newly calculated tax.
 
         estimateData = {
           userId,
@@ -9741,14 +9750,14 @@ The Autobidder Team`;
             name: formula.name,
             description: formula.description || "",
             variables: (lead as any).variables,
-            price: basePrice,
+            price: baseServicePrice, // Price of the service item itself, before adjustments
             category: "Service"
           }],
           subtotal,
-          taxAmount,
+          taxAmount: finalTaxAmount,
           discountAmount,
           distanceFee,
-          totalAmount,
+          totalAmount: finalTotalAmount,
           validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           status: "approved",
           ownerApprovalStatus: "approved",

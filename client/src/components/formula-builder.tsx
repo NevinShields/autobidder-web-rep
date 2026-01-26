@@ -16,8 +16,10 @@ import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
 import FormulaDemoPreview from "./formula-demo-preview";
 import IconSelector from "./icon-selector";
+import AIIconGeneratorModal from "./ai-icon-generator-modal";
 import { TemplateLibraryButton } from "./template-library";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import FormulaExpressionInput from "./formula-expression-input";
 import { useToast } from "@/hooks/use-toast";
 import {
   DndContext,
@@ -185,6 +187,7 @@ export default function FormulaBuilderComponent({
   const [showAIEditor, setShowAIEditor] = useState(false);
   const [aiEditInstructions, setAiEditInstructions] = useState("");
   const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
+  const [showIconGenerator, setShowIconGenerator] = useState(false);
   const [templateCategory, setTemplateCategory] = useState("");
   const [templateName, setTemplateName] = useState("");
   const [templateIconId, setTemplateIconId] = useState<number | null>(formula.iconId || null);
@@ -715,6 +718,14 @@ export default function FormulaBuilderComponent({
                       }}
                     />
                   </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowIconGenerator(true)}
+                    className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    AI Generate
+                  </button>
                 </div>
               </div>
 
@@ -1106,12 +1117,11 @@ export default function FormulaBuilderComponent({
             <div className="space-y-4">
               <div>
                 <Label htmlFor="formula-expression">Formula Expression</Label>
-                <textarea
-                  id="formula-expression"
+                <FormulaExpressionInput
                   value={formulaExpression}
-                  onChange={(e) => handleFormulaChange(e.target.value)}
+                  onChange={handleFormulaChange}
+                  variables={formula.variables || []}
                   placeholder="e.g., squareFootage * 25 + laborHours * 85"
-                  className="w-full min-h-[80px] p-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 />
               </div>
               
@@ -1343,6 +1353,19 @@ export default function FormulaBuilderComponent({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Icon Generator Modal */}
+      <AIIconGeneratorModal
+        isOpen={showIconGenerator}
+        onClose={() => setShowIconGenerator(false)}
+        onIconGenerated={(iconDataUrl) => {
+          onUpdate({ iconUrl: iconDataUrl, iconId: null });
+          setShowIconGenerator(false);
+          toast({ title: "Icon generated successfully" });
+        }}
+        defaultPrompt={formula.name ? `Icon for ${formula.name} service` : ''}
+        title="Generate Service Icon"
+      />
     </div>
   );
 }

@@ -43,6 +43,7 @@ import {
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
+import { generateIcon, generateBulkIcons, type IconStyle } from "./icon-generator";
 import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS, editCustomCSS } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
@@ -588,6 +589,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Icon upload error:', error);
       res.status(500).json({ message: "Failed to upload icon" });
+    }
+  });
+
+  // AI Icon Generation endpoint - generates a single icon using Gemini Nano Banana
+  app.post("/api/icons/generate", requireAuth, async (req, res) => {
+    try {
+      const { prompt, style } = req.body;
+
+      if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      const validStyles: IconStyle[] = ['flat', 'outlined', 'gradient', '3d'];
+      const iconStyle: IconStyle = validStyles.includes(style) ? style : 'flat';
+
+      console.log('Generating AI icon:', { prompt, style: iconStyle });
+
+      const result = await generateIcon(prompt.trim(), iconStyle);
+
+      res.json({
+        imageBase64: result.imageBase64,
+        mimeType: result.mimeType
+      });
+    } catch (error) {
+      console.error('AI icon generation error:', error);
+      res.status(500).json({ message: "Failed to generate icon: " + (error as Error).message });
+    }
+  });
+
+  // Bulk AI Icon Generation endpoint - generates icons for multiple choice options
+  app.post("/api/icons/generate-bulk", requireAuth, async (req, res) => {
+    try {
+      const { context, options, style } = req.body;
+
+      if (!context || typeof context !== 'string' || context.trim() === '') {
+        return res.status(400).json({ message: "Context is required" });
+      }
+
+      if (!options || !Array.isArray(options) || options.length === 0) {
+        return res.status(400).json({ message: "Options array is required" });
+      }
+
+      // Validate options structure
+      for (const opt of options) {
+        if (!opt.id || !opt.label) {
+          return res.status(400).json({ message: "Each option must have id and label" });
+        }
+      }
+
+      // Limit bulk generation to prevent abuse
+      if (options.length > 10) {
+        return res.status(400).json({ message: "Maximum 10 options allowed per bulk request" });
+      }
+
+      const validStyles: IconStyle[] = ['flat', 'outlined', 'gradient', '3d'];
+      const iconStyle: IconStyle = validStyles.includes(style) ? style : 'flat';
+
+      console.log('Generating bulk AI icons:', { context, optionCount: options.length, style: iconStyle });
+
+      const result = await generateBulkIcons(context.trim(), options, iconStyle);
+
+      res.json({
+        images: result.images,
+        errors: result.errors
+      });
+    } catch (error) {
+      console.error('Bulk AI icon generation error:', error);
+      res.status(500).json({ message: "Failed to generate icons: " + (error as Error).message });
     }
   });
 

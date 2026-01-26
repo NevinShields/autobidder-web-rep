@@ -16,7 +16,10 @@
       "Bash(timeout 20s npm run dev:*)",
       "Bash(npm run build:*)",
       "Bash(npm run db:push:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "WebSearch",
+      "Bash(npm install:*)",
+      "WebFetch(domain:ai.google.dev)"
     ]
   }
 }

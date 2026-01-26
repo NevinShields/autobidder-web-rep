@@ -10,8 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload,
   Zap, HelpCircle, ChevronDown, ChevronUp, Hash, Type, CheckSquare,
-  SlidersHorizontal, List, Image, Copy, Video, ImageIcon
+  SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2
 } from "lucide-react";
+import AIIconGeneratorModal from "./ai-icon-generator-modal";
+import { useToast } from "@/hooks/use-toast";
+import { processIconWithBackgroundRemoval } from "@/lib/background-removal";
 import { getAvailableDependencies, getConditionLabel, getAvailableConditions } from "@shared/conditional-logic";
 import {
   DndContext,
@@ -47,6 +50,7 @@ interface SortableOptionItemProps {
   showDefaultUnselected?: boolean;
   onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string; defaultUnselectedValue?: number }) => void;
   onDelete: (index: number) => void;
+  onAIGenerate?: (index: number) => void;
 }
 
 const typeConfig: Record<string, { icon: any; label: string; color: string }> = {
@@ -59,7 +63,7 @@ const typeConfig: Record<string, { icon: any; label: string; color: string }> = 
   select: { icon: List, label: "Select", color: "bg-orange-100 text-orange-700 border-orange-200" },
 };
 
-function SortableOptionItem({ option, index, showImage = false, showDefaultUnselected = false, onUpdate, onDelete }: SortableOptionItemProps) {
+function SortableOptionItem({ option, index, showImage = false, showDefaultUnselected = false, onUpdate, onDelete, onAIGenerate }: SortableOptionItemProps) {
   const {
     attributes,
     listeners,
@@ -109,7 +113,7 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
       </div>
 
       {showImage && (
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex gap-1">
           {option.image ? (
             <div className="relative group">
               <img
@@ -126,15 +130,27 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
               </button>
             </div>
           ) : (
-            <label className="w-10 h-10 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-              <Upload className="w-4 h-4 text-gray-400" />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
+            <>
+              <label className="w-10 h-10 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors" title="Upload image">
+                <Upload className="w-4 h-4 text-gray-400" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+              {onAIGenerate && (
+                <button
+                  type="button"
+                  onClick={() => onAIGenerate(index)}
+                  className="w-10 h-10 border-2 border-dashed border-purple-300 rounded-lg flex items-center justify-center hover:border-purple-500 hover:bg-purple-50 transition-colors"
+                  title="Generate with AI"
+                >
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                </button>
+              )}
+            </>
           )}
         </div>
       )}
@@ -247,6 +263,13 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editCheckedValue, setEditCheckedValue] = useState(variable.checkedValue?.toString() || "1");
   const [editUncheckedValue, setEditUncheckedValue] = useState(variable.uncheckedValue?.toString() || "0");
 
+  // AI Icon Generation state
+  const [showSingleIconGenerator, setShowSingleIconGenerator] = useState(false);
+  const [singleIconGeneratorIndex, setSingleIconGeneratorIndex] = useState<number | null>(null);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 });
+  const { toast } = useToast();
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -353,6 +376,107 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const handleDeleteOption = (index: number) => {
     if (!onUpdate || !variable.options) return;
     onUpdate(variable.id, { options: variable.options.filter((_, i) => i !== index) });
+  };
+
+  // AI Icon Generation handlers
+  const handleOpenSingleIconGenerator = (index: number) => {
+    setSingleIconGeneratorIndex(index);
+    setShowSingleIconGenerator(true);
+  };
+
+  const handleSingleIconGenerated = (iconDataUrl: string) => {
+    if (singleIconGeneratorIndex !== null && variable.options) {
+      handleOptionUpdate(singleIconGeneratorIndex, { image: iconDataUrl });
+    }
+    setShowSingleIconGenerator(false);
+    setSingleIconGeneratorIndex(null);
+  };
+
+  const handleBulkGenerateIcons = async () => {
+    if (!variable.options || variable.options.length === 0 || !onUpdate) return;
+
+    setIsBulkGenerating(true);
+    setBulkProgress({ completed: 0, total: variable.options.length });
+
+    try {
+      const response = await fetch('/api/icons/generate-bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          context: variable.name,
+          options: variable.options.map((opt, i) => ({
+            id: opt.id || `option-${i}`,
+            label: opt.label
+          })),
+          style: 'flat'
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate icons');
+      }
+
+      const data = await response.json();
+
+      // Process each generated image - remove background client-side
+      const updatedOptions = [...variable.options];
+      let completed = 0;
+
+      for (const img of data.images) {
+        try {
+          // Find the option index
+          const optionIndex = variable.options.findIndex(
+            (opt, i) => (opt.id || `option-${i}`) === img.optionId
+          );
+
+          if (optionIndex !== -1) {
+            // Remove background client-side
+            const processedDataUrl = await processIconWithBackgroundRemoval(img.imageBase64, img.mimeType);
+            updatedOptions[optionIndex] = { ...updatedOptions[optionIndex], image: processedDataUrl };
+          }
+
+          completed++;
+          setBulkProgress({ completed, total: variable.options.length });
+        } catch (bgError) {
+          console.warn(`Background removal failed for option ${img.optionId}:`, bgError);
+          // Use original image if background removal fails
+          const optionIndex = variable.options.findIndex(
+            (opt, i) => (opt.id || `option-${i}`) === img.optionId
+          );
+          if (optionIndex !== -1) {
+            updatedOptions[optionIndex] = {
+              ...updatedOptions[optionIndex],
+              image: `data:${img.mimeType};base64,${img.imageBase64}`
+            };
+          }
+          completed++;
+          setBulkProgress({ completed, total: variable.options.length });
+        }
+      }
+
+      onUpdate(variable.id, { options: updatedOptions });
+
+      if (data.errors && data.errors.length > 0) {
+        toast({
+          title: `Generated ${data.images.length} icons`,
+          description: `${data.errors.length} failed to generate`,
+          variant: "default"
+        });
+      } else {
+        toast({ title: `Generated ${data.images.length} icons successfully` });
+      }
+    } catch (error) {
+      console.error('Bulk icon generation error:', error);
+      toast({
+        title: "Generation failed",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsBulkGenerating(false);
+      setBulkProgress({ completed: 0, total: 0 });
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -804,10 +928,33 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   <Settings className="w-4 h-4" />
                   Options ({variable.options?.length || 0})
                 </button>
-                <Button variant="outline" size="sm" onClick={handleAddOption} className="h-8 text-xs">
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add
-                </Button>
+                <div className="flex gap-2">
+                  {variable.type === 'multiple-choice' && variable.options && variable.options.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkGenerateIcons}
+                      disabled={isBulkGenerating}
+                      className="h-8 text-xs text-purple-600 border-purple-200 hover:bg-purple-50"
+                    >
+                      {isBulkGenerating ? (
+                        <>
+                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                          {bulkProgress.total > 0 ? `${bulkProgress.completed}/${bulkProgress.total}` : 'Generating...'}
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          AI Generate All
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={handleAddOption} className="h-8 text-xs">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add
+                  </Button>
+                </div>
               </div>
 
               {showOptions && variable.options && (
@@ -823,6 +970,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           showDefaultUnselected={variable.type === 'multiple-choice' && variable.allowMultipleSelection}
                           onUpdate={handleOptionUpdate}
                           onDelete={handleDeleteOption}
+                          onAIGenerate={variable.type === 'multiple-choice' ? handleOpenSingleIconGenerator : undefined}
                         />
                       ))}
                     </div>
@@ -1019,6 +1167,22 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           </div>
         </div>
       )}
+
+      {/* AI Icon Generator Modal for single option */}
+      <AIIconGeneratorModal
+        isOpen={showSingleIconGenerator}
+        onClose={() => {
+          setShowSingleIconGenerator(false);
+          setSingleIconGeneratorIndex(null);
+        }}
+        onIconGenerated={handleSingleIconGenerated}
+        defaultPrompt={
+          singleIconGeneratorIndex !== null && variable.options?.[singleIconGeneratorIndex]
+            ? `${variable.options[singleIconGeneratorIndex].label} - ${variable.name}`
+            : ''
+        }
+        title="Generate Option Icon"
+      />
     </div>
   );
 }

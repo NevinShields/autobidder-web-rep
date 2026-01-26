@@ -1,15 +1,12 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Sparkles, Loader2, RefreshCw, Check, X } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw, Check, X, Upload, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { processIconWithBackgroundRemoval } from "@/lib/background-removal";
-
-type IconStyle = 'flat' | 'outlined' | 'gradient' | '3d';
 
 interface AIIconGeneratorModalProps {
   isOpen: boolean;
@@ -21,13 +18,6 @@ interface AIIconGeneratorModalProps {
 
 type GenerationStatus = 'idle' | 'generating' | 'removing-bg' | 'success' | 'error';
 
-const styleDescriptions: Record<IconStyle, string> = {
-  flat: 'Simple, solid colors, minimal design',
-  outlined: 'Line art, stroke-based design',
-  gradient: 'Smooth color gradients',
-  '3d': 'Dimensional, with depth and shadows'
-};
-
 export default function AIIconGeneratorModal({
   isOpen,
   onClose,
@@ -36,12 +26,44 @@ export default function AIIconGeneratorModal({
   title = 'Generate Icon with AI'
 }: AIIconGeneratorModalProps) {
   const [prompt, setPrompt] = useState(defaultPrompt);
-  const [style, setStyle] = useState<IconStyle>('flat');
+  const [styleDescription, setStyleDescription] = useState('');
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [removeBackground, setRemoveBackground] = useState(true);
   const [status, setStatus] = useState<GenerationStatus>('idle');
   const [generatedIcon, setGeneratedIcon] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const handleReferenceUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({ title: "Please select an image file", variant: "destructive" });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "Image must be smaller than 5MB", variant: "destructive" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setReferenceImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeReferenceImage = () => {
+    setReferenceImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const statusMessages: Record<GenerationStatus, string> = {
     idle: 'Enter a description for your icon',
@@ -69,7 +91,11 @@ export default function AIIconGeneratorModal({
       const response = await fetch('/api/icons/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim(), style })
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          styleDescription: styleDescription.trim(),
+          referenceImage: referenceImage || undefined
+        })
       });
 
       if (!response.ok) {
@@ -114,11 +140,15 @@ export default function AIIconGeneratorModal({
 
   const handleClose = () => {
     setPrompt(defaultPrompt);
-    setStyle('flat');
+    setStyleDescription('');
+    setReferenceImage(null);
     setRemoveBackground(true);
     setStatus('idle');
     setGeneratedIcon(null);
     setErrorMessage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     onClose();
   };
 
@@ -161,22 +191,58 @@ export default function AIIconGeneratorModal({
             />
           </div>
 
-          {/* Style Selector */}
+          {/* Style Description */}
           <div className="space-y-2">
-            <Label htmlFor="style">Icon Style</Label>
-            <Select value={style} onValueChange={(v) => setStyle(v as IconStyle)} disabled={isGenerating}>
-              <SelectTrigger id="style">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(styleDescriptions) as IconStyle[]).map((s) => (
-                  <SelectItem key={s} value={s}>
-                    <span className="capitalize">{s}</span>
-                    <span className="text-xs text-gray-500 ml-2">- {styleDescriptions[s]}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="style">Style Description (optional)</Label>
+            <Input
+              id="style"
+              placeholder="e.g., flat minimalist, 3D realistic, cartoon style, line art..."
+              value={styleDescription}
+              onChange={(e) => setStyleDescription(e.target.value)}
+              disabled={isGenerating}
+            />
+            <p className="text-xs text-gray-500">Describe the visual style you want for your icon</p>
+          </div>
+
+          {/* Reference Image Upload */}
+          <div className="space-y-2">
+            <Label>Reference Icon (optional)</Label>
+            <div className="flex items-center gap-3">
+              {referenceImage ? (
+                <div className="relative group">
+                  <img
+                    src={referenceImage}
+                    alt="Reference"
+                    className="w-12 h-12 object-cover rounded-lg border-2 border-purple-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeReferenceImage}
+                    disabled={isGenerating}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className={`w-12 h-12 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <Upload className="w-5 h-5 text-gray-400" />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleReferenceUpload}
+                    disabled={isGenerating}
+                    className="hidden"
+                  />
+                </label>
+              )}
+              <div className="flex-1">
+                <p className="text-xs text-gray-500">
+                  Upload an existing icon to match its style
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Remove Background Toggle */}

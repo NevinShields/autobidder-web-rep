@@ -19,7 +19,8 @@
       "Bash(npx vite:*)",
       "WebSearch",
       "Bash(npm install:*)",
-      "WebFetch(domain:ai.google.dev)"
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(ls:*)"
     ]
   }
 }

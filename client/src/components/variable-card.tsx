@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload,
   Zap, HelpCircle, ChevronDown, ChevronUp, Hash, Type, CheckSquare,
@@ -268,6 +269,10 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [singleIconGeneratorIndex, setSingleIconGeneratorIndex] = useState<number | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ completed: 0, total: 0 });
+  const [showBulkStyleDialog, setShowBulkStyleDialog] = useState(false);
+  const [bulkStyleDescription, setBulkStyleDescription] = useState('');
+  const [bulkReferenceImage, setBulkReferenceImage] = useState<string | null>(null);
+  const bulkFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -392,9 +397,48 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
     setSingleIconGeneratorIndex(null);
   };
 
+  const openBulkGenerateDialog = () => {
+    setBulkStyleDescription('');
+    setBulkReferenceImage(null);
+    if (bulkFileInputRef.current) {
+      bulkFileInputRef.current.value = '';
+    }
+    setShowBulkStyleDialog(true);
+  };
+
+  const handleBulkReferenceUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({ title: "Please select an image file", variant: "destructive" });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "Image must be smaller than 5MB", variant: "destructive" });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setBulkReferenceImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    if (bulkFileInputRef.current) {
+      bulkFileInputRef.current.value = '';
+    }
+  };
+
+  const removeBulkReferenceImage = () => {
+    setBulkReferenceImage(null);
+    if (bulkFileInputRef.current) {
+      bulkFileInputRef.current.value = '';
+    }
+  };
+
   const handleBulkGenerateIcons = async () => {
     if (!variable.options || variable.options.length === 0 || !onUpdate) return;
 
+    setShowBulkStyleDialog(false);
     setIsBulkGenerating(true);
     setBulkProgress({ completed: 0, total: variable.options.length });
 
@@ -408,7 +452,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             id: opt.id || `option-${i}`,
             label: opt.label
           })),
-          style: 'flat'
+          styleDescription: bulkStyleDescription,
+          referenceImage: bulkReferenceImage || undefined
         })
       });
 
@@ -933,7 +978,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleBulkGenerateIcons}
+                      onClick={openBulkGenerateDialog}
                       disabled={isBulkGenerating}
                       className="h-8 text-xs text-purple-600 border-purple-200 hover:bg-purple-50"
                     >
@@ -1183,6 +1228,88 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         }
         title="Generate Option Icon"
       />
+
+      {/* Bulk Style Description Dialog */}
+      <Dialog open={showBulkStyleDialog} onOpenChange={setShowBulkStyleDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-500" />
+              Generate All Icons
+            </DialogTitle>
+            <DialogDescription>
+              Generate icons for all {variable.options?.length || 0} options in "{variable.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="bulk-style">Style Description (optional)</Label>
+              <Input
+                id="bulk-style"
+                placeholder="e.g., flat minimalist, 3D realistic, cartoon style..."
+                value={bulkStyleDescription}
+                onChange={(e) => setBulkStyleDescription(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    handleBulkGenerateIcons();
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500">
+                Describe the visual style for all icons. Leave empty for default style.
+              </p>
+            </div>
+
+            {/* Reference Image Upload */}
+            <div className="space-y-2">
+              <Label>Reference Icon (optional)</Label>
+              <div className="flex items-center gap-3">
+                {bulkReferenceImage ? (
+                  <div className="relative group">
+                    <img
+                      src={bulkReferenceImage}
+                      alt="Reference"
+                      className="w-12 h-12 object-cover rounded-lg border-2 border-purple-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeBulkReferenceImage}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors">
+                    <Upload className="w-5 h-5 text-gray-400" />
+                    <input
+                      ref={bulkFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBulkReferenceUpload}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500">
+                    Upload an existing icon to match its style for all generated icons
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkStyleDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBulkGenerateIcons}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate Icons
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

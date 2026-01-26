@@ -43,7 +43,7 @@ import {
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
-import { generateIcon, generateBulkIcons, type IconStyle } from "./icon-generator";
+import { generateIcon, generateBulkIcons } from "./icon-generator";
 import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS, editCustomCSS } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
@@ -595,18 +595,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Icon Generation endpoint - generates a single icon using Gemini Nano Banana
   app.post("/api/icons/generate", requireAuth, async (req, res) => {
     try {
-      const { prompt, style } = req.body;
+      const { prompt, styleDescription, referenceImage } = req.body;
 
       if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
         return res.status(400).json({ message: "Prompt is required" });
       }
 
-      const validStyles: IconStyle[] = ['flat', 'outlined', 'gradient', '3d'];
-      const iconStyle: IconStyle = validStyles.includes(style) ? style : 'flat';
+      // styleDescription is optional, default to empty string
+      const style = typeof styleDescription === 'string' ? styleDescription.trim() : '';
 
-      console.log('Generating AI icon:', { prompt, style: iconStyle });
+      // referenceImage is optional - should be a data URL if provided
+      const refImage = typeof referenceImage === 'string' && referenceImage.startsWith('data:image/')
+        ? referenceImage
+        : undefined;
 
-      const result = await generateIcon(prompt.trim(), iconStyle);
+      console.log('Generating AI icon:', {
+        prompt,
+        styleDescription: style || '(default)',
+        hasReferenceImage: !!refImage
+      });
+
+      const result = await generateIcon(prompt.trim(), style, refImage);
 
       res.json({
         imageBase64: result.imageBase64,
@@ -621,7 +630,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk AI Icon Generation endpoint - generates icons for multiple choice options
   app.post("/api/icons/generate-bulk", requireAuth, async (req, res) => {
     try {
-      const { context, options, style } = req.body;
+      const { context, options, styleDescription, referenceImage } = req.body;
 
       if (!context || typeof context !== 'string' || context.trim() === '') {
         return res.status(400).json({ message: "Context is required" });
@@ -643,12 +652,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Maximum 10 options allowed per bulk request" });
       }
 
-      const validStyles: IconStyle[] = ['flat', 'outlined', 'gradient', '3d'];
-      const iconStyle: IconStyle = validStyles.includes(style) ? style : 'flat';
+      // styleDescription is optional, default to empty string
+      const style = typeof styleDescription === 'string' ? styleDescription.trim() : '';
 
-      console.log('Generating bulk AI icons:', { context, optionCount: options.length, style: iconStyle });
+      // referenceImage is optional - should be a data URL if provided
+      const refImage = typeof referenceImage === 'string' && referenceImage.startsWith('data:image/')
+        ? referenceImage
+        : undefined;
 
-      const result = await generateBulkIcons(context.trim(), options, iconStyle);
+      console.log('Generating bulk AI icons:', {
+        context,
+        optionCount: options.length,
+        styleDescription: style || '(default)',
+        hasReferenceImage: !!refImage
+      });
+
+      const result = await generateBulkIcons(context.trim(), options, style, refImage);
 
       res.json({
         images: result.images,

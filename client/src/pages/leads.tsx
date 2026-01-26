@@ -1226,7 +1226,7 @@ export default function LeadsPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <Users className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xs font-medium text-blue-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
@@ -1245,7 +1245,7 @@ export default function LeadsPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <DollarSign className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xs font-medium text-emerald-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
@@ -1266,7 +1266,7 @@ export default function LeadsPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
+                <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xs font-medium text-violet-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">

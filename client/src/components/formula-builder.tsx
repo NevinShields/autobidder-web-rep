@@ -25,7 +25,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -245,9 +246,19 @@ export default function FormulaBuilderComponent({
     },
   });
 
-  // Drag and drop sensors
+  // Drag and drop sensors with activation constraints to prevent blocking touch interactions
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10, // Require 10px movement before drag starts
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250, // Require 250ms hold before drag starts on touch devices
+        tolerance: 5, // Allow 5px movement during the delay
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })

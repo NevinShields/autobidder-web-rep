@@ -3284,7 +3284,7 @@ export default function StyledCalculator(props: any = {}) {
               {businessSettings?.enableBooking && (
                 <Button
                   onClick={() => setCurrentStep("scheduling")}
-                  className="button flex-1"
+                  className="ab-button ab-button-primary button flex-1"
                   data-testid="button-schedule-service"
                   style={getButtonStyles('primary')}
                   onMouseEnter={(e) => {

@@ -555,7 +555,7 @@ export default function IntegrationsPage() {
               <p className="text-gray-600 dark:text-gray-400 dark:text-gray-400">
                 Having trouble setting up an integration? We're here to help!
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <Button variant="outline" asChild>
                   <a href="/support" className="flex items-center gap-2">
                     Contact Support

@@ -20,7 +20,8 @@
       "WebSearch",
       "Bash(npm install:*)",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(psql:*)"
     ]
   }
 }

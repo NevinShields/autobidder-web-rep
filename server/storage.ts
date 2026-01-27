@@ -175,6 +175,7 @@ import {
   type Tutorial,
   type InsertTutorial,
   whiteLabelVideos,
+  whiteLabelVideoDownloads,
   type WhiteLabelVideo,
   type InsertWhiteLabelVideo
 } from "@shared/schema";
@@ -643,9 +644,14 @@ export interface IStorage {
   
   // White Label Video operations
   getWhiteLabelVideos(): Promise<WhiteLabelVideo[]>;
+  getWhiteLabelVideo(id: number): Promise<WhiteLabelVideo | undefined>;
   createWhiteLabelVideo(video: InsertWhiteLabelVideo): Promise<WhiteLabelVideo>;
   updateWhiteLabelVideo(id: number, video: Partial<InsertWhiteLabelVideo>): Promise<WhiteLabelVideo | undefined>;
   deleteWhiteLabelVideo(id: number): Promise<boolean>;
+
+  // White Label Video Download tracking
+  getVideoDownloadsCount(userId: string, month: number, year: number): Promise<number>;
+  recordVideoDownload(userId: string, videoId: number, month: number, year: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4782,6 +4788,40 @@ export class DatabaseStorage implements IStorage {
       .where(eq(whiteLabelVideos.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  async getWhiteLabelVideo(id: number): Promise<WhiteLabelVideo | undefined> {
+    const [video] = await db
+      .select()
+      .from(whiteLabelVideos)
+      .where(eq(whiteLabelVideos.id, id));
+    return video || undefined;
+  }
+
+  // White Label Video Download tracking
+  async getVideoDownloadsCount(userId: string, month: number, year: number): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(whiteLabelVideoDownloads)
+      .where(
+        and(
+          eq(whiteLabelVideoDownloads.userId, userId),
+          eq(whiteLabelVideoDownloads.downloadMonth, month),
+          eq(whiteLabelVideoDownloads.downloadYear, year)
+        )
+      );
+    return result[0]?.count || 0;
+  }
+
+  async recordVideoDownload(userId: string, videoId: number, month: number, year: number): Promise<void> {
+    await db
+      .insert(whiteLabelVideoDownloads)
+      .values({
+        userId,
+        videoId,
+        downloadMonth: month,
+        downloadYear: year
+      });
   }
 }
 

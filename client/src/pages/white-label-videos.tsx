@@ -7,11 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Plus, Trash2, Edit2, ExternalLink, Video, Download, FileVideo, Upload } from "lucide-react";
+import { Play, Plus, Trash2, Edit2, ExternalLink, Video, Download, FileVideo, Upload, Lock, Crown, AlertCircle } from "lucide-react";
+import { useLocation } from "wouter";
 import type { WhiteLabelVideo } from "@shared/schema";
+
+interface DownloadStatus {
+  canDownload: boolean;
+  reason?: string | null;
+  message?: string | null;
+  currentPlan?: string;
+  downloadsThisMonth: number;
+  downloadLimit: number | string;
+}
 
 function extractYouTubeVideoId(url: string): string | null {
   if (!url) return null;
@@ -29,43 +40,28 @@ function extractYouTubeVideoId(url: string): string | null {
   return null;
 }
 
-function VideoCard({ video, isAdmin, onEdit, onDelete }: { 
-  video: WhiteLabelVideo; 
+function VideoCard({ video, isAdmin, onEdit, onDelete, downloadStatus, onDownloadClick }: {
+  video: WhiteLabelVideo;
   isAdmin: boolean;
   onEdit: (video: WhiteLabelVideo) => void;
   onDelete: (id: number) => void;
+  downloadStatus?: DownloadStatus;
+  onDownloadClick: (videoId: number) => void;
 }) {
   const videoId = video.youtubeUrl ? extractYouTubeVideoId(video.youtubeUrl) : null;
   const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : null;
-  
+
   const openVideo = () => {
     if (video.youtubeUrl) {
       window.open(video.youtubeUrl, '_blank');
     }
   };
 
-  const downloadFile = () => {
-    if (video.fileUrl) {
-      // For object storage URLs, we need to fetch and create a download
-      fetch(video.fileUrl)
-        .then(res => res.blob())
-        .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = video.fileName || 'video.mp4';
-          link.click();
-          window.URL.revokeObjectURL(url);
-        })
-        .catch(() => {
-          // Fallback: direct download
-          const link = document.createElement('a');
-          link.href = video.fileUrl!;
-          link.download = video.fileName || 'video.mp4';
-          link.click();
-        });
-    }
+  const handleDownloadClick = () => {
+    onDownloadClick(video.id);
   };
+
+  const canDownload = downloadStatus?.canDownload ?? false;
 
   return (
     <Card className="overflow-hidden group hover:shadow-lg transition-shadow" data-testid={`video-card-${video.id}`}>
@@ -149,11 +145,15 @@ function VideoCard({ video, isAdmin, onEdit, onDelete }: {
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
-              onClick={downloadFile}
+              className={`flex-1 ${!canDownload ? 'opacity-75' : ''}`}
+              onClick={handleDownloadClick}
               data-testid={`download-video-${video.id}`}
             >
-              <Download className="w-4 h-4 mr-1" />
+              {canDownload ? (
+                <Download className="w-4 h-4 mr-1" />
+              ) : (
+                <Lock className="w-4 h-4 mr-1" />
+              )}
               Download
             </Button>
           )}
@@ -166,9 +166,12 @@ function VideoCard({ video, isAdmin, onEdit, onDelete }: {
 export default function WhiteLabelVideosPage() {
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<WhiteLabelVideo | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -179,6 +182,91 @@ export default function WhiteLabelVideosPage() {
   });
 
   const isAdmin = isSuperAdmin;
+
+  // Fetch download status (limits based on plan)
+  const { data: downloadStatus } = useQuery<DownloadStatus>({
+    queryKey: ["/api/white-label-videos/download-status"],
+    enabled: !isSuperAdmin, // Admins don't need to check
+  });
+
+  // Download mutation
+  const downloadMutation = useMutation({
+    mutationFn: async (videoId: number) => {
+      const response = await apiRequest("POST", `/api/white-label-videos/${videoId}/download`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Trigger actual file download
+      if (data.fileUrl) {
+        fetch(data.fileUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = data.fileName || 'video.mp4';
+            link.click();
+            window.URL.revokeObjectURL(url);
+          })
+          .catch(() => {
+            const link = document.createElement('a');
+            link.href = data.fileUrl;
+            link.download = data.fileName || 'video.mp4';
+            link.click();
+          });
+      }
+      // Refresh download status
+      queryClient.invalidateQueries({ queryKey: ["/api/white-label-videos/download-status"] });
+      toast({
+        title: "Download started",
+        description: data.downloadLimit === "unlimited"
+          ? "Your download has started."
+          : `You have ${data.downloadLimit - data.downloadsThisMonth} download${data.downloadLimit - data.downloadsThisMonth === 1 ? '' : 's'} remaining this month.`
+      });
+    },
+    onError: (error: any) => {
+      if (error?.upgradeRequired || error?.limitReached) {
+        setUpgradeMessage(error.message || "Upgrade required to download videos");
+        setShowUpgradeDialog(true);
+      } else {
+        toast({
+          title: "Download failed",
+          description: error.message || "Failed to download video",
+          variant: "destructive"
+        });
+      }
+    }
+  });
+
+  const handleDownloadClick = (videoId: number) => {
+    // Super admins can always download
+    if (isSuperAdmin) {
+      const video = videos.find(v => v.id === videoId);
+      if (video?.fileUrl) {
+        fetch(video.fileUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = video.fileName || 'video.mp4';
+            link.click();
+            window.URL.revokeObjectURL(url);
+          });
+      }
+      return;
+    }
+
+    // Check if user can download
+    if (!downloadStatus?.canDownload) {
+      setUpgradeMessage(downloadStatus?.message || "Upgrade to a paid plan to download videos");
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    // Proceed with download
+    downloadMutation.mutate(videoId);
+  };
 
   const { data: videos = [], isLoading } = useQuery<WhiteLabelVideo[]>({
     queryKey: ["/api/white-label-videos"]
@@ -467,10 +555,98 @@ export default function WhiteLabelVideosPage() {
                 isAdmin={isAdmin || false}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                downloadStatus={isSuperAdmin ? { canDownload: true, downloadsThisMonth: 0, downloadLimit: "unlimited" } : downloadStatus}
+                onDownloadClick={handleDownloadClick}
               />
             ))}
           </div>
         )}
+
+        {/* Download Status Banner */}
+        {!isSuperAdmin && downloadStatus && (
+          <div className="mt-6">
+            <Card className={`${downloadStatus.canDownload ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950' : 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    {downloadStatus.canDownload ? (
+                      <Download className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    )}
+                    <div>
+                      <p className="font-medium text-sm">
+                        {downloadStatus.downloadLimit === "unlimited"
+                          ? "Unlimited downloads available"
+                          : `${downloadStatus.downloadsThisMonth} of ${downloadStatus.downloadLimit} downloads used this month`}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {downloadStatus.currentPlan === 'standard'
+                          ? "Standard plan: 1 video download per month"
+                          : downloadStatus.currentPlan === 'plus' || downloadStatus.currentPlan === 'plus_seo'
+                          ? "Plus plan: Unlimited video downloads"
+                          : "Upgrade to download videos"}
+                      </p>
+                    </div>
+                  </div>
+                  {downloadStatus.currentPlan === 'standard' && (
+                    <Button
+                      size="sm"
+                      onClick={() => setLocation('/upgrade')}
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      Upgrade for Unlimited
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Upgrade Required Dialog */}
+        <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500" />
+                Upgrade Required
+              </DialogTitle>
+              <DialogDescription>
+                {upgradeMessage}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <h4 className="font-semibold mb-2">Plan Download Limits:</h4>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-gray-100">Standard $49/mo</Badge>
+                    <span>1 video download per month</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-blue-100 text-blue-700">Plus $97/mo</Badge>
+                    <span className="font-medium text-green-600">Unlimited downloads</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-purple-100 text-purple-700">Plus SEO $297/mo</Badge>
+                    <span className="font-medium text-green-600">Unlimited downloads</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
+                Maybe Later
+              </Button>
+              <Button onClick={() => setLocation('/upgrade')} className="bg-gradient-to-r from-blue-600 to-indigo-600">
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade Now
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

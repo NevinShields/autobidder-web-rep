@@ -1,0 +1,5 @@
+{
+  "name": "AI Icon Saloon",
+  "description": "An AI-powered application to generate custom icons with a rustic, western theme. Users can describe a style or upload a reference to create unique, high-quality icons.",
+  "requestFramePermissions": []
+}

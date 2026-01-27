@@ -15117,6 +15117,136 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // Check if user can download white label video (plan-based limits)
+  app.get("/api/white-label-videos/download-status", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const user = await storage.getUser(currentUser.id);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if user is on a paid plan
+      const paidPlans = ['standard', 'plus', 'plus_seo'];
+      const isPaidPlan = paidPlans.includes(user.plan || '');
+      const isActiveSub = user.subscriptionStatus === 'active';
+
+      if (!isPaidPlan || !isActiveSub) {
+        return res.json({
+          canDownload: false,
+          reason: "upgrade_required",
+          message: "Video downloads require a paid subscription",
+          currentPlan: user.plan,
+          downloadsThisMonth: 0,
+          downloadLimit: 0
+        });
+      }
+
+      // Get current month's downloads
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1; // 1-12
+      const currentYear = now.getFullYear();
+
+      const downloadsThisMonth = await storage.getVideoDownloadsCount(
+        currentUser.id,
+        currentMonth,
+        currentYear
+      );
+
+      // Set limits based on plan
+      // Standard ($49): 1 video per month
+      // Plus ($97) and Plus SEO ($297): Unlimited
+      const isUnlimitedPlan = ['plus', 'plus_seo'].includes(user.plan || '');
+      const downloadLimit = isUnlimitedPlan ? -1 : 1; // -1 means unlimited
+
+      const canDownload = isUnlimitedPlan || downloadsThisMonth < downloadLimit;
+
+      res.json({
+        canDownload,
+        reason: canDownload ? null : "limit_reached",
+        message: canDownload
+          ? null
+          : `You've reached your monthly download limit (${downloadLimit} video${downloadLimit === 1 ? '' : 's'}/month). Upgrade to Plus for unlimited downloads.`,
+        currentPlan: user.plan,
+        downloadsThisMonth,
+        downloadLimit: isUnlimitedPlan ? "unlimited" : downloadLimit
+      });
+    } catch (error) {
+      console.error("Error checking download status:", error);
+      res.status(500).json({ message: "Failed to check download status" });
+    }
+  });
+
+  // Record a video download
+  app.post("/api/white-label-videos/:id/download", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const videoId = parseInt(req.params.id);
+      const user = await storage.getUser(currentUser.id);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if user is on a paid plan
+      const paidPlans = ['standard', 'plus', 'plus_seo'];
+      const isPaidPlan = paidPlans.includes(user.plan || '');
+      const isActiveSub = user.subscriptionStatus === 'active';
+
+      if (!isPaidPlan || !isActiveSub) {
+        return res.status(403).json({
+          message: "Video downloads require a paid subscription",
+          upgradeRequired: true
+        });
+      }
+
+      // Get current month's downloads
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
+
+      const downloadsThisMonth = await storage.getVideoDownloadsCount(
+        currentUser.id,
+        currentMonth,
+        currentYear
+      );
+
+      // Check limits for standard plan
+      const isUnlimitedPlan = ['plus', 'plus_seo'].includes(user.plan || '');
+      const downloadLimit = 1;
+
+      if (!isUnlimitedPlan && downloadsThisMonth >= downloadLimit) {
+        return res.status(403).json({
+          message: "Monthly download limit reached. Upgrade to Plus for unlimited downloads.",
+          limitReached: true,
+          downloadsThisMonth,
+          downloadLimit
+        });
+      }
+
+      // Record the download
+      await storage.recordVideoDownload(currentUser.id, videoId, currentMonth, currentYear);
+
+      // Get the video URL for downloading
+      const video = await storage.getWhiteLabelVideo(videoId);
+      if (!video || !video.fileUrl) {
+        return res.status(404).json({ message: "Video file not found" });
+      }
+
+      res.json({
+        success: true,
+        fileUrl: video.fileUrl,
+        fileName: video.fileName || 'video.mp4',
+        downloadsThisMonth: downloadsThisMonth + 1,
+        downloadLimit: isUnlimitedPlan ? "unlimited" : downloadLimit
+      });
+    } catch (error) {
+      console.error("Error recording video download:", error);
+      res.status(500).json({ message: "Failed to process download" });
+    }
+  });
+
   // ==================== PUSH NOTIFICATION ROUTES ====================
   
   // Get VAPID public key for push subscription

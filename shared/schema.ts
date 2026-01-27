@@ -2677,3 +2677,16 @@ export const insertWhiteLabelVideoSchema = createInsertSchema(whiteLabelVideos).
 
 export type WhiteLabelVideo = typeof whiteLabelVideos.$inferSelect;
 export type InsertWhiteLabelVideo = z.infer<typeof insertWhiteLabelVideoSchema>;
+
+// White Label Video Downloads tracking table
+export const whiteLabelVideoDownloads = pgTable("white_label_video_downloads", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  videoId: integer("video_id").notNull().references(() => whiteLabelVideos.id),
+  downloadedAt: timestamp("downloaded_at").notNull().defaultNow(),
+  // Store the month/year for easy querying of monthly limits
+  downloadMonth: integer("download_month").notNull(), // 1-12
+  downloadYear: integer("download_year").notNull(),
+});
+
+export type WhiteLabelVideoDownload = typeof whiteLabelVideoDownloads.$inferSelect;

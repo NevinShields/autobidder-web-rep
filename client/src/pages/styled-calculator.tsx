@@ -491,6 +491,10 @@ export default function StyledCalculator(props: any = {}) {
   const prefillEmail = searchParams.get('prefillEmail');
   const prefillPhone = searchParams.get('prefillPhone');
   const prefillAddress = searchParams.get('prefillAddress');
+
+  // Single service embed mode - only show one specific service
+  const singleServiceId = searchParams.get('serviceId') || searchParams.get('formulaId');
+  const isSingleServiceMode = !!singleServiceId;
   
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [cartServiceIds, setCartServiceIds] = useState<number[]>([]); // Services added to cart for checkout
@@ -584,9 +588,19 @@ export default function StyledCalculator(props: any = {}) {
   const useAuthenticatedData = !!authUser && !isPublicAccess;
   
   // Extract data from combined response - prioritize authenticated data when logged in
-  const formulas = useAuthenticatedData 
+  const allFormulas = useAuthenticatedData
     ? (authenticatedData?.formulas || [])
     : (calculatorData?.formulas || []);
+
+  // Filter to single service if in single service embed mode
+  const formulas = useMemo(() => {
+    if (isSingleServiceMode && singleServiceId) {
+      const serviceIdNum = parseInt(singleServiceId, 10);
+      const filtered = allFormulas.filter((f: Formula) => f.id === serviceIdNum);
+      return filtered.length > 0 ? filtered : allFormulas;
+    }
+    return allFormulas;
+  }, [allFormulas, isSingleServiceMode, singleServiceId]);
   const businessSettings = useAuthenticatedData
     ? (authenticatedData?.businessSettings || null)
     : (calculatorData?.businessSettings || null);
@@ -907,7 +921,7 @@ export default function StyledCalculator(props: any = {}) {
   useEffect(() => {
     const isCartEnabled = businessSettings?.enableServiceCart === true;
     const hasMultipleServices = selectedServices.length > 1;
-    
+
     // Auto-sync cart when cart feature is disabled or only one service selected
     if (!isCartEnabled || !hasMultipleServices) {
       setCartServiceIds(selectedServices);
@@ -917,6 +931,19 @@ export default function StyledCalculator(props: any = {}) {
       setCartServiceIds(selectedServices);
     }
   }, [selectedServices, businessSettings?.enableServiceCart, cartServiceIds.length]);
+
+  // Single service mode: auto-select the service and skip to configuration
+  const [singleServiceInitialized, setSingleServiceInitialized] = useState(false);
+  useEffect(() => {
+    if (isSingleServiceMode && formulas.length === 1 && !singleServiceInitialized) {
+      const serviceId = formulas[0].id;
+      setSelectedServices([serviceId]);
+      setCartServiceIds([serviceId]);
+      setExpandedServices(new Set([serviceId]));
+      setCurrentStep("configuration");
+      setSingleServiceInitialized(true);
+    }
+  }, [isSingleServiceMode, formulas, singleServiceInitialized]);
 
   // Auto-expand/collapse logic for multi-service flow
   useEffect(() => {

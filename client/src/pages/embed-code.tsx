@@ -38,7 +38,13 @@ export default function EmbedCode() {
 
   // Generate embed URLs
   const baseUrl = window.location.origin;
-  const singleFormulaUrl = selectedFormulaData ? `${baseUrl}/embed/${selectedFormulaData.embedId}` : "";
+
+  // Single service URL now uses styled-calculator with serviceId parameter
+  const singleFormulaUrl = selectedFormulaData && user?.id
+    ? `${baseUrl}/styled-calculator?userId=${user.id}&serviceId=${selectedFormulaData.id}`
+    : selectedFormulaData
+    ? `${baseUrl}/styled-calculator?serviceId=${selectedFormulaData.id}`
+    : "";
 
   const styledCalculatorUrl = user?.id ? `${baseUrl}/styled-calculator?userId=${user.id}` : `${baseUrl}/styled-calculator`;
 
@@ -186,15 +192,19 @@ export default function EmbedCode() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Code className="h-5 w-5" />
-                  Single Calculator Embed
+                  Single Service Embed
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Embed a single service calculator using the same premium styled design. Perfect for service-specific landing pages.
+                </p>
+
                 <div>
-                  <Label htmlFor="formula">Select Calculator</Label>
+                  <Label htmlFor="formula">Select Service</Label>
                   <Select value={selectedFormula} onValueChange={setSelectedFormula}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose a calculator..." />
+                      <SelectValue placeholder="Choose a service..." />
                     </SelectTrigger>
                     <SelectContent>
                       {activeFormulas.map((formula) => (
@@ -209,7 +219,8 @@ export default function EmbedCode() {
                 {selectedFormulaData && (
                   <>
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{selectedFormulaData.name}</Badge>
+                      <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">{selectedFormulaData.name}</Badge>
+                      <Badge variant="outline" className="text-xs">Styled Calculator</Badge>
                       <Button
                         variant="outline"
                         size="sm"

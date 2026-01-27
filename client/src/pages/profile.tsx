@@ -380,7 +380,7 @@ export default function ProfilePage() {
                       type="email"
                       value={profile?.email || ''}
                       disabled
-                      className="mt-1 bg-gray-50"
+                      className="mt-1 bg-gray-50 dark:bg-gray-800"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Email cannot be changed. Contact support if needed.

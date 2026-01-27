@@ -9,17 +9,29 @@ import { Card, CardContent } from "@/components/ui/card";
 
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import { GoogleMapsLoader } from "@/components/google-maps-loader";
-import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
-import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-measurement";
 import { ChevronDown, ChevronUp, Map, Search, User, Mail, Phone, MapPin, X } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 import { injectCSSVariables } from "@shared/css-variables";
 
 // Lazy load heavy components for better performance
+const EnhancedVariableInput = lazy(() => import("@/components/enhanced-variable-input"));
+const CollapsiblePhotoMeasurement = lazy(() =>
+  import("@/components/collapsible-photo-measurement").then((module) => ({
+    default: module.CollapsiblePhotoMeasurement,
+  }))
+);
+const GoogleMapsLoader = lazy(() =>
+  import("@/components/google-maps-loader").then((module) => ({
+    default: module.GoogleMapsLoader,
+  }))
+);
+const GooglePlacesAutocomplete = lazy(() =>
+  import("@/components/google-places-autocomplete").then((module) => ({
+    default: module.GooglePlacesAutocomplete,
+  }))
+);
 const MeasureMapTerraImproved = lazy(() => import("@/components/measure-map-terra-improved"));
 const BookingCalendar = lazy(() => import("@/components/booking-calendar-v2"));
 
@@ -72,22 +84,24 @@ const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementT
       
       {isExpanded && (
         <div className="p-4">
-          <GoogleMapsLoader>
-            <Suspense fallback={
+          <Suspense
+            fallback={
               <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center gap-2">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                   <p className="text-sm text-gray-600">Loading map tool...</p>
                 </div>
               </div>
-            }>
+            }
+          >
+            <GoogleMapsLoader>
               <MeasureMapTerraImproved
                 measurementType={measurementType}
                 unit={unit}
                 onMeasurementComplete={onMeasurementComplete}
               />
-            </Suspense>
-          </GoogleMapsLoader>
+            </GoogleMapsLoader>
+          </Suspense>
         </div>
       )}
     </div>
@@ -2469,72 +2483,91 @@ export default function StyledCalculator(props: any = {}) {
                   {/* Show Photo Measurement if enabled for this service */}
                   {service.enablePhotoMeasurement && service.photoMeasurementSetup && (
                     <div className="mb-6">
-                      <CollapsiblePhotoMeasurement
-                        setup={service.photoMeasurementSetup}
-                        formulaName={service.name}
-                        businessOwnerId={effectiveBusinessOwnerId || ''}
-                        onMeasurementComplete={(measurement) => {
-                          // Find the best matching variable based on measurement type
-                          const measurementType = service.photoMeasurementSetup?.measurementType || 'area';
-                          let targetVariable;
+                      <Suspense
+                        fallback={(
+                          <div className="p-4 border border-gray-200 rounded-lg">
+                            <div className="h-6 w-40 bg-gray-200 rounded mb-3 animate-pulse"></div>
+                            <div className="h-24 bg-gray-100 rounded animate-pulse"></div>
+                          </div>
+                        )}
+                      >
+                        <CollapsiblePhotoMeasurement
+                          setup={service.photoMeasurementSetup}
+                          formulaName={service.name}
+                          businessOwnerId={effectiveBusinessOwnerId || ''}
+                          onMeasurementComplete={(measurement) => {
+                            // Find the best matching variable based on measurement type
+                            const measurementType = service.photoMeasurementSetup?.measurementType || 'area';
+                            let targetVariable;
 
-                          if (measurementType === 'area') {
-                            // For area measurements, look for area/size/square footage variables
-                            targetVariable = service.variables.find((v: any) =>
-                              v.type === 'number' && (
-                                v.name.toLowerCase().includes('size') ||
-                                v.name.toLowerCase().includes('area') ||
-                                v.name.toLowerCase().includes('square') ||
-                                v.name.toLowerCase().includes('sq') ||
-                                v.name.toLowerCase().includes('footage')
-                              )
-                            );
-                          } else if (['length', 'width', 'height', 'perimeter'].includes(measurementType)) {
-                            // For linear measurements, look for matching dimension variables
-                            targetVariable = service.variables.find((v: any) =>
-                              v.type === 'number' && (
-                                v.name.toLowerCase().includes(measurementType) ||
-                                v.name.toLowerCase().includes('distance') ||
-                                v.name.toLowerCase().includes('dimension')
-                              )
-                            );
-                          }
+                            if (measurementType === 'area') {
+                              // For area measurements, look for area/size/square footage variables
+                              targetVariable = service.variables.find((v: any) =>
+                                v.type === 'number' && (
+                                  v.name.toLowerCase().includes('size') ||
+                                  v.name.toLowerCase().includes('area') ||
+                                  v.name.toLowerCase().includes('square') ||
+                                  v.name.toLowerCase().includes('sq') ||
+                                  v.name.toLowerCase().includes('footage')
+                                )
+                              );
+                            } else if (['length', 'width', 'height', 'perimeter'].includes(measurementType)) {
+                              // For linear measurements, look for matching dimension variables
+                              targetVariable = service.variables.find((v: any) =>
+                                v.type === 'number' && (
+                                  v.name.toLowerCase().includes(measurementType) ||
+                                  v.name.toLowerCase().includes('distance') ||
+                                  v.name.toLowerCase().includes('dimension')
+                                )
+                              );
+                            }
 
-                          // Fallback to first number variable if no match found
-                          if (!targetVariable) {
-                            targetVariable = service.variables.find((v: any) => v.type === 'number');
-                          }
+                            // Fallback to first number variable if no match found
+                            if (!targetVariable) {
+                              targetVariable = service.variables.find((v: any) => v.type === 'number');
+                            }
 
-                          if (targetVariable) {
-                            handleServiceVariableChange(serviceId, targetVariable.id, measurement.value);
-                            console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${targetVariable.name}`);
-                          } else {
-                            console.warn('No suitable variable found for photo measurement auto-population');
-                          }
+                            if (targetVariable) {
+                              handleServiceVariableChange(serviceId, targetVariable.id, measurement.value);
+                              console.log(`Photo measurement applied: ${measurement.value} ${measurement.unit} to ${targetVariable.name}`);
+                            } else {
+                              console.warn('No suitable variable found for photo measurement auto-population');
+                            }
 
-                          // Save full photo measurement data
-                          if (measurement.fullData) {
-                            setPhotoMeasurements(prev => [...prev, measurement.fullData!]);
-                          }
-                        }}
-                      />
+                            // Save full photo measurement data
+                            if (measurement.fullData) {
+                              setPhotoMeasurements(prev => [...prev, measurement.fullData!]);
+                            }
+                          }}
+                        />
+                      </Suspense>
                     </div>
                   )}
 
                   <div className="space-y-4">
-                    {service.variables.map((variable) => (
-                      <EnhancedVariableInput
-                        key={variable.id}
-                        variable={variable}
-                        value={serviceVariables[serviceId]?.[variable.id]}
-                        onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
-                        styling={styling}
-                        componentStyles={componentStyles}
-                        allVariables={service.variables}
-                        currentValues={serviceVariables[serviceId] || {}}
-                        hasCustomCSS={!!designSettings?.customCSS}
-                      />
-                    ))}
+                    <Suspense
+                      fallback={(
+                        <div className="space-y-4">
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      )}
+                    >
+                      {service.variables.map((variable) => (
+                        <EnhancedVariableInput
+                          key={variable.id}
+                          variable={variable}
+                          value={serviceVariables[serviceId]?.[variable.id]}
+                          onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
+                          styling={styling}
+                          componentStyles={componentStyles}
+                          allVariables={service.variables}
+                          currentValues={serviceVariables[serviceId] || {}}
+                          hasCustomCSS={!!designSettings?.customCSS}
+                        />
+                      ))}
+                    </Suspense>
                   </div>
                 </div>
               )}
@@ -2896,30 +2929,32 @@ export default function StyledCalculator(props: any = {}) {
                   <Label htmlFor="address" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.addressLabel || 'Address'} {businessSettings?.styling?.requireAddress ? '*' : ''}
                   </Label>
-                  <GoogleMapsLoader>
-                    <GooglePlacesAutocomplete
-                      value={leadForm.address}
-                      onChange={(newAddress) => {
-                        setLeadForm(prev => ({ ...prev, address: newAddress }));
-                        // Calculate distance when address changes (with debounce)
-                        if (newAddress.length > 10) {
-                          // Clear any existing timeout
-                          const timeoutId = setTimeout(() => {
-                            calculateDistance(newAddress);
-                          }, 1000);
-                          // Store timeout ID for cleanup if needed
-                        } else {
-                          setDistanceInfo(null);
-                        }
-                      }}
-                      placeholder={businessSettings?.styling?.addressLabel || 'Enter your address...'}
-                      types={['address']}
-                      componentRestrictions={{ country: 'us' }}
-                      styling={styling}
-                      componentStyles={designSettings?.componentStyles}
-                      className="w-full"
-                    />
-                  </GoogleMapsLoader>
+                  <Suspense fallback={<Skeleton className="h-12 w-full" />}>
+                    <GoogleMapsLoader>
+                      <GooglePlacesAutocomplete
+                        value={leadForm.address}
+                        onChange={(newAddress) => {
+                          setLeadForm(prev => ({ ...prev, address: newAddress }));
+                          // Calculate distance when address changes (with debounce)
+                          if (newAddress.length > 10) {
+                            // Clear any existing timeout
+                            const timeoutId = setTimeout(() => {
+                              calculateDistance(newAddress);
+                            }, 1000);
+                            // Store timeout ID for cleanup if needed
+                          } else {
+                            setDistanceInfo(null);
+                          }
+                        }}
+                        placeholder={businessSettings?.styling?.addressLabel || 'Enter your address...'}
+                        types={['address']}
+                        componentRestrictions={{ country: 'us' }}
+                        styling={styling}
+                        componentStyles={designSettings?.componentStyles}
+                        className="w-full"
+                      />
+                    </GoogleMapsLoader>
+                  </Suspense>
                 </div>
               )}
 

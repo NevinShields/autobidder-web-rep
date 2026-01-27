@@ -1,43 +1,26 @@
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
-import { ChartContainer } from "@/components/ui/chart";
-import { cn } from "@/lib/utils";
 import { 
   Calculator, 
   Users, 
   TrendingUp, 
   DollarSign, 
   Plus, 
-  ExternalLink, 
   BarChart3, 
-  Settings, 
   Palette, 
   Calendar, 
   Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Target, 
-  Rocket,
-  Edit,
-  Copy,
   Share,
   ArrowRight,
-  Timer,
-  Star,
-  Globe,
-  FileText,
-  Mail
+  Globe
 } from "lucide-react";
-import { Link, useLocation } from "wouter";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import type { Formula, Lead, BusinessSettings, MultiServiceLead, User } from "@shared/schema";
-import SupportContact from "@/components/support-contact";
+import { Link } from "wouter";
+import type { Formula, Lead, MultiServiceLead, User } from "@shared/schema";
 import DashboardLayout from "@/components/dashboard-layout";
+
+const TopServicesChart = lazy(() => import("@/components/dashboard/top-services-chart"));
 
 // Function to get quick actions with dynamic URLs
 const getQuickActions = (userId?: string) => [
@@ -50,8 +33,6 @@ const getQuickActions = (userId?: string) => [
 ];
 
 export default function Dashboard() {
-  const [timeframe, setTimeframe] = useState<"week" | "month" | "year">("month");
-
   // Fetch user data
   const { data: user } = useQuery<User>({
     queryKey: ['/api/auth/user'],
@@ -82,11 +63,6 @@ export default function Dashboard() {
     queryKey: ['/api/stats'],
   });
 
-  // Fetch business settings
-  const { data: businessSettings } = useQuery<BusinessSettings>({
-    queryKey: ['/api/business-settings'],
-  });
-
   // Fetch profile data for trial status
   const { data: profileData } = useQuery<{
     user: any;
@@ -108,11 +84,13 @@ export default function Dashboard() {
   const conversionRate = stats?.conversionRate || 0;
 
   // Recent activity (last 7 days)
-  const now = new Date();
-  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const recentLeads = [...leadList, ...multiLeadList].filter(lead => 
-    new Date(lead.createdAt) > weekAgo
-  );
+  const recentLeads = useMemo(() => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    return [...leadList, ...multiLeadList].filter(lead => 
+      new Date(lead.createdAt) > weekAgo
+    );
+  }, [leadList, multiLeadList]);
 
   if (formulasLoading || leadsLoading || multiLeadsLoading || statsLoading) {
     return (
@@ -134,56 +112,59 @@ export default function Dashboard() {
   }
 
   // Calculate service selections over past 30 days
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  
-  // Count service selections from past 30 days
-  const serviceSelections = new Map<number, { name: string; count: number; revenue: number }>();
-  
-  // Initialize with all formulas
-  formulaList.forEach(formula => {
-    serviceSelections.set(formula.id, {
-      name: formula.name,
-      count: 0,
-      revenue: 0
-    });
-  });
+  const serviceChartData = useMemo(() => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  // Count from regular leads (past 30 days)
-  leadList
-    .filter(lead => new Date(lead.createdAt) > thirtyDaysAgo)
-    .forEach(lead => {
-      if (lead.formulaId && serviceSelections.has(lead.formulaId)) {
-        const service = serviceSelections.get(lead.formulaId)!;
-        service.count += 1;
-        service.revenue += (lead.calculatedPrice || 0) / 100;
-      }
+    // Count service selections from past 30 days
+    const serviceSelections = new Map<number, { name: string; count: number; revenue: number }>();
+
+    // Initialize with all formulas
+    formulaList.forEach(formula => {
+      serviceSelections.set(formula.id, {
+        name: formula.name,
+        count: 0,
+        revenue: 0
+      });
     });
 
-  // Count from multi-service leads (past 30 days)
-  multiLeadList
-    .filter(lead => new Date(lead.createdAt) > thirtyDaysAgo)
-    .forEach(lead => {
-      if (lead.services && Array.isArray(lead.services)) {
-        lead.services.forEach((service: any) => {
-          if (service.formulaId && serviceSelections.has(service.formulaId)) {
-            const serviceData = serviceSelections.get(service.formulaId)!;
-            serviceData.count += 1;
-            serviceData.revenue += (service.calculatedPrice || 0) / 100;
-          }
-        });
-      }
-    });
+    // Count from regular leads (past 30 days)
+    leadList
+      .filter(lead => new Date(lead.createdAt) > thirtyDaysAgo)
+      .forEach(lead => {
+        if (lead.formulaId && serviceSelections.has(lead.formulaId)) {
+          const service = serviceSelections.get(lead.formulaId)!;
+          service.count += 1;
+          service.revenue += (lead.calculatedPrice || 0) / 100;
+        }
+      });
 
-  // Convert to chart data and sort by count
-  const serviceChartData = Array.from(serviceSelections.values())
-    .filter(service => service.count > 0) // Only show services that have been selected
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-    .map(service => ({
-      name: service.name.length > 15 ? service.name.substring(0, 15) + '...' : service.name,
-      leads: service.count,
-      revenue: service.revenue
-    }));
+    // Count from multi-service leads (past 30 days)
+    multiLeadList
+      .filter(lead => new Date(lead.createdAt) > thirtyDaysAgo)
+      .forEach(lead => {
+        if (lead.services && Array.isArray(lead.services)) {
+          lead.services.forEach((service: any) => {
+            if (service.formulaId && serviceSelections.has(service.formulaId)) {
+              const serviceData = serviceSelections.get(service.formulaId)!;
+              serviceData.count += 1;
+              serviceData.revenue += (service.calculatedPrice || 0) / 100;
+            }
+          });
+        }
+      });
+
+    // Convert to chart data and sort by count
+    return Array.from(serviceSelections.values())
+      .filter(service => service.count > 0) // Only show services that have been selected
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map(service => ({
+        name: service.name.length > 15 ? service.name.substring(0, 15) + '...' : service.name,
+        leads: service.count,
+        revenue: service.revenue
+      }));
+  }, [formulaList, leadList, multiLeadList]);
 
   return (
     <DashboardLayout>
@@ -343,33 +324,18 @@ export default function Dashboard() {
                   <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">Most Popular Calculators</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {serviceChartData.length > 0 ? (
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={serviceChartData}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                          <XAxis dataKey="name" tick={{ fontSize: 12 }} className="fill-gray-600 dark:fill-gray-400" />
-                          <YAxis tick={{ fontSize: 12 }} className="fill-gray-600 dark:fill-gray-400" />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'var(--tooltip-bg, white)',
-                              border: '1px solid var(--tooltip-border, #e5e7eb)',
-                              borderRadius: '8px',
-                              fontSize: '12px'
-                            }}
-                          />
-                          <Bar dataKey="leads" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      <div className="text-center">
-                        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p className="text-sm">No calculator data yet</p>
+                  <Suspense
+                    fallback={
+                      <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                          <p className="text-sm">Loading chart...</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    }
+                  >
+                    <TopServicesChart data={serviceChartData} />
+                  </Suspense>
                 </CardContent>
               </Card>
             </div>

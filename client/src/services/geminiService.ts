@@ -56,10 +56,10 @@ You are a professional digital asset creator. Your task is to generate a high-fi
 
   const generationPromises = Array(4).fill(0).map(async (_, i) => {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.0-flash-exp-image-generation',
       contents: { parts: [...basePromptParts, { text: `Variation ${i + 1}` }] },
       config: {
-        responseModalities: [Modality.IMAGE],
+        responseModalities: [Modality.TEXT, Modality.IMAGE],
       },
     });
 
@@ -112,10 +112,10 @@ export const refineIcon = async (
 
   const refinementPromises = Array(4).fill(0).map(async (_, i) => {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.0-flash-exp-image-generation',
       contents: { parts: [...promptParts, { text: `Refined Variation ${i + 1}` }] },
       config: {
-        responseModalities: [Modality.IMAGE],
+        responseModalities: [Modality.TEXT, Modality.IMAGE],
       },
     });
 

@@ -48,10 +48,6 @@ export function WelcomeModal() {
   // Mark as shown mutation
   const markShownMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/welcome-modal/mark-shown"),
-    onSuccess: () => {
-      setIsOpen(false);
-      // Optionally refresh user data
-    },
   });
 
   // Show modal if user hasn't seen it and config is enabled
@@ -67,6 +63,7 @@ export function WelcomeModal() {
   }, [user, config, isLoading]);
 
   const handleGetStarted = () => {
+    setIsOpen(false);
     markShownMutation.mutate();
   };
 

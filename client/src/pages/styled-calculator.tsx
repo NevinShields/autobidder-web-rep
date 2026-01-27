@@ -14,7 +14,7 @@ import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-measurement";
-import { ChevronDown, ChevronUp, Map } from "lucide-react";
+import { ChevronDown, ChevronUp, Map, Search, User, Mail, Phone, MapPin, X } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 import { injectCSSVariables } from "@shared/css-variables";
@@ -533,6 +533,8 @@ export default function StyledCalculator(props: any = {}) {
   const [callScreenLeadMode, setCallScreenLeadMode] = useState<"select" | "new">("select");
   const [selectedLeadOption, setSelectedLeadOption] = useState<"existing" | "new" | "skip">("new");
   const [selectedCallScreenLeadId, setSelectedCallScreenLeadId] = useState<number | null>(null);
+  const [selectedCallScreenLeadType, setSelectedCallScreenLeadType] = useState<"single" | "multi">("single");
+  const [leadSearchTerm, setLeadSearchTerm] = useState("");
 
   // Scroll to top whenever the step changes
   useEffect(() => {
@@ -599,10 +601,54 @@ export default function StyledCalculator(props: any = {}) {
       : (calculatorData?.showAutobidderBranding || false);
   
   // Fetch leads for call screen mode (only when in call screen mode)
-  const { data: leads = [] } = useQuery<Lead[]>({
+  const { data: singleLeads = [] } = useQuery<Lead[]>({
     queryKey: ['/api/leads'],
     enabled: isCallScreenMode && !isPublicAccess,
   });
+
+  // Fetch multi-service leads for call screen mode
+  const { data: multiServiceLeads = [] } = useQuery<any[]>({
+    queryKey: ['/api/multi-service-leads'],
+    enabled: isCallScreenMode && !isPublicAccess,
+  });
+
+  // Combine and normalize leads for search
+  const allLeads = useMemo(() => {
+    const single = singleLeads.map(lead => ({
+      ...lead,
+      leadType: 'single' as const,
+      displayName: lead.name || 'Unknown',
+      displayEmail: lead.email || '',
+      displayPhone: lead.phone || '',
+      displayAddress: lead.address || '',
+    }));
+    const multi = multiServiceLeads.map((lead: any) => ({
+      ...lead,
+      leadType: 'multi' as const,
+      displayName: lead.name || 'Unknown',
+      displayEmail: lead.email || '',
+      displayPhone: lead.phone || '',
+      displayAddress: lead.address || '',
+    }));
+    return [...single, ...multi].sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [singleLeads, multiServiceLeads]);
+
+  // Filter leads based on search term
+  const filteredLeads = useMemo(() => {
+    if (!leadSearchTerm.trim()) return allLeads;
+    const term = leadSearchTerm.toLowerCase();
+    return allLeads.filter(lead =>
+      lead.displayName.toLowerCase().includes(term) ||
+      lead.displayEmail.toLowerCase().includes(term) ||
+      lead.displayPhone.toLowerCase().includes(term) ||
+      lead.displayAddress.toLowerCase().includes(term)
+    );
+  }, [allLeads, leadSearchTerm]);
+
+  // Keep backwards compatibility
+  const leads = singleLeads;
 
   // Get the user ID for data fetching (from URL param or custom form)
   const effectiveUserId = isCustomForm && customForm ? customForm.userId : userId;
@@ -799,6 +845,61 @@ export default function StyledCalculator(props: any = {}) {
         // Show blocked message
         setIsBlocked(true);
       }
+    },
+  });
+
+  // Create estimate for existing lead mutation
+  const createEstimateForLeadMutation = useMutation({
+    mutationFn: async (data: {
+      leadId: number;
+      leadType: "single" | "multi";
+      services: ServiceCalculation[];
+      totalPrice: number;
+      leadInfo: LeadFormData;
+      distanceInfo?: { distance: number; fee: number; message: string };
+      appliedDiscounts?: Array<{ id: string; name: string; percentage: number; amount: number }>;
+      bundleDiscountAmount?: number;
+      selectedUpsells?: Array<{ id: string; name: string; percentage: number; amount: number }>;
+      taxAmount?: number;
+    }) => {
+      const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      // Convert services to estimate format
+      const estimateServices = data.services.map(service => ({
+        name: service.formulaName,
+        description: `Service configuration`,
+        price: service.calculatedPrice, // Already in cents
+        category: "Service",
+        variables: service.variables
+      }));
+
+      const estimateData = {
+        leadId: data.leadType === 'single' ? data.leadId : undefined,
+        multiServiceLeadId: data.leadType === 'multi' ? data.leadId : undefined,
+        estimateNumber,
+        customerName: data.leadInfo.name,
+        customerEmail: data.leadInfo.email,
+        customerPhone: data.leadInfo.phone || undefined,
+        customerAddress: data.leadInfo.address || undefined,
+        services: estimateServices,
+        subtotal: data.services.reduce((sum, s) => sum + s.calculatedPrice, 0),
+        totalAmount: data.totalPrice,
+        appliedDiscounts: data.appliedDiscounts,
+        bundleDiscountAmount: data.bundleDiscountAmount,
+        distanceInfo: data.distanceInfo,
+        taxAmount: data.taxAmount,
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+
+      return apiRequest("POST", "/api/estimates", estimateData);
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+    },
+    onError: (error: any) => {
+      console.error("Failed to create estimate:", error);
     },
   });
 
@@ -1790,12 +1891,22 @@ export default function StyledCalculator(props: any = {}) {
     };
 
     console.log('Submitting lead data:', submissionData);
-    
+
     // Show pricing page immediately while submission happens in background
     setCurrentStep("pricing");
-    
-    // Submit in background
-    submitMultiServiceLeadMutation.mutate(submissionData);
+
+    // Check if we're adding an estimate to an existing lead (call screen mode)
+    if (isCallScreenMode && selectedLeadOption === "existing" && selectedCallScreenLeadId) {
+      // Create estimate for existing lead
+      createEstimateForLeadMutation.mutate({
+        leadId: selectedCallScreenLeadId,
+        leadType: selectedCallScreenLeadType,
+        ...submissionData
+      });
+    } else {
+      // Submit as new lead
+      submitMultiServiceLeadMutation.mutate(submissionData);
+    }
   };
 
   // Get styling from design settings - map to the format components expect
@@ -2326,7 +2437,9 @@ export default function StyledCalculator(props: any = {}) {
         
         // Handle call screen mode lead selection (show options screen)
         if (isCallScreenMode && callScreenLeadMode === "select") {
-          const selectedLead = leads.find(lead => lead.id === selectedCallScreenLeadId);
+          const selectedLead = allLeads.find(lead =>
+            lead.id === selectedCallScreenLeadId && lead.leadType === selectedCallScreenLeadType
+          );
           
           return (
             <div className="space-y-6">
@@ -2360,45 +2473,128 @@ export default function StyledCalculator(props: any = {}) {
                     
                     {selectedLeadOption === "existing" && (
                       <div className="mt-4 space-y-4">
-                        {leads.length > 0 ? (
+                        {allLeads.length > 0 ? (
                           <>
-                            <select
-                              value={selectedCallScreenLeadId?.toString() || ""}
-                              onChange={(e) => {
-                                const leadId = parseInt(e.target.value);
-                                setSelectedCallScreenLeadId(leadId);
-                                const lead = leads.find(l => l.id === leadId);
-                                if (lead) {
-                                  setLeadForm({
-                                    name: lead.name || "",
-                                    email: lead.email || "",
-                                    phone: lead.phone || "",
-                                    address: lead.address || "",
-                                    notes: "",
-                                    howDidYouHear: ""
-                                  });
-                                }
-                              }}
-                              className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                            >
-                              <option value="">Select a lead...</option>
-                              {leads.map((lead) => (
-                                <option key={lead.id} value={lead.id}>
-                                  {lead.name} - {lead.email}
-                                </option>
-                              ))}
-                            </select>
-                            
+                            {/* Search Input */}
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                              <Input
+                                type="text"
+                                placeholder="Search by name, email, phone, or address..."
+                                value={leadSearchTerm}
+                                onChange={(e) => setLeadSearchTerm(e.target.value)}
+                                className="pl-10 pr-10"
+                              />
+                              {leadSearchTerm && (
+                                <button
+                                  onClick={() => setLeadSearchTerm("")}
+                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Selected Lead Display */}
                             {selectedLead && (
-                              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div className="space-y-2 text-sm">
-                                  <div><strong>Name:</strong> {selectedLead.name}</div>
-                                  {selectedLead.email && <div><strong>Email:</strong> {selectedLead.email}</div>}
-                                  {selectedLead.phone && <div><strong>Phone:</strong> {selectedLead.phone}</div>}
-                                  {selectedLead.address && <div><strong>Address:</strong> {selectedLead.address}</div>}
+                              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                                <div className="flex justify-between items-start">
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-4 w-4 text-blue-600" />
+                                      <span className="font-semibold text-gray-900">{selectedLead.name}</span>
+                                      <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full">
+                                        Selected
+                                      </span>
+                                    </div>
+                                    {selectedLead.email && (
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Mail className="h-3.5 w-3.5" />
+                                        {selectedLead.email}
+                                      </div>
+                                    )}
+                                    {selectedLead.phone && (
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Phone className="h-3.5 w-3.5" />
+                                        {selectedLead.phone}
+                                      </div>
+                                    )}
+                                    {selectedLead.address && (
+                                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <MapPin className="h-3.5 w-3.5" />
+                                        {selectedLead.address}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setSelectedCallScreenLeadId(null);
+                                      setSelectedCallScreenLeadType("single");
+                                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600"
+                                  >
+                                    <X className="h-5 w-5" />
+                                  </button>
                                 </div>
                               </div>
                             )}
+
+                            {/* Lead List */}
+                            {!selectedLead && (
+                              <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+                                {filteredLeads.length > 0 ? (
+                                  filteredLeads.map((lead) => (
+                                    <button
+                                      key={`${lead.leadType}-${lead.id}`}
+                                      onClick={() => {
+                                        setSelectedCallScreenLeadId(lead.id);
+                                        setSelectedCallScreenLeadType(lead.leadType);
+                                        setLeadForm({
+                                          name: lead.displayName,
+                                          email: lead.displayEmail,
+                                          phone: lead.displayPhone,
+                                          address: lead.displayAddress,
+                                          notes: "",
+                                          howDidYouHear: ""
+                                        });
+                                      }}
+                                      className="w-full text-left p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                                    >
+                                      <div className="flex justify-between items-start">
+                                        <div>
+                                          <div className="font-medium text-gray-900">{lead.displayName}</div>
+                                          <div className="text-sm text-gray-500">{lead.displayEmail}</div>
+                                          {lead.displayPhone && (
+                                            <div className="text-sm text-gray-500">{lead.displayPhone}</div>
+                                          )}
+                                        </div>
+                                        <div className="text-right">
+                                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                            lead.leadType === 'multi'
+                                              ? 'bg-purple-100 text-purple-700'
+                                              : 'bg-gray-100 text-gray-600'
+                                          }`}>
+                                            {lead.leadType === 'multi' ? 'Multi-service' : 'Single'}
+                                          </span>
+                                          <div className="text-xs text-gray-400 mt-1">
+                                            {new Date(lead.createdAt).toLocaleDateString()}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </button>
+                                  ))
+                                ) : (
+                                  <div className="p-4 text-center text-gray-500 text-sm">
+                                    No leads found matching "{leadSearchTerm}"
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <p className="text-xs text-gray-500 text-center">
+                              {allLeads.length} total customer{allLeads.length !== 1 ? 's' : ''} in database
+                            </p>
                           </>
                         ) : (
                           <p className="text-sm text-gray-500 text-center py-4">No existing leads found</p>

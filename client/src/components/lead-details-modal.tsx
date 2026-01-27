@@ -1551,6 +1551,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <ClipboardCheck className="h-4 w-4 text-violet-600" />
                   </div>
                   <h3 className="font-semibold text-slate-800 dark:text-white">Workflow Management</h3>
+                  {estimates && estimates.length > 0 && (
+                    <Badge variant="secondary" className="bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                      {estimates.length} estimate{estimates.length !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
                 </div>
                 <Button
                   size="sm"
@@ -1560,7 +1565,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   className="bg-violet-600 hover:bg-violet-700 text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Estimate
+                  New Estimate
                 </Button>
               </div>
             </div>

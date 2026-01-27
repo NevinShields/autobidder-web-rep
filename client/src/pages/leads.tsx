@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2, Zap, Play, Pause, Settings, ExternalLink, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, Search, Filter, Users, DollarSign, Mail, Phone, MapPin, FileText, Clock, Eye, CheckCircle, Circle, XCircle, AlertCircle, Trash2, MoreHorizontal, Download, Columns, LayoutGrid, Tag, Plus, X, Edit2, Zap, Play, Pause, Settings, ExternalLink, Check, ChevronDown, ChevronUp, Map } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import LeadDetailsModal from "@/components/lead-details-modal";
@@ -27,6 +27,8 @@ import { Label } from "@/components/ui/label";
 import { Link } from "wouter";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { LeadsMapView } from "@/components/leads-map-view";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
 
 interface Lead {
   id: number;
@@ -374,7 +376,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
 
 export default function LeadsPage() {
   const [activeTab, setActiveTab] = useState<"leads" | "estimates" | "work-orders" | "invoices" | "automations">("leads");
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  const [viewMode, setViewMode] = useState<"table" | "kanban" | "map">("table");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [filterBy, setFilterBy] = useState("all");
@@ -959,6 +961,13 @@ export default function LeadsPage() {
     setIsModalOpen(true);
   };
 
+  const handleMapLeadClick = (leadId: number) => {
+    const lead = sortedLeads.find(l => l.id === leadId);
+    if (lead) {
+      handleLeadClick(lead);
+    }
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedLead(null);
@@ -1200,6 +1209,16 @@ export default function LeadsPage() {
                     <LayoutGrid className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Kanban</span>
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode("map")}
+                    data-testid="button-view-map"
+                    className={`rounded-md transition-all ${viewMode === "map" ? "bg-white dark:bg-gray-800 text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white dark:bg-gray-800/10"}`}
+                  >
+                    <Map className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Map</span>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1229,7 +1248,7 @@ export default function LeadsPage() {
                 <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <Users className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-blue-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium text-blue-100 bg-white/10 dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
                   All time
                 </span>
               </div>
@@ -1248,7 +1267,7 @@ export default function LeadsPage() {
                 <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <DollarSign className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-emerald-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium text-emerald-100 bg-white/10 dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
                   Pipeline value
                 </span>
               </div>
@@ -1269,7 +1288,7 @@ export default function LeadsPage() {
                 <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
                   <Calendar className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-violet-100 bg-white dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
+                <span className="text-xs font-medium text-violet-100 bg-white/10 dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
                   Per lead
                 </span>
               </div>
@@ -1441,7 +1460,45 @@ export default function LeadsPage() {
           </div>
         </Collapsible>
 
-        {viewMode === "table" ? (
+        {viewMode === "map" ? (
+          <>
+            {/* Map View */}
+            <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
+                      <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-800 dark:text-white">Customer Locations</h3>
+                      <p className="text-sm text-slate-500 dark:text-gray-400">
+                        {sortedLeads.filter(l => l.address).length} of {sortedLeads.length} customers with addresses
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4">
+                <GoogleMapsLoader>
+                  <LeadsMapView
+                    leads={sortedLeads.map(lead => ({
+                      id: lead.id,
+                      name: lead.name,
+                      address: lead.address || null,
+                      addressLatitude: (lead as any).addressLatitude || null,
+                      addressLongitude: (lead as any).addressLongitude || null,
+                      distanceFromBusiness: (lead as any).distanceFromBusiness || null,
+                      createdAt: new Date(lead.createdAt)
+                    }))}
+                    height="500px"
+                    onLeadClick={handleMapLeadClick}
+                  />
+                </GoogleMapsLoader>
+              </div>
+            </div>
+          </>
+        ) : viewMode === "table" ? (
           <>
             {/* Premium Leads Table */}
             <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">

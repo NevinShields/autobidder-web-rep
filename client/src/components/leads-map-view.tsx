@@ -16,9 +16,10 @@ interface Lead {
 interface LeadsMapViewProps {
   leads: Lead[];
   height?: string;
+  onLeadClick?: (leadId: number) => void;
 }
 
-export function LeadsMapView({ leads, height = '400px' }: LeadsMapViewProps) {
+export function LeadsMapView({ leads, height = '400px', onLeadClick }: LeadsMapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -94,15 +95,55 @@ export function LeadsMapView({ leads, height = '400px' }: LeadsMapViewProps) {
               animation: window.google.maps.Animation.DROP,
             });
 
+            // Create info window content with View Details button
+            const infoWindowContent = document.createElement('div');
+            infoWindowContent.style.cssText = `
+              padding: 8px;
+              min-width: 160px;
+              max-width: 220px;
+              font-family: system-ui, -apple-system, sans-serif;
+              box-sizing: border-box;
+            `;
+
+            // Truncate long addresses for mobile
+            const truncatedAddress = lead.address && lead.address.length > 40
+              ? lead.address.substring(0, 40) + '...'
+              : lead.address;
+
+            infoWindowContent.innerHTML = `
+              <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${lead.name || 'Anonymous Lead'}</div>
+              <div style="font-size: 12px; color: #4b5563; margin-bottom: 3px; line-height: 1.3;">${truncatedAddress || 'No address'}</div>
+              ${lead.distanceFromBusiness ? `<div style="font-size: 11px; color: #6b7280; margin-bottom: 2px;">${lead.distanceFromBusiness} mi away</div>` : ''}
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 8px;">${new Date(lead.createdAt).toLocaleDateString()}</div>
+            `;
+
+            // Add View Details button if callback is provided
+            if (onLeadClick) {
+              const button = document.createElement('button');
+              button.textContent = 'View Details';
+              button.style.cssText = `
+                display: block;
+                width: 100%;
+                padding: 6px 10px;
+                background: #2563eb;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                box-sizing: border-box;
+              `;
+              button.onmouseover = () => { button.style.background = '#1d4ed8'; };
+              button.onmouseout = () => { button.style.background = '#2563eb'; };
+              button.onclick = () => {
+                onLeadClick(lead.id);
+              };
+              infoWindowContent.appendChild(button);
+            }
+
             const infoWindow = new window.google.maps.InfoWindow({
-              content: `
-                <div style="padding: 8px; min-width: 150px;">
-                  <div style="font-weight: 600; margin-bottom: 4px;">${lead.name || 'Anonymous Lead'}</div>
-                  <div style="font-size: 12px; color: #666;">${lead.address || 'No address'}</div>
-                  ${lead.distanceFromBusiness ? `<div style="font-size: 11px; color: #888; margin-top: 4px;">${lead.distanceFromBusiness} miles from business</div>` : ''}
-                  <div style="font-size: 11px; color: #888; margin-top: 4px;">${new Date(lead.createdAt).toLocaleDateString()}</div>
-                </div>
-              `,
+              content: infoWindowContent,
             });
 
             marker.addListener('click', () => {
@@ -140,7 +181,7 @@ export function LeadsMapView({ leads, height = '400px' }: LeadsMapViewProps) {
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
     };
-  }, [isLoaded, leads, error]);
+  }, [isLoaded, leads, error, onLeadClick]);
 
   if (error) {
     return (

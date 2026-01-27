@@ -435,12 +435,6 @@ export default function IconGeneratorPage() {
           )}
         </div>
       </main>
-
-      <footer className="mt-12 pb-12 px-6">
-        <div className="max-w-4xl mx-auto border-t border-stone-700 pt-8">
-          <p className="text-center text-stone-500 text-xs">Built with Gemini AI</p>
-        </div>
-      </footer>
     </div>
   );
 }

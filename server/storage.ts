@@ -1703,6 +1703,7 @@ export class DatabaseStorage implements IStorage {
         lastName: userData.lastName,
         profileImageUrl: userData.profileImageUrl,
         passwordHash: userData.passwordHash,
+        googleId: userData.googleId,
         authProvider: userData.authProvider || 'email',
         emailVerified: userData.emailVerified ?? false,
         userType: userData.userType || 'owner',

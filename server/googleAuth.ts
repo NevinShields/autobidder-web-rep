@@ -2,9 +2,24 @@ import { OAuth2Client } from "google-auth-library";
 import { storage } from "./storage";
 import type { Express, Request, Response } from "express";
 import crypto from "crypto";
+import { isSuperAdmin } from "./universalAuth";
+import { sendAdminNewUserSignupNotification } from "./email-templates";
+import { addUserToGoogleSheet } from "./googleSheets";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+
+// Calculate trial dates (same as email auth)
+function calculateTrialDates() {
+  const trialStartDate = new Date();
+  const trialEndDate = new Date();
+  trialEndDate.setDate(trialStartDate.getDate() + 14); // 14 days from now
+  
+  return {
+    trialStartDate,
+    trialEndDate,
+  };
+}
 
 function getRedirectUri(req: Request): string {
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
@@ -85,9 +100,16 @@ export function setupGoogleAuth(app: Express) {
       }
 
       let user = await storage.getUserByEmail(email);
+      let isNewUser = false;
 
       if (!user) {
+        isNewUser = true;
         const newUserId = generateUserId();
+        const { trialStartDate, trialEndDate } = calculateTrialDates();
+        
+        // Determine user type based on email (same as email auth)
+        const userType = isSuperAdmin(email) ? "super_admin" : "owner";
+        
         user = await storage.createUser({
           id: newUserId,
           email: email,
@@ -95,14 +117,67 @@ export function setupGoogleAuth(app: Express) {
           lastName: family_name || "",
           profileImageUrl: picture || null,
           googleId: googleId,
-          password: null,
-          userType: "owner",
-          onboardingCompleted: false,
+          passwordHash: null,
+          authProvider: "google",
+          emailVerified: true,
+          plan: "trial",
           subscriptionStatus: "trialing",
-          subscriptionPlan: "free",
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          trialStartDate,
+          trialEndDate,
+          trialUsed: true,
+          isActive: true,
+          userType,
+          permissions: {
+            canManageUsers: true,
+            canEditFormulas: true,
+            canViewLeads: true,
+            canManageCalendar: true,
+            canAccessDesign: true,
+            canViewStats: true,
+          },
+          onboardingCompleted: false,
+          onboardingStep: 1,
         });
+        
+        // Create onboarding progress (same as email auth)
+        await storage.createOnboardingProgress({
+          userId: newUserId,
+          completedSteps: [],
+          currentStep: 1,
+          businessSetupCompleted: false,
+          firstCalculatorCreated: false,
+          designCustomized: false,
+          embedCodeGenerated: false,
+          firstLeadReceived: false,
+        });
+        
+        // Send admin notification (non-blocking, same as email auth)
+        const userName = `${given_name || ""} ${family_name || ""}`.trim() || "Google User";
+        sendAdminNewUserSignupNotification(
+          email,
+          userName,
+          newUserId,
+          undefined // No business name from Google OAuth
+        ).catch(error => {
+          console.error('Failed to send admin signup notification for Google user:', error);
+        });
+        
+        // Add user to Google Sheet (non-blocking, same as email auth)
+        addUserToGoogleSheet({
+          userId: newUserId,
+          email,
+          firstName: given_name || "",
+          lastName: family_name || "",
+          businessName: undefined,
+          signupDate: new Date(),
+          plan: "trial",
+          trialEndDate: trialEndDate
+        }).catch(error => {
+          console.error('Failed to add Google user to Google Sheet:', error);
+        });
+        
       } else if (!user.googleId) {
+        // Existing user linking their Google account
         await storage.updateUser(user.id, {
           googleId: googleId,
           profileImageUrl: user.profileImageUrl || picture || null,

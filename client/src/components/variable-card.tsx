@@ -114,13 +114,13 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
       </div>
 
       {showImage && (
-        <div className="flex-shrink-0 flex gap-1">
+        <div className="flex-shrink-0">
           {option.image ? (
             <div className="relative group">
               <img
                 src={option.image}
                 alt={option.label}
-                className="w-10 h-10 object-cover rounded-lg border"
+                className="w-10 h-10 object-cover rounded-lg border dark:border-gray-600"
               />
               <button
                 type="button"
@@ -131,27 +131,15 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
               </button>
             </div>
           ) : (
-            <>
-              <label className="w-10 h-10 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors" title="Upload image">
-                <Upload className="w-4 h-4 text-gray-400" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
-              {onAIGenerate && (
-                <button
-                  type="button"
-                  onClick={() => onAIGenerate(index)}
-                  className="w-10 h-10 border-2 border-dashed border-purple-300 rounded-lg flex items-center justify-center hover:border-purple-500 hover:bg-purple-50 transition-colors"
-                  title="Generate with AI"
-                >
-                  <Sparkles className="w-4 h-4 text-purple-400" />
-                </button>
-              )}
-            </>
+            <label className="w-10 h-10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Upload image">
+              <Upload className="w-4 h-4 text-gray-400" />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
           )}
         </div>
       )}
@@ -597,69 +585,106 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
       {/* Header */}
       <div
-        className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
-        <button className="text-gray-400 hover:text-gray-600 p-0.5" onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}>
-          {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
-        </button>
-
-        <Badge variant="outline" className={`${typeColorClass} border text-xs font-medium px-2 py-0.5 flex items-center gap-1`}>
-          <TypeIcon className="w-3 h-3" />
-          {typeConfig[variable.type]?.label || variable.type}
-        </Badge>
-
-        {isEditingName ? (
-          <div className="flex-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="h-8 text-sm font-medium flex-1"
-              autoFocus
-              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); }}
-            />
-            <Button variant="ghost" size="sm" onClick={handleSaveName} className="h-8 w-8 p-0 text-green-600">
-              <Check className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => { setIsEditingName(false); setEditName(variable.name); }} className="h-8 w-8 p-0 text-gray-400">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center gap-2 min-w-0">
-            <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{variable.name}</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
-              className="text-gray-400 hover:text-blue-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* Status badges */}
-        <div className="flex items-center gap-2">
-          {hasOptions && variable.options?.length && (
-            <Badge variant="secondary" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-              {variable.options.length} options
-            </Badge>
-          )}
-          {hasConditionalLogic && (
-            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700">
-              <Zap className="w-3 h-3 mr-1" />
-              Conditional
-            </Badge>
+        {/* Mobile: Show variable name on its own line above */}
+        <div className="sm:hidden mb-2">
+          {isEditingName ? (
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="h-8 text-sm font-medium flex-1"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); }}
+              />
+              <Button variant="ghost" size="sm" onClick={handleSaveName} className="h-8 w-8 p-0 text-green-600">
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setIsEditingName(false); setEditName(variable.name); }} className="h-8 w-8 p-0 text-gray-400">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">{variable.name}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
+                className="text-gray-400 hover:text-blue-500 p-1"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => { e.stopPropagation(); onDelete(variable.id); }}
-          className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-3">
+          <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5" onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}>
+            {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
+          </button>
+
+          <Badge variant="outline" className={`${typeColorClass} border text-xs font-medium px-2 py-0.5 flex items-center gap-1`}>
+            <TypeIcon className="w-3 h-3" />
+            {typeConfig[variable.type]?.label || variable.type}
+          </Badge>
+
+          {/* Desktop: Show name inline */}
+          {isEditingName ? (
+            <div className="hidden sm:flex flex-1 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="h-8 text-sm font-medium flex-1"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); }}
+              />
+              <Button variant="ghost" size="sm" onClick={handleSaveName} className="h-8 w-8 p-0 text-green-600">
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setIsEditingName(false); setEditName(variable.name); }} className="h-8 w-8 p-0 text-gray-400">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="hidden sm:flex flex-1 items-center gap-2 min-w-0">
+              <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{variable.name}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
+                className="text-gray-400 hover:text-blue-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Spacer for mobile */}
+          <div className="flex-1 sm:hidden" />
+
+          {/* Status badges */}
+          <div className="hidden sm:flex items-center gap-2">
+            {hasOptions && variable.options?.length && (
+              <Badge variant="secondary" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                {variable.options.length} options
+              </Badge>
+            )}
+            {hasConditionalLogic && (
+              <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                <Zap className="w-3 h-3 mr-1" />
+                Conditional
+              </Badge>
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); onDelete(variable.id); }}
+            className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Expanded Content */}
@@ -685,7 +710,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   </Button>
                 </div>
               ) : (
-                <code className="text-xs font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded truncate">
+                <code className="text-xs font-mono text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded truncate">
                   {variable.id}
                 </code>
               )}
@@ -729,7 +754,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 </div>
               ) : (
                 <div className="flex items-center justify-between h-9 bg-gray-50 dark:bg-gray-700 rounded-lg px-3">
-                  <span className="text-sm text-gray-900 capitalize">{typeConfig[variable.type]?.label || variable.type}</span>
+                  <span className="text-sm text-gray-900 dark:text-gray-200 capitalize">{typeConfig[variable.type]?.label || variable.type}</span>
                   <Button variant="ghost" size="sm" onClick={() => setIsEditingType(true)} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
                     <Edit3 className="w-3 h-3" />
                   </Button>
@@ -757,7 +782,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   </div>
                 ) : (
                   <div className="flex items-center justify-between h-9 bg-gray-50 dark:bg-gray-700 rounded-lg px-3">
-                    <span className="text-sm text-gray-900">{variable.unit || <span className="text-gray-400">None</span>}</span>
+                    <span className="text-sm text-gray-900 dark:text-gray-200">{variable.unit || <span className="text-gray-400 dark:text-gray-500">None</span>}</span>
                     <Button variant="ghost" size="sm" onClick={() => { setIsEditingUnit(true); setEditUnit(variable.unit || ''); }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
                       <Edit3 className="w-3 h-3" />
                     </Button>
@@ -804,8 +829,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   </div>
                 ) : (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-                    <div className="text-sm text-gray-900">{variable.min || 0} - {variable.max || 100}</div>
-                    <div className="text-xs text-gray-500">Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}</div>
+                    <div className="text-sm text-gray-900 dark:text-gray-200">{variable.min || 0} - {variable.max || 100}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}</div>
                   </div>
                 )}
               </div>
@@ -842,12 +867,12 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 ) : (
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 grid grid-cols-2 gap-2 text-sm">
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Checked:</span>
-                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">{variable.checkedValue || "1"}</code>
+                      <span className="text-gray-500 dark:text-gray-400">Checked:</span>
+                      <code className="text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded text-xs font-mono">{variable.checkedValue || "1"}</code>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-500">Unchecked:</span>
-                      <code className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs font-mono">{variable.uncheckedValue || "0"}</code>
+                      <span className="text-gray-500 dark:text-gray-400">Unchecked:</span>
+                      <code className="text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded text-xs font-mono">{variable.uncheckedValue || "0"}</code>
                     </div>
                   </div>
                 )}
@@ -876,7 +901,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             {isEditingTooltip ? (
               <div className="space-y-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div>
-                  <Label className="text-xs text-gray-500 mb-1 block">Help Text</Label>
+                  <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Help Text</Label>
                   <Textarea
                     value={editTooltip}
                     onChange={(e) => setEditTooltip(e.target.value)}
@@ -884,11 +909,11 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     className="text-sm min-h-[60px]"
                     maxLength={200}
                   />
-                  <span className="text-xs text-gray-400">{editTooltip.length}/200</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{editTooltip.length}/200</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                    <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                       <Video className="w-3 h-3" />
                       Video URL
                     </Label>
@@ -900,7 +925,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                    <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                       <ImageIcon className="w-3 h-3" />
                       Image URL
                     </Label>
@@ -924,8 +949,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               </div>
             ) : (
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 space-y-2">
-                <div className="text-sm text-gray-600">
-                  {variable.tooltip || <span className="text-gray-400 italic">No help text</span>}
+                <div className="text-sm text-gray-600 dark:text-gray-300">
+                  {variable.tooltip || <span className="text-gray-400 dark:text-gray-500 italic">No help text</span>}
                 </div>
                 {(variable.tooltipVideoUrl || variable.tooltipImageUrl) && (
                   <div className="flex items-center gap-3 text-xs text-gray-500">
@@ -949,10 +974,10 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
           {/* Multiple Selection Toggle */}
           {variable.type === 'multiple-choice' && (
-            <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+            <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
               <div>
-                <span className="text-sm font-medium text-blue-900">Allow multiple selections</span>
-                <p className="text-xs text-blue-700">Each option can be selected independently</p>
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">Allow multiple selections</span>
+                <p className="text-xs text-blue-700 dark:text-blue-300">Each option can be selected independently</p>
               </div>
               <Switch
                 checked={variable.allowMultipleSelection || false}
@@ -967,39 +992,16 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setShowOptions(!showOptions)}
-                  className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
                 >
                   {showOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   <Settings className="w-4 h-4" />
                   Options ({variable.options?.length || 0})
                 </button>
-                <div className="flex gap-2">
-                  {variable.type === 'multiple-choice' && variable.options && variable.options.length > 0 && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={openBulkGenerateDialog}
-                      disabled={isBulkGenerating}
-                      className="h-8 text-xs text-purple-600 border-purple-200 hover:bg-purple-50"
-                    >
-                      {isBulkGenerating ? (
-                        <>
-                          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                          {bulkProgress.total > 0 ? `${bulkProgress.completed}/${bulkProgress.total}` : 'Generating...'}
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          AI Generate All
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={handleAddOption} className="h-8 text-xs">
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" onClick={handleAddOption} className="h-8 text-xs dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add
+                </Button>
               </div>
 
               {showOptions && variable.options && (
@@ -1015,7 +1017,6 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           showDefaultUnselected={variable.type === 'multiple-choice' && variable.allowMultipleSelection}
                           onUpdate={handleOptionUpdate}
                           onDelete={handleDeleteOption}
-                          onAIGenerate={variable.type === 'multiple-choice' ? handleOpenSingleIconGenerator : undefined}
                         />
                       ))}
                     </div>
@@ -1030,12 +1031,12 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setShowConditionalLogic(!showConditionalLogic)}
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
               >
                 {showConditionalLogic ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 <Zap className="w-4 h-4" />
                 Conditional Display
-                {hasConditionalLogic && <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 ml-1">Active</Badge>}
+                {hasConditionalLogic && <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 ml-1">Active</Badge>}
               </button>
               <Switch
                 checked={variable.conditionalLogic?.enabled || false}
@@ -1044,9 +1045,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             </div>
 
             {showConditionalLogic && variable.conditionalLogic?.enabled && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-3">
+              <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-gray-700">Show this variable when:</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Show this variable when:</p>
                   {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
                     <Select
                       value={variable.conditionalLogic.operator || 'AND'}
@@ -1153,8 +1154,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 </Button>
 
                 {(variable.conditionalLogic.conditions?.length || 0) > 0 && (
-                  <div className="pt-2 border-t border-amber-200 space-y-2">
-                    <Label className="text-sm text-gray-700 font-medium">Default value when hidden:</Label>
+                  <div className="pt-2 border-t border-amber-200 dark:border-amber-700 space-y-2">
+                    <Label className="text-sm text-gray-700 dark:text-gray-200 font-medium">Default value when hidden:</Label>
                     {variable.type === 'number' || variable.type === 'slider' ? (
                       <div className="flex gap-2">
                         <Select
@@ -1203,7 +1204,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 )}
 
                 {getAvailableDependencies(variable, allVariables).length === 0 && (
-                  <div className="text-xs text-amber-700 bg-amber-100 p-2 rounded border border-amber-300">
+                  <div className="text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 p-2 rounded border border-amber-300 dark:border-amber-700">
                     Add more variables above this one to enable conditional logic
                   </div>
                 )}

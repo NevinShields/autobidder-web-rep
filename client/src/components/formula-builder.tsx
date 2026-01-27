@@ -683,7 +683,7 @@ export default function FormulaBuilderComponent({
                 <div className="flex-shrink-0">
                   {formula.iconUrl ? (
                     <div className="relative group">
-                      <img src={formula.iconUrl} alt="Icon" className="w-12 h-12 object-cover rounded-lg border-2 border-gray-200" />
+                      <img src={formula.iconUrl} alt="Icon" className="w-12 h-12 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600" />
                       <button
                         onClick={() => onUpdate({ iconUrl: null, iconId: null })}
                         className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
@@ -692,19 +692,20 @@ export default function FormulaBuilderComponent({
                       </button>
                     </div>
                   ) : (
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
                       <span className="text-2xl">🔧</span>
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-row flex-wrap gap-2 items-center">
                   <IconSelector
                     selectedIconId={formula.iconId || undefined}
                     onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
                     triggerText="Icon"
                     size="sm"
                   />
-                  <label className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer">
+                  <label className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer px-2 py-1 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                    <Upload className="w-3 h-3 inline mr-1" />
                     Upload
                     <input
                       type="file"
@@ -729,14 +730,13 @@ export default function FormulaBuilderComponent({
                       }}
                     />
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowIconGenerator(true)}
-                    className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                  <a
+                    href="/icon-generator"
+                    className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1 px-2 py-1 border border-purple-200 dark:border-purple-800 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/30"
                   >
                     <Sparkles className="w-3 h-3" />
                     AI Generate
-                  </button>
+                  </a>
                 </div>
               </div>
 
@@ -771,16 +771,16 @@ export default function FormulaBuilderComponent({
           <div className="border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setShowMediaSection(!showMediaSection)}
-              className="w-full px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              className="w-full px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <Settings2 className="w-4 h-4 text-gray-500" />
-                <span className="text-sm font-medium text-gray-700">Media & Settings</span>
+                <Settings2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Media & Settings</span>
                 {(formula.description || (formula.bulletPoints && formula.bulletPoints.length > 0) || formula.guideVideoUrl || formula.showImage || formula.enableMeasureMap || formula.enablePhotoMeasurement) && (
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Active</span>
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Active</span>
                 )}
               </div>
-              {showMediaSection ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
+              {showMediaSection ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
             </button>
 
             {showMediaSection && (
@@ -826,23 +826,23 @@ export default function FormulaBuilderComponent({
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 mb-1 block">Service Image</Label>
+                    <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Service Image</Label>
                     <div className="flex items-center gap-2">
                       <Switch
                         id="show-image"
                         checked={formula.showImage}
                         onCheckedChange={(checked) => onUpdate({ showImage: checked })}
                       />
-                      <span className="text-xs text-gray-600">{formula.showImage ? 'Enabled' : 'Disabled'}</span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{formula.showImage ? 'Enabled' : 'Disabled'}</span>
                       {formula.showImage && formula.imageUrl && (
-                        <img src={formula.imageUrl} alt="Preview" className="w-8 h-8 object-cover rounded border ml-2" />
+                        <img src={formula.imageUrl} alt="Preview" className="w-8 h-8 object-cover rounded border dark:border-gray-600 ml-2" />
                       )}
                     </div>
                   </div>
                 </div>
 
                 {formula.showImage && (
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                     <input
                       type="file"
                       accept="image/*"
@@ -860,9 +860,9 @@ export default function FormulaBuilderComponent({
                           }
                         }
                       }}
-                      className="text-xs flex-1"
+                      className="text-xs flex-1 dark:text-gray-200"
                     />
-                    <span className="text-xs text-gray-500">or</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">or</span>
                     <Input
                       value={formula.imageUrl || ''}
                       onChange={(e) => onUpdate({ imageUrl: e.target.value || null })}
@@ -896,9 +896,9 @@ export default function FormulaBuilderComponent({
                 </div>
 
                 {formula.enableMeasureMap && (
-                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center gap-3">
-                      <Label className="text-xs text-blue-700">Unit:</Label>
+                      <Label className="text-xs text-blue-700 dark:text-blue-300">Unit:</Label>
                       <Select
                         value={formula.measureMapUnit || "sqft"}
                         onValueChange={(value) => onUpdate({ measureMapUnit: value })}
@@ -916,11 +916,11 @@ export default function FormulaBuilderComponent({
                 )}
 
                 {formula.enablePhotoMeasurement && (
-                  <div className="bg-purple-50 rounded-lg p-3 border border-purple-200 space-y-3">
+                  <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800 space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <Label className="text-xs text-purple-700">Object Description</Label>
+                          <Label className="text-xs text-purple-700 dark:text-purple-300">Object Description</Label>
                           <RefinePromptButton formula={formula} onUpdate={onUpdate} />
                         </div>
                         <Textarea
@@ -935,7 +935,7 @@ export default function FormulaBuilderComponent({
                         />
                       </div>
                       <div>
-                        <Label className="text-xs text-purple-700 mb-1 block">Customer Instructions</Label>
+                        <Label className="text-xs text-purple-700 dark:text-purple-300 mb-1 block">Customer Instructions</Label>
                         <Textarea
                           value={formula.photoMeasurementSetup?.customerInstructions || ''}
                           onChange={(e) => {
@@ -949,7 +949,7 @@ export default function FormulaBuilderComponent({
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Label className="text-xs text-purple-700">Measure:</Label>
+                      <Label className="text-xs text-purple-700 dark:text-purple-300">Measure:</Label>
                       <Select
                         value={formula.photoMeasurementSetup?.measurementType || "area"}
                         onValueChange={(value: 'area' | 'length' | 'width' | 'height' | 'perimeter') => {
@@ -1108,13 +1108,13 @@ export default function FormulaBuilderComponent({
                       allVariables={formula.variables || []}
                     />
                   ))}
-                  <div 
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 flex items-center justify-center hover:border-primary hover:bg-blue-50 cursor-pointer transition-colors"
+                  <div
+                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 flex items-center justify-center hover:border-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer transition-colors"
                     onClick={() => setShowVariableModal(true)}
                   >
                     <div className="text-center">
                       <Plus className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">Add Variable</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Add Variable</p>
                     </div>
                   </div>
                 </div>
@@ -1127,7 +1127,7 @@ export default function FormulaBuilderComponent({
             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Pricing Formula</h3>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="formula-expression">Formula Expression</Label>
+                <Label htmlFor="formula-expression" className="dark:text-gray-200">Formula Expression</Label>
                 <FormulaExpressionInput
                   value={formulaExpression}
                   onChange={handleFormulaChange}
@@ -1196,9 +1196,9 @@ export default function FormulaBuilderComponent({
               {/* Min/Max Price Constraints */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="min-price">Minimum Price (optional)</Label>
+                  <Label htmlFor="min-price" className="dark:text-gray-200">Minimum Price (optional)</Label>
                   <div className="relative mt-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
                     <Input
                       id="min-price"
                       type="number"
@@ -1211,14 +1211,14 @@ export default function FormulaBuilderComponent({
                       data-testid="input-min-price"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     If the calculated price is below this, show this minimum instead
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="max-price">Maximum Price (optional)</Label>
+                  <Label htmlFor="max-price" className="dark:text-gray-200">Maximum Price (optional)</Label>
                   <div className="relative mt-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
                     <Input
                       id="max-price"
                       type="number"
@@ -1231,15 +1231,15 @@ export default function FormulaBuilderComponent({
                       data-testid="input-max-price"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     If the calculated price is above this, show this maximum instead
                   </p>
                 </div>
               </div>
               
               {/* Formula Help */}
-              <div className="text-xs text-gray-500 space-y-1">
-                <p><strong>Formula Tips:</strong></p>
+              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
+                <p><strong className="dark:text-gray-300">Formula Tips:</strong></p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Use basic math operators: +, -, *, /, ( )</li>
                   <li>Reference variables by their ID (case-sensitive)</li>

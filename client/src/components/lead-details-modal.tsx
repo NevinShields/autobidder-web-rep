@@ -82,6 +82,14 @@ interface Lead {
     message: string;
   };
   totalDistanceFee?: number; // Travel fee in cents
+  selectedUpsells?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    percentageOfMain: number;
+    amount: number; // Upsell amount in cents
+    category?: string;
+  }>;
   createdAt: string;
   type: 'single' | 'multi';
   formula?: {
@@ -966,7 +974,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     variant="ghost"
                     onClick={handleEditContact}
                     data-testid="button-edit-contact"
-                    className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+                    className="text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-gray-700"
                   >
                     <Edit className="h-3.5 w-3.5 mr-1.5" />
                     Edit
@@ -1091,7 +1099,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <span className="text-sm font-medium">Email</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600 break-all">{processedLead.email}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300 break-all">{processedLead.email}</span>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -1114,7 +1122,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <span className="text-sm font-medium">Phone</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">{processedLead.phone}</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-300">{processedLead.phone}</span>
                           <Button
                             size="sm"
                             variant="ghost"
@@ -1136,7 +1144,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <MapPin className="h-4 w-4 text-red-500 mt-0.5" />
                         <div className="flex-1">
                           <span className="text-sm font-medium">Address</span>
-                          <p className="text-sm text-gray-600 mt-1">{processedLead.address}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">{processedLead.address}</p>
                         </div>
                       </div>
                     )}
@@ -1148,11 +1156,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <span className="text-sm font-medium">IP Address</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600 font-mono">{processedLead.ipAddress}</span>
+                          <span className="text-sm text-gray-600 dark:text-gray-300 font-mono">{processedLead.ipAddress}</span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-6 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-6 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/30"
                             onClick={() => blockIpMutation.mutate({
                               ipAddress: processedLead.ipAddress!,
                               reason: "spam"
@@ -1172,7 +1180,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <FileText className="h-4 w-4 text-purple-500" />
                           <span className="text-sm font-medium">How they heard about us</span>
                         </div>
-                        <span className="text-sm text-gray-600">{processedLead.howDidYouHear}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">{processedLead.howDidYouHear}</span>
                       </div>
                     )}
 
@@ -1275,7 +1283,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             tagId: tag.id,
                             isMultiService: processedLead.type === 'multi'
                           })}
-                          className="ml-1 hover:bg-gray-200 rounded p-0.5"
+                          className="ml-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5"
                           disabled={removeTagMutation.isPending}
                         >
                           <X className="h-3 w-3" />
@@ -1283,7 +1291,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       </Badge>
                     ))
                   ) : (
-                    <span className="text-sm text-gray-500">No tags assigned</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">No tags assigned</span>
                   )}
                 </div>
 
@@ -1334,8 +1342,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           <div className="rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 rounded-xl">
-                  <DollarSign className="h-4 w-4 text-emerald-600" />
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/50 rounded-xl">
+                  <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <h3 className="font-semibold text-slate-800 dark:text-white">Pricing Details</h3>
               </div>
@@ -1357,7 +1365,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
                 {/* Detailed Service Information */}
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">Services Requested & Customer Details:</h4>
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Services Requested & Customer Details:</h4>
                   <div className="space-y-4">
                     {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 0 ? (
                       // Multi-service layout with detailed breakdown
@@ -1369,21 +1377,21 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               <div className="text-lg font-bold text-green-600">
                                 ${(service.calculatedPrice / 100).toLocaleString()}
                               </div>
-                              <div className="text-xs text-gray-500">Service {index + 1}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">Service {index + 1}</div>
                             </div>
                           </div>
                           
                           {/* Service-specific variables if available */}
                           {service.variables && Object.keys(service.variables).length > 0 && (
                             <div className="mt-3">
-                              <h6 className="text-xs font-medium text-gray-600 mb-2">Customer Selections:</h6>
+                              <h6 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Customer Selections:</h6>
                               <div className="grid grid-cols-1 gap-2">
                                 {Object.entries(service.variables).map(([key, value]) => (
-                                  <div key={key} className="flex justify-between text-xs bg-gray-50 p-2 rounded">
-                                    <span className="text-gray-600 capitalize font-medium">
+                                  <div key={key} className="flex justify-between text-xs bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                                    <span className="text-gray-600 dark:text-gray-300 capitalize font-medium">
                                       {key.replace(/([A-Z])/g, ' $1').trim()}:
                                     </span>
-                                    <span className="text-gray-800 font-medium">
+                                    <span className="text-gray-800 dark:text-gray-100 font-medium">
                                       {Array.isArray(value) ? value.join(', ') : String(value)}
                                     </span>
                                   </div>
@@ -1394,9 +1402,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           
                           {/* Tax line for single services */}
                           {processedLead.taxAmount && processedLead.taxAmount > 0 && processedLead.totalServices === 1 && (
-                            <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                               <div className="flex justify-between items-center text-sm">
-                                <span className="text-gray-700 font-medium">Sales Tax:</span>
+                                <span className="text-gray-700 dark:text-gray-200 font-medium">Sales Tax:</span>
                                 <span className="text-blue-600 font-medium">
                                   +${(processedLead.taxAmount / 100).toLocaleString()}
                                 </span>
@@ -1418,14 +1426,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         {/* Single service variables */}
                         {processedLead.variables && Object.keys(processedLead.variables).length > 0 && (
                           <div className="mt-3">
-                            <h6 className="text-xs font-medium text-gray-600 mb-2">Customer Selections & Answers:</h6>
+                            <h6 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Customer Selections & Answers:</h6>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                               {Object.entries(processedLead.variables).map(([key, value]) => (
-                                <div key={key} className="flex justify-between text-xs bg-gray-50 p-2 rounded">
-                                  <span className="text-gray-600 capitalize font-medium">
+                                <div key={key} className="flex justify-between text-xs bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
+                                  <span className="text-gray-600 dark:text-gray-300 capitalize font-medium">
                                     {key.replace(/([A-Z])/g, ' $1').trim()}:
                                   </span>
-                                  <span className="text-gray-800 font-medium">
+                                  <span className="text-gray-800 dark:text-gray-100 font-medium">
                                     {Array.isArray(value) ? value.join(', ') : String(value)}
                                   </span>
                                 </div>
@@ -1436,9 +1444,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         
                         {/* Tax line for single services */}
                         {processedLead.taxAmount && processedLead.taxAmount > 0 && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
                             <div className="flex justify-between items-center text-sm">
-                              <span className="text-gray-700 font-medium">Sales Tax:</span>
+                              <span className="text-gray-700 dark:text-gray-200 font-medium">Sales Tax:</span>
                               <span className="text-blue-600 font-medium">
                                 +${(processedLead.taxAmount / 100).toLocaleString()}
                               </span>
@@ -1453,67 +1461,111 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <div className="mt-4 border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
                     <h5 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Pricing Breakdown:</h5>
                     <div className="space-y-2">
-                      
-                      {/* Bundle Discount */}
-                      {processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0 && (
+
+                      {/* Services Subtotal */}
+                      {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 0 ? (
+                        <>
+                          {processedLead.services.map((service, index) => (
+                            <div key={index} className="flex justify-between items-center text-sm">
+                              <span className="text-gray-700 dark:text-gray-200">{service.formulaName}:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                ${(service.calculatedPrice / 100).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </>
+                      ) : (
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-green-700">Bundle Discount (Multiple Services):</span>
-                          <span className="font-medium text-green-600">
-                            -${(processedLead.bundleDiscountAmount / 100).toLocaleString()}
+                          <span className="text-gray-700 dark:text-gray-200">{processedLead.serviceNames}:</span>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            ${(() => {
+                              // Calculate base service price by removing adjustments from total
+                              const discounts = (processedLead.bundleDiscountAmount || 0) +
+                                (processedLead.appliedDiscounts?.reduce((sum, d) => sum + d.amount, 0) || 0);
+                              const upsells = processedLead.selectedUpsells?.reduce((sum, u) => sum + u.amount, 0) || 0;
+                              const travelFee = processedLead.totalDistanceFee || 0;
+                              const tax = processedLead.taxAmount || 0;
+                              // Total in cents = service + upsells + travel - discounts + tax
+                              // Service = Total - upsells - travel + discounts - tax
+                              const servicePrice = (processedLead.calculatedPrice * 100) - upsells - travelFee + discounts - tax;
+                              return (servicePrice / 100).toLocaleString();
+                            })()}
                           </span>
                         </div>
                       )}
-                      
-                      {/* Customer Discounts */}
-                      {processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0 && processedLead.appliedDiscounts.map((discount, index) => (
+
+                      {/* Selected Upsells/Add-ons */}
+                      {processedLead.selectedUpsells && processedLead.selectedUpsells.length > 0 && processedLead.selectedUpsells.map((upsell, index) => (
                         <div key={index} className="flex justify-between items-center text-sm">
-                          <span className="text-green-700">{discount.name} ({discount.percentage}%):</span>
-                          <span className="font-medium text-green-600">
-                            -${(discount.amount / 100).toLocaleString()}
+                          <span className="text-purple-700 dark:text-purple-400">{upsell.name}:</span>
+                          <span className="font-medium text-purple-600 dark:text-purple-400">
+                            +${(upsell.amount / 100).toLocaleString()}
                           </span>
                         </div>
                       ))}
-                      
+
                       {/* Travel Fee */}
                       {processedLead.totalDistanceFee && processedLead.totalDistanceFee > 0 && (
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-orange-700">
+                          <span className="text-orange-700 dark:text-orange-400">
                             Travel Fee
                             {processedLead.distanceInfo?.distance && (
-                              <span className="text-xs text-orange-600 ml-1">
+                              <span className="text-xs text-orange-600 dark:text-orange-400 ml-1">
                                 ({processedLead.distanceInfo.distance.toFixed(1)} mi)
                               </span>
                             )}:
                           </span>
-                          <span className="font-medium text-orange-600">
+                          <span className="font-medium text-orange-600 dark:text-orange-400">
                             +${(processedLead.totalDistanceFee / 100).toLocaleString()}
                           </span>
                         </div>
                       )}
-                      
-                      {/* Tax - Always show, calculated from business settings */}
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-blue-700">
-                          {(businessSettings as any)?.styling?.salesTaxLabel || 'Sales Tax'} 
-                          {(businessSettings as any)?.styling?.enableSalesTax && (businessSettings as any)?.styling?.salesTaxRate 
-                            ? ` (${(businessSettings as any).styling.salesTaxRate}%)` 
-                            : ''}:
-                        </span>
-                        <span className="font-medium text-blue-600">
-                          +${(calculatedTaxAmount / 100).toLocaleString()}
-                        </span>
-                      </div>
-                      
+
+                      {/* Bundle Discount */}
+                      {processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0 && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-green-700 dark:text-green-400">Bundle Discount:</span>
+                          <span className="font-medium text-green-600 dark:text-green-400">
+                            -${(processedLead.bundleDiscountAmount / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Customer Discounts */}
+                      {processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0 && processedLead.appliedDiscounts.map((discount, index) => (
+                        <div key={index} className="flex justify-between items-center text-sm">
+                          <span className="text-green-700 dark:text-green-400">{discount.name} ({discount.percentage}%):</span>
+                          <span className="font-medium text-green-600 dark:text-green-400">
+                            -${(discount.amount / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+
+                      {/* Tax */}
+                      {calculatedTaxAmount > 0 && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-blue-700 dark:text-blue-400">
+                            {(businessSettings as any)?.styling?.salesTaxLabel || 'Sales Tax'}
+                            {(businessSettings as any)?.styling?.enableSalesTax && (businessSettings as any)?.styling?.salesTaxRate
+                              ? ` (${(businessSettings as any).styling.salesTaxRate}%)`
+                              : ''}:
+                          </span>
+                          <span className="font-medium text-blue-600 dark:text-blue-400">
+                            +${(calculatedTaxAmount / 100).toLocaleString()}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Total line */}
-                      <div className="pt-2 border-t border-gray-300">
+                      <div className="pt-2 mt-2 border-t border-gray-300 dark:border-gray-500">
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-gray-800 dark:text-white">Final Total:</span>
-                          <span className="text-lg font-bold text-green-600">
+                          <span className="font-semibold text-gray-800 dark:text-white">Total:</span>
+                          <span className="text-lg font-bold text-green-600 dark:text-green-400">
                             ${processedLead.calculatedPrice.toLocaleString()}
                           </span>
                         </div>
                       </div>
-                      
+
                     </div>
                   </div>
                 </div>
@@ -1528,8 +1580,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 rounded-xl">
-                    <FileText className="h-4 w-4 text-amber-600" />
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-xl">
+                    <FileText className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <h3 className="font-semibold text-slate-800 dark:text-white">Notes</h3>
                 </div>
@@ -1547,8 +1599,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-violet-100 rounded-xl">
-                    <ClipboardCheck className="h-4 w-4 text-violet-600" />
+                  <div className="p-2 bg-violet-100 dark:bg-violet-900/50 rounded-xl">
+                    <ClipboardCheck className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                   </div>
                   <h3 className="font-semibold text-slate-800 dark:text-white">Workflow Management</h3>
                   {estimates && estimates.length > 0 && (
@@ -1585,7 +1637,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <div className="flex items-center gap-2 mb-3">
                           <FileText className="h-5 w-5 text-blue-600" />
                           <h3 className="font-semibold text-blue-900 dark:text-blue-100">Pre-Estimates (Awaiting Owner Review)</h3>
-                          <Badge variant="outline" className="border-blue-500 text-blue-700 ml-auto">
+                          <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-300 ml-auto">
                             {pendingEstimates.length} Pending
                           </Badge>
                         </div>
@@ -1596,7 +1648,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               <div className="flex justify-between items-start mb-3">
                                 <div>
                                   <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
-                                  <p className="text-sm text-gray-600 mt-1">
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                     Created {new Date(estimate.createdAt).toLocaleDateString()}
                                   </p>
                                 </div>
@@ -1604,19 +1656,19 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                   <div className="text-2xl font-bold text-green-600">
                                     ${(estimate.totalAmount / 100).toLocaleString()}
                                   </div>
-                                  <p className="text-xs text-gray-500 mt-1">Total Amount</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Amount</p>
                                 </div>
                               </div>
 
                               {/* Services breakdown if available */}
                               {estimate.services && estimate.services.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <h5 className="text-xs font-medium text-gray-600 mb-2">Services Included:</h5>
+                                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                                  <h5 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Services Included:</h5>
                                   <div className="space-y-2">
                                     {estimate.services.map((service: any, index: number) => (
                                       <div key={index} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700 p-2 rounded">
-                                        <span className="text-gray-700">{service.name || service.description}</span>
-                                        <span className="font-medium text-gray-900">
+                                        <span className="text-gray-700 dark:text-gray-200">{service.name || service.description}</span>
+                                        <span className="font-medium text-gray-900 dark:text-white">
                                           ${((service.price || service.amount) / 100).toLocaleString()}
                                         </span>
                                       </div>
@@ -1625,7 +1677,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                 </div>
                               )}
 
-                              <div className="bg-blue-100 border border-blue-300 rounded p-3 mt-3">
+                              <div className="bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-800 rounded p-3 mt-3">
                                 <p className="text-sm text-blue-900 dark:text-blue-100">
                                   <strong>Next Step:</strong> Review and approve this estimate to send to the customer.
                                 </p>
@@ -1677,7 +1729,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <div className="flex items-center gap-2 mb-3">
                     <DollarSign className="h-5 w-5 text-blue-600" />
                     <h3 className="font-semibold text-blue-900 dark:text-blue-100">Pre-Estimate (Calculator Completion)</h3>
-                    <Badge variant="outline" className="border-blue-500 text-blue-700 ml-auto">
+                    <Badge variant="outline" className="border-blue-500 text-blue-700 dark:text-blue-300 ml-auto">
                       Awaiting Review
                     </Badge>
                   </div>
@@ -1688,7 +1740,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <h4 className="font-semibold text-gray-900 dark:text-white">
                           {processedLead.type === 'multi' ? 'Multi-Service Quote' : processedLead.serviceNames}
                         </h4>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                           {processedLead.totalServices} service{processedLead.totalServices > 1 ? 's' : ''} calculated
                         </p>
                       </div>
@@ -1696,14 +1748,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         <div className="text-2xl font-bold text-green-600">
                           ${processedLead.calculatedPrice.toLocaleString()}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Total Amount</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Amount</p>
                       </div>
                     </div>
 
                     {/* Service Breakdown */}
                     {processedLead.type === 'multi' && processedLead.services && processedLead.services.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <h5 className="text-xs font-medium text-gray-600 mb-2">Services Included:</h5>
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <h5 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Services Included:</h5>
                         <div className="space-y-2">
                           {processedLead.services.map((service, index) => (
                             <div key={index} className="flex justify-between text-sm bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
@@ -1719,14 +1771,34 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
                     {/* Discounts Applied */}
                     {processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <h5 className="text-xs font-medium text-gray-600 mb-2">Discounts Applied:</h5>
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <h5 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Discounts Applied:</h5>
                         <div className="space-y-1">
                           {processedLead.appliedDiscounts.map((discount, index) => (
                             <div key={index} className="flex justify-between text-sm">
-                              <span className="text-green-700">{discount.name} ({discount.percentage}%)</span>
+                              <span className="text-green-700 dark:text-green-400">{discount.name} ({discount.percentage}%)</span>
                               <span className="font-medium text-green-600">
                                 -${(discount.amount / 100).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upsells Selected */}
+                    {processedLead.selectedUpsells && processedLead.selectedUpsells.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <h5 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Add-Ons Selected:</h5>
+                        <div className="space-y-1">
+                          {processedLead.selectedUpsells.map((upsell, index) => (
+                            <div key={index} className="flex justify-between text-sm">
+                              <span className="text-purple-700 dark:text-purple-400">
+                                {upsell.name}
+                                {upsell.category && <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">({upsell.category})</span>}
+                              </span>
+                              <span className="font-medium text-purple-600">
+                                +${(upsell.amount / 100).toLocaleString()}
                               </span>
                             </div>
                           ))}
@@ -1757,19 +1829,72 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       variant="outline"
                       onClick={() => {
                         // Open manual line items with calculator data pre-filled
-                        const services = processedLead.type === 'multi' && processedLead.services 
-                          ? processedLead.services 
+                        const services = processedLead.type === 'multi' && processedLead.services
+                          ? processedLead.services
                           : [{
                               formulaName: processedLead.serviceNames,
                               calculatedPrice: processedLead.calculatedPrice * 100 // Convert to cents
                             }];
-                        
-                        const lineItems = services.map(service => ({
+
+                        // Start with service line items
+                        const lineItems: Array<{ name: string; description: string; price: number }> = services.map(service => ({
                           name: service.formulaName,
-                          description: '',
+                          description: 'Service',
                           price: service.calculatedPrice / 100 // Convert cents to dollars
                         }));
-                        
+
+                        // Add selected upsells/add-ons
+                        if (processedLead.selectedUpsells && processedLead.selectedUpsells.length > 0) {
+                          processedLead.selectedUpsells.forEach(upsell => {
+                            lineItems.push({
+                              name: upsell.name,
+                              description: upsell.category ? `Add-on (${upsell.category})` : 'Add-on',
+                              price: upsell.amount / 100 // Convert cents to dollars
+                            });
+                          });
+                        }
+
+                        // Add travel fee
+                        if (processedLead.totalDistanceFee && processedLead.totalDistanceFee > 0) {
+                          lineItems.push({
+                            name: 'Travel Fee',
+                            description: processedLead.distanceInfo?.distance
+                              ? `${processedLead.distanceInfo.distance.toFixed(1)} miles`
+                              : 'Distance-based fee',
+                            price: processedLead.totalDistanceFee / 100
+                          });
+                        }
+
+                        // Add discounts as negative line items
+                        if (processedLead.bundleDiscountAmount && processedLead.bundleDiscountAmount > 0) {
+                          lineItems.push({
+                            name: 'Bundle Discount',
+                            description: 'Multi-service discount',
+                            price: -(processedLead.bundleDiscountAmount / 100) // Negative for discount
+                          });
+                        }
+
+                        if (processedLead.appliedDiscounts && processedLead.appliedDiscounts.length > 0) {
+                          processedLead.appliedDiscounts.forEach(discount => {
+                            lineItems.push({
+                              name: discount.name,
+                              description: `${discount.percentage}% discount`,
+                              price: -(discount.amount / 100) // Negative for discount
+                            });
+                          });
+                        }
+
+                        // Add tax
+                        if (processedLead.taxAmount && processedLead.taxAmount > 0) {
+                          lineItems.push({
+                            name: (businessSettings as any)?.styling?.salesTaxLabel || 'Sales Tax',
+                            description: (businessSettings as any)?.styling?.salesTaxRate
+                              ? `${(businessSettings as any).styling.salesTaxRate}%`
+                              : 'Tax',
+                            price: processedLead.taxAmount / 100
+                          });
+                        }
+
                         setManualLineItems(lineItems);
                         setEstimateCreationMethod('manual');
                         setShowCreateEstimateDialog(true);
@@ -1810,11 +1935,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <Badge 
                             variant="outline"
                             className={
-                              estimate.ownerApprovalStatus === 'approved' 
-                                ? 'border-green-500 text-green-700' 
+                              estimate.ownerApprovalStatus === 'approved'
+                                ? 'border-green-500 text-green-700 dark:text-green-400'
                                 : estimate.ownerApprovalStatus === 'revision_requested'
-                                ? 'border-yellow-500 text-yellow-700'
-                                : 'border-gray-500 text-gray-700'
+                                ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400'
+                                : 'border-gray-500 text-gray-700 dark:text-gray-300'
                             }
                           >
                             {estimate.ownerApprovalStatus === 'approved' 
@@ -1971,7 +2096,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                 </Button>
                               )}
                               {workOrder.invoiceId && (
-                                <Badge variant="outline" className="border-green-500 text-green-700">
+                                <Badge variant="outline" className="border-green-500 text-green-700 dark:text-green-400">
                                   Invoice Created
                                 </Badge>
                               )}
@@ -1986,7 +2111,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     );
                   } else {
                     return (
-                      <div className="text-center py-4 text-gray-500">
+                      <div className="text-center py-4 text-gray-500 dark:text-gray-400">
                         <p className="text-sm">No owner-confirmed estimates yet. Approve a pre-estimate to move it here.</p>
                       </div>
                     );
@@ -2001,8 +2126,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-pink-100 rounded-xl">
-                    <ImageIcon className="h-4 w-4 text-pink-600" />
+                  <div className="p-2 bg-pink-100 dark:bg-pink-900/50 rounded-xl">
+                    <ImageIcon className="h-4 w-4 text-pink-600 dark:text-pink-400" />
                   </div>
                   <h3 className="font-semibold text-slate-800 dark:text-white">
                     Images {!isLoadingMeasurements && `(${photoMeasurements.length + (processedLead.uploadedImages?.length || 0)})`}
@@ -2030,7 +2155,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </Button>
                   {!isLoadingMeasurements && photoMeasurements.some((m: any) => m.tags && m.tags.length > 0) && (
                     <>
-                      <Filter className="h-4 w-4 text-gray-500" />
+                      <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                       <Select value={selectedTagFilter} onValueChange={setSelectedTagFilter}>
                         <SelectTrigger className="w-[200px]">
                           <SelectValue placeholder="Filter by tag" />
@@ -2052,7 +2177,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   <div className="flex items-center justify-center py-8">
                     <div className="text-center">
                       <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-sm text-gray-600">Loading images...</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Loading images...</p>
                     </div>
                   </div>
                 ) : isMeasurementsError ? (
@@ -2064,7 +2189,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
                 ) : photoMeasurements.length === 0 && (!processedLead.uploadedImages || processedLead.uploadedImages.length === 0) ? (
                   <div className="flex items-center justify-center py-8">
-                    <p className="text-sm text-gray-500">No images available for this lead. Upload images using the button above.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No images available for this lead. Upload images using the button above.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2134,7 +2259,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               </p>
                             )}
                             {measurement.confidence !== undefined && (
-                              <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                                 <span>Confidence:</span>
                                 <span className={measurement.confidence >= 80 ? "text-green-600 font-medium" : measurement.confidence >= 60 ? "text-yellow-600 font-medium" : "text-red-600 font-medium"}>
                                   {measurement.confidence}%
@@ -2154,8 +2279,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-100 rounded-xl">
-                    <MapPin className="h-4 w-4 text-red-600" />
+                  <div className="p-2 bg-red-100 dark:bg-red-900/50 rounded-xl">
+                    <MapPin className="h-4 w-4 text-red-600 dark:text-red-400" />
                   </div>
                   <h3 className="font-semibold text-slate-800 dark:text-white">Location Actions</h3>
                 </div>
@@ -2191,7 +2316,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
                   
                   {/* Embedded Google Map */}
-                  <div className="relative w-full h-80 bg-gray-100 rounded-lg overflow-hidden">
+                  <div className="relative w-full h-80 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
                     <iframe
                       src={`https://www.google.com/maps/embed/v1/place?key=${googleMapsApiKey}&q=${encodeURIComponent(processedLead.address || '')}&zoom=15&maptype=roadmap`}
                       width="100%"
@@ -2235,7 +2360,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             setManualLineItems([{ name: '', description: '', price: 0 }]);
           }
         }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
             <DialogHeader>
               <DialogTitle>Create Estimate</DialogTitle>
               <DialogDescription>
@@ -2248,7 +2373,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             {/* Step 1: Choose Method */}
             {estimateCreationMethod === 'choose' && (
               <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Card 
                     className="cursor-pointer hover:border-primary transition-colors"
                     onClick={() => {
@@ -2275,7 +2400,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <CardContent className="p-6 text-center">
                       <DollarSign className="h-12 w-12 mx-auto mb-3 text-primary" />
                       <h3 className="font-semibold mb-2">From Calculator</h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         Calculate a new price using the call screen calculator
                       </p>
                     </CardContent>
@@ -2289,7 +2414,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <CardContent className="p-6 text-center">
                       <FileText className="h-12 w-12 mx-auto mb-3 text-primary" />
                       <h3 className="font-semibold mb-2">Manual Line Items</h3>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         Create custom line items with your own pricing
                       </p>
                     </CardContent>
@@ -2304,8 +2429,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 <div className="space-y-3">
                   <Label>Line Items</Label>
                   {manualLineItems.map((item, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 items-start border p-3 rounded">
-                      <div className="col-span-4">
+                    <div key={index} className="border dark:border-gray-600 p-3 rounded-lg space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-start">
+                      {/* Mobile: stacked layout, Desktop: grid */}
+                      <div className="sm:col-span-4">
+                        <Label className="text-xs text-gray-500 dark:text-gray-400 sm:hidden mb-1 block">Item Name</Label>
                         <Input
                           placeholder="Item name"
                           value={item.name}
@@ -2317,7 +2444,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           data-testid={`input-line-item-name-${index}`}
                         />
                       </div>
-                      <div className="col-span-5">
+                      <div className="sm:col-span-4">
+                        <Label className="text-xs text-gray-500 dark:text-gray-400 sm:hidden mb-1 block">Description</Label>
                         <Input
                           placeholder="Description"
                           value={item.description}
@@ -2329,33 +2457,38 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           data-testid={`input-line-item-description-${index}`}
                         />
                       </div>
-                      <div className="col-span-2">
-                        <Input
-                          type="number"
-                          placeholder="Price"
-                          value={item.price === 0 ? '' : item.price}
-                          onChange={(e) => {
-                            const newItems = [...manualLineItems];
-                            newItems[index].price = parseFloat(e.target.value) || 0;
-                            setManualLineItems(newItems);
-                          }}
-                          data-testid={`input-line-item-price-${index}`}
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        {manualLineItems.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newItems = manualLineItems.filter((_, i) => i !== index);
+                      <div className="flex gap-2 items-end sm:col-span-4 sm:grid sm:grid-cols-4 sm:gap-2">
+                        <div className="flex-1 sm:col-span-3">
+                          <Label className="text-xs text-gray-500 dark:text-gray-400 sm:hidden mb-1 block">Price ($)</Label>
+                          <Input
+                            type="number"
+                            placeholder="Price"
+                            value={item.price === 0 ? '' : item.price}
+                            onChange={(e) => {
+                              const newItems = [...manualLineItems];
+                              newItems[index].price = parseFloat(e.target.value) || 0;
                               setManualLineItems(newItems);
                             }}
-                            data-testid={`button-remove-line-item-${index}`}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
+                            className={item.price < 0 ? 'text-red-600 dark:text-red-400' : ''}
+                            data-testid={`input-line-item-price-${index}`}
+                          />
+                        </div>
+                        <div className="sm:col-span-1 flex items-center justify-center">
+                          {manualLineItems.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-10 w-10 p-0"
+                              onClick={() => {
+                                const newItems = manualLineItems.filter((_, i) => i !== index);
+                                setManualLineItems(newItems);
+                              }}
+                              data-testid={`button-remove-line-item-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2364,16 +2497,20 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     size="sm"
                     onClick={() => setManualLineItems([...manualLineItems, { name: '', description: '', price: 0 }])}
                     data-testid="button-add-line-item"
+                    className="w-full sm:w-auto"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Line Item
                   </Button>
                 </div>
 
-                <div className="p-3 bg-gray-50 rounded">
-                  <p className="font-semibold">
-                    Total: ${manualLineItems.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
-                  </p>
+                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-300">Total:</span>
+                    <span className={`text-xl font-bold ${manualLineItems.reduce((sum, item) => sum + (item.price || 0), 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                      ${manualLineItems.reduce((sum, item) => sum + (item.price || 0), 0).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -2391,31 +2528,34 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             )}
 
             {/* Footer Buttons */}
-            <div className="flex justify-between gap-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2">
               {estimateCreationMethod !== 'choose' && (
                 <Button
                   variant="outline"
                   onClick={() => setEstimateCreationMethod('choose')}
                   disabled={createEstimateMutation.isPending}
                   data-testid="button-back"
+                  className="w-full sm:w-auto"
                 >
                   Back
                 </Button>
               )}
-              <div className="flex gap-2 ml-auto">
+              <div className="flex flex-col sm:flex-row gap-2 sm:ml-auto">
                 <Button
                   variant="outline"
                   onClick={() => setShowCreateEstimateDialog(false)}
                   disabled={createEstimateMutation.isPending}
                   data-testid="button-cancel-create-estimate"
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
                 {estimateCreationMethod === 'manual' && (
                   <Button
                     onClick={() => {
-                      const isValid = manualLineItems.length > 0 && manualLineItems.every(item => item.name && item.price > 0);
-                      
+                      // Validate: each item needs a name and a non-zero price (can be negative for discounts)
+                      const isValid = manualLineItems.length > 0 && manualLineItems.every(item => item.name && item.price !== 0);
+
                       if (!isValid) {
                         toast({
                           title: "Validation Error",
@@ -2424,13 +2564,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         });
                         return;
                       }
-                      
-                      createEstimateMutation.mutate({ 
+
+                      createEstimateMutation.mutate({
                         businessMessage: estimateMessage,
                         lineItems: manualLineItems
                       });
                     }}
                     disabled={createEstimateMutation.isPending}
+                    className="w-full sm:w-auto"
                     data-testid="button-submit-create-estimate"
                   >
                     {createEstimateMutation.isPending ? "Creating..." : "Create Estimate"}
@@ -2518,7 +2659,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   onChange={(e) => setScheduledDate(e.target.value)}
                   data-testid="input-scheduled-date"
                 />
-                <p className="text-xs text-gray-500">Leave blank to create without scheduling</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Leave blank to create without scheduling</p>
               </div>
             </div>
             <div className="flex justify-end gap-2">

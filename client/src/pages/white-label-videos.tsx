@@ -325,14 +325,17 @@ export default function WhiteLabelVideosPage() {
 
   const uploadFileMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
       const response = await fetch('/api/white-label-videos/upload', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Upload failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || 'Upload failed');
+      }
       return response.json();
     },
   });
@@ -343,8 +346,9 @@ export default function WhiteLabelVideosPage() {
       toast({ title: "Title is required", variant: "destructive" });
       return;
     }
-    if (!formData.youtubeUrl) {
-      toast({ title: "YouTube URL is required", variant: "destructive" });
+    // Require either YouTube URL or file upload
+    if (!formData.youtubeUrl && !selectedFile && !formData.fileUrl) {
+      toast({ title: "Please provide a YouTube URL or upload a video file", variant: "destructive" });
       return;
     }
 
@@ -357,8 +361,12 @@ export default function WhiteLabelVideosPage() {
           const uploadResult = await uploadFileMutation.mutateAsync(selectedFile);
           fileUrl = uploadResult.fileUrl;
           fileName = uploadResult.fileName;
-        } catch (error) {
-          toast({ title: "Failed to upload file", variant: "destructive" });
+        } catch (error: any) {
+          toast({
+            title: "Failed to upload file",
+            description: error?.message || "Please try again or check if object storage is configured",
+            variant: "destructive"
+          });
           return;
         }
       }
@@ -434,7 +442,9 @@ export default function WhiteLabelVideosPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">YouTube URL *</label>
+                    <label className="text-sm font-medium">
+                      YouTube URL {!selectedFile && !formData.fileUrl ? '*' : '(optional if uploading file)'}
+                    </label>
                     <Input
                       value={formData.youtubeUrl}
                       onChange={(e) => setFormData({ ...formData, youtubeUrl: e.target.value })}
@@ -443,7 +453,12 @@ export default function WhiteLabelVideosPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Upload Video File (Optional)</label>
+                    <label className="text-sm font-medium">
+                      Upload Video File {formData.youtubeUrl ? '(optional)' : '*'}
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Upload a downloadable video file for users to download
+                    </p>
                     <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors">
                       <input
                         type="file"

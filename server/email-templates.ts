@@ -598,6 +598,9 @@ export async function sendNewLeadNotification(
     customerName?: string;
     email?: string;
     phone?: string;
+    address?: string;
+    notes?: string;
+    howDidYouHear?: string;
     serviceName: string;
     totalPrice: number;
     subtotal?: number;
@@ -671,6 +674,24 @@ export async function sendNewLeadNotification(
           <span style="font-weight: 600;">Phone:</span>
           <span>${lead.phone || 'Not provided'}</span>
         </div>
+        ${lead.address ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Address:</span>
+          <span>${lead.address}</span>
+        </div>
+        ` : ''}
+        ${lead.howDidYouHear ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">How They Heard About Us:</span>
+          <span>${lead.howDidYouHear}</span>
+        </div>
+        ` : ''}
+        ${lead.notes ? `
+        <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600; display: block; margin-bottom: 4px;">Notes:</span>
+          <span style="color: #6b7280;">${lead.notes}</span>
+        </div>
+        ` : ''}
         <div style="display: flex; justify-content: space-between; padding: 8px 0;">
           <span style="font-weight: 600;">Service:</span>
           <span>${lead.serviceName}</span>
@@ -733,6 +754,9 @@ export async function sendNewMultiServiceLeadNotification(
     customerName?: string;
     email?: string;
     phone?: string;
+    address?: string;
+    notes?: string;
+    howDidYouHear?: string;
     services: Array<{
       name: string;
       price: number;
@@ -917,6 +941,24 @@ export async function sendNewMultiServiceLeadNotification(
           <span style="font-weight: 600;">Phone:</span>
           <span>${lead.phone || 'Not provided'}</span>
         </div>
+        ${lead.address ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">Address:</span>
+          <span>${lead.address}</span>
+        </div>
+        ` : ''}
+        ${lead.howDidYouHear ? `
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600;">How They Heard About Us:</span>
+          <span>${lead.howDidYouHear}</span>
+        </div>
+        ` : ''}
+        ${lead.notes ? `
+        <div style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+          <span style="font-weight: 600; display: block; margin-bottom: 4px;">Notes:</span>
+          <span style="color: #6b7280;">${lead.notes}</span>
+        </div>
+        ` : ''}
         <div style="margin-top: 16px;">
           <h4 style="color: #1f2937; margin: 0 0 12px 0; font-size: 16px;">${isMultiService ? `Services Requested (${serviceCount}):` : 'Service Requested:'}</h4>
           ${servicesList}

@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 
 let genAI: GoogleGenAI | null = null;
 
@@ -18,6 +18,10 @@ interface IconGenerationResult {
   mimeType: string;
 }
 
+interface MultiIconGenerationResult {
+  images: Array<{ imageBase64: string; mimeType: string }>;
+}
+
 interface BulkIconResult {
   optionId: string;
   imageBase64: string;
@@ -35,262 +39,202 @@ interface BulkGenerationResult {
 }
 
 /**
- * Analyzes a reference icon and returns a detailed style description
- * This is used as an intermediate step to better match icon styles
- * @param referenceImage - Reference image as base64 data URL
- * @returns Detailed text description of the icon's visual style
+ * Generates 4 icon variations using Gemini's image generation model
+ * Uses direct image-to-image approach for better style matching
+ * @param prompt - Description of what the icon should represent
+ * @param styleDescription - Optional custom style description
+ * @param referenceImage - Optional reference image (base64 data URL) to match style
+ * @param variationCount - Number of variations to generate (default 4)
  */
-async function analyzeIconStyle(referenceImage: string): Promise<string> {
+export async function generateIconVariations(
+  prompt: string,
+  styleDescription: string = '',
+  referenceImage?: string,
+  variationCount: number = 4
+): Promise<MultiIconGenerationResult> {
   const ai = getGenAI();
 
-  // Extract base64 data and mime type from data URL
-  const matches = referenceImage.match(/^data:([^;]+);base64,(.+)$/);
-  if (!matches) {
-    throw new Error('Invalid reference image format');
-  }
+  // Build prompt parts array (similar to the new icon-generator approach)
+  const basePromptParts: any[] = [];
 
-  const mimeType = matches[1];
-  const base64Data = matches[2];
+  // Add reference image directly if provided (no text conversion step)
+  if (referenceImage) {
+    const matches = referenceImage.match(/^data:([^;]+);base64,(.+)$/);
+    if (matches) {
+      const mimeType = matches[1];
+      const base64Data = matches[2];
 
-  const analysisPrompt = `You are an expert icon designer. Analyze this icon image and provide a VERY DETAILED and SPECIFIC description of its visual style that could be used to recreate the exact same style for a different subject.
-
-Describe with extreme precision:
-
-1. COLOR PALETTE: List the exact colors used with hex codes if possible (e.g., "primary: bright coral #FF6B4A, secondary: soft teal #4ECDC4, accent: white"). Note saturation levels (vivid/muted/pastel).
-
-2. LINE WORK: Exact line thickness (hairline/thin/medium/thick/bold), stroke style (solid/dashed), corner treatment (sharp 90°/slightly rounded/fully rounded/pill-shaped), outline presence and color.
-
-3. SHADING & DEPTH: Flat with no shading? Subtle gradients? Strong 3D with cast shadows? Cel-shaded with hard edges? Long shadows? Inner shadows? Highlight placement?
-
-4. RENDERING TECHNIQUE: Vector/raster look? Minimalist/detailed? Geometric/organic? Illustrated/realistic? Glyph-style/filled?
-
-5. PERSPECTIVE & COMPOSITION: Front-facing/isometric/3/4 view? Centered? How much padding around the subject?
-
-6. SHAPE CHARACTERISTICS: Rounded shapes vs angular? Geometric primitives or organic forms? Thick chunky forms or delicate thin elements?
-
-7. TEXTURE: Smooth/grainy/noisy? Any patterns?
-
-8. BACKGROUND: Transparent/solid color/gradient? If colored, what color?
-
-Write this as a single detailed paragraph that serves as EXACT INSTRUCTIONS for generating a matching icon. Be extremely specific - imagine you're writing a specification that an artist must follow precisely.`;
-
-  const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            inlineData: {
-              mimeType: mimeType,
-              data: base64Data
-            }
-          },
-          { text: analysisPrompt }
-        ]
-      }
-    ]
-  });
-
-  const candidates = response.candidates;
-  if (!candidates || candidates.length === 0) {
-    throw new Error('No style analysis generated');
-  }
-
-  const parts = candidates[0].content?.parts;
-  if (!parts) {
-    throw new Error('No content in style analysis');
-  }
-
-  // Extract text response
-  for (const part of parts) {
-    if (part.text) {
-      return part.text;
+      basePromptParts.push({ text: "STYLE REFERENCE IMAGE (Extract the aesthetic directly from this):" });
+      basePromptParts.push({
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data
+        }
+      });
     }
   }
 
-  throw new Error('No text in style analysis response');
+  // Build the main prompt with strict rendering requirements
+  const styleText = styleDescription.trim() || 'clean, professional, modern icon design';
+
+  const mainPrompt = `
+You are a professional digital asset creator. Your task is to generate a high-fidelity icon strictly following the user's provided style and subject.
+
+**SUBJECT**: "${prompt}"
+**STYLE**: "${styleText}"
+
+**CRITICAL RENDERING REQUIREMENTS:**
+1. **NO TEXT**: Do not include any words, letters, numbers, or typographical characters of any kind. The icon must be a pure visual symbol or object.
+2. **STRICT ADHERENCE**: Do not add any artistic themes (like western or modern) unless specified in the prompt above.
+3. **MAXIMIZE SIZE**: The icon subject must be LARGE and prominent. It MUST fill at least 90% of the image frame. Use only a very narrow, minimal black border (approx 5%) on all sides.
+4. **ISOLATION**: The icon MUST be rendered on a PURE, SOLID, FLAT BLACK BACKGROUND (#000000).
+5. **NO BACKGROUND TEXTURE**: The black background must be 100% solid with zero gradients, noise, or lighting effects.
+6. **NO CHECKERBOARDS**: Never draw a transparency grid or checkerboard pattern.
+7. **QUALITY**: Use studio-quality rendering. If the style is 3D, use cinematic lighting. If it is 2D, use clean vector-style lines.
+8. **CENTERED**: The object must be centered.
+  `;
+
+  basePromptParts.push({ text: mainPrompt });
+
+  // Generate multiple variations in parallel
+  const generationPromises = Array(variationCount).fill(0).map(async (_, i) => {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp-image-generation',
+        contents: { parts: [...basePromptParts, { text: `Variation ${i + 1}` }] },
+        config: {
+          responseModalities: [Modality.TEXT, Modality.IMAGE],
+        },
+      });
+
+      const part = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+      if (!part?.inlineData?.data) {
+        throw new Error(`Failed to generate variation ${i + 1}`);
+      }
+
+      return {
+        imageBase64: part.inlineData.data,
+        mimeType: part.inlineData.mimeType || 'image/png'
+      };
+    } catch (error) {
+      console.error(`Variation ${i + 1} failed:`, error);
+      throw error;
+    }
+  });
+
+  const results = await Promise.allSettled(generationPromises);
+  const successfulImages = results
+    .filter((r): r is PromiseFulfilledResult<{ imageBase64: string; mimeType: string }> => r.status === 'fulfilled')
+    .map(r => r.value);
+
+  if (successfulImages.length === 0) {
+    throw new Error('Failed to generate any icon variations');
+  }
+
+  return { images: successfulImages };
 }
 
 /**
- * Generates an icon using Gemini 3 Pro Image (most powerful model for style consistency)
- * @param prompt - Description of what the icon should represent
- * @param styleDescription - Optional custom style description (e.g., "flat minimalist", "3D realistic", "cartoon style")
- * @param referenceImage - Optional reference image (base64 data URL) to match style
+ * Refines an existing icon based on user feedback
+ * @param baseIconData - Base64 data of the icon to refine
+ * @param refinementPrompt - User's refinement instructions
+ * @param originalStyleDescription - Original style description for context
+ * @param originalReferenceImage - Original reference image for style consistency
+ */
+export async function refineIcon(
+  baseIconData: string,
+  refinementPrompt: string,
+  originalStyleDescription: string = '',
+  originalReferenceImage?: string
+): Promise<MultiIconGenerationResult> {
+  const ai = getGenAI();
+
+  const promptParts: any[] = [];
+
+  // Add original style reference if available
+  if (originalReferenceImage) {
+    const matches = originalReferenceImage.match(/^data:([^;]+);base64,(.+)$/);
+    if (matches) {
+      promptParts.push({ text: "ORIGINAL STYLE CONTEXT:" });
+      promptParts.push({
+        inlineData: { mimeType: matches[1], data: matches[2] }
+      });
+    }
+  }
+
+  // Add current icon version
+  promptParts.push({ text: "CURRENT ICON VERSION:" });
+  promptParts.push({
+    inlineData: { mimeType: 'image/png', data: baseIconData }
+  });
+
+  const mainPrompt = `
+**USER REFINEMENT REQUEST:** "${refinementPrompt}"
+
+**INSTRUCTIONS:**
+1. Modify the current icon based on the feedback while strictly maintaining the user's requested style: "${originalStyleDescription || 'professional icon design'}".
+2. **NO TEXT**: Ensure there are no words, letters, or numbers in the refined versions.
+3. **MAXIMIZE SIZE**: Ensure the refined icon continues to fill the majority of the frame with minimal black padding.
+4. Continue to use a SOLID PURE BLACK BACKGROUND (#000000).
+5. Output refined variations based on the feedback.
+  `;
+
+  promptParts.push({ text: mainPrompt });
+
+  // Generate 4 refined variations
+  const refinementPromises = Array(4).fill(0).map(async (_, i) => {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp-image-generation',
+        contents: { parts: [...promptParts, { text: `Refined Variation ${i + 1}` }] },
+        config: {
+          responseModalities: [Modality.TEXT, Modality.IMAGE],
+        },
+      });
+
+      const part = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+      if (!part?.inlineData?.data) {
+        throw new Error(`Refinement ${i + 1} failed`);
+      }
+
+      return {
+        imageBase64: part.inlineData.data,
+        mimeType: part.inlineData.mimeType || 'image/png'
+      };
+    } catch (error) {
+      console.error(`Refinement ${i + 1} failed:`, error);
+      throw error;
+    }
+  });
+
+  const results = await Promise.allSettled(refinementPromises);
+  const successfulImages = results
+    .filter((r): r is PromiseFulfilledResult<{ imageBase64: string; mimeType: string }> => r.status === 'fulfilled')
+    .map(r => r.value);
+
+  if (successfulImages.length === 0) {
+    throw new Error('Failed to generate any refined variations');
+  }
+
+  return { images: successfulImages };
+}
+
+/**
+ * Legacy single-icon generation for backwards compatibility
+ * Internally uses generateIconVariations and returns the first result
  */
 export async function generateIcon(
   prompt: string,
   styleDescription: string = '',
   referenceImage?: string
 ): Promise<IconGenerationResult> {
-  const ai = getGenAI();
-
-  // Build the prompt based on whether we have a reference image
-  let enhancedPrompt: string;
-  let analyzedStyle: string | null = null;
-
-  if (referenceImage) {
-    // Step 1: Analyze the reference image to extract detailed style description
-    try {
-      console.log('=== ICON GENERATION WITH REFERENCE ===');
-      console.log('Subject prompt:', prompt);
-      console.log('User style description:', styleDescription || '(none)');
-      console.log('Reference image size:', Math.round(referenceImage.length / 1024), 'KB');
-      console.log('Analyzing reference icon style...');
-      analyzedStyle = await analyzeIconStyle(referenceImage);
-      console.log('=== STYLE ANALYSIS RESULT ===');
-      console.log(analyzedStyle);
-      console.log('=== END STYLE ANALYSIS ===');
-    } catch (error) {
-      console.warn('Style analysis failed, will use image directly:', error);
-      analyzedStyle = null;
-    }
-  }
-
-  // Build prompt based on available information
-  const additionalNotes = styleDescription.trim()
-    ? `\nUser's additional style notes: ${styleDescription.trim()}`
-    : '';
-
-  if (referenceImage) {
-    // With reference image - use both analyzed style AND the image for best results
-    const styleSpec = analyzedStyle
-      ? `\n\nDETAILED STYLE ANALYSIS OF THE REFERENCE:\n${analyzedStyle}`
-      : '';
-
-    // Structure prompt to emphasize style transfer
-    enhancedPrompt = `TASK: Style Transfer Icon Generation
-
-I am providing a REFERENCE ICON image. Your task is to create a NEW icon depicting "${prompt}" that looks like it was created by the SAME DESIGNER using the EXACT SAME visual style.
-
-CRITICAL INSTRUCTION: Do NOT create a generic icon. The generated icon must be visually IDENTICAL in style to the reference - as if both icons came from the same icon pack or design system.
-${styleSpec}${additionalNotes}
-
-MANDATORY STYLE ELEMENTS TO COPY FROM REFERENCE:
-1. COLOR SCHEME: Use the exact same colors (match hue, saturation, brightness precisely)
-2. LINE WEIGHT: Match the exact stroke thickness and line quality
-3. CORNER RADIUS: Copy the exact roundness/sharpness of corners
-4. SHADING/GRADIENT: Replicate the exact lighting and depth style
-5. FILL STYLE: Match solid fills, gradients, or transparency exactly
-6. ICON DENSITY: Match how detailed/simple the icon is
-7. PROPORTIONS: Match the visual weight and balance
-
-OUTPUT: A new icon of "${prompt}" that is STYLISTICALLY IDENTICAL to the reference icon.
-
-Format: Square, centered, no text.`;
-  } else {
-    // Standard prompt without reference
-    const styleText = styleDescription.trim()
-      ? `Style: ${styleDescription.trim()}.`
-      : 'Style: clean, professional, modern icon design.';
-
-    enhancedPrompt = `Create a simple icon for: ${prompt}.
-${styleText}
-Requirements:
-- Square format, centered design
-- Simple, recognizable symbol
-- Clean white or light solid background
-- Professional quality suitable for a web application
-- No text or labels in the icon
-- Single focused subject
-- High contrast for visibility at small sizes`;
-  }
-
-  try {
-    // Build content array
-    let contents: any[];
-
-    if (referenceImage) {
-      // Always include reference image when available - Gemini 3 Pro handles it better
-      const matches = referenceImage.match(/^data:([^;]+);base64,(.+)$/);
-      if (matches) {
-        const mimeType = matches[1];
-        const base64Data = matches[2];
-
-        // Put INSTRUCTIONS first, then the REFERENCE IMAGE
-        // This way the model reads the task before seeing the reference
-        contents = [
-          {
-            role: 'user',
-            parts: [
-              { text: enhancedPrompt },
-              { text: "\n\nREFERENCE ICON (match this style exactly):" },
-              {
-                inlineData: {
-                  mimeType: mimeType,
-                  data: base64Data
-                }
-              }
-            ]
-          }
-        ];
-      } else {
-        contents = [
-          {
-            role: 'user',
-            parts: [{ text: enhancedPrompt }]
-          }
-        ];
-      }
-    } else {
-      contents = [
-        {
-          role: 'user',
-          parts: [{ text: enhancedPrompt }]
-        }
-      ];
-    }
-
-    // Log the final prompt being sent
-    console.log('=== FINAL GENERATION PROMPT ===');
-    console.log(enhancedPrompt);
-    console.log('=== END PROMPT ===');
-    console.log('Including reference image in request:', referenceImage ? 'YES' : 'NO');
-    console.log('Using model: gemini-3-pro-image-preview');
-
-    // Use Gemini 3 Pro Image - most powerful model for style consistency
-    const response = await ai.models.generateContent({
-      model: "gemini-3-pro-image-preview",
-      contents: contents,
-      config: {
-        responseModalities: ['IMAGE'],
-        // Request square 1:1 aspect ratio for icons
-        // Note: Gemini may not always honor this but it's a hint
-      }
-    });
-
-    console.log('=== GENERATION RESPONSE RECEIVED ===');
-    console.log('Response candidates:', response.candidates?.length || 0);
-
-    // Extract image data from response
-    const candidates = response.candidates;
-    if (!candidates || candidates.length === 0) {
-      throw new Error('No response generated from AI');
-    }
-
-    const parts = candidates[0].content?.parts;
-    if (!parts) {
-      throw new Error('No content parts in response');
-    }
-
-    for (const part of parts) {
-      if (part.inlineData) {
-        return {
-          imageBase64: part.inlineData.data,
-          mimeType: part.inlineData.mimeType || 'image/png'
-        };
-      }
-    }
-
-    throw new Error('No image data in response');
-  } catch (error) {
-    console.error('Icon generation error:', error);
-    throw new Error(`Failed to generate icon: ${(error as Error).message}`);
-  }
+  const result = await generateIconVariations(prompt, styleDescription, referenceImage, 1);
+  return result.images[0];
 }
 
 /**
  * Generates multiple icons for multiple choice options
+ * Uses the improved generation approach with better style matching
  * @param context - The question/context for the icons (e.g., "Select your flooring type")
  * @param options - Array of options with id and label
  * @param styleDescription - Optional custom style description for all icons
@@ -314,6 +258,7 @@ export async function generateBulkIcons(
     const batchPromises = batch.map(async (option) => {
       try {
         const prompt = `${option.label} - related to: ${context}`;
+        // Use the new generateIcon which internally uses the improved approach
         const result = await generateIcon(prompt, styleDescription, referenceImage);
         return {
           success: true as const,

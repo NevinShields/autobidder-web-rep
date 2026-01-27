@@ -202,8 +202,8 @@ export default function IntegrationsPage() {
                     </Button>
                   </DialogTrigger>
                   
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
+                  <DialogContent className="max-w-2xl w-[95vw] max-h-[85vh] flex flex-col">
+                    <DialogHeader className="flex-shrink-0">
                       <DialogTitle className="flex items-center gap-2">
                         <Zap className="w-5 h-5 text-orange-500" />
                         Zapier Integration Setup
@@ -212,8 +212,8 @@ export default function IntegrationsPage() {
                         Copy these credentials to connect your Autobidder account with Zapier
                       </DialogDescription>
                     </DialogHeader>
-                    
-                    <div className="space-y-6">
+
+                    <div className="space-y-6 overflow-y-auto flex-1 pr-2">
                       {/* Server URL */}
                       <div className="space-y-2">
                         <Label className="text-sm font-medium">Server URL</Label>

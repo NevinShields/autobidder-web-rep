@@ -798,6 +798,8 @@ export default function StyledCalculator(props: any = {}) {
         percentage: number;
         amount: number;
       }>;
+      taxAmount?: number;
+      subtotal?: number;
     }) => {
       const payload = {
         name: data.leadInfo.name,
@@ -814,6 +816,8 @@ export default function StyledCalculator(props: any = {}) {
         appliedDiscounts: data.appliedDiscounts,
         bundleDiscountAmount: data.bundleDiscountAmount,
         selectedUpsells: data.selectedUpsells,
+        taxAmount: data.taxAmount,
+        subtotal: data.subtotal,
         businessOwnerId: isPublicAccess ? userId : undefined,
       };
       
@@ -917,6 +921,36 @@ export default function StyledCalculator(props: any = {}) {
     },
   });
 
+  // Mutation to update lead with pricing selections (discounts, upsells) after they're selected on pricing page
+  const updateLeadPricingMutation = useMutation({
+    mutationFn: async (data: {
+      leadId: number;
+      appliedDiscounts: Array<{ id: string; name: string; percentage: number; amount: number }>;
+      selectedUpsells: Array<{ id: string; name: string; percentage: number; amount: number }>;
+      bundleDiscountAmount: number;
+      taxAmount: number;
+      subtotal: number;
+      totalPrice: number;
+    }) => {
+      return apiRequest("PATCH", `/api/multi-service-leads/${data.leadId}/pricing-selections`, {
+        appliedDiscounts: data.appliedDiscounts,
+        selectedUpsells: data.selectedUpsells,
+        bundleDiscountAmount: data.bundleDiscountAmount,
+        taxAmount: data.taxAmount,
+        subtotal: data.subtotal,
+        totalPrice: data.totalPrice,
+      });
+    },
+    onSuccess: async (response: Response) => {
+      const data = await response.json();
+      console.log('Lead pricing selections updated successfully:', data);
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+    },
+    onError: (error: any) => {
+      console.error("Failed to update lead pricing selections:", error);
+    },
+  });
+
   // Sync cart with selections when cart mode is disabled or only one service
   useEffect(() => {
     const isCartEnabled = businessSettings?.enableServiceCart === true;
@@ -1000,6 +1034,84 @@ export default function StyledCalculator(props: any = {}) {
 
     return () => clearTimeout(timeoutId);
   }, [serviceVariables, currentStep, selectedServices, formulas, businessSettings?.enableAutoExpandCollapse]);
+
+  // Update lead with pricing selections when discounts/upsells change on pricing page
+  useEffect(() => {
+    console.log('Pricing selections useEffect triggered:', {
+      currentStep,
+      submittedLeadId,
+      selectedDiscounts,
+      selectedUpsells
+    });
+
+    // Only run when on pricing page with a submitted lead
+    if (currentStep !== 'pricing' || !submittedLeadId) {
+      console.log('Skipping update - conditions not met:', { currentStep, submittedLeadId });
+      return;
+    }
+
+    // Debounce the update to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      console.log('Debounce timeout fired, preparing update...');
+      // Calculate current pricing with selections
+      const subtotal = cartServiceIds.reduce((sum, serviceId) => sum + Math.max(0, serviceCalculations[serviceId] || 0), 0);
+      const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && cartServiceIds.length > 1)
+        ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
+        : 0;
+
+      // Get applied discounts
+      const appliedDiscountData = businessSettings?.discounts
+        ?.filter(d => d.isActive && selectedDiscounts.includes(d.id))
+        ?.map(discount => ({
+          id: discount.id,
+          name: discount.name,
+          percentage: discount.percentage,
+          amount: Math.round(subtotal * (discount.percentage / 100) * 100)
+        })) || [];
+
+      // Get upsell amounts
+      const allUpsells = cartServiceIds.reduce((acc: any[], serviceId) => {
+        const service = formulas?.find(f => f.id === serviceId);
+        if (service?.upsellItems) {
+          acc.push(...service.upsellItems);
+        }
+        return acc;
+      }, []);
+
+      const selectedUpsellData = allUpsells
+        ?.filter((u: any) => selectedUpsells.includes(u.id))
+        ?.map((upsell: any) => ({
+          id: upsell.id,
+          name: upsell.name,
+          percentage: upsell.percentageOfMain,
+          amount: Math.round(subtotal * (upsell.percentageOfMain / 100) * 100)
+        })) || [];
+
+      const customerDiscountAmount = appliedDiscountData.reduce((sum, d) => sum + d.amount, 0) / 100;
+      const upsellTotal = selectedUpsellData.reduce((sum, u) => sum + u.amount, 0) / 100;
+      const discountedSubtotal = subtotal - bundleDiscount - customerDiscountAmount + upsellTotal;
+
+      const taxAmount = businessSettings?.styling?.enableSalesTax
+        ? Math.round(discountedSubtotal * ((businessSettings.styling.salesTaxRate || 0) / 100))
+        : 0;
+      const totalPrice = discountedSubtotal + taxAmount;
+
+      // Update the lead with current selections
+      const updatePayload = {
+        leadId: submittedLeadId,
+        appliedDiscounts: appliedDiscountData,
+        selectedUpsells: selectedUpsellData,
+        bundleDiscountAmount: Math.round(bundleDiscount * 100),
+        taxAmount: Math.round(taxAmount * 100),
+        subtotal: Math.round(subtotal * 100),
+        totalPrice: Math.round(totalPrice * 100),
+      };
+      console.log('Updating lead with pricing selections:', updatePayload);
+      updateLeadPricingMutation.mutate(updatePayload);
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timeoutId);
+  }, [currentStep, submittedLeadId, selectedDiscounts, selectedUpsells, cartServiceIds, serviceCalculations, businessSettings, formulas]);
 
   // Inject CSS variables from design settings - must be before early returns to maintain hook order
   useEffect(() => {
@@ -1883,8 +1995,8 @@ export default function StyledCalculator(props: any = {}) {
         amount: Math.round(subtotal * (discount.percentage / 100) * 100) // Convert to cents
       })) || [];
 
-    // Prepare upsell information for submission - collect from all selected services
-    const allUpsellsForSubmission = selectedServices.reduce((acc: any[], serviceId) => {
+    // Prepare upsell information for submission - collect from all cart services
+    const allUpsellsForSubmission = cartServiceIds.reduce((acc: any[], serviceId) => {
       const service = formulas?.find(f => f.id === serviceId);
       if (service?.upsellItems) {
         acc.push(...service.upsellItems);
@@ -1914,10 +2026,13 @@ export default function StyledCalculator(props: any = {}) {
       appliedDiscounts: appliedDiscountData,
       bundleDiscountAmount: Math.round(bundleDiscount * 100), // Convert to cents
       selectedUpsells: selectedUpsellData,
-      taxAmount: Math.round(taxAmount * 100)
+      taxAmount: Math.round(taxAmount * 100),
+      subtotal: Math.round(subtotal * 100) // Convert to cents
     };
 
     console.log('Submitting lead data:', submissionData);
+    console.log('Selected discounts state:', selectedDiscounts);
+    console.log('Business settings discounts:', businessSettings?.discounts);
 
     // Show pricing page immediately while submission happens in background
     setCurrentStep("pricing");

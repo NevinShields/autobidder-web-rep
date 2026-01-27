@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { MessageSquare, Save, Info, ExternalLink } from "lucide-react";
+import { MessageSquare, Save, Info, ExternalLink, ArrowLeft } from "lucide-react";
 import { CrmSettings as CrmSettingsType } from "@shared/schema";
+import { Link } from "wouter";
 
 export default function CrmSettings() {
   const { toast } = useToast();
@@ -75,6 +76,12 @@ export default function CrmSettings() {
     <div className="p-6">
       <div className="max-w-4xl mx-auto space-y-6">
       <div>
+        <Link href="/integrations">
+          <Button variant="ghost" size="sm" className="mb-4 -ml-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Integrations
+          </Button>
+        </Link>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <MessageSquare className="h-8 w-8 text-blue-500" />
           Twilio SMS Configuration

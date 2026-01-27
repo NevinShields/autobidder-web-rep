@@ -43,7 +43,7 @@ import {
   insertDfyServicePurchaseSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
-import { generateIcon, generateBulkIcons } from "./icon-generator";
+import { generateIcon, generateIconVariations, refineIcon, generateBulkIcons } from "./icon-generator";
 import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS, editCustomCSS } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
@@ -676,6 +676,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Bulk AI icon generation error:', error);
       res.status(500).json({ message: "Failed to generate icons: " + (error as Error).message });
+    }
+  });
+
+  // AI Icon Generation with multiple variations endpoint
+  app.post("/api/icons/generate-variations", requireAuth, async (req, res) => {
+    try {
+      const { prompt, styleDescription, referenceImage } = req.body;
+
+      if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      const style = typeof styleDescription === 'string' ? styleDescription.trim() : '';
+      const refImage = typeof referenceImage === 'string' && referenceImage.startsWith('data:image/')
+        ? referenceImage
+        : undefined;
+
+      console.log('Generating AI icon variations:', {
+        prompt,
+        styleDescription: style || '(default)',
+        hasReferenceImage: !!refImage
+      });
+
+      const result = await generateIconVariations(prompt.trim(), style, refImage, 4);
+
+      res.json({
+        images: result.images
+      });
+    } catch (error) {
+      console.error('AI icon variations generation error:', error);
+      res.status(500).json({ message: "Failed to generate icon variations: " + (error as Error).message });
+    }
+  });
+
+  // AI Icon Refinement endpoint - refines an existing icon based on feedback
+  app.post("/api/icons/refine", requireAuth, async (req, res) => {
+    try {
+      const { baseIconData, refinementPrompt, originalStyleDescription, originalReferenceImage } = req.body;
+
+      if (!baseIconData || typeof baseIconData !== 'string') {
+        return res.status(400).json({ message: "Base icon data is required" });
+      }
+
+      if (!refinementPrompt || typeof refinementPrompt !== 'string' || refinementPrompt.trim() === '') {
+        return res.status(400).json({ message: "Refinement prompt is required" });
+      }
+
+      const style = typeof originalStyleDescription === 'string' ? originalStyleDescription.trim() : '';
+      const refImage = typeof originalReferenceImage === 'string' && originalReferenceImage.startsWith('data:image/')
+        ? originalReferenceImage
+        : undefined;
+
+      console.log('Refining AI icon:', {
+        refinementPrompt,
+        hasOriginalStyle: !!style,
+        hasReferenceImage: !!refImage
+      });
+
+      const result = await refineIcon(baseIconData, refinementPrompt.trim(), style, refImage);
+
+      res.json({
+        images: result.images
+      });
+    } catch (error) {
+      console.error('AI icon refinement error:', error);
+      res.status(500).json({ message: "Failed to refine icon: " + (error as Error).message });
     }
   });
 
@@ -2669,6 +2735,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               customerName: lead.name,
               email: lead.email,
               phone: lead.phone || undefined,
+              address: lead.address || undefined,
+              notes: lead.notes || undefined,
               serviceName: formulaName,
               totalPrice: lead.calculatedPrice, // Keep in cents for proper conversion in email template
               variables: lead.variables,
@@ -4004,6 +4072,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerName: lead.name,
             email: lead.email,
             phone: lead.phone || undefined,
+            address: lead.address || undefined,
+            notes: lead.notes || undefined,
+            howDidYouHear: lead.howDidYouHear || undefined,
             services: lead.services.map(service => ({
               name: service.formulaName || 'Service',
               price: service.calculatedPrice, // Keep in cents for proper conversion in email template
@@ -4287,6 +4358,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedLead);
     } catch (error) {
       res.status(500).json({ message: "Failed to update multi-service lead" });
+    }
+  });
+
+  // Update lead pricing selections (discounts, upsells) - called from pricing page after lead creation
+  app.patch("/api/multi-service-leads/:id/pricing-selections", optionalAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { appliedDiscounts, selectedUpsells, bundleDiscountAmount, taxAmount, subtotal, totalPrice } = req.body;
+
+      const updateData: any = {};
+
+      if (appliedDiscounts !== undefined) {
+        updateData.appliedDiscounts = appliedDiscounts;
+      }
+      if (selectedUpsells !== undefined) {
+        updateData.selectedUpsells = selectedUpsells;
+      }
+      if (bundleDiscountAmount !== undefined) {
+        updateData.bundleDiscountAmount = bundleDiscountAmount;
+      }
+      if (taxAmount !== undefined) {
+        updateData.taxAmount = taxAmount;
+      }
+      if (subtotal !== undefined) {
+        updateData.subtotal = subtotal;
+      }
+      if (totalPrice !== undefined) {
+        updateData.totalPrice = totalPrice;
+      }
+
+      const updatedLead = await storage.updateMultiServiceLead(id, updateData);
+
+      if (!updatedLead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+
+      console.log(`Updated lead ${id} with pricing selections:`, updateData);
+      res.json(updatedLead);
+    } catch (error) {
+      console.error("Failed to update lead pricing selections:", error);
+      res.status(500).json({ message: "Failed to update lead pricing selections" });
     }
   });
 

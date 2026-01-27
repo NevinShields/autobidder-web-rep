@@ -92,25 +92,6 @@ export default function Dashboard() {
     );
   }, [leadList, multiLeadList]);
 
-  if (formulasLoading || leadsLoading || multiLeadsLoading || statsLoading) {
-    return (
-      <DashboardLayout>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="animate-pulse bg-white dark:bg-gray-800">
-                <CardContent className="p-6">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   // Calculate service selections over past 30 days
   const serviceChartData = useMemo(() => {
     const now = new Date();
@@ -165,6 +146,25 @@ export default function Dashboard() {
         revenue: service.revenue
       }));
   }, [formulaList, leadList, multiLeadList]);
+
+  if (formulasLoading || leadsLoading || multiLeadsLoading || statsLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="animate-pulse bg-white dark:bg-gray-800">
+                <CardContent className="p-6">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

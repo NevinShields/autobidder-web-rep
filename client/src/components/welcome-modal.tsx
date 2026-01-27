@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Play, Sparkles, ArrowRight, Loader2 } from "lucide-react";
 
 interface WelcomeModalConfig {
@@ -48,6 +48,9 @@ export function WelcomeModal() {
   // Mark as shown mutation
   const markShownMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/welcome-modal/mark-shown"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
   });
 
   // Show modal if user hasn't seen it and config is enabled

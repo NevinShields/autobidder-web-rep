@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow, Image, Moon, Sun } from "lucide-react";
+import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow, Image, Moon, Sun, Video } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import SupportContact from "@/components/support-contact";
 import NotificationDropdown from "@/components/notifications/notification-dropdown";
+import { SupportHelpButton } from "@/components/support-help-button";
 import { useTheme } from "@/hooks/use-theme";
 
 interface DashboardLayoutProps {
@@ -140,7 +141,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { name: "Profile", href: "/profile", icon: User },
         { name: "Integrations", href: "/integrations", icon: Zap },
-        ...(isSuperAdmin ? [{ name: "Admin Dashboard", href: "/admin", icon: Shield }] : []),
+        ...(isSuperAdmin ? [
+          { name: "Admin Dashboard", href: "/admin", icon: Shield },
+          { name: "Support Videos", href: "/admin/support-videos", icon: Video },
+        ] : []),
       ]
     }
   };
@@ -415,6 +419,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Phone className="w-5 h-5" />
                 </Button>
               </Link>
+
+              {/* Page Support Help Button */}
+              <SupportHelpButton />
 
               {/* Notification Bell */}
               <NotificationDropdown />

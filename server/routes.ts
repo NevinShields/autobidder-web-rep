@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps } from "@shared/schema";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig } from "@shared/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
@@ -15389,6 +15389,438 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error: any) {
       console.error("Error saving push subscription:", error);
       res.status(500).json({ message: "Failed to save subscription" });
+    }
+  });
+
+  // ==================== Support Videos & Welcome Modal API ====================
+
+  // Get welcome modal config (for users)
+  app.get("/api/welcome-modal/config", requireAuth, async (req, res) => {
+    try {
+      const config = await db.select().from(welcomeModalConfig).limit(1);
+      if (config.length === 0) {
+        // Return default config if none exists
+        return res.json({
+          title: "Welcome to Autobidder!",
+          description: "Watch this quick video to get started.",
+          youtubeUrl: null,
+          isEnabled: true,
+        });
+      }
+      res.json(config[0]);
+    } catch (error: any) {
+      console.error("Error fetching welcome modal config:", error);
+      res.status(500).json({ message: "Failed to fetch welcome modal config" });
+    }
+  });
+
+  // Mark welcome modal as shown for user
+  app.post("/api/welcome-modal/mark-shown", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as Express.User;
+      await db.update(users).set({ welcomeModalShown: true }).where(eq(users.id, currentUser.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error marking welcome modal as shown:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Update welcome modal config (admin only)
+  app.put("/api/admin/welcome-modal/config", requireSuperAdmin, async (req, res) => {
+    try {
+      const { title, description, youtubeUrl, isEnabled } = req.body;
+
+      const existing = await db.select().from(welcomeModalConfig).limit(1);
+
+      if (existing.length === 0) {
+        // Create new config
+        const [newConfig] = await db.insert(welcomeModalConfig).values({
+          title: title || "Welcome to Autobidder!",
+          description,
+          youtubeUrl,
+          isEnabled: isEnabled ?? true,
+        }).returning();
+        return res.json(newConfig);
+      }
+
+      // Update existing config
+      const [updated] = await db.update(welcomeModalConfig)
+        .set({
+          title: title || "Welcome to Autobidder!",
+          description,
+          youtubeUrl,
+          isEnabled: isEnabled ?? true,
+          updatedAt: new Date(),
+        })
+        .where(eq(welcomeModalConfig.id, existing[0].id))
+        .returning();
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating welcome modal config:", error);
+      res.status(500).json({ message: "Failed to update welcome modal config" });
+    }
+  });
+
+  // Get all support videos (admin)
+  app.get("/api/admin/support-videos", requireSuperAdmin, async (req, res) => {
+    try {
+      const videos = await db.select().from(supportVideos).orderBy(supportVideos.sortOrder);
+      res.json(videos);
+    } catch (error: any) {
+      console.error("Error fetching support videos:", error);
+      res.status(500).json({ message: "Failed to fetch support videos" });
+    }
+  });
+
+  // Create support video (admin)
+  app.post("/api/admin/support-videos", requireSuperAdmin, async (req, res) => {
+    try {
+      const { title, description, youtubeUrl, thumbnailUrl, sortOrder, isActive } = req.body;
+
+      if (!title || !youtubeUrl) {
+        return res.status(400).json({ message: "Title and YouTube URL are required" });
+      }
+
+      const [video] = await db.insert(supportVideos).values({
+        title,
+        description,
+        youtubeUrl,
+        thumbnailUrl,
+        sortOrder: sortOrder ?? 0,
+        isActive: isActive ?? true,
+      }).returning();
+
+      res.status(201).json(video);
+    } catch (error: any) {
+      console.error("Error creating support video:", error);
+      res.status(500).json({ message: "Failed to create support video" });
+    }
+  });
+
+  // Update support video (admin)
+  app.put("/api/admin/support-videos/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+      const { title, description, youtubeUrl, thumbnailUrl, sortOrder, isActive } = req.body;
+
+      const [updated] = await db.update(supportVideos)
+        .set({
+          title,
+          description,
+          youtubeUrl,
+          thumbnailUrl,
+          sortOrder,
+          isActive,
+          updatedAt: new Date(),
+        })
+        .where(eq(supportVideos.id, videoId))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating support video:", error);
+      res.status(500).json({ message: "Failed to update support video" });
+    }
+  });
+
+  // Delete support video (admin)
+  app.delete("/api/admin/support-videos/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const videoId = parseInt(req.params.id);
+
+      await db.delete(supportVideos).where(eq(supportVideos.id, videoId));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting support video:", error);
+      res.status(500).json({ message: "Failed to delete support video" });
+    }
+  });
+
+  // Get all page support configs (admin)
+  app.get("/api/admin/page-support-configs", requireSuperAdmin, async (req, res) => {
+    try {
+      const configs = await db.select().from(pageSupportConfigs);
+
+      // Get video counts for each page
+      const configsWithCounts = await Promise.all(
+        configs.map(async (config) => {
+          const assignments = await db.select()
+            .from(pageSupportVideoAssignments)
+            .where(eq(pageSupportVideoAssignments.pageConfigId, config.id));
+          return {
+            ...config,
+            videoCount: assignments.length,
+          };
+        })
+      );
+
+      res.json(configsWithCounts);
+    } catch (error: any) {
+      console.error("Error fetching page support configs:", error);
+      res.status(500).json({ message: "Failed to fetch page support configs" });
+    }
+  });
+
+  // Initialize/seed page support configs (admin) - creates entries for all pages
+  app.post("/api/admin/page-support-configs/seed", requireSuperAdmin, async (req, res) => {
+    try {
+      const defaultPages = [
+        { pageKey: 'dashboard', pageName: 'Dashboard' },
+        { pageKey: 'formulas', pageName: 'Formulas' },
+        { pageKey: 'leads', pageName: 'Customers' },
+        { pageKey: 'calendar', pageName: 'Calendar' },
+        { pageKey: 'design', pageName: 'Design' },
+        { pageKey: 'logic', pageName: 'Logic' },
+        { pageKey: 'embed-code', pageName: 'Embed Code' },
+        { pageKey: 'stats', pageName: 'Stats' },
+        { pageKey: 'email-settings', pageName: 'Email Settings' },
+        { pageKey: 'integrations', pageName: 'Integrations' },
+        { pageKey: 'website', pageName: 'Website' },
+        { pageKey: 'custom-forms', pageName: 'Custom Forms' },
+        { pageKey: 'automations', pageName: 'Automations' },
+        { pageKey: 'photos', pageName: 'Photos' },
+        { pageKey: 'profile', pageName: 'Profile' },
+        { pageKey: 'call-screen', pageName: 'Call Screen' },
+      ];
+
+      for (const page of defaultPages) {
+        // Check if already exists
+        const existing = await db.select().from(pageSupportConfigs)
+          .where(eq(pageSupportConfigs.pageKey, page.pageKey));
+
+        if (existing.length === 0) {
+          await db.insert(pageSupportConfigs).values({
+            pageKey: page.pageKey,
+            pageName: page.pageName,
+            isEnabled: true,
+          });
+        }
+      }
+
+      const allConfigs = await db.select().from(pageSupportConfigs);
+      res.json(allConfigs);
+    } catch (error: any) {
+      console.error("Error seeding page support configs:", error);
+      res.status(500).json({ message: "Failed to seed page support configs" });
+    }
+  });
+
+  // Update page support config (admin)
+  app.put("/api/admin/page-support-configs/:pageKey", requireSuperAdmin, async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+      const { isEnabled, pageName } = req.body;
+
+      // Check if config exists
+      const existing = await db.select().from(pageSupportConfigs)
+        .where(eq(pageSupportConfigs.pageKey, pageKey));
+
+      if (existing.length === 0) {
+        // Create new config
+        const [newConfig] = await db.insert(pageSupportConfigs).values({
+          pageKey,
+          pageName: pageName || pageKey,
+          isEnabled: isEnabled ?? true,
+        }).returning();
+        return res.json(newConfig);
+      }
+
+      // Update existing
+      const [updated] = await db.update(pageSupportConfigs)
+        .set({
+          isEnabled: isEnabled ?? existing[0].isEnabled,
+          pageName: pageName ?? existing[0].pageName,
+          updatedAt: new Date(),
+        })
+        .where(eq(pageSupportConfigs.pageKey, pageKey))
+        .returning();
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating page support config:", error);
+      res.status(500).json({ message: "Failed to update page support config" });
+    }
+  });
+
+  // Assign video to page (admin)
+  app.post("/api/admin/page-support-configs/:pageKey/videos", requireSuperAdmin, async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+      const { videoId, sortOrder } = req.body;
+
+      // Get or create page config
+      let config = await db.select().from(pageSupportConfigs)
+        .where(eq(pageSupportConfigs.pageKey, pageKey));
+
+      if (config.length === 0) {
+        const [newConfig] = await db.insert(pageSupportConfigs).values({
+          pageKey,
+          pageName: pageKey,
+          isEnabled: true,
+        }).returning();
+        config = [newConfig];
+      }
+
+      // Check if assignment already exists
+      const existingAssignment = await db.select()
+        .from(pageSupportVideoAssignments)
+        .where(and(
+          eq(pageSupportVideoAssignments.pageConfigId, config[0].id),
+          eq(pageSupportVideoAssignments.videoId, videoId)
+        ));
+
+      if (existingAssignment.length > 0) {
+        return res.status(400).json({ message: "Video already assigned to this page" });
+      }
+
+      // Get max sort order for this page
+      const maxSort = await db.select()
+        .from(pageSupportVideoAssignments)
+        .where(eq(pageSupportVideoAssignments.pageConfigId, config[0].id))
+        .orderBy(desc(pageSupportVideoAssignments.sortOrder))
+        .limit(1);
+
+      const newSortOrder = sortOrder ?? (maxSort.length > 0 ? maxSort[0].sortOrder + 1 : 0);
+
+      const [assignment] = await db.insert(pageSupportVideoAssignments).values({
+        pageConfigId: config[0].id,
+        videoId,
+        sortOrder: newSortOrder,
+      }).returning();
+
+      res.status(201).json(assignment);
+    } catch (error: any) {
+      console.error("Error assigning video to page:", error);
+      res.status(500).json({ message: "Failed to assign video to page" });
+    }
+  });
+
+  // Remove video from page (admin)
+  app.delete("/api/admin/page-support-configs/:pageKey/videos/:videoId", requireSuperAdmin, async (req, res) => {
+    try {
+      const { pageKey, videoId } = req.params;
+
+      const config = await db.select().from(pageSupportConfigs)
+        .where(eq(pageSupportConfigs.pageKey, pageKey));
+
+      if (config.length === 0) {
+        return res.status(404).json({ message: "Page config not found" });
+      }
+
+      await db.delete(pageSupportVideoAssignments)
+        .where(and(
+          eq(pageSupportVideoAssignments.pageConfigId, config[0].id),
+          eq(pageSupportVideoAssignments.videoId, parseInt(videoId))
+        ));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error removing video from page:", error);
+      res.status(500).json({ message: "Failed to remove video from page" });
+    }
+  });
+
+  // Get page support config with videos (for users)
+  app.get("/api/support/page/:pageKey", requireAuth, async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+
+      const config = await db.select().from(pageSupportConfigs)
+        .where(eq(pageSupportConfigs.pageKey, pageKey));
+
+      if (config.length === 0 || !config[0].isEnabled) {
+        return res.json({ isEnabled: false, videos: [] });
+      }
+
+      // Get assigned videos
+      const assignments = await db.select({
+        assignment: pageSupportVideoAssignments,
+        video: supportVideos,
+      })
+        .from(pageSupportVideoAssignments)
+        .innerJoin(supportVideos, eq(pageSupportVideoAssignments.videoId, supportVideos.id))
+        .where(and(
+          eq(pageSupportVideoAssignments.pageConfigId, config[0].id),
+          eq(supportVideos.isActive, true)
+        ))
+        .orderBy(pageSupportVideoAssignments.sortOrder);
+
+      res.json({
+        ...config[0],
+        videos: assignments.map(a => a.video),
+      });
+    } catch (error: any) {
+      console.error("Error fetching page support:", error);
+      res.status(500).json({ message: "Failed to fetch page support" });
+    }
+  });
+
+  // Get videos assigned to a page (admin)
+  app.get("/api/admin/page-support-configs/:pageKey/videos", requireSuperAdmin, async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+
+      const config = await db.select().from(pageSupportConfigs)
+        .where(eq(pageSupportConfigs.pageKey, pageKey));
+
+      if (config.length === 0) {
+        return res.json([]);
+      }
+
+      const assignments = await db.select({
+        assignment: pageSupportVideoAssignments,
+        video: supportVideos,
+      })
+        .from(pageSupportVideoAssignments)
+        .innerJoin(supportVideos, eq(pageSupportVideoAssignments.videoId, supportVideos.id))
+        .where(eq(pageSupportVideoAssignments.pageConfigId, config[0].id))
+        .orderBy(pageSupportVideoAssignments.sortOrder);
+
+      res.json(assignments.map(a => ({
+        ...a.video,
+        assignmentId: a.assignment.id,
+        sortOrder: a.assignment.sortOrder,
+      })));
+    } catch (error: any) {
+      console.error("Error fetching page videos:", error);
+      res.status(500).json({ message: "Failed to fetch page videos" });
+    }
+  });
+
+  // Reorder videos for a page (admin)
+  app.put("/api/admin/page-support-configs/:pageKey/videos/reorder", requireSuperAdmin, async (req, res) => {
+    try {
+      const { pageKey } = req.params;
+      const { videoIds } = req.body; // Array of video IDs in new order
+
+      const config = await db.select().from(pageSupportConfigs)
+        .where(eq(pageSupportConfigs.pageKey, pageKey));
+
+      if (config.length === 0) {
+        return res.status(404).json({ message: "Page config not found" });
+      }
+
+      // Update sort order for each video
+      for (let i = 0; i < videoIds.length; i++) {
+        await db.update(pageSupportVideoAssignments)
+          .set({ sortOrder: i })
+          .where(and(
+            eq(pageSupportVideoAssignments.pageConfigId, config[0].id),
+            eq(pageSupportVideoAssignments.videoId, videoIds[i])
+          ));
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error reordering videos:", error);
+      res.status(500).json({ message: "Failed to reorder videos" });
     }
   });
 

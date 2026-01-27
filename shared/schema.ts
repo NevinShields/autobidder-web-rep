@@ -994,6 +994,7 @@ export const users = pgTable("users", {
       auth: string;
     };
   }>(),
+  welcomeModalShown: boolean("welcome_modal_shown").notNull().default(false), // Track if user has seen welcome modal
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -2690,3 +2691,89 @@ export const whiteLabelVideoDownloads = pgTable("white_label_video_downloads", {
 });
 
 export type WhiteLabelVideoDownload = typeof whiteLabelVideoDownloads.$inferSelect;
+
+// ==================== Support Videos System ====================
+
+// Support Videos Library - all support videos that can be assigned to pages
+export const supportVideos = pgTable("support_videos", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  youtubeUrl: text("youtube_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSupportVideoSchema = createInsertSchema(supportVideos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type SupportVideo = typeof supportVideos.$inferSelect;
+export type InsertSupportVideo = z.infer<typeof insertSupportVideoSchema>;
+
+// Page Support Configurations - configuration for each page's support modal
+export const pageSupportConfigs = pgTable("page_support_configs", {
+  id: serial("id").primaryKey(),
+  pageKey: text("page_key").notNull().unique(), // e.g., "dashboard", "formulas", "leads"
+  pageName: text("page_name").notNull(), // Human-readable name: "Dashboard", "Formulas"
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPageSupportConfigSchema = createInsertSchema(pageSupportConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PageSupportConfig = typeof pageSupportConfigs.$inferSelect;
+export type InsertPageSupportConfig = z.infer<typeof insertPageSupportConfigSchema>;
+
+// Page Support Video Assignments - join table linking videos to pages
+export const pageSupportVideoAssignments = pgTable("page_support_video_assignments", {
+  id: serial("id").primaryKey(),
+  pageConfigId: integer("page_config_id").notNull().references(() => pageSupportConfigs.id, { onDelete: 'cascade' }),
+  videoId: integer("video_id").notNull().references(() => supportVideos.id, { onDelete: 'cascade' }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type PageSupportVideoAssignment = typeof pageSupportVideoAssignments.$inferSelect;
+
+// Welcome Modal Configuration - single row table for welcome modal settings
+export const welcomeModalConfig = pgTable("welcome_modal_config", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull().default("Welcome to Autobidder!"),
+  description: text("description"),
+  youtubeUrl: text("youtube_url"),
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type WelcomeModalConfig = typeof welcomeModalConfig.$inferSelect;
+
+// Relations for support videos system
+export const supportVideoRelations = relations(supportVideos, ({ many }) => ({
+  pageAssignments: many(pageSupportVideoAssignments),
+}));
+
+export const pageSupportConfigRelations = relations(pageSupportConfigs, ({ many }) => ({
+  videoAssignments: many(pageSupportVideoAssignments),
+}));
+
+export const pageSupportVideoAssignmentRelations = relations(pageSupportVideoAssignments, ({ one }) => ({
+  pageConfig: one(pageSupportConfigs, {
+    fields: [pageSupportVideoAssignments.pageConfigId],
+    references: [pageSupportConfigs.id],
+  }),
+  video: one(supportVideos, {
+    fields: [pageSupportVideoAssignments.videoId],
+    references: [supportVideos.id],
+  }),
+}));

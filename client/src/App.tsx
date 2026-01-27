@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
+import { WelcomeModal } from "@/components/welcome-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { lazy, Suspense } from "react";
@@ -60,6 +61,7 @@ import AdminWebsiteTemplatesPage from "@/pages/admin-website-templates";
 import AdminTemplateTagsPage from "@/pages/admin-template-tags";
 import DfyServicesPage from "@/pages/dfy-services";
 import AdminDfyServicesPage from "@/pages/admin-dfy-services";
+import AdminSupportVideosPage from "@/pages/admin-support-videos";
 import TermsPage from "@/pages/terms";
 import PrivacyPage from "@/pages/privacy";
 import IntegrationsPage from "@/pages/integrations";
@@ -183,6 +185,7 @@ function Router() {
   return (
     <>
       {user && (user as any).isImpersonating && <ImpersonationBanner />}
+      {user && <WelcomeModal />}
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
@@ -230,6 +233,7 @@ function Router() {
         <Route path="/admin/template-tags" component={AdminTemplateTagsPage} />
         <Route path="/dfy-services" component={DfyServicesPage} />
         <Route path="/admin/dfy-services" component={AdminDfyServicesPage} />
+        <Route path="/admin/support-videos" component={AdminSupportVideosPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/faq" component={FAQPage} />

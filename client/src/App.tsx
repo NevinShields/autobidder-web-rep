@@ -117,6 +117,7 @@ import WhiteLabelVideosPage from "@/pages/white-label-videos";
 import AbSeoPlan from "@/pages/ab-seo-plan";
 import LeadCapture from "@/pages/Crm/LeadCapture";
 import TryCalculator from "@/pages/try-calculator";
+import IconGeneratorPage from "@/pages/icon-generator";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -173,6 +174,7 @@ function Router() {
         <Route path="/measure-map-tool" component={MeasureMapTool} />
         <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route path="/try" component={TryCalculator} />
+        <Route path="/icon-generator" component={IconGeneratorPage} />
         <Route component={Landing} />
       </Switch>
     );
@@ -268,6 +270,7 @@ function Router() {
         <Route path="/white-label-videos" component={WhiteLabelVideosPage} />
         <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route path="/try" component={TryCalculator} />
+        <Route path="/icon-generator" component={IconGeneratorPage} />
         <Route component={NotFound} />
       </Switch>
     </>

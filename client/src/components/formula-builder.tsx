@@ -697,46 +697,52 @@ export default function FormulaBuilderComponent({
                     </div>
                   )}
                 </div>
-                <div className="flex flex-row flex-wrap gap-2 items-center">
-                  <IconSelector
-                    selectedIconId={formula.iconId || undefined}
-                    onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
-                    triggerText="Icon"
-                    size="sm"
-                  />
-                  <label className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer px-2 py-1 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                    <Upload className="w-3 h-3 inline mr-1" />
-                    Upload
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const formData = new FormData();
-                          formData.append('icon', file);
-                          try {
-                            const response = await fetch('/api/upload/icon', { method: 'POST', body: formData });
-                            const data = await response.json();
-                            if (response.ok) {
-                              onUpdate({ iconUrl: data.iconUrl, iconId: null });
-                              toast({ title: "Icon uploaded" });
-                            }
-                          } catch (error) {
-                            toast({ title: "Upload failed", variant: "destructive" });
-                          }
-                        }
-                      }}
+                <div className="flex flex-col gap-1.5 min-w-[140px]">
+                  <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold ml-1">Icon Source</Label>
+                  <div className="flex items-center p-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                    <IconSelector
+                      selectedIconId={formula.iconId || undefined}
+                      onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
+                      triggerText="Library"
+                      size="sm"
+                      className="flex-1 bg-transparent border-none shadow-none hover:bg-gray-100 dark:hover:bg-gray-800 h-8 text-xs font-medium rounded-lg"
                     />
-                  </label>
-                  <a
-                    href="/icon-generator"
-                    className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1 px-2 py-1 border border-purple-200 dark:border-purple-800 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/30"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    AI Generate
-                  </a>
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                    <label className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 h-8 px-2 rounded-lg cursor-pointer transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const formData = new FormData();
+                            formData.append('icon', file);
+                            try {
+                              const response = await fetch('/api/upload/icon', { method: 'POST', body: formData });
+                              const data = await response.json();
+                              if (response.ok) {
+                                onUpdate({ iconUrl: data.iconUrl, iconId: null });
+                                toast({ title: "Icon uploaded" });
+                              }
+                            } catch (error) {
+                              toast({ title: "Upload failed", variant: "destructive" });
+                            }
+                          }
+                        }}
+                      />
+                    </label>
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                    <a
+                      href="/icon-generator"
+                      className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 h-8 px-2 rounded-lg transition-colors"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>AI</span>
+                    </a>
+                  </div>
                 </div>
               </div>
 

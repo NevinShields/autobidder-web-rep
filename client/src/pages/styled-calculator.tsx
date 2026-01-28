@@ -2873,7 +2873,7 @@ export default function StyledCalculator(props: any = {}) {
               {/* Name Field - Show if not explicitly disabled */}
               {businessSettings?.styling?.enableName !== false && (
                 <div className="ab-question-card">
-                  <Label htmlFor="name" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                  <Label htmlFor="name" className="ab-label ab-question-label" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.nameLabel || 'Name'} {businessSettings?.styling?.requireName !== false ? '*' : ''}
                   </Label>
                   <Input
@@ -2881,7 +2881,7 @@ export default function StyledCalculator(props: any = {}) {
                     value={leadForm.name}
                     onChange={(e) => setLeadForm(prev => ({ ...prev, name: e.target.value }))}
                     required={businessSettings?.styling?.requireName !== false}
-                    style={getInputStyles()}
+                    style={hasCustomCSS ? {} : getInputStyles()}
                     className="ab-input ab-text-input"
                   />
                 </div>
@@ -2890,7 +2890,7 @@ export default function StyledCalculator(props: any = {}) {
               {/* Email Field - Show if not explicitly disabled */}
               {businessSettings?.styling?.enableEmail !== false && (
                 <div className="ab-question-card">
-                  <Label htmlFor="email" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                  <Label htmlFor="email" className="ab-label ab-question-label" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.emailLabel || 'Email'} {businessSettings?.styling?.requireEmail !== false ? '*' : ''}
                   </Label>
                   <Input
@@ -2899,7 +2899,7 @@ export default function StyledCalculator(props: any = {}) {
                     value={leadForm.email}
                     onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
                     required={businessSettings?.styling?.requireEmail !== false}
-                    style={getInputStyles()}
+                    style={hasCustomCSS ? {} : getInputStyles()}
                     className="ab-input ab-text-input"
                   />
                 </div>
@@ -2908,7 +2908,7 @@ export default function StyledCalculator(props: any = {}) {
               {/* Phone Field - Show only if enabled */}
               {businessSettings?.styling?.enablePhone && (
                 <div className="ab-question-card">
-                  <Label htmlFor="phone" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                  <Label htmlFor="phone" className="ab-label ab-question-label" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.phoneLabel || 'Phone'} {businessSettings?.styling?.requirePhone ? '*' : ''}
                   </Label>
                   <Input
@@ -2917,7 +2917,7 @@ export default function StyledCalculator(props: any = {}) {
                     value={leadForm.phone}
                     onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
                     required={businessSettings?.styling?.requirePhone}
-                    style={getInputStyles()}
+                    style={hasCustomCSS ? {} : getInputStyles()}
                     className="ab-input ab-text-input"
                   />
                 </div>
@@ -2961,14 +2961,14 @@ export default function StyledCalculator(props: any = {}) {
               {/* Notes Field - Show only if enabled */}
               {businessSettings?.styling?.enableNotes && (
                 <div className="ab-question-card">
-                  <Label htmlFor="notes" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                  <Label htmlFor="notes" className="ab-label ab-question-label" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.notesLabel || 'Additional Notes'}
                   </Label>
                   <textarea
                     id="notes"
                     value={leadForm.notes}
                     onChange={(e) => setLeadForm(prev => ({ ...prev, notes: e.target.value }))}
-                    style={getInputStyles()}
+                    style={hasCustomCSS ? {} : getInputStyles()}
                     className="ab-input ab-textarea min-h-[80px] resize-y w-full"
                     rows={3}
                   />
@@ -2978,7 +2978,7 @@ export default function StyledCalculator(props: any = {}) {
               {/* How Did You Hear Field - Show only if enabled */}
               {businessSettings?.styling?.enableHowDidYouHear && (
                 <div className="ab-question-card">
-                  <Label htmlFor="howDidYouHear" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                  <Label htmlFor="howDidYouHear" className="ab-label ab-question-label" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.howDidYouHearLabel || 'How did you hear about us?'} {businessSettings?.styling?.requireHowDidYouHear ? '*' : ''}
                   </Label>
                   <select
@@ -2986,7 +2986,7 @@ export default function StyledCalculator(props: any = {}) {
                     value={leadForm.howDidYouHear || ''}
                     onChange={(e) => setLeadForm(prev => ({ ...prev, howDidYouHear: e.target.value }))}
                     required={businessSettings?.styling?.requireHowDidYouHear}
-                    style={getInputStyles()}
+                    style={hasCustomCSS ? {} : getInputStyles()}
                     className="ab-select w-full"
                   >
                     <option value="">Select an option...</option>
@@ -3000,7 +3000,7 @@ export default function StyledCalculator(props: any = {}) {
               {/* Image Upload Field - Show only if enabled */}
               {businessSettings?.styling?.enableImageUpload && (
                 <div className="ab-question-card">
-                  <Label htmlFor="images" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                  <Label htmlFor="images" className="ab-label ab-question-label" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                     Upload Images {businessSettings?.styling?.requireImageUpload ? '*' : ''}
                   </Label>
                   <div className="mt-2">

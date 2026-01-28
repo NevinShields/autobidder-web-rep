@@ -856,167 +856,167 @@ export default function DesignDashboard() {
                         {/* CSS Class Reference & Examples */}
                         <div className="mb-4 space-y-3">
                           {/* Class Reference */}
-                          <details className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                            <summary className="text-xs font-semibold cursor-pointer text-blue-900">
+                          <details className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <summary className="text-xs font-semibold cursor-pointer text-blue-900 dark:text-blue-100">
                               📋 Available CSS Classes (click to expand)
                             </summary>
                             <div className="mt-3 space-y-3 text-xs font-mono">
                               {/* Form & Container */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Form & Container:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Form & Container:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-form-container</span> - Form wrapper</div>
-                                  <div><span className="text-blue-600">.ab-question-card</span> - Question cards</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-form-container</span> - Form wrapper</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-question-card</span> - Question cards</div>
                                 </div>
                               </div>
                               {/* Buttons */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Buttons:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Buttons:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-button</span> - All buttons</div>
-                                  <div><span className="text-blue-600">.ab-button-primary</span> - Primary buttons</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-button</span> - All buttons</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-button-primary</span> - Primary buttons</div>
                                 </div>
                               </div>
                               {/* Input Fields */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Input Fields:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Input Fields:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-input</span> - All inputs (base)</div>
-                                  <div><span className="text-blue-600">.ab-number-input</span> - Number inputs</div>
-                                  <div><span className="text-blue-600">.ab-text-input</span> - Text inputs</div>
-                                  <div><span className="text-blue-600">.ab-textarea</span> - Textareas</div>
-                                  <div><span className="text-blue-600">.ab-select</span> - Dropdown triggers</div>
-                                  <div><span className="text-blue-600">.ab-select-content</span> - Dropdown menu</div>
-                                  <div><span className="text-blue-600">.ab-checkbox</span> - Checkboxes</div>
-                                  <div><span className="text-blue-600">.ab-address-input</span> - Address inputs</div>
-                                  <div><span className="text-blue-600">.ab-file-input</span> - File uploads</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-input</span> - All inputs (base)</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-number-input</span> - Number inputs</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-text-input</span> - Text inputs</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-textarea</span> - Textareas</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-select</span> - Dropdown triggers</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-select-content</span> - Dropdown menu</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-checkbox</span> - Checkboxes</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-address-input</span> - Address inputs</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-file-input</span> - File uploads</div>
                                 </div>
                               </div>
                               {/* Slider */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Slider:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Slider:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-slider</span> - Range sliders</div>
-                                  <div><span className="text-blue-600">.ab-slider-value</span> - Slider value</div>
-                                  <div><span className="text-blue-600">.ab-slider-unit</span> - Slider unit</div>
-                                  <div><span className="text-blue-600">.ab-slider-min</span> - Min label</div>
-                                  <div><span className="text-blue-600">.ab-slider-max</span> - Max label</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-slider</span> - Range sliders</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-slider-value</span> - Slider value</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-slider-unit</span> - Slider unit</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-slider-min</span> - Min label</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-slider-max</span> - Max label</div>
                                 </div>
                               </div>
                               {/* Labels */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Labels:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Labels:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-label</span> - All labels</div>
-                                  <div><span className="text-blue-600">.ab-question-label</span> - Question labels</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-label</span> - All labels</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-question-label</span> - Question labels</div>
                                 </div>
                               </div>
                               {/* Service Cards */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Service Cards:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Service Cards:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-service-card</span> - Service cards</div>
-                                  <div><span className="text-blue-600">.ab-service-title</span> - Service titles</div>
-                                  <div><span className="text-blue-600">.ab-service-accordion</span> - Accordion headers</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-service-card</span> - Service cards</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-service-title</span> - Service titles</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-service-accordion</span> - Accordion headers</div>
                                 </div>
                               </div>
                               {/* Multiple Choice */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Multiple Choice:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Multiple Choice:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-multiple-choice</span> - Choice cards</div>
-                                  <div><span className="text-blue-600">.ab-multichoice-card</span> - Choice cards (alt)</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice</span> - Choice cards</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-multichoice-card</span> - Choice cards (alt)</div>
                                 </div>
                               </div>
                               {/* Pricing Cards */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Pricing Cards:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Pricing Cards:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-pricing-card</span> - Pricing cards</div>
-                                  <div><span className="text-blue-600">.ab-pricing-card-price</span> - Price badge</div>
-                                  <div><span className="text-blue-600">.ab-pricing-card-icon</span> - Service icon</div>
-                                  <div><span className="text-blue-600">.ab-pricing-card-title</span> - Service title</div>
-                                  <div><span className="text-blue-600">.ab-pricing-card-description</span> - Description</div>
-                                  <div><span className="text-blue-600">.ab-pricing-card-bullet-icon</span> - Bullet icons</div>
-                                  <div><span className="text-blue-600">.ab-pricing-card-bullet-text</span> - Bullet text</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card</span> - Pricing cards</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-price</span> - Price badge</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-icon</span> - Service icon</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-title</span> - Service title</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-description</span> - Description</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-bullet-icon</span> - Bullet icons</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-bullet-text</span> - Bullet text</div>
                                 </div>
                               </div>
                               {/* Calendar */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">Booking Calendar:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Booking Calendar:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.ab-calendar-nav</span> - Nav buttons</div>
-                                  <div><span className="text-blue-600">.ab-calendar-nav-prev</span> - Prev button</div>
-                                  <div><span className="text-blue-600">.ab-calendar-nav-next</span> - Next button</div>
-                                  <div><span className="text-blue-600">.ab-calendar-month-title</span> - Month title</div>
-                                  <div><span className="text-blue-600">.ab-calendar-day-header</span> - Day headers</div>
-                                  <div><span className="text-blue-600">.ab-calendar-date</span> - Date buttons</div>
-                                  <div><span className="text-blue-600">.ab-time-slot</span> - Time slots</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-nav</span> - Nav buttons</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-nav-prev</span> - Prev button</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-nav-next</span> - Next button</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-month-title</span> - Month title</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-day-header</span> - Day headers</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-date</span> - Date buttons</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-time-slot</span> - Time slots</div>
                                 </div>
                               </div>
                               {/* State Classes */}
                               <div>
-                                <p className="font-semibold text-blue-900 mb-1">State & Utility:</p>
+                                <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">State & Utility:</p>
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
-                                  <div><span className="text-blue-600">.selected</span> - Selected state</div>
-                                  <div><span className="text-blue-600">.disabled</span> - Disabled state</div>
-                                  <div><span className="text-blue-600">.ab-error</span> - Error messages</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.selected</span> - Selected state</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.disabled</span> - Disabled state</div>
+                                  <div><span className="text-blue-600 dark:text-blue-400">.ab-error</span> - Error messages</div>
                                 </div>
                               </div>
                             </div>
                           </details>
 
                           {/* CSS Variables Info */}
-                          <details className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                            <summary className="text-xs font-semibold cursor-pointer text-green-900">
+                          <details className="p-3 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg">
+                            <summary className="text-xs font-semibold cursor-pointer text-green-900 dark:text-green-100">
                               🎨 CSS Variables (click to expand)
                             </summary>
                             <div className="mt-3 space-y-2">
-                              <p className="text-xs text-green-800">Your design settings are available as CSS variables. Use them or override with your own values:</p>
+                              <p className="text-xs text-green-800 dark:text-green-200">Your design settings are available as CSS variables. Use them or override with your own values:</p>
                               <div className="grid grid-cols-2 gap-1 text-xs font-mono">
-                                <div><span className="text-green-600">--ab-primary-color</span></div>
-                                <div><span className="text-green-600">--ab-button-bg</span></div>
-                                <div><span className="text-green-600">--ab-button-text-color</span></div>
-                                <div><span className="text-green-600">--ab-button-hover-bg</span></div>
-                                <div><span className="text-green-600">--ab-button-border-radius</span></div>
-                                <div><span className="text-green-600">--ab-input-border-color</span></div>
-                                <div><span className="text-green-600">--ab-input-border-radius</span></div>
-                                <div><span className="text-green-600">--ab-service-selector-bg</span></div>
-                                <div><span className="text-green-600">--ab-service-selector-border-color</span></div>
-                                <div><span className="text-green-600">--ab-service-selector-border-radius</span></div>
-                                <div><span className="text-green-600">--ab-service-selector-active-bg</span></div>
-                                <div><span className="text-green-600">--ab-service-selector-hover-bg</span></div>
-                                <div><span className="text-green-600">--ab-multiple-choice-border-color</span></div>
-                                <div><span className="text-green-600">--ab-multiple-choice-active-bg</span></div>
-                                <div><span className="text-green-600">--ab-multiple-choice-hover-bg</span></div>
-                                <div><span className="text-green-600">--ab-label-color</span></div>
-                                <div><span className="text-green-600">--ab-label-font-family</span></div>
-                                <div><span className="text-green-600">--ab-label-font-weight</span></div>
-                                <div><span className="text-green-600">--ab-label-font-size</span></div>
-                                <div><span className="text-green-600">--ab-service-title-color</span></div>
-                                <div><span className="text-green-600">--ab-service-title-font-family</span></div>
-                                <div><span className="text-green-600">--ab-service-title-font-weight</span></div>
-                                <div><span className="text-green-600">--ab-service-title-font-size</span></div>
-                                <div><span className="text-green-600">--ab-pricing-card-bg</span></div>
-                                <div><span className="text-green-600">--ab-pricing-card-border-radius</span></div>
-                                <div><span className="text-green-600">--ab-pricing-card-border-color</span></div>
-                                <div><span className="text-green-600">--ab-pricing-card-border-width</span></div>
-                                <div><span className="text-green-600">--ab-pricing-card-shadow</span></div>
-                                <div><span className="text-green-600">--ab-pricing-card-padding</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-primary-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-button-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-button-text-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-button-hover-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-button-border-radius</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-input-border-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-input-border-radius</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-selector-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-selector-border-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-selector-border-radius</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-selector-active-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-selector-hover-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-multiple-choice-border-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-multiple-choice-active-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-multiple-choice-hover-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-label-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-label-font-family</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-label-font-weight</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-label-font-size</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-title-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-title-font-family</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-title-font-weight</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-service-title-font-size</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-bg</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-border-radius</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-border-color</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-border-width</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-shadow</span></div>
+                                <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-padding</span></div>
                               </div>
-                              <p className="text-xs text-green-700 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
+                              <p className="text-xs text-green-700 dark:text-green-300 mt-2 italic">✨ Custom CSS overrides inline styles - full control!</p>
                             </div>
                           </details>
 
                           {/* Examples Dropdown */}
-                          <details className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                            <summary className="text-xs font-semibold cursor-pointer text-purple-900">
+                          <details className="p-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg">
+                            <summary className="text-xs font-semibold cursor-pointer text-purple-900 dark:text-purple-100">
                               📚 Example CSS Patterns (click to expand)
                             </summary>
                             <div className="mt-3 space-y-3 text-xs">
                               <div>
-                                <p className="font-semibold text-purple-900 mb-1">Hover Effects on Service Cards:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-service-card:hover {
+                                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">Hover Effects on Service Cards:</p>
+                                <pre className="bg-white dark:bg-gray-900 p-2 rounded border border-purple-200 dark:border-purple-800 overflow-x-auto text-gray-900 dark:text-gray-100"><code>{`.ab-service-card:hover {
   transform: scale(1.05);
   box-shadow: 0 10px 20px rgba(0,0,0,0.15);
   border-color: #3B82F6;
@@ -1024,8 +1024,8 @@ export default function DesignDashboard() {
                               </div>
                               
                               <div>
-                                <p className="font-semibold text-purple-900 mb-1">Style Selected Service Cards:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-service-card.selected {
+                                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">Style Selected Service Cards:</p>
+                                <pre className="bg-white dark:bg-gray-900 p-2 rounded border border-purple-200 dark:border-purple-800 overflow-x-auto text-gray-900 dark:text-gray-100"><code>{`.ab-service-card.selected {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: 3px solid #764ba2;
@@ -1033,8 +1033,8 @@ export default function DesignDashboard() {
                               </div>
                               
                               <div>
-                                <p className="font-semibold text-purple-900 mb-1">Gradient Buttons:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-button-primary {
+                                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">Gradient Buttons:</p>
+                                <pre className="bg-white dark:bg-gray-900 p-2 rounded border border-purple-200 dark:border-purple-800 overflow-x-auto text-gray-900 dark:text-gray-100"><code>{`.ab-button-primary {
   background: linear-gradient(to right, #3B82F6, #8B5CF6);
   border: none;
   transition: all 0.3s ease;
@@ -1047,8 +1047,8 @@ export default function DesignDashboard() {
                               </div>
                               
                               <div>
-                                <p className="font-semibold text-purple-900 mb-1">Custom Input Focus States:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`.ab-input:focus {
+                                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">Custom Input Focus States:</p>
+                                <pre className="bg-white dark:bg-gray-900 p-2 rounded border border-purple-200 dark:border-purple-800 overflow-x-auto text-gray-900 dark:text-gray-100"><code>{`.ab-input:focus {
   border-color: #8B5CF6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
   outline: none;
@@ -1056,8 +1056,8 @@ export default function DesignDashboard() {
                               </div>
                               
                               <div>
-                                <p className="font-semibold text-purple-900 mb-1">Customize Range Sliders:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style slider track and thumb */
+                                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">Customize Range Sliders:</p>
+                                <pre className="bg-white dark:bg-gray-900 p-2 rounded border border-purple-200 dark:border-purple-800 overflow-x-auto text-gray-900 dark:text-gray-100"><code>{`/* Style slider track and thumb */
 .ab-slider [role="slider"] {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   width: 20px;
@@ -1074,8 +1074,8 @@ export default function DesignDashboard() {
                               </div>
                               
                               <div>
-                                <p className="font-semibold text-purple-900 mb-1">Customize Question Labels & Service Titles:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style question labels */
+                                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">Customize Question Labels & Service Titles:</p>
+                                <pre className="bg-white dark:bg-gray-900 p-2 rounded border border-purple-200 dark:border-purple-800 overflow-x-auto text-gray-900 dark:text-gray-100"><code>{`/* Style question labels */
 .ab-question-label {
   font-family: 'Georgia', serif;
   font-weight: 600;
@@ -1093,8 +1093,8 @@ export default function DesignDashboard() {
                               </div>
                               
                               <div>
-                                <p className="font-semibold text-purple-900 mb-1">Customize Pricing Cards:</p>
-                                <pre className="bg-white p-2 rounded border border-purple-200 overflow-x-auto"><code>{`/* Style pricing card wrapper */
+                                <p className="font-semibold text-purple-900 dark:text-purple-100 mb-1">Customize Pricing Cards:</p>
+                                <pre className="bg-white dark:bg-gray-900 p-2 rounded border border-purple-200 dark:border-purple-800 overflow-x-auto text-gray-900 dark:text-gray-100"><code>{`/* Style pricing card wrapper */
 .ab-pricing-card {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: 2px solid #764ba2;
@@ -1126,10 +1126,10 @@ export default function DesignDashboard() {
                         </div>
 
                         {/* AI CSS Generation */}
-                        <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                        <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
                           <div className="flex items-center gap-2 mb-3">
-                            <Sparkles className="h-5 w-5 text-purple-600" />
-                            <h4 className="text-sm font-semibold text-purple-900">AI CSS Generator</h4>
+                            <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                            <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-100">AI CSS Generator</h4>
                             <Badge variant="secondary" className="text-xs">New ✨</Badge>
                           </div>
                           <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">

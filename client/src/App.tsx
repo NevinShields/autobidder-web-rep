@@ -3,125 +3,143 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { GoogleMapsLoader } from "@/components/google-maps-loader";
 import { ImpersonationBanner } from "@/components/impersonation-banner";
 import { WelcomeModal } from "@/components/welcome-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { lazy, Suspense } from "react";
-import Dashboard from "@/pages/dashboard";
-import FormulasPage from "@/pages/formulas";
-import FormulaBuilder from "@/pages/formula-builder";
-import EmbedCalculator from "@/pages/embed-calculator";
 
-import EmbedCode from "@/pages/embed-code";
-import ServiceSelector from "@/pages/service-selector";
-
-import FormSettings from "@/pages/form-settings";
-import DesignDashboard from "@/pages/design-dashboard-new";
-import LeadsPage from "@/pages/leads";
-import CalendarPage from "@/pages/calendar";
-import UsersPage from "@/pages/users";
-import Website from "@/pages/website";
+// Keep essential pages as eager imports for fast initial load
 import Landing from "@/pages/landing";
-import Lander from "@/pages/lander";
-import LandingExteriorCleaning from "@/pages/landing-exterior-cleaning";
-import LandingSplitTest from "@/pages/landing-split-test";
-import LandingDfySetup from "@/pages/landing-dfy-setup";
-import LandingBrutalist from "@/pages/landing-brutalist";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
-import ForgotPassword from "@/pages/forgot-password";
-import ResetPassword from "@/pages/reset-password";
-import Pricing from "@/pages/pricing";
-import Features from "@/pages/features";
-import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
-import StatsPage from "@/pages/stats";
-import Onboarding from "@/pages/onboarding";
-import DocsPage from "@/pages/docs";
 
-import SignupSuccess from "@/pages/signup-success";
-import CustomForms from "@/pages/custom-forms";
-import CustomFormEditor from "@/pages/custom-form-editor";
-import AdminDashboard from "@/pages/admin-dashboard";
-import EstimatesPage from "@/pages/estimates";
-import EstimatePage from "@/pages/estimate";
-import WorkOrdersPage from "@/pages/work-orders";
-import EmailSettingsPage from "@/pages/email-settings";
-import EmailTemplatesPage from "@/pages/email-templates";
-import BidRequestsPage from "@/pages/bid-requests";
-import VerifyBidPage from "@/pages/verify-bid";
-import BidResponsePage from "@/pages/bid-response";
-import BidEmailTemplatesPage from "@/pages/bid-email-templates";
-
-import SupportPage from "@/pages/support";
-
-import AdminWebsiteTemplatesPage from "@/pages/admin-website-templates";
-
-import AdminTemplateTagsPage from "@/pages/admin-template-tags";
-import DfyServicesPage from "@/pages/dfy-services";
-import AdminDfyServicesPage from "@/pages/admin-dfy-services";
-import AdminSupportVideosPage from "@/pages/admin-support-videos";
-import TermsPage from "@/pages/terms";
-import PrivacyPage from "@/pages/privacy";
-import IntegrationsPage from "@/pages/integrations";
-import CallScreen from "@/pages/call-screen";
-import UpgradePage from "@/pages/upgrade";
-
-import SubscriptionTest from "@/pages/subscription-test";
-import PaymentConfirmation from "@/pages/payment-confirmation";
+// Lazy load all other pages for code splitting
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const FormulasPage = lazy(() => import("@/pages/formulas"));
+const FormulaBuilder = lazy(() => import("@/pages/formula-builder"));
+const EmbedCalculator = lazy(() => import("@/pages/embed-calculator"));
+const EmbedCode = lazy(() => import("@/pages/embed-code"));
+const ServiceSelector = lazy(() => import("@/pages/service-selector"));
+const FormSettings = lazy(() => import("@/pages/form-settings"));
+const DesignDashboard = lazy(() => import("@/pages/design-dashboard-new"));
+const LeadsPage = lazy(() => import("@/pages/leads"));
+const CalendarPage = lazy(() => import("@/pages/calendar"));
+const UsersPage = lazy(() => import("@/pages/users"));
+const Website = lazy(() => import("@/pages/website"));
+const Lander = lazy(() => import("@/pages/lander"));
+const LandingExteriorCleaning = lazy(() => import("@/pages/landing-exterior-cleaning"));
+const LandingSplitTest = lazy(() => import("@/pages/landing-split-test"));
+const LandingDfySetup = lazy(() => import("@/pages/landing-dfy-setup"));
+const LandingBrutalist = lazy(() => import("@/pages/landing-brutalist"));
+const ForgotPassword = lazy(() => import("@/pages/forgot-password"));
+const ResetPassword = lazy(() => import("@/pages/reset-password"));
+const Pricing = lazy(() => import("@/pages/pricing"));
+const Features = lazy(() => import("@/pages/features"));
+const ProfilePage = lazy(() => import("@/pages/profile"));
+const StatsPage = lazy(() => import("@/pages/stats"));
+const Onboarding = lazy(() => import("@/pages/onboarding"));
+const DocsPage = lazy(() => import("@/pages/docs"));
+const SignupSuccess = lazy(() => import("@/pages/signup-success"));
+const CustomForms = lazy(() => import("@/pages/custom-forms"));
+const CustomFormEditor = lazy(() => import("@/pages/custom-form-editor"));
+const AdminDashboard = lazy(() => import("@/pages/admin-dashboard"));
+const EstimatesPage = lazy(() => import("@/pages/estimates"));
+const EstimatePage = lazy(() => import("@/pages/estimate"));
+const WorkOrdersPage = lazy(() => import("@/pages/work-orders"));
+const EmailSettingsPage = lazy(() => import("@/pages/email-settings"));
+const EmailTemplatesPage = lazy(() => import("@/pages/email-templates"));
+const BidRequestsPage = lazy(() => import("@/pages/bid-requests"));
+const VerifyBidPage = lazy(() => import("@/pages/verify-bid"));
+const BidResponsePage = lazy(() => import("@/pages/bid-response"));
+const BidEmailTemplatesPage = lazy(() => import("@/pages/bid-email-templates"));
+const SupportPage = lazy(() => import("@/pages/support"));
+const AdminWebsiteTemplatesPage = lazy(() => import("@/pages/admin-website-templates"));
+const AdminTemplateTagsPage = lazy(() => import("@/pages/admin-template-tags"));
+const DfyServicesPage = lazy(() => import("@/pages/dfy-services"));
+const AdminDfyServicesPage = lazy(() => import("@/pages/admin-dfy-services"));
+const AdminSupportVideosPage = lazy(() => import("@/pages/admin-support-videos"));
+const TermsPage = lazy(() => import("@/pages/terms"));
+const PrivacyPage = lazy(() => import("@/pages/privacy"));
+const IntegrationsPage = lazy(() => import("@/pages/integrations"));
+const CallScreen = lazy(() => import("@/pages/call-screen"));
+const UpgradePage = lazy(() => import("@/pages/upgrade"));
+const SubscriptionTest = lazy(() => import("@/pages/subscription-test"));
+const PaymentConfirmation = lazy(() => import("@/pages/payment-confirmation"));
 const StyledCalculator = lazy(() => import("@/pages/styled-calculator"));
+const ProposalsPage = lazy(() => import("@/pages/proposals"));
+const ProposalViewPage = lazy(() => import("@/pages/proposal-view"));
+const MapMigrationDemo = lazy(() => import("@/pages/map-migration-demo"));
+const TerraDrawRefinement = lazy(() => import("@/pages/terra-draw-refinement"));
+const CustomFormDisplay = lazy(() => import("@/pages/custom-form-display"));
+const PhotoMeasurement = lazy(() => import("@/pages/photo-measurement"));
+const BookingTest = lazy(() => import("@/pages/booking-test"));
+const SeoTrackerTest = lazy(() => import("@/pages/seo-tracker-test"));
+const MeasureMapTool = lazy(() => import("@/pages/measure-map-tool"));
+const FAQPage = lazy(() => import("@/pages/faq"));
+const BookCall = lazy(() => import("@/pages/book-call"));
+const AcceptInvitePage = lazy(() => import("@/pages/accept-invite"));
+const CrmSettings = lazy(() => import("@/pages/crm-settings"));
+const CrmAutomations = lazy(() => import("@/pages/crm-automations"));
+const CrmAnalytics = lazy(() => import("@/pages/crm-analytics"));
+const AutomationBuilder = lazy(() => import("@/pages/automations"));
+const BlockedIpsPage = lazy(() => import("@/pages/blocked-ips"));
+const PhotosPage = lazy(() => import("@/pages/photos"));
+const TutorialsPage = lazy(() => import("@/pages/tutorials"));
+const WhiteLabelVideosPage = lazy(() => import("@/pages/white-label-videos"));
+const AbSeoPlan = lazy(() => import("@/pages/ab-seo-plan"));
+const LeadCapture = lazy(() => import("@/pages/Crm/LeadCapture"));
+const TryCalculator = lazy(() => import("@/pages/try-calculator"));
+const IconGeneratorPage = lazy(() => import("@/pages/icon-generator"));
+const SetupStepByStepPage = lazy(() => import("@/pages/setup-step-by-step"));
+
+// Generic loading fallback for lazy-loaded pages
+function PageLoader() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+    </div>
+  );
+}
+
+// Calculator-specific loading fallback
+function CalculatorLoader() {
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <div className="animate-pulse">
+        <div className="h-6 bg-gray-200 rounded w-48 mb-3"></div>
+        <div className="h-4 bg-gray-200 rounded w-72 mb-6"></div>
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i}>
+              <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+              <div className="h-10 bg-gray-200 rounded w-full"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Suspense wrapper for lazy-loaded StyledCalculator
 function LazyStyledCalculator(props: any) {
   return (
-    <Suspense fallback={
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-48 mb-3"></div>
-          <div className="h-4 bg-gray-200 rounded w-72 mb-6"></div>
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <div key={i}>
-                <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
-                <div className="h-10 bg-gray-200 rounded w-full"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<CalculatorLoader />}>
       <StyledCalculator {...props} />
     </Suspense>
   );
 }
 
-import ProposalsPage from "@/pages/proposals";
-import ProposalViewPage from "@/pages/proposal-view";
-import MapMigrationDemo from "@/pages/map-migration-demo";
-import TerraDrawRefinement from "@/pages/terra-draw-refinement";
-import CustomFormDisplay from "@/pages/custom-form-display";
-import PhotoMeasurement from "@/pages/photo-measurement";
-import BookingTest from "@/pages/booking-test";
-import SeoTrackerTest from "@/pages/seo-tracker-test";
-import MeasureMapTool from "@/pages/measure-map-tool";
-import FAQPage from "@/pages/faq";
-import BookCall from "@/pages/book-call";
-import AcceptInvitePage from "@/pages/accept-invite";
-import CrmSettings from "@/pages/crm-settings";
-import CrmAutomations from "@/pages/crm-automations";
-import CrmAnalytics from "@/pages/crm-analytics";
-import AutomationBuilder from "@/pages/automations";
-import BlockedIpsPage from "@/pages/blocked-ips";
-import PhotosPage from "@/pages/photos";
-import TutorialsPage from "@/pages/tutorials";
-import WhiteLabelVideosPage from "@/pages/white-label-videos";
-import AbSeoPlan from "@/pages/ab-seo-plan";
-import LeadCapture from "@/pages/Crm/LeadCapture";
-import TryCalculator from "@/pages/try-calculator";
-import IconGeneratorPage from "@/pages/icon-generator";
-import SetupStepByStepPage from "@/pages/setup-step-by-step";
+// Generic Suspense wrapper for lazy-loaded pages
+function LazyPage({ Component, ...props }: { Component: React.LazyExoticComponent<any>; [key: string]: any }) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Component {...props} />
+    </Suspense>
+  );
+}
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -139,6 +157,7 @@ function Router() {
 
   if (!isAuthenticated) {
     return (
+      <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/" component={Landing} />
         <Route path="/landing" component={Landing} />
@@ -185,6 +204,7 @@ function Router() {
         <Route path="/icon-generator" component={IconGeneratorPage} />
         <Route component={Landing} />
       </Switch>
+      </Suspense>
     );
   }
 
@@ -192,6 +212,7 @@ function Router() {
     <>
       {user && (user as any).isImpersonating && <ImpersonationBanner />}
       {user && (location === "/" || location.startsWith("/dashboard")) && <WelcomeModal />}
+      <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
@@ -286,6 +307,7 @@ function Router() {
         <Route path="/icon-generator" component={IconGeneratorPage} />
         <Route component={NotFound} />
       </Switch>
+      </Suspense>
     </>
   );
 }

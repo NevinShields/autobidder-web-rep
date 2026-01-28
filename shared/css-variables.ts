@@ -1,6 +1,44 @@
 import type { StylingOptions } from './schema';
 
 /**
+ * Supported Google Fonts for the calculator.
+ * Maps lowercase font keys to their Google Fonts URL parameter.
+ */
+const SUPPORTED_FONTS: Record<string, string> = {
+  'inter': 'Inter:wght@400;500;600;700',
+  'roboto': 'Roboto:wght@400;500;600;700',
+  'open sans': 'Open+Sans:wght@400;500;600;700',
+  'lato': 'Lato:wght@400;500;600;700',
+  'montserrat': 'Montserrat:wght@400;500;600;700',
+};
+
+// Track which fonts have already been loaded to avoid duplicate requests
+const loadedFonts = new Set<string>();
+
+/**
+ * Dynamically loads a single Google Font on demand.
+ * Only loads the font if it hasn't been loaded already.
+ */
+export function loadFontDynamic(fontFamily: string): void {
+  if (!fontFamily) return;
+
+  const fontKey = fontFamily.toLowerCase().trim();
+
+  // Already loaded or not a supported font
+  if (loadedFonts.has(fontKey)) return;
+
+  const fontParam = SUPPORTED_FONTS[fontKey];
+  if (!fontParam) return;
+
+  loadedFonts.add(fontKey);
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${fontParam}&display=swap`;
+  document.head.appendChild(link);
+}
+
+/**
  * Converts padding size strings to pixel values
  */
 function getPaddingValue(padding: string | number): number {
@@ -162,8 +200,13 @@ export function injectCSSVariables(styling: StylingOptions, containerId: string 
     document.head.appendChild(styleElement);
   }
 
+  // Dynamically load only the font needed for this calculator
+  if (styling.fontFamily) {
+    loadFontDynamic(styling.fontFamily);
+  }
+
   const cssVariables = generateCSSVariables(styling);
-  
+
   styleElement.textContent = `
 /* Autobidder Form CSS Variables */
 /* These variables are generated from your design settings */

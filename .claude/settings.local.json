@@ -21,7 +21,9 @@
       "Bash(npm install:*)",
       "WebFetch(domain:ai.google.dev)",
       "Bash(ls:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(du:*)",
+      "Bash(timeout 15 npm run dev:*)"
     ]
   }
 }

@@ -585,8 +585,8 @@ export default function StyledCalculator(props: any = {}) {
       return fetch(`/api/public/calculator-data?${params}`).then(res => res.json());
     },
     enabled: !!userId || (isCustomForm && !!embedId),
-    staleTime: 0, // Always fetch fresh
-    gcTime: 0, // No cache
+    staleTime: 30 * 1000, // Cache for 30 seconds to avoid redundant requests
+    gcTime: 60 * 1000, // Keep in garbage collection cache for 60 seconds
   });
 
   // Fetch authenticated user's data (for logged-in users viewing their own calculator)
@@ -594,8 +594,8 @@ export default function StyledCalculator(props: any = {}) {
     queryKey: ['/api/public/calculator-data', 'authenticated'],
     queryFn: () => fetch('/api/public/calculator-data').then(res => res.json()),
     enabled: !!authUser && !isPublicAccess,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
   });
 
   // Use authenticated data when logged in and not in public access mode

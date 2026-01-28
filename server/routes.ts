@@ -1012,10 +1012,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Combined calculator data endpoint for better performance
   app.get("/api/public/calculator-data", async (req, res) => {
-    // Disable caching to ensure fresh data
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    // Allow short-lived caching for embed performance (30 seconds)
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.removeHeader('Pragma');
     
     try {
       const { userId: queryUserId, customFormId } = req.query;

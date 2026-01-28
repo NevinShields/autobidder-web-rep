@@ -19,6 +19,13 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+// Embed routes that should serve the lightweight embed.html
+const EMBED_ROUTE_PREFIXES = ['/styled-calculator', '/custom-form/', '/embed/', '/f/'];
+
+function isEmbedRoute(url: string): boolean {
+  return EMBED_ROUTE_PREFIXES.some(prefix => url.startsWith(prefix));
+}
+
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
@@ -45,18 +52,23 @@ export async function setupVite(app: Express, server: Server) {
     const url = req.originalUrl;
 
     try {
+      // Serve lightweight embed.html for embed routes (no analytics scripts)
+      const useEmbed = isEmbedRoute(url);
+      const templateFile = useEmbed ? "embed.html" : "index.html";
+      const entryScript = useEmbed ? "/src/embed-entry.tsx" : "/src/main.tsx";
+
       const clientTemplate = path.resolve(
         import.meta.dirname,
         "..",
         "client",
-        "index.html",
+        templateFile,
       );
 
-      // always reload the index.html file from disk incase it changes
+      // always reload the html file from disk in case it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+        `src="${entryScript}"`,
+        `src="${entryScript}?v=${nanoid()}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
@@ -78,8 +90,15 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // Serve embed.html for embed routes, index.html for everything else
+  app.use("*", (req, res) => {
+    const url = req.originalUrl;
+    if (isEmbedRoute(url)) {
+      const embedPath = path.resolve(distPath, "embed.html");
+      if (fs.existsSync(embedPath)) {
+        return res.sendFile(embedPath);
+      }
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

@@ -38,11 +38,24 @@ function extractYouTubeVideoId(url: string): string | null {
 export function WelcomeModal() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [hasMarked, setHasMarked] = useState(false);
+  const [hasLocalShown, setHasLocalShown] = useState(false);
+
+  const getLocalShown = (userId?: string | null) => {
+    if (typeof window === "undefined" || !userId) return false;
+    return window.localStorage.getItem(`welcomeModalShown:${userId}`) === "true";
+  };
+
+  const setLocalShown = (userId?: string | null) => {
+    if (typeof window === "undefined" || !userId) return;
+    window.localStorage.setItem(`welcomeModalShown:${userId}`, "true");
+    setHasLocalShown(true);
+  };
 
   // Fetch welcome modal config
   const { data: config, isLoading } = useQuery<WelcomeModalConfig>({
     queryKey: ["/api/welcome-modal/config"],
-    enabled: !!user && !(user as any).welcomeModalShown,
+    enabled: !!user && !(user as any).welcomeModalShown && !getLocalShown((user as any)?.id),
   });
 
   // Mark as shown mutation
@@ -55,19 +68,37 @@ export function WelcomeModal() {
 
   // Show modal if user hasn't seen it and config is enabled
   useEffect(() => {
+    if (user?.id) {
+      const localShown = getLocalShown(user.id);
+      if (localShown && !hasLocalShown) {
+        setHasLocalShown(true);
+        return;
+      }
+    }
     if (
       user &&
       !(user as any).welcomeModalShown &&
       config?.isEnabled &&
-      !isLoading
+      !isLoading &&
+      !hasMarked &&
+      !hasLocalShown
     ) {
       setIsOpen(true);
+      if (!hasMarked) {
+        setHasMarked(true);
+        setLocalShown((user as any)?.id);
+        markShownMutation.mutate();
+      }
     }
-  }, [user, config, isLoading]);
+  }, [user, config, isLoading, hasMarked, hasLocalShown, markShownMutation]);
 
   const handleGetStarted = () => {
     setIsOpen(false);
-    markShownMutation.mutate();
+    if (!hasMarked) {
+      setHasMarked(true);
+      setLocalShown((user as any)?.id);
+      markShownMutation.mutate();
+    }
   };
 
   const videoId = config?.youtubeUrl
@@ -75,7 +106,7 @@ export function WelcomeModal() {
     : null;
 
   // Don't render anything if user has already seen the modal
-  if (!user || (user as any).welcomeModalShown) {
+  if (!user || (user as any).welcomeModalShown || hasLocalShown) {
     return null;
   }
 

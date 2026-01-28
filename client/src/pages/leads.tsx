@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -447,6 +447,7 @@ export default function LeadsPage() {
   const [newTagColor, setNewTagColor] = useState("#3b82f6");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isAddCustomerDialogOpen, setIsAddCustomerDialogOpen] = useState(false);
+  const [kanbanScrollWidth, setKanbanScrollWidth] = useState(0);
   const [newCustomerData, setNewCustomerData] = useState({
     name: "",
     email: "",
@@ -454,6 +455,9 @@ export default function LeadsPage() {
     address: "",
     notes: "",
   });
+  const kanbanScrollRef = useRef<HTMLDivElement | null>(null);
+  const kanbanScrollTopRef = useRef<HTMLDivElement | null>(null);
+  const isSyncingScroll = useRef(false);
   
   // Tag mutations
   const createTagMutation = useMutation({
@@ -582,6 +586,38 @@ export default function LeadsPage() {
       const endpoint = isMultiService ? `/api/multi-service-leads/${leadId}/stage` : `/api/leads/${leadId}/stage`;
       return await apiRequest("PATCH", endpoint, { stage, notes });
     },
+    onMutate: async ({ leadId, stage, isMultiService }) => {
+      const singleKey = ["/api/leads?includeTags=true"];
+      const multiKey = ["/api/multi-service-leads?includeTags=true"];
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: singleKey }),
+        queryClient.cancelQueries({ queryKey: multiKey }),
+      ]);
+
+      const previousSingle = queryClient.getQueryData<Lead[]>(singleKey);
+      const previousMulti = queryClient.getQueryData<MultiServiceLead[]>(multiKey);
+      const optimisticTimestamp = new Date().toISOString();
+
+      if (isMultiService) {
+        queryClient.setQueryData<MultiServiceLead[]>(multiKey, (old) =>
+          (old || []).map((lead) =>
+            lead.id === leadId
+              ? { ...lead, stage, lastStageChange: optimisticTimestamp }
+              : lead
+          )
+        );
+      } else {
+        queryClient.setQueryData<Lead[]>(singleKey, (old) =>
+          (old || []).map((lead) =>
+            lead.id === leadId
+              ? { ...lead, stage, lastStageChange: optimisticTimestamp }
+              : lead
+          )
+        );
+      }
+
+      return { previousSingle, previousMulti };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
@@ -590,7 +626,13 @@ export default function LeadsPage() {
         description: "Lead stage has been updated successfully.",
       });
     },
-    onError: () => {
+    onError: (_error, _variables, context) => {
+      if (context?.previousSingle) {
+        queryClient.setQueryData(["/api/leads?includeTags=true"], context.previousSingle);
+      }
+      if (context?.previousMulti) {
+        queryClient.setQueryData(["/api/multi-service-leads?includeTags=true"], context.previousMulti);
+      }
       toast({
         title: "Update Failed",
         description: "Failed to update lead stage. Please try again.",
@@ -1121,12 +1163,36 @@ export default function LeadsPage() {
   };
   
   const stages = PIPELINE_STAGES;
+  const kanbanLeads = [...allLeads].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
   const leadsByStage = stages.reduce((acc, stage) => {
-    acc[stage.value] = allLeads.filter(lead => lead.stage === stage.value);
+    acc[stage.value] = kanbanLeads.filter(lead => lead.stage === stage.value);
     return acc;
   }, {} as Record<string, typeof allLeads>);
   
   const activeLead = activeId ? allLeads.find(l => `draggable-${l.type}-${l.id}` === activeId) : null;
+
+  useEffect(() => {
+    if (viewMode !== "kanban") return;
+    const updateWidth = () => {
+      if (kanbanScrollRef.current) {
+        setKanbanScrollWidth(kanbanScrollRef.current.scrollWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, [viewMode, allLeads.length, searchTerm, sortBy, filterBy, stageFilter, tagFilter, serviceFilter]);
+
+  const syncKanbanScroll = (source: HTMLDivElement, target: HTMLDivElement | null) => {
+    if (!target || isSyncingScroll.current) return;
+    isSyncingScroll.current = true;
+    target.scrollLeft = source.scrollLeft;
+    requestAnimationFrame(() => {
+      isSyncingScroll.current = false;
+    });
+  };
 
   if (isLoading) {
     return (
@@ -1721,7 +1787,18 @@ export default function LeadsPage() {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
-              <div className="flex gap-4 overflow-x-auto pb-4">
+              <div
+                className="overflow-x-auto h-4 mb-2"
+                ref={kanbanScrollTopRef}
+                onScroll={(event) => syncKanbanScroll(event.currentTarget, kanbanScrollRef.current)}
+              >
+                <div style={{ width: kanbanScrollWidth, height: 1 }} />
+              </div>
+              <div
+                className="flex gap-4 overflow-x-auto pb-4 scrollbar-hidden"
+                ref={kanbanScrollRef}
+                onScroll={(event) => syncKanbanScroll(event.currentTarget, kanbanScrollTopRef.current)}
+              >
                 {stages.map((stage) => (
                   <div key={stage.value} id={`droppable-${stage.value}`}>
                     <DroppableColumn

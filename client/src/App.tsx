@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -39,6 +39,7 @@ import ProfilePage from "@/pages/profile";
 import NotFound from "@/pages/not-found";
 import StatsPage from "@/pages/stats";
 import Onboarding from "@/pages/onboarding";
+import DocsPage from "@/pages/docs";
 
 import SignupSuccess from "@/pages/signup-success";
 import CustomForms from "@/pages/custom-forms";
@@ -120,9 +121,11 @@ import AbSeoPlan from "@/pages/ab-seo-plan";
 import LeadCapture from "@/pages/Crm/LeadCapture";
 import TryCalculator from "@/pages/try-calculator";
 import IconGeneratorPage from "@/pages/icon-generator";
+import SetupStepByStepPage from "@/pages/setup-step-by-step";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const [location] = useLocation();
 
   // Debug logging
   console.log('Router render:', { isAuthenticated, isLoading, user: user?.email });
@@ -150,6 +153,9 @@ function Router() {
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/features" component={Features} />
+        <Route path="/docs" component={DocsPage} />
+        <Route path="/docs/:slug" component={DocsPage} />
+        <Route path="/setup-step-by-step" component={SetupStepByStepPage} />
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/signup-success" component={SignupSuccess} />
         <Route path="/terms" component={TermsPage} />
@@ -185,11 +191,14 @@ function Router() {
   return (
     <>
       {user && (user as any).isImpersonating && <ImpersonationBanner />}
-      {user && <WelcomeModal />}
+      {user && (location === "/" || location.startsWith("/dashboard")) && <WelcomeModal />}
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/onboarding" component={Onboarding} />
+        <Route path="/docs" component={DocsPage} />
+        <Route path="/docs/:slug" component={DocsPage} />
+        <Route path="/setup-step-by-step" component={SetupStepByStepPage} />
         <Route path="/formulas" component={FormulasPage} />
         <Route path="/formula/:id" component={FormulaBuilder} />
         <Route path="/formula-builder/:id" component={FormulaBuilder} />

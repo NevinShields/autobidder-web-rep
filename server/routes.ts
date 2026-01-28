@@ -344,6 +344,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Refresh session user from DB to keep flags like welcomeModalShown in sync
+      const dbUser = await storage.getUser(sessionUser.id);
+      if (dbUser) {
+        req.session.user = dbUser as any;
+      }
+
       res.json(req.session.user);
     } catch (error) {
       console.error("Get user error:", error);
@@ -3478,6 +3484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isActive: updatedUser!.isActive,
         plan: updatedUser!.plan,
         permissions: updatedUser!.permissions,
+        welcomeModalShown: updatedUser!.welcomeModalShown,
       };
       
       res.json({ 
@@ -15417,8 +15424,17 @@ This booking was created on ${new Date().toLocaleString()}.
   // Mark welcome modal as shown for user
   app.post("/api/welcome-modal/mark-shown", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as Express.User;
+      const currentUser = (req as any).currentUser || (req as any).user || req.session?.user;
+      if (!currentUser) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       await db.update(users).set({ welcomeModalShown: true }).where(eq(users.id, currentUser.id));
+      if (req.session?.user) {
+        req.session.user = {
+          ...(req.session.user as any),
+          welcomeModalShown: true,
+        };
+      }
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error marking welcome modal as shown:", error);

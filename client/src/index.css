@@ -385,6 +385,16 @@
   background: rgba(156, 163, 175, 0.7);
 }
 
+/* Hide scrollbar while keeping scroll enabled */
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 /* Enhanced mobile sidebar styling */
 .mobile-sidebar-enhanced {
   border-radius: 16px;

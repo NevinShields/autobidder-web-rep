@@ -436,23 +436,30 @@ export default function Landing() {
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {pricingPlans.map((plan, index) => (
-              <Card key={index} className={`p-8 ${plan.popular ? 'border-4 border-blue-500 relative' : 'border-2'} hover:shadow-xl transition-all duration-300`}>
+              <Card
+                key={index}
+                className={`group relative overflow-hidden p-8 ${
+                  plan.popular ? "border-2 border-indigo-300/70" : "border border-white/10"
+                } bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/20`}
+              >
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-400/20 via-purple-400/10 to-cyan-300/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute -top-24 right-0 h-40 w-40 rounded-full bg-indigo-400/30 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 {plan.popular && (
-                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-1">
+                  <Badge className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 shadow-lg">
                     Most Popular
                   </Badge>
                 )}
                 <CardContent className="p-0">
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                    <p className="text-gray-600 mb-4">{plan.description}</p>
+                    <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                    <p className="text-indigo-100 mb-4">{plan.description}</p>
                     <div className="mb-4">
-                      <span className="text-5xl font-bold text-gray-900" data-testid={`price-${plan.name.toLowerCase()}`}>
+                      <span className="text-5xl font-bold text-white" data-testid={`price-${plan.name.toLowerCase()}`}>
                         ${isYearly ? plan.yearlyPrice : plan.price}
                       </span>
-                      <span className="text-gray-600">/month</span>
+                      <span className="text-indigo-200">/month</span>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-indigo-200/80">
                       {isYearly ? 'billed annually' : `or $${plan.yearlyPrice}/month billed yearly`}
                     </p>
                   </div>
@@ -461,13 +468,19 @@ export default function Landing() {
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center">
                         <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-                        <span className="text-gray-700">{feature}</span>
+                        <span className="text-slate-100">{feature}</span>
                       </li>
                     ))}
                   </ul>
 
                   <Link href="/signup-flow">
-                    <Button className={`w-full py-3 ${plan.popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-900 hover:bg-gray-800 text-white'}`}>
+                    <Button
+                      className={`w-full py-3 ${
+                        plan.popular
+                          ? "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg"
+                          : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                      }`}
+                    >
                       Start Free Trial
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>

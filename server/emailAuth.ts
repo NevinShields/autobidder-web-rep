@@ -847,6 +847,7 @@ export function setupEmailAuth(app: Express) {
         plan: user.plan,
         isActive: user.isActive,
         trialEndDate: user.trialEndDate,
+        welcomeModalShown: user.welcomeModalShown,
       };
       (req.session as any).authProvider = 'email';
       

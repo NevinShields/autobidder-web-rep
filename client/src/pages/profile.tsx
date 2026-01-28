@@ -336,7 +336,7 @@ export default function ProfilePage() {
                       <h3 className="font-semibold text-lg">
                         {profile?.firstName} {profile?.lastName}
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-400">{profile?.email}</p>
+                      <p className="text-gray-600 dark:text-gray-400 break-all sm:break-normal">{profile?.email}</p>
                       <Button variant="outline" size="sm" className="mt-2">
                         <Camera className="w-4 h-4 mr-2" />
                         Change Photo

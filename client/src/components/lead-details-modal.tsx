@@ -486,12 +486,17 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   });
 
   const sendBidToCustomerMutation = useMutation({
-    mutationFn: async ({ estimateId, notifyEmail, notifySms, message, subject }: {
+    mutationFn: async ({ estimateId, notifyEmail, notifySms, message, subject, customMessage, layoutId, theme, attachments, videoUrl }: {
       estimateId: number;
       notifyEmail: boolean;
       notifySms: boolean;
       message: string;
       subject?: string;
+      customMessage?: string;
+      layoutId?: string;
+      theme?: any;
+      attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }>;
+      videoUrl?: string;
     }) => {
       const response = await fetch(`/api/estimates/${estimateId}/send-to-customer`, {
         method: "POST",
@@ -504,6 +509,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           notifySms,
           message,
           subject,
+          customMessage,
+          layoutId,
+          theme,
+          attachments,
+          videoUrl,
         }),
       });
 
@@ -2769,6 +2779,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             totalAmount={confirmedBidEstimate.totalAmount}
             defaultMessage={`Hi ${lead.name},\n\nThank you for your interest in our services! We've prepared an estimate for you.\n\nYour total: $${(confirmedBidEstimate.totalAmount / 100).toLocaleString()}\n\nPlease review the details using the link below. Feel free to reach out if you have any questions!`}
             isPending={sendBidToCustomerMutation.isPending}
+            showEstimateEditor
+            estimate={estimates.find((est: any) => est.id === confirmedBidEstimate.estimateId)}
+            estimatePageDefaults={(businessSettings as any)?.estimatePageSettings}
           />
         )}
       </DialogContent>

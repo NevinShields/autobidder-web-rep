@@ -49,6 +49,8 @@ const EstimatesPage = lazy(() => import("@/pages/estimates"));
 const EstimatePage = lazy(() => import("@/pages/estimate"));
 const WorkOrdersPage = lazy(() => import("@/pages/work-orders"));
 const EmailSettingsPage = lazy(() => import("@/pages/email-settings"));
+const BusinessSettingsPage = lazy(() => import("@/pages/business-settings"));
+const EstimatePageSettings = lazy(() => import("@/pages/estimate-page-settings"));
 const EmailTemplatesPage = lazy(() => import("@/pages/email-templates"));
 const BidRequestsPage = lazy(() => import("@/pages/bid-requests"));
 const VerifyBidPage = lazy(() => import("@/pages/verify-bid"));
@@ -244,6 +246,8 @@ function Router() {
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
         <Route path="/work-orders" component={WorkOrdersPage} />
         <Route path="/email-settings" component={EmailSettingsPage} />
+        <Route path="/business-settings" component={BusinessSettingsPage} />
+        <Route path="/estimate-page-settings" component={EstimatePageSettings} />
         <Route path="/email-templates" component={EmailTemplatesPage} />
         <Route path="/bid-email-templates" component={BidEmailTemplatesPage} />
         <Route path="/bid-requests" component={BidRequestsPage} />

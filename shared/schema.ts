@@ -245,6 +245,22 @@ export const businessSettings = pgTable("business_settings", {
   contactSubtitle: text("contact_subtitle").default("We need your contact details to send you the quote"),
   pricingTitle: text("pricing_title").default("Your Quote is Ready!"),
   pricingSubtitle: text("pricing_subtitle").default("Here's your personalized pricing breakdown"),
+  estimatePageSettings: jsonb("estimate_page_settings").notNull().default({}).$type<{
+    defaultLayoutId?: string;
+    defaultTheme?: {
+      primaryColor?: string;
+      accentColor?: string;
+      backgroundColor?: string;
+      textColor?: string;
+    };
+    defaultAttachments?: Array<{
+      url: string;
+      name?: string;
+      type: "image" | "pdf";
+    }>;
+    defaultVideoUrl?: string;
+    defaultIncludeAttachments?: boolean;
+  }>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -358,12 +374,28 @@ export const estimates = pgTable("estimates", {
   userId: varchar("user_id").references(() => users.id),
   leadId: integer("lead_id"),
   multiServiceLeadId: integer("multi_service_lead_id"),
+  estimateType: text("estimate_type").notNull().default("confirmed"), // "pre_estimate" | "confirmed"
   estimateNumber: text("estimate_number").notNull().unique(),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   customerPhone: text("customer_phone"),
   customerAddress: text("customer_address"),
   businessMessage: text("business_message"),
+  customMessage: text("custom_message"),
+  layoutId: text("layout_id"),
+  theme: jsonb("theme").default({}).$type<{
+    primaryColor?: string;
+    accentColor?: string;
+    backgroundColor?: string;
+    textColor?: string;
+  }>(),
+  attachments: jsonb("attachments").default([]).$type<Array<{
+    url: string;
+    name?: string;
+    type: "image" | "pdf";
+  }>>(),
+  videoUrl: text("video_url"),
+  revisionReason: text("revision_reason"),
   services: jsonb("services").notNull().$type<EstimateService[]>(),
   subtotal: integer("subtotal").notNull(),
   taxAmount: integer("tax_amount").default(0),
@@ -378,6 +410,7 @@ export const estimates = pgTable("estimates", {
   ownerNotes: text("owner_notes"),
   revisionNotes: text("revision_notes"),
   sentToCustomerAt: timestamp("sent_to_customer_at"),
+  isSentLocked: boolean("is_sent_locked").notNull().default(false),
   viewedByCustomerAt: timestamp("viewed_by_customer_at"),
   customerResponseAt: timestamp("customer_response_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -2604,6 +2637,20 @@ export const sendEstimateToCustomerSchema = z.object({
   notifySms: z.boolean(),
   message: z.string().min(1, "Message is required"),
   subject: z.string().optional(),
+  customMessage: z.string().optional(),
+  layoutId: z.string().optional(),
+  theme: z.object({
+    primaryColor: z.string().optional(),
+    accentColor: z.string().optional(),
+    backgroundColor: z.string().optional(),
+    textColor: z.string().optional(),
+  }).optional(),
+  attachments: z.array(z.object({
+    url: z.string().min(1),
+    name: z.string().optional(),
+    type: z.enum(["image", "pdf"]),
+  })).optional(),
+  videoUrl: z.string().optional(),
 });
 
 export type SendEstimateToCustomer = z.infer<typeof sendEstimateToCustomerSchema>;

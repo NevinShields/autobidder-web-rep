@@ -127,6 +127,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: "Photos", href: "/photos", icon: Image },
         { name: "Automations", href: "/crm/automations", icon: Workflow },
         { name: "Email Settings", href: "/email-settings", icon: Mail },
+        { name: "Estimate Page Editor", href: "/estimate-page-settings", icon: FileText },
         { name: "Stats", href: "/stats", icon: BarChart3 },
         { name: "Embed Code", href: "/embed-code", icon: Code },
         // { name: "Estimates", href: "/estimates", icon: FileText },

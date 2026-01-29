@@ -137,6 +137,16 @@ export default function EstimatesPage() {
     }
   };
 
+  const getEstimateTypeBadge = (estimateType?: string) => {
+    if (estimateType === "pre_estimate") {
+      return { label: "Pre-Estimate", className: "bg-orange-100 text-orange-800" };
+    }
+    if (estimateType === "confirmed") {
+      return { label: "Confirmed", className: "bg-emerald-100 text-emerald-800" };
+    }
+    return null;
+  };
+
   // Calculate statistics
   const totalEstimates = estimates.length;
   const totalValue = estimates.reduce((sum, estimate) => sum + estimate.totalAmount, 0);
@@ -277,6 +287,7 @@ export default function EstimatesPage() {
                       <TableHead>Customer</TableHead>
                       <TableHead>Services</TableHead>
                       <TableHead>Amount</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Valid Until</TableHead>
@@ -308,6 +319,15 @@ export default function EstimatesPage() {
                           <span className="font-semibold text-gray-900">
                             {formatCurrency(estimate.totalAmount)}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          {getEstimateTypeBadge((estimate as any).estimateType) ? (
+                            <Badge className={getEstimateTypeBadge((estimate as any).estimateType)?.className}>
+                              {getEstimateTypeBadge((estimate as any).estimateType)?.label}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-gray-400">Unknown</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(estimate.status)}>

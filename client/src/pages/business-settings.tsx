@@ -43,6 +43,11 @@ const defaultStyling: StylingOptions = {
 };
 
 export default function BusinessSettings() {
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === "undefined") return "general";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || "general";
+  });
   const [businessName, setBusinessName] = useState("");
   const [businessEmail, setBusinessEmail] = useState("");
   const [enableLeadCapture, setEnableLeadCapture] = useState(true);
@@ -131,7 +136,7 @@ export default function BusinessSettings() {
           <p className="text-gray-600 mt-2">Configure your multi-service pricing form</p>
         </div>
 
-        <Tabs defaultValue="general" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="general" className="flex items-center">
               <Settings className="w-4 h-4 mr-2" />

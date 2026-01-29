@@ -6,25 +6,43 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { 
-  FileText, 
-  Calendar, 
-  Building, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Download, 
+import {
+  FileText,
+  Calendar,
+  Building,
+  Mail,
+  Phone,
+  MapPin,
+  Download,
   Printer,
   DollarSign,
   Percent,
   Receipt,
   Check,
   X,
-  Truck
+  Truck,
+  Play,
+  Paperclip,
+  Image as ImageIcon,
+  FileIcon,
+  AlertCircle
 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Estimate } from "@shared/schema";
+
+type EstimateTheme = {
+  primaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+};
+
+type EstimateAttachment = {
+  url: string;
+  name?: string;
+  type: "image" | "pdf";
+};
 
 export default function EstimatePage() {
   const { estimateNumber } = useParams<{ estimateNumber: string }>();
@@ -116,7 +134,7 @@ export default function EstimatePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="force-light-mode min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-300 rounded w-1/3 mb-6"></div>
@@ -136,7 +154,7 @@ export default function EstimatePage() {
 
   if (!estimate) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="force-light-mode min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
         <div className="max-w-4xl mx-auto text-center py-20">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Estimate Not Found</h1>
@@ -153,6 +171,51 @@ export default function EstimatePage() {
     }).format(amount / 100);
   };
 
+  // Extract theme, attachments, video, custom message from estimate
+  const theme = (estimate?.theme as EstimateTheme) || {};
+  const attachments = (estimate?.attachments as EstimateAttachment[]) || [];
+  const videoUrl = estimate?.videoUrl as string | undefined;
+  const customMessage = estimate?.customMessage as string | undefined;
+  const revisionReason = estimate?.revisionReason as string | undefined;
+
+  // Helper to get video embed URL
+  const getVideoEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+
+    // YouTube
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+
+    // Vimeo
+    const vimeoMatch = url.match(/(?:vimeo\.com\/)(\d+)/);
+    if (vimeoMatch) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+
+    // Loom
+    const loomMatch = url.match(/(?:loom\.com\/share\/)([a-zA-Z0-9]+)/);
+    if (loomMatch) {
+      return `https://www.loom.com/embed/${loomMatch[1]}`;
+    }
+
+    // Return original if it's already an embed URL or direct video
+    if (url.includes('embed') || url.endsWith('.mp4') || url.endsWith('.webm')) {
+      return url;
+    }
+
+    return null;
+  };
+
+  // Theme-based styles
+  const themeStyles = {
+    primaryColor: theme.primaryColor || '#2563eb',
+    accentColor: theme.accentColor || '#16a34a',
+    backgroundColor: theme.backgroundColor || '#ffffff',
+    textColor: theme.textColor || '#111827',
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
@@ -165,7 +228,7 @@ export default function EstimatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="force-light-mode min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-6">
@@ -173,6 +236,9 @@ export default function EstimatePage() {
             Estimate {estimate.estimateNumber}
           </h1>
           <div className="flex items-center gap-3">
+            <Badge className={estimate.estimateType === "pre_estimate" ? "bg-orange-100 text-orange-800" : "bg-emerald-100 text-emerald-800"}>
+              {estimate.estimateType === "pre_estimate" ? "Pre-Estimate" : "Confirmed Estimate"}
+            </Badge>
             <Badge className={getStatusColor(estimate.status)}>
               {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
             </Badge>
@@ -196,8 +262,25 @@ export default function EstimatePage() {
           </div>
         </div>
 
-        {/* Accept/Decline Actions - Only show when approved by owner and not yet responded */}
-        {estimate.ownerApprovalStatus === 'approved' && 
+        {/* Pre-estimate notice */}
+        {estimate.estimateType === "pre_estimate" && (
+          <Card className="mb-6 border-2 border-orange-200 bg-orange-50/60">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <h2 className="text-xl font-semibold text-orange-900 mb-2">
+                  Pre-Estimate
+                </h2>
+                <p className="text-orange-700">
+                  This is an initial estimate. A confirmed estimate will be sent for approval.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Accept/Decline Actions - Only show for confirmed estimates approved by owner and not yet responded */}
+        {estimate.estimateType === "confirmed" &&
+         estimate.ownerApprovalStatus === 'approved' && 
          estimate.status !== 'accepted' && 
          estimate.status !== 'rejected' && (
           <Card className="mb-6 border-2 border-blue-200 bg-blue-50/50">
@@ -251,7 +334,7 @@ export default function EstimatePage() {
                   {estimate.status === 'accepted' ? 'Estimate Accepted' : 'Estimate Declined'}
                 </h2>
                 <p className={estimate.status === 'accepted' ? 'text-green-700' : 'text-red-700'}>
-                  {estimate.status === 'accepted' 
+                  {estimate.status === 'accepted'
                     ? "Thank you for accepting! We'll be in touch shortly to schedule the work."
                     : "Thank you for your response. We appreciate your consideration."}
                 </p>
@@ -265,27 +348,47 @@ export default function EstimatePage() {
           </Card>
         )}
 
+        {/* Revision Reason Notice - Show when price was revised */}
+        {revisionReason && (
+          <Card className="mb-6 border-2 border-blue-200 bg-blue-50/50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">Price Revision Note</h3>
+                  <p className="text-blue-800 text-sm">{revisionReason}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Estimate Content */}
         <div ref={printRef}>
-          <Card className="shadow-lg">
-            <CardHeader className="border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <Card className="shadow-lg" style={{ backgroundColor: themeStyles.backgroundColor }}>
+            <CardHeader
+              className="border-b text-white"
+              style={{
+                background: `linear-gradient(to right, ${themeStyles.primaryColor}, ${themeStyles.accentColor})`,
+              }}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-2xl font-bold mb-2">
                     Professional Estimate
                   </CardTitle>
-                  <p className="text-blue-100">
+                  <p className="text-white/80">
                     Estimate #{estimate.estimateNumber}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-blue-100">Issue Date</p>
+                  <p className="text-white/80">Issue Date</p>
                   <p className="font-semibold">
                     {format(new Date(estimate.createdAt), 'MMMM dd, yyyy')}
                   </p>
                   {estimate.validUntil && (
                     <>
-                      <p className="text-blue-100 mt-2">Valid Until</p>
+                      <p className="text-white/80 mt-2">Valid Until</p>
                       <p className="font-semibold">
                         {format(new Date(estimate.validUntil), 'MMMM dd, yyyy')}
                       </p>
@@ -298,15 +401,18 @@ export default function EstimatePage() {
             <CardContent className="p-8">
               {/* Customer Information */}
               <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Building className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeStyles.textColor }}>
+                  <Building className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
                   Customer Information
                 </h3>
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-semibold">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${themeStyles.primaryColor}20` }}
+                      >
+                        <span className="font-semibold" style={{ color: themeStyles.primaryColor }}>
                           {estimate.customerName.charAt(0).toUpperCase()}
                         </span>
                       </div>
@@ -357,10 +463,94 @@ export default function EstimatePage() {
                 </div>
               )}
 
+              {/* Custom Estimate Message */}
+              {customMessage && (
+                <div className="mb-8">
+                  <div
+                    className="p-4 rounded-lg border-l-4"
+                    style={{
+                      backgroundColor: `${themeStyles.primaryColor}10`,
+                      borderLeftColor: themeStyles.primaryColor,
+                    }}
+                  >
+                    <p className="leading-relaxed whitespace-pre-wrap" style={{ color: themeStyles.textColor }}>
+                      {customMessage}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Video Section */}
+              {videoUrl && getVideoEmbedUrl(videoUrl) && (
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Play className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
+                    Video
+                  </h3>
+                  <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
+                    <iframe
+                      src={getVideoEmbedUrl(videoUrl)!}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title="Estimate Video"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Attachments Section */}
+              {attachments.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Paperclip className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
+                    Attachments
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {attachments.map((attachment, index) => (
+                      <a
+                        key={`${attachment.url}-${index}`}
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors group"
+                      >
+                        {attachment.type === "image" ? (
+                          <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+                            <img
+                              src={attachment.url}
+                              alt={attachment.name || "Attachment"}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                            <div className="hidden w-full h-full flex items-center justify-center">
+                              <ImageIcon className="w-6 h-6 text-gray-400" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded bg-red-50 flex items-center justify-center flex-shrink-0">
+                            <FileIcon className="w-6 h-6 text-red-500" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate group-hover:text-blue-600">
+                            {attachment.name || `${attachment.type === "pdf" ? "PDF Document" : "Image"}`}
+                          </p>
+                          <p className="text-sm text-gray-500 uppercase">{attachment.type}</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Services */}
               <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeStyles.textColor }}>
+                  <Receipt className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
                   Services & Pricing
                 </h3>
                 <div className="overflow-x-auto">

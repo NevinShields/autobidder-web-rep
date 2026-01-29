@@ -9,6 +9,28 @@ import { Mail, MessageSquare, Link as LinkIcon, Loader2, DollarSign, FileText, E
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+type EstimatePageTheme = {
+  primaryColor?: string;
+  accentColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+};
+
+type EstimateAttachmentDraft = {
+  url: string;
+  name?: string;
+  type: "image" | "pdf";
+  enabled: boolean;
+};
+
+type EstimatePageDefaults = {
+  defaultLayoutId?: string;
+  defaultTheme?: EstimatePageTheme;
+  defaultAttachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }>;
+  defaultVideoUrl?: string;
+  defaultIncludeAttachments?: boolean;
+};
+
 interface BidEmailTemplate {
   id: number;
   templateType: string;
@@ -26,6 +48,11 @@ interface SendBidDialogProps {
     notifySms: boolean;
     message: string;
     subject?: string;
+    customMessage?: string;
+    layoutId?: string;
+    theme?: EstimatePageTheme;
+    attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }>;
+    videoUrl?: string;
   }) => Promise<void>;
   customerName: string;
   customerEmail?: string;
@@ -35,6 +62,15 @@ interface SendBidDialogProps {
   defaultMessage: string;
   isPending?: boolean;
   templateType?: "initial_bid" | "updated_bid" | "booking_confirmation";
+  showEstimateEditor?: boolean;
+  estimate?: {
+    customMessage?: string | null;
+    layoutId?: string | null;
+    theme?: EstimatePageTheme | null;
+    attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }> | null;
+    videoUrl?: string | null;
+  };
+  estimatePageDefaults?: EstimatePageDefaults;
 }
 
 export default function SendBidDialog({
@@ -49,6 +85,9 @@ export default function SendBidDialog({
   defaultMessage,
   isPending = false,
   templateType = "initial_bid",
+  showEstimateEditor = false,
+  estimate,
+  estimatePageDefaults,
 }: SendBidDialogProps) {
   const [notifyEmail, setNotifyEmail] = useState(false);
   const [notifySms, setNotifySms] = useState(false);
@@ -56,6 +95,14 @@ export default function SendBidDialog({
   const [subject, setSubject] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("custom");
   const [isEditing, setIsEditing] = useState(false);
+  const [estimateCustomMessage, setEstimateCustomMessage] = useState("");
+  const [estimateLayoutId, setEstimateLayoutId] = useState("classic");
+  const [estimateTheme, setEstimateTheme] = useState<EstimatePageTheme>({});
+  const [estimateAttachments, setEstimateAttachments] = useState<EstimateAttachmentDraft[]>([]);
+  const [estimateVideoUrl, setEstimateVideoUrl] = useState("");
+  const [newAttachmentUrl, setNewAttachmentUrl] = useState("");
+  const [newAttachmentName, setNewAttachmentName] = useState("");
+  const [newAttachmentType, setNewAttachmentType] = useState<"image" | "pdf">("image");
 
   // Fetch available bid email templates
   const { data: templates = [] } = useQuery<BidEmailTemplate[]>({
@@ -87,8 +134,35 @@ export default function SendBidDialog({
       setSubject(`Your Estimate - $${(totalAmount / 100).toLocaleString()}`);
       setSelectedTemplateId("custom");
       setIsEditing(false);
+
+      const defaults = estimatePageDefaults;
+      const defaultAttachments = defaults?.defaultIncludeAttachments === false
+        ? []
+        : (defaults?.defaultAttachments || []);
+      const initialAttachments = (estimate?.attachments && estimate.attachments.length > 0)
+        ? estimate.attachments
+        : defaultAttachments;
+
+      setEstimateCustomMessage(estimate?.customMessage || "");
+      setEstimateLayoutId(estimate?.layoutId || defaults?.defaultLayoutId || "classic");
+      setEstimateTheme({
+        primaryColor: estimate?.theme?.primaryColor || defaults?.defaultTheme?.primaryColor || "",
+        accentColor: estimate?.theme?.accentColor || defaults?.defaultTheme?.accentColor || "",
+        backgroundColor: estimate?.theme?.backgroundColor || defaults?.defaultTheme?.backgroundColor || "",
+        textColor: estimate?.theme?.textColor || defaults?.defaultTheme?.textColor || "",
+      });
+      setEstimateAttachments(
+        (initialAttachments || []).map((attachment) => ({
+          ...attachment,
+          enabled: true,
+        }))
+      );
+      setEstimateVideoUrl(estimate?.videoUrl || defaults?.defaultVideoUrl || "");
+      setNewAttachmentUrl("");
+      setNewAttachmentName("");
+      setNewAttachmentType("image");
     }
-  }, [isOpen, customerEmail, customerPhone, defaultMessage, totalAmount]);
+  }, [isOpen, customerEmail, customerPhone, defaultMessage, totalAmount, estimate, estimatePageDefaults]);
 
   // Handle template selection
   const handleTemplateSelect = (templateId: string) => {
@@ -113,6 +187,17 @@ export default function SendBidDialog({
       notifySms,
       message,
       subject,
+      ...(showEstimateEditor
+        ? {
+            customMessage: estimateCustomMessage || undefined,
+            layoutId: estimateLayoutId || undefined,
+            theme: estimateTheme,
+            attachments: estimateAttachments
+              .filter((attachment) => attachment.enabled)
+              .map(({ url, name, type }) => ({ url, name, type })),
+            videoUrl: estimateVideoUrl || undefined,
+          }
+        : {}),
     });
   };
 
@@ -303,6 +388,179 @@ export default function SendBidDialog({
               )}
             </p>
           </div>
+
+          {showEstimateEditor && (
+            <div className="space-y-4 border rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Estimate Page Details</Label>
+                <span className="text-xs text-gray-500">Visible on the customer estimate page</span>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estimate-custom-message" className="text-sm font-medium">
+                  Estimate Message (Optional)
+                </Label>
+                <Textarea
+                  id="estimate-custom-message"
+                  value={estimateCustomMessage}
+                  onChange={(e) => setEstimateCustomMessage(e.target.value)}
+                  rows={4}
+                  placeholder="Add a note or message that appears on the estimate page..."
+                  disabled={isPending}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="estimate-layout" className="text-sm font-medium">
+                    Layout Preset
+                  </Label>
+                  <select
+                    id="estimate-layout"
+                    value={estimateLayoutId}
+                    onChange={(e) => setEstimateLayoutId(e.target.value)}
+                    className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm"
+                    disabled={isPending}
+                  >
+                    <option value="classic">Classic</option>
+                    <option value="minimal">Minimal</option>
+                    <option value="detailed">Detailed</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estimate-video" className="text-sm font-medium">
+                    Video Link (Optional)
+                  </Label>
+                  <Input
+                    id="estimate-video"
+                    value={estimateVideoUrl}
+                    onChange={(e) => setEstimateVideoUrl(e.target.value)}
+                    placeholder="https://..."
+                    disabled={isPending}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="theme-primary" className="text-sm font-medium">Primary Color</Label>
+                  <Input
+                    id="theme-primary"
+                    type="color"
+                    value={estimateTheme.primaryColor || "#2563eb"}
+                    onChange={(e) => setEstimateTheme((prev) => ({ ...prev, primaryColor: e.target.value }))}
+                    disabled={isPending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="theme-accent" className="text-sm font-medium">Accent Color</Label>
+                  <Input
+                    id="theme-accent"
+                    type="color"
+                    value={estimateTheme.accentColor || "#16a34a"}
+                    onChange={(e) => setEstimateTheme((prev) => ({ ...prev, accentColor: e.target.value }))}
+                    disabled={isPending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="theme-bg" className="text-sm font-medium">Background Color</Label>
+                  <Input
+                    id="theme-bg"
+                    type="color"
+                    value={estimateTheme.backgroundColor || "#ffffff"}
+                    onChange={(e) => setEstimateTheme((prev) => ({ ...prev, backgroundColor: e.target.value }))}
+                    disabled={isPending}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="theme-text" className="text-sm font-medium">Text Color</Label>
+                  <Input
+                    id="theme-text"
+                    type="color"
+                    value={estimateTheme.textColor || "#111827"}
+                    onChange={(e) => setEstimateTheme((prev) => ({ ...prev, textColor: e.target.value }))}
+                    disabled={isPending}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Attachments</Label>
+                {estimateAttachments.length === 0 && (
+                  <p className="text-sm text-gray-500">No attachments selected yet.</p>
+                )}
+                <div className="space-y-2">
+                  {estimateAttachments.map((attachment, index) => (
+                    <div key={`${attachment.url}-${index}`} className="flex items-center gap-3 border rounded-md p-2">
+                      <Checkbox
+                        checked={attachment.enabled}
+                        onCheckedChange={(checked) => {
+                          setEstimateAttachments((prev) =>
+                            prev.map((item, i) => i === index ? { ...item, enabled: checked as boolean } : item)
+                          );
+                        }}
+                        disabled={isPending}
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{attachment.name || attachment.url}</p>
+                        <p className="text-xs text-gray-500">{attachment.type.toUpperCase()}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEstimateAttachments((prev) => prev.filter((_, i) => i !== index));
+                        }}
+                        disabled={isPending}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <Input
+                    placeholder="Attachment URL"
+                    value={newAttachmentUrl}
+                    onChange={(e) => setNewAttachmentUrl(e.target.value)}
+                    disabled={isPending}
+                  />
+                  <Input
+                    placeholder="Display name (optional)"
+                    value={newAttachmentName}
+                    onChange={(e) => setNewAttachmentName(e.target.value)}
+                    disabled={isPending}
+                  />
+                  <select
+                    value={newAttachmentType}
+                    onChange={(e) => setNewAttachmentType(e.target.value as "image" | "pdf")}
+                    className="border border-gray-200 rounded-md px-3 py-2 text-sm"
+                    disabled={isPending}
+                  >
+                    <option value="image">Image</option>
+                    <option value="pdf">PDF</option>
+                  </select>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!newAttachmentUrl.trim()) return;
+                    setEstimateAttachments((prev) => [
+                      ...prev,
+                      { url: newAttachmentUrl.trim(), name: newAttachmentName.trim() || undefined, type: newAttachmentType, enabled: true },
+                    ]);
+                    setNewAttachmentUrl("");
+                    setNewAttachmentName("");
+                    setNewAttachmentType("image");
+                  }}
+                  disabled={isPending || !newAttachmentUrl.trim()}
+                >
+                  Add Attachment
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
             <div className="flex items-start gap-3">

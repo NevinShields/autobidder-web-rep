@@ -4678,7 +4678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
         'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
-        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos',
+        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold'
       ];
       
@@ -4716,7 +4716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
         'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
-        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos',
+        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold'
       ];
       const cleanData: any = {};
@@ -9470,6 +9470,19 @@ The Autobidder Team`;
   app.patch("/api/estimates/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const existingEstimate = await storage.getEstimate(id);
+      if (!existingEstimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+
+      if (existingEstimate.isSentLocked) {
+        const lockedFields = ["layoutId", "theme", "attachments", "videoUrl", "customMessage", "estimateType"];
+        const hasLockedFieldUpdate = lockedFields.some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
+        if (hasLockedFieldUpdate) {
+          return res.status(400).json({ message: "Estimate layout and presentation settings are locked after sending." });
+        }
+      }
+
       const validatedData = insertEstimateSchema.partial().parse(req.body);
       const estimate = await storage.updateEstimate(id, validatedData);
       if (!estimate) {
@@ -9590,6 +9603,10 @@ The Autobidder Team`;
       if (!existingEstimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
+
+      if (existingEstimate.estimateType === 'pre_estimate') {
+        return res.status(400).json({ message: "Pre-estimates cannot be accepted by the customer." });
+      }
       
       if (existingEstimate.userId !== userId) {
         return res.status(403).json({ message: "Access denied" });
@@ -9666,6 +9683,10 @@ The Autobidder Team`;
       if (existingEstimate.userId !== userId) {
         return res.status(403).json({ message: "Access denied" });
       }
+
+      if (existingEstimate.estimateType === 'pre_estimate') {
+        return res.status(400).json({ message: "Pre-estimates cannot be converted to work orders." });
+      }
       
       // Require customer approval before conversion to work order
       if (existingEstimate.status !== 'accepted') {
@@ -9709,6 +9730,10 @@ The Autobidder Team`;
       const estimate = await storage.getEstimateByNumber(estimateNumber);
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
+      }
+
+      if (estimate.estimateType === 'pre_estimate') {
+        return res.status(400).json({ message: "This pre-estimate cannot be accepted. A confirmed estimate is required." });
       }
       
       // Check if estimate is in a state that can be accepted
@@ -9766,6 +9791,10 @@ The Autobidder Team`;
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
+
+      if (estimate.estimateType === 'pre_estimate') {
+        return res.status(400).json({ message: "This pre-estimate cannot be declined. A confirmed estimate is required." });
+      }
       
       // Check if estimate is in a state that can be declined
       if (estimate.ownerApprovalStatus !== 'approved') {
@@ -9816,6 +9845,7 @@ The Autobidder Team`;
       const estimateData = {
         userId,
         leadId: lead.id,
+        estimateType: "pre_estimate",
         estimateNumber,
         customerName: lead.name,
         customerEmail: lead.email,
@@ -9885,6 +9915,7 @@ The Autobidder Team`;
       const estimateData = {
         userId,
         multiServiceLeadId: lead.id,
+        estimateType: "pre_estimate",
         estimateNumber,
         customerName: lead.name,
         customerEmail: lead.email,
@@ -9977,6 +10008,7 @@ The Autobidder Team`;
         estimateData = {
           userId,
           multiServiceLeadId: lead.id,
+          estimateType: "confirmed",
           estimateNumber,
           customerName: lead.name,
           customerEmail: lead.email,
@@ -10030,6 +10062,7 @@ The Autobidder Team`;
         estimateData = {
           userId,
           leadId: lead.id,
+          estimateType: "confirmed",
           estimateNumber,
           customerName: lead.name,
           customerEmail: lead.email,
@@ -10108,7 +10141,17 @@ The Autobidder Team`;
       // Validate request body
       const { sendEstimateToCustomerSchema } = await import("@shared/schema");
       const validatedData = sendEstimateToCustomerSchema.parse(req.body);
-      const { notifyEmail, notifySms, message, subject: customSubject } = validatedData;
+      const {
+        notifyEmail,
+        notifySms,
+        message,
+        subject: customSubject,
+        customMessage,
+        layoutId,
+        theme,
+        attachments,
+        videoUrl,
+      } = validatedData;
       
       // Get estimate
       const estimate = await storage.getEstimate(estimateId);
@@ -10121,7 +10164,7 @@ The Autobidder Team`;
       }
       
       // Get business settings for branding and Twilio config
-      const businessSettings = await storage.getBusinessSettings();
+      const businessSettings = await storage.getBusinessSettingsByUserId(userId);
       const businessName = businessSettings?.businessName || 'Your Business';
       const baseUrl = process.env.REPL_SLUG 
         ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
@@ -10134,6 +10177,29 @@ The Autobidder Team`;
         errors: [] as string[]
       };
       
+      // Apply estimate page defaults + overrides before sending
+      if (!estimate.isSentLocked) {
+        const pageDefaults = businessSettings?.estimatePageSettings;
+        const defaultAttachments = pageDefaults?.defaultIncludeAttachments === false
+          ? []
+          : (pageDefaults?.defaultAttachments || []);
+
+        const resolvedAttachments = attachments
+          ?? ((estimate.attachments && estimate.attachments.length > 0) ? estimate.attachments : defaultAttachments);
+
+        const updatedEstimateData = {
+          customMessage: customMessage ?? estimate.customMessage ?? undefined,
+          layoutId: layoutId ?? estimate.layoutId ?? pageDefaults?.defaultLayoutId ?? undefined,
+          theme: theme ?? estimate.theme ?? pageDefaults?.defaultTheme ?? undefined,
+          attachments: resolvedAttachments,
+          videoUrl: videoUrl ?? estimate.videoUrl ?? pageDefaults?.defaultVideoUrl ?? undefined,
+        };
+
+        await storage.updateEstimate(estimate.id, updatedEstimateData);
+      } else if (customMessage || layoutId || theme || attachments || videoUrl) {
+        return res.status(400).json({ message: "Estimate page settings are locked after sending." });
+      }
+
       // Send email notification if requested
       if (notifyEmail && estimate.customerEmail) {
         try {
@@ -10205,6 +10271,11 @@ The Autobidder Team`;
       
       // Send Zapier webhook notification for estimate sent (if email or SMS was sent successfully)
       if (results.emailSent || results.smsSent) {
+        await storage.updateEstimate(estimate.id, {
+          sentToCustomerAt: estimate.sentToCustomerAt || new Date(),
+          isSentLocked: true,
+        });
+
         ZapierIntegrationService.sendWebhookNotification(
           userId,
           'estimate_sent',

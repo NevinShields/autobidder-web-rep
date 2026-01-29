@@ -49,6 +49,7 @@ interface SendBidDialogProps {
     notifySms: boolean;
     message: string;
     subject?: string;
+    estimateLink: string;
     customMessage?: string;
     layoutId?: string;
     theme?: EstimatePageTheme;
@@ -189,6 +190,7 @@ export default function SendBidDialog({
       notifySms,
       message,
       subject,
+      estimateLink,
       ...(showEstimateEditor
         ? {
             customMessage: estimateCustomMessage || undefined,

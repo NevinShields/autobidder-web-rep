@@ -10437,6 +10437,7 @@ The Autobidder Team`;
         notifySms,
         message,
         subject: customSubject,
+        estimateLink,
         customMessage,
         layoutId,
         theme,
@@ -10457,7 +10458,6 @@ The Autobidder Team`;
       // Get business settings for branding and Twilio config
       const businessSettings = await storage.getBusinessSettingsByUserId(userId);
       const businessName = businessSettings?.businessName || 'Your Business';
-      const estimateLink = `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
       
       const results = {
         emailSent: false,

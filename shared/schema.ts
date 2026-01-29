@@ -2647,6 +2647,7 @@ export const sendEstimateToCustomerSchema = z.object({
   notifySms: z.boolean(),
   message: z.string().min(1, "Message is required"),
   subject: z.string().optional(),
+  estimateLink: z.string().min(1, "Estimate link is required"),
   customMessage: z.string().optional(),
   layoutId: z.string().optional(),
   theme: z.object({

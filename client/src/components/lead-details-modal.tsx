@@ -478,12 +478,13 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   });
 
   const sendBidToCustomerMutation = useMutation({
-    mutationFn: async ({ estimateId, notifyEmail, notifySms, message, subject, customMessage, layoutId, theme, attachments, videoUrl }: {
+    mutationFn: async ({ estimateId, notifyEmail, notifySms, message, subject, estimateLink, customMessage, layoutId, theme, attachments, videoUrl }: {
       estimateId: number;
       notifyEmail: boolean;
       notifySms: boolean;
       message: string;
       subject?: string;
+      estimateLink: string;
       customMessage?: string;
       layoutId?: string;
       theme?: any;
@@ -501,6 +502,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
           notifySms,
           message,
           subject,
+          estimateLink,
           customMessage,
           layoutId,
           theme,

@@ -11,14 +11,17 @@ import { Button } from "@/components/ui/button";
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
-  onGetUploadParameters: () => Promise<{
+  allowedFileTypes?: string[];
+  onGetUploadParameters: (file: { name: string }) => Promise<{
     method: "PUT";
     url: string;
+    objectPath?: string;
   }>;
   onComplete?: (
     result: UploadResult<Record<string, unknown>, Record<string, unknown>>
   ) => void;
   buttonClassName?: string;
+  disabled?: boolean;
   children: ReactNode;
 }
 
@@ -53,33 +56,49 @@ interface ObjectUploaderProps {
 export function ObjectUploader({
   maxNumberOfFiles = 1,
   maxFileSize = 10485760, // 10MB default
+  allowedFileTypes = ["image/*"],
   onGetUploadParameters,
   onComplete,
   buttonClassName,
+  disabled,
   children,
 }: ObjectUploaderProps) {
   const [showModal, setShowModal] = useState(false);
-  const [uppy] = useState(() =>
-    new Uppy({
+  const [uppy] = useState(() => {
+    const instance = new Uppy({
       restrictions: {
         maxNumberOfFiles,
         maxFileSize,
-        allowedFileTypes: ['image/*'], // Only allow images for icons
+        allowedFileTypes,
       },
       autoProceed: false,
-    })
+    });
+
+    instance
       .use(AwsS3, {
         shouldUseMultipart: false,
-        getUploadParameters: onGetUploadParameters,
+        getUploadParameters: async (file) => {
+          const params = await onGetUploadParameters({ name: file.name });
+          if (params.objectPath) {
+            instance.setFileMeta(file.id, { objectPath: params.objectPath });
+          }
+          return { method: params.method, url: params.url };
+        },
       })
       .on("complete", (result) => {
         onComplete?.(result);
-      })
-  );
+      });
+
+    return instance;
+  });
 
   return (
     <div>
-      <Button onClick={() => setShowModal(true)} className={buttonClassName}>
+      <Button
+        onClick={() => setShowModal(true)}
+        className={buttonClassName}
+        disabled={disabled}
+      >
         {children}
       </Button>
 

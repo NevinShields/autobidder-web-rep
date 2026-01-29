@@ -194,22 +194,42 @@ export default function FormulasPage() {
     },
   });
 
-  // Delete formula mutation
+  // Delete formula mutation with optimistic update
   const deleteFormulaMutation = useMutation({
     mutationFn: (id: number) => apiRequest('DELETE', `/api/formulas/${id}`),
+    onMutate: async (id) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/formulas'] });
+
+      // Snapshot the previous value
+      const previousFormulas = queryClient.getQueryData(['/api/formulas']);
+
+      // Optimistically remove the formula from the list
+      queryClient.setQueryData(['/api/formulas'], (old: Formula[] | undefined) => {
+        if (!old) return [];
+        return old.filter(formula => formula.id !== id);
+      });
+
+      return { previousFormulas };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
       toast({
         title: "Success",
         description: "Formula deleted successfully",
       });
     },
-    onError: () => {
+    onError: (err, id, context) => {
+      // Restore the previous state on error
+      queryClient.setQueryData(['/api/formulas'], context?.previousFormulas);
       toast({
         title: "Error",
         description: "Failed to delete formula",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Refetch to ensure consistency with server
+      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
     },
   });
 

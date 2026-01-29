@@ -1,4 +1,4 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -14,6 +14,7 @@ import { Formula } from "@shared/schema";
 
 export default function FormulaBuilder() {
   const { id } = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const [showPreview, setShowPreview] = useState(false);
   const [showSingleServicePreview, setShowSingleServicePreview] = useState(false);
   const { toast } = useToast();
@@ -192,6 +193,11 @@ export default function FormulaBuilder() {
       });
       setCurrentFormula(data);
       queryClient.invalidateQueries({ queryKey: ["/api/formulas"] });
+
+      // Redirect to the new formula's URL after creation to prevent duplicate saves
+      if (id === "new" && data.id) {
+        setLocation(`/formula-builder/${data.id}`, { replace: true });
+      }
     },
     onError: (error: any) => {
       console.error('Formula save error:', error);

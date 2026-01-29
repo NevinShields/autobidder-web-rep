@@ -26,7 +26,8 @@ interface LineItem {
 interface EstimateAttachment {
   url: string;
   name?: string;
-  type: "image" | "pdf";
+  type: "image" | "pdf" | "file";
+  category?: "terms" | "insurance" | "custom";
 }
 
 interface EditEstimateDialogProps {

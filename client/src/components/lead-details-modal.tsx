@@ -438,14 +438,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     }
   };
 
-  // Workflow mutations
-  const { approveMutation: approveEstimateMutation, DialogComponent: AutomationDialog } = useAutomationApproval({
-    invalidateQueries: [
-      [`/api/leads/${lead?.id}/estimates`],
-      ["/api/estimates"]
-    ],
-  });
-
   const [confirmBidPendingRunIds, setConfirmBidPendingRunIds] = useState<number[]>([]);
   const [showConfirmBidAutomationDialog, setShowConfirmBidAutomationDialog] = useState(false);
 
@@ -558,6 +550,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         description: "Failed to send the bid to the customer. Please try again.",
         variant: "destructive",
       });
+    },
+  });
+
+  // Workflow mutations
+  const { approveMutation: approveEstimateMutation, DialogComponent: AutomationDialog } = useAutomationApproval({
+    invalidateQueries: [
+      [`/api/leads/${lead?.id}/estimates`],
+      ["/api/estimates"]
+    ],
+    onSuccess: (data: any) => {
+      if (!data?.id) return;
+      setConfirmedBidEstimate({
+        estimateId: data.id,
+        estimateNumber: data.estimateNumber,
+        totalAmount: data.totalAmount,
+      });
+      setShowSendBidDialog(true);
     },
   });
 
@@ -2779,7 +2788,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             totalAmount={confirmedBidEstimate.totalAmount}
             defaultMessage={`Hi ${lead.name},\n\nThank you for your interest in our services! We've prepared an estimate for you.\n\nYour total: $${(confirmedBidEstimate.totalAmount / 100).toLocaleString()}\n\nPlease review the details using the link below. Feel free to reach out if you have any questions!`}
             isPending={sendBidToCustomerMutation.isPending}
-            showEstimateEditor
+            showEstimateEditor={false}
             estimate={estimates.find((est: any) => est.id === confirmedBidEstimate.estimateId)}
             estimatePageDefaults={(businessSettings as any)?.estimatePageSettings}
           />

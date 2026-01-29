@@ -100,6 +100,8 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{estimate.validUntil}', description: 'Expiration date' },
     { name: '{estimate.link}', description: 'Link URL to view pricing/estimate' },
     { name: '{estimate.button}', description: 'Clickable button to view estimate' },
+    { name: '{estimate.preEstimateLink}', description: 'Link URL to view pre-estimate (unconfirmed)' },
+    { name: '{estimate.preEstimateButton}', description: 'Button to view pre-estimate with Unconfirmed tag' },
   ];
 
   const workOrderVariables = [
@@ -119,7 +121,7 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{invoice.button}', description: 'Clickable button to pay invoice' },
   ];
 
-  if (triggerType?.includes('estimate')) {
+  if (triggerType === 'lead_created' || triggerType?.includes('estimate')) {
     return [...baseVariables, ...estimateVariables];
   } else if (triggerType?.includes('work_order')) {
     return [...baseVariables, ...workOrderVariables];

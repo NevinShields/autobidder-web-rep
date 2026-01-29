@@ -28,6 +28,7 @@ const variableTypeConfig = {
 export default function AddVariableModal({ isOpen, onClose, onAddVariable }: AddVariableModalProps) {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
+  const [idManuallyEdited, setIdManuallyEdited] = useState(false);
   const [type, setType] = useState<Variable["type"]>("number");
   const [unit, setUnit] = useState("");
   const [allowMultipleSelection, setAllowMultipleSelection] = useState(false);
@@ -85,6 +86,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   const handleClose = () => {
     setName("");
     setId("");
+    setIdManuallyEdited(false);
     setType("number");
     setUnit("");
     setAllowMultipleSelection(false);
@@ -103,7 +105,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
 
   const handleNameChange = (value: string) => {
     setName(value);
-    if (!id) {
+    // Auto-generate ID from name unless user has manually edited the ID field
+    if (!idManuallyEdited) {
       const autoId = value
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '')
@@ -180,7 +183,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
               <Input
                 id="variable-id"
                 value={id}
-                onChange={(e) => setId(e.target.value)}
+                onChange={(e) => {
+                  setId(e.target.value);
+                  setIdManuallyEdited(true);
+                }}
                 placeholder="Auto-generated from name"
                 className="mt-1.5 h-11 font-mono text-sm"
               />

@@ -41,7 +41,23 @@ type EstimateTheme = {
 type EstimateAttachment = {
   url: string;
   name?: string;
-  type: "image" | "pdf";
+  type: "image" | "pdf" | "file";
+  category?: "terms" | "insurance" | "custom";
+};
+
+type PublicBusinessSettings = {
+  businessName?: string | null;
+  businessPhone?: string | null;
+  businessEmail?: string | null;
+  businessAddress?: string | null;
+  estimatePageSettings?: {
+    defaultShowBusinessLogo?: boolean;
+    defaultLogoUrl?: string;
+    defaultShowBusinessName?: boolean;
+    defaultShowBusinessAddress?: boolean;
+    defaultShowBusinessEmail?: boolean;
+    defaultShowBusinessPhone?: boolean;
+  };
 };
 
 export default function EstimatePage() {
@@ -52,6 +68,12 @@ export default function EstimatePage() {
   const { data: estimate, isLoading } = useQuery<Estimate>({
     queryKey: ["/api/estimates/by-number", estimateNumber],
     enabled: !!estimateNumber,
+  });
+
+  const { data: publicBusinessSettings } = useQuery<PublicBusinessSettings>({
+    queryKey: [`/api/public/business-settings/${estimate?.userId}`],
+    enabled: !!estimate?.userId,
+    retry: false,
   });
 
   const acceptMutation = useMutation({
@@ -176,7 +198,21 @@ export default function EstimatePage() {
   const attachments = (estimate?.attachments as EstimateAttachment[]) || [];
   const videoUrl = estimate?.videoUrl as string | undefined;
   const customMessage = estimate?.customMessage as string | undefined;
+  const resolvedMessage = (customMessage || estimate?.businessMessage || "").trim();
   const revisionReason = estimate?.revisionReason as string | undefined;
+  const estimateDefaults = publicBusinessSettings?.estimatePageSettings || {};
+  const showBusinessLogo =
+    estimateDefaults.defaultShowBusinessLogo === true && !!estimateDefaults.defaultLogoUrl;
+  const showBusinessName = estimateDefaults.defaultShowBusinessName === true;
+  const showBusinessAddress = estimateDefaults.defaultShowBusinessAddress === true;
+  const showBusinessEmail = estimateDefaults.defaultShowBusinessEmail === true;
+  const showBusinessPhone = estimateDefaults.defaultShowBusinessPhone === true;
+  const showBusinessDetails =
+    showBusinessLogo ||
+    showBusinessName ||
+    showBusinessAddress ||
+    showBusinessEmail ||
+    showBusinessPhone;
 
   // Helper to get video embed URL
   const getVideoEmbedUrl = (url: string): string | null => {
@@ -227,9 +263,308 @@ export default function EstimatePage() {
     }
   };
 
+  const layoutId = estimate.layoutId || "classic";
+  const isMinimal = layoutId === "minimal";
+  const isDetailed = layoutId === "detailed";
+  const pageBackgroundClass = isMinimal
+    ? "bg-white"
+    : isDetailed
+      ? "bg-slate-50"
+      : "bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50";
+  const containerWidthClass = isDetailed ? "max-w-6xl" : isMinimal ? "max-w-3xl" : "max-w-4xl";
+  const cardClassName = isMinimal || isDetailed ? "shadow-sm border" : "shadow-lg";
+  const headerClassName = isMinimal || isDetailed ? "border-b" : "border-b text-white";
+  const headerStyle = isMinimal
+    ? { backgroundColor: themeStyles.backgroundColor, color: themeStyles.textColor }
+    : isDetailed
+      ? { backgroundColor: themeStyles.backgroundColor, color: themeStyles.textColor, borderTop: `4px solid ${themeStyles.primaryColor}` }
+      : { background: `linear-gradient(to right, ${themeStyles.primaryColor}, ${themeStyles.accentColor})` };
+  const headerMutedClass = isMinimal || isDetailed ? "text-gray-500" : "text-white/80";
+  const headerTitleClass = isMinimal || isDetailed ? "text-gray-900" : "text-white";
+  const headerSubtleClass = isMinimal || isDetailed ? "text-gray-600" : "text-white/80";
+  const sectionOuterClassName = isDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : "";
+  const sectionInnerClassName = isDetailed ? "bg-transparent p-0" : "bg-gray-50 rounded-lg p-4";
+  const messageBoxClassName = isDetailed
+    ? "rounded-lg border border-slate-200 bg-slate-50 p-4"
+    : "bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg";
+
+  const customerInfoSection = (
+    <div className={`mb-8 ${sectionOuterClassName}`}>
+      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeStyles.textColor }}>
+        <Building className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
+        Customer Information
+      </h3>
+      <div className={sectionInnerClassName}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: `${themeStyles.primaryColor}20` }}
+            >
+              <span className="font-semibold" style={{ color: themeStyles.primaryColor }}>
+                {estimate.customerName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">{estimate.customerName}</p>
+              <p className="text-sm text-gray-600">Customer</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Mail className="w-5 h-5 text-gray-400" />
+            <div>
+              <p className="font-medium text-gray-900">{estimate.customerEmail}</p>
+              <p className="text-sm text-gray-600">Email</p>
+            </div>
+          </div>
+
+          {estimate.customerPhone && (
+            <div className="flex items-center gap-3">
+              <Phone className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="font-medium text-gray-900">{estimate.customerPhone}</p>
+                <p className="text-sm text-gray-600">Phone</p>
+              </div>
+            </div>
+          )}
+
+          {estimate.customerAddress && (
+            <div className="flex items-center gap-3">
+              <MapPin className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="font-medium text-gray-900">{estimate.customerAddress}</p>
+                <p className="text-sm text-gray-600">Address</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const messageSection = resolvedMessage ? (
+    <div className={`mb-8 ${sectionOuterClassName}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Message</h3>
+      <div className={isMinimal ? "border border-gray-200 p-4 rounded-lg" : messageBoxClassName}>
+        <p className="leading-relaxed whitespace-pre-wrap" style={{ color: themeStyles.textColor }}>
+          {resolvedMessage}
+        </p>
+      </div>
+    </div>
+  ) : null;
+
+  const businessDetailsSection = showBusinessDetails ? (
+    <div className={`mb-8 ${sectionOuterClassName}`}>
+      <h3 className="text-lg font-semibold mb-4" style={{ color: themeStyles.textColor }}>
+        Business Details
+      </h3>
+      <div className={sectionInnerClassName}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {showBusinessLogo && estimateDefaults.defaultLogoUrl && (
+            <img
+              src={estimateDefaults.defaultLogoUrl}
+              alt={`${publicBusinessSettings?.businessName || "Business"} logo`}
+              className="h-12 w-auto object-contain"
+            />
+          )}
+          <div className="space-y-1 text-sm text-gray-700">
+            {showBusinessName && publicBusinessSettings?.businessName && (
+              <div className="font-semibold text-gray-900">{publicBusinessSettings.businessName}</div>
+            )}
+            {showBusinessAddress && publicBusinessSettings?.businessAddress && (
+              <div>{publicBusinessSettings.businessAddress}</div>
+            )}
+            {showBusinessEmail && publicBusinessSettings?.businessEmail && (
+              <div>{publicBusinessSettings.businessEmail}</div>
+            )}
+            {showBusinessPhone && publicBusinessSettings?.businessPhone && (
+              <div>{publicBusinessSettings.businessPhone}</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  const videoSection = videoUrl && getVideoEmbedUrl(videoUrl) ? (
+    <div className={`mb-8 ${sectionOuterClassName}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <Play className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
+        Video
+      </h3>
+      <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 border border-slate-200">
+        <iframe
+          src={getVideoEmbedUrl(videoUrl)!}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="Estimate Video"
+        />
+      </div>
+    </div>
+  ) : null;
+
+  const attachmentsSection = attachments.length > 0 ? (
+    <div className={`mb-8 ${sectionOuterClassName}`}>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <Paperclip className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
+        Attachments
+      </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {attachments.map((attachment, index) => (
+          <a
+            key={`${attachment.url}-${index}`}
+            href={attachment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors group"
+          >
+            {attachment.type === "image" ? (
+              <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0">
+                <img
+                  src={attachment.url}
+                  alt={attachment.name || "Attachment"}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <div className="hidden w-full h-full flex items-center justify-center">
+                  <ImageIcon className="w-6 h-6 text-gray-400" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded bg-red-50 flex items-center justify-center flex-shrink-0">
+                <FileIcon className="w-6 h-6 text-red-500" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 truncate group-hover:text-blue-600">
+                {attachment.name ||
+                  (attachment.type === "pdf"
+                    ? "PDF Document"
+                    : attachment.type === "image"
+                      ? "Image"
+                      : "File")}
+              </p>
+              <p className="text-sm text-gray-500 uppercase">{attachment.type}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
+  const servicesSection = (
+    <div className={`mb-8 ${sectionOuterClassName}`}>
+      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeStyles.textColor }}>
+        <Receipt className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
+        Services & Pricing
+      </h3>
+      <div className="overflow-x-auto">
+        <table className={`w-full border-collapse border border-gray-200 rounded-lg overflow-hidden ${isDetailed ? "bg-white" : ""}`}>
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-900">
+                Service
+              </th>
+              <th className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-900">
+                Description
+              </th>
+              <th className="border border-gray-200 px-4 py-3 text-right font-semibold text-gray-900">
+                Price
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {estimate.services.map((service, index) => (
+              <tr key={index} className="hover:bg-gray-50">
+                <td className="border border-gray-200 px-4 py-3">
+                  <div className="font-medium text-gray-900">{service.name}</div>
+                  {service.category && (
+                    <div className="text-sm text-gray-500">{service.category}</div>
+                  )}
+                </td>
+                <td className="border border-gray-200 px-4 py-3 text-gray-700">
+                  {service.description || 'Professional service'}
+                </td>
+                <td className="border border-gray-200 px-4 py-3 text-right font-medium text-gray-900">
+                  {formatCurrency(service.price)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const totalsSection = (
+    <div className="border-t pt-6">
+      <div className="max-w-md ml-auto">
+        <div className="space-y-3">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Subtotal:</span>
+            <span className="font-medium">{formatCurrency(estimate.subtotal)}</span>
+          </div>
+
+          {(estimate.discountAmount ?? 0) > 0 && (
+            <div className="flex justify-between items-center text-green-600">
+              <span className="flex items-center gap-2">
+                <Percent className="w-4 h-4" />
+                Discount:
+              </span>
+              <span className="font-medium">-{formatCurrency(estimate.discountAmount ?? 0)}</span>
+            </div>
+          )}
+
+          {(estimate.distanceFee ?? 0) > 0 && (
+            <div className="flex justify-between items-center text-orange-600">
+              <span className="flex items-center gap-2">
+                <Truck className="w-4 h-4" />
+                Travel Fee:
+              </span>
+              <span className="font-medium">{formatCurrency(estimate.distanceFee ?? 0)}</span>
+            </div>
+          )}
+
+          {(estimate.taxAmount ?? 0) > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Tax:</span>
+              <span className="font-medium">{formatCurrency(estimate.taxAmount ?? 0)}</span>
+            </div>
+          )}
+
+          <Separator />
+
+          <div className="flex justify-between items-center text-xl font-bold text-gray-900">
+            <span className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5" />
+              Total:
+            </span>
+            <span>{formatCurrency(estimate.totalAmount)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const footerSection = (
+    <div className="mt-8 pt-6 border-t text-center text-gray-600">
+      <p className="text-sm">
+        This estimate is valid until {estimate.validUntil ? format(new Date(estimate.validUntil), 'MMMM dd, yyyy') : 'further notice'}.
+      </p>
+      <p className="text-sm mt-2">
+        Thank you for choosing our services. We look forward to working with you!
+      </p>
+    </div>
+  );
+
   return (
-    <div className="force-light-mode min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className={`force-light-mode min-h-screen ${pageBackgroundClass} p-4`}>
+      <div className={`${containerWidthClass} mx-auto`}>
         {/* Header Actions */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -261,22 +596,6 @@ export default function EstimatePage() {
             </Button>
           </div>
         </div>
-
-        {/* Pre-estimate notice */}
-        {estimate.estimateType === "pre_estimate" && (
-          <Card className="mb-6 border-2 border-orange-200 bg-orange-50/60">
-            <CardContent className="p-6">
-              <div className="text-center">
-                <h2 className="text-xl font-semibold text-orange-900 mb-2">
-                  Pre-Estimate
-                </h2>
-                <p className="text-orange-700">
-                  This is an initial estimate. A confirmed estimate will be sent for approval.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Accept/Decline Actions - Only show for confirmed estimates approved by owner and not yet responded */}
         {estimate.estimateType === "confirmed" &&
@@ -365,291 +684,135 @@ export default function EstimatePage() {
 
         {/* Estimate Content */}
         <div ref={printRef}>
-          <Card className="shadow-lg" style={{ backgroundColor: themeStyles.backgroundColor }}>
-            <CardHeader
-              className="border-b text-white"
-              style={{
-                background: `linear-gradient(to right, ${themeStyles.primaryColor}, ${themeStyles.accentColor})`,
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl font-bold mb-2">
-                    Professional Estimate
-                  </CardTitle>
-                  <p className="text-white/80">
-                    Estimate #{estimate.estimateNumber}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-white/80">Issue Date</p>
-                  <p className="font-semibold">
-                    {format(new Date(estimate.createdAt), 'MMMM dd, yyyy')}
-                  </p>
-                  {estimate.validUntil && (
-                    <>
-                      <p className="text-white/80 mt-2">Valid Until</p>
-                      <p className="font-semibold">
-                        {format(new Date(estimate.validUntil), 'MMMM dd, yyyy')}
+          {isDetailed ? (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+              <Card className={cardClassName} style={{ backgroundColor: themeStyles.backgroundColor }}>
+                <CardHeader className={headerClassName} style={headerStyle}>
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Detailed Estimate</p>
+                      <CardTitle className={`text-2xl font-bold mt-2 ${headerTitleClass}`}>
+                        Estimate #{estimate.estimateNumber}
+                      </CardTitle>
+                      <p className={headerSubtleClass}>
+                        Prepared for {estimate.customerName}
                       </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-8">
-              {/* Customer Information */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeStyles.textColor }}>
-                  <Building className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
-                  Customer Information
-                </h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: `${themeStyles.primaryColor}20` }}
-                      >
-                        <span className="font-semibold" style={{ color: themeStyles.primaryColor }}>
-                          {estimate.customerName.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{estimate.customerName}</p>
-                        <p className="text-sm text-gray-600">Customer</p>
-                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-gray-400" />
-                      <div>
-                        <p className="font-medium text-gray-900">{estimate.customerEmail}</p>
-                        <p className="text-sm text-gray-600">Email</p>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge className={estimate.estimateType === "pre_estimate" ? "bg-orange-100 text-orange-800" : "bg-emerald-100 text-emerald-800"}>
+                        {estimate.estimateType === "pre_estimate" ? "Pre-Estimate" : "Confirmed Estimate"}
+                      </Badge>
+                      <Badge className={getStatusColor(estimate.status)}>
+                        {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
+                      </Badge>
+                      <span className="ml-2 text-sm text-gray-500">Total</span>
+                      <span className="text-lg font-semibold text-gray-900">{formatCurrency(estimate.totalAmount)}</span>
                     </div>
-
-                    {estimate.customerPhone && (
-                      <div className="flex items-center gap-3">
-                        <Phone className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="font-medium text-gray-900">{estimate.customerPhone}</p>
-                          <p className="text-sm text-gray-600">Phone</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {estimate.customerAddress && (
-                      <div className="flex items-center gap-3">
-                        <MapPin className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="font-medium text-gray-900">{estimate.customerAddress}</p>
-                          <p className="text-sm text-gray-600">Address</p>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                </div>
+                </CardHeader>
+
+                <CardContent className={isMinimal ? "p-6" : "p-8"}>
+                  {businessDetailsSection}
+                  {customerInfoSection}
+                  {messageSection}
+                  {videoSection}
+                  {attachmentsSection}
+                  {servicesSection}
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card className="shadow-sm border" style={{ backgroundColor: themeStyles.backgroundColor }}>
+                  <CardContent className="p-6 space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Status</p>
+                      <Badge className={getStatusColor(estimate.status)}>
+                        {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
+                      </Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Estimate Number</p>
+                      <p className="font-semibold text-gray-900">{estimate.estimateNumber}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Issued</p>
+                      <p className="font-semibold text-gray-900">{format(new Date(estimate.createdAt), 'MMMM dd, yyyy')}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Valid Until</p>
+                      <p className="font-semibold text-gray-900">
+                        {estimate.validUntil ? format(new Date(estimate.validUntil), 'MMMM dd, yyyy') : 'Further notice'}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm border" style={{ backgroundColor: themeStyles.backgroundColor }}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Line Items</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {estimate.services.map((service, index) => (
+                      <div key={index} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-700">{service.name}</span>
+                        <span className="font-semibold text-gray-900">{formatCurrency(service.price)}</span>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm border" style={{ backgroundColor: themeStyles.backgroundColor }}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {totalsSection}
+                    <div className="mt-6">{footerSection}</div>
+                  </CardContent>
+                </Card>
               </div>
-
-              {/* Business Message */}
-              {estimate.businessMessage && (
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Message</h3>
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-lg">
-                    <p className="text-gray-700 leading-relaxed">{estimate.businessMessage}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Custom Estimate Message */}
-              {customMessage && (
-                <div className="mb-8">
-                  <div
-                    className="p-4 rounded-lg border-l-4"
-                    style={{
-                      backgroundColor: `${themeStyles.primaryColor}10`,
-                      borderLeftColor: themeStyles.primaryColor,
-                    }}
-                  >
-                    <p className="leading-relaxed whitespace-pre-wrap" style={{ color: themeStyles.textColor }}>
-                      {customMessage}
+            </div>
+          ) : (
+            <Card className={cardClassName} style={{ backgroundColor: themeStyles.backgroundColor }}>
+              <CardHeader className={headerClassName} style={headerStyle}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className={`text-2xl font-bold mb-2 ${headerTitleClass}`}>
+                      Professional Estimate
+                    </CardTitle>
+                    <p className={headerMutedClass}>
+                      Estimate #{estimate.estimateNumber}
                     </p>
                   </div>
-                </div>
-              )}
-
-              {/* Video Section */}
-              {videoUrl && getVideoEmbedUrl(videoUrl) && (
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Play className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
-                    Video
-                  </h3>
-                  <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
-                    <iframe
-                      src={getVideoEmbedUrl(videoUrl)!}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      title="Estimate Video"
-                    />
+                  <div className="text-right">
+                    <p className={headerMutedClass}>Issue Date</p>
+                    <p className={`font-semibold ${headerTitleClass}`}>
+                      {format(new Date(estimate.createdAt), 'MMMM dd, yyyy')}
+                    </p>
+                    {estimate.validUntil && (
+                      <>
+                        <p className={`${headerSubtleClass} mt-2`}>Valid Until</p>
+                        <p className={`font-semibold ${headerTitleClass}`}>
+                          {format(new Date(estimate.validUntil), 'MMMM dd, yyyy')}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
-              )}
+              </CardHeader>
 
-              {/* Attachments Section */}
-              {attachments.length > 0 && (
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <Paperclip className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
-                    Attachments
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {attachments.map((attachment, index) => (
-                      <a
-                        key={`${attachment.url}-${index}`}
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 transition-colors group"
-                      >
-                        {attachment.type === "image" ? (
-                          <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0">
-                            <img
-                              src={attachment.url}
-                              alt={attachment.name || "Attachment"}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                            <div className="hidden w-full h-full flex items-center justify-center">
-                              <ImageIcon className="w-6 h-6 text-gray-400" />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 rounded bg-red-50 flex items-center justify-center flex-shrink-0">
-                            <FileIcon className="w-6 h-6 text-red-500" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate group-hover:text-blue-600">
-                            {attachment.name || `${attachment.type === "pdf" ? "PDF Document" : "Image"}`}
-                          </p>
-                          <p className="text-sm text-gray-500 uppercase">{attachment.type}</p>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Services */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeStyles.textColor }}>
-                  <Receipt className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
-                  Services & Pricing
-                </h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-200 rounded-lg overflow-hidden">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-900">
-                          Service
-                        </th>
-                        <th className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-900">
-                          Description
-                        </th>
-                        <th className="border border-gray-200 px-4 py-3 text-right font-semibold text-gray-900">
-                          Price
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {estimate.services.map((service, index) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="border border-gray-200 px-4 py-3">
-                            <div className="font-medium text-gray-900">{service.name}</div>
-                            {service.category && (
-                              <div className="text-sm text-gray-500">{service.category}</div>
-                            )}
-                          </td>
-                          <td className="border border-gray-200 px-4 py-3 text-gray-700">
-                            {service.description || 'Professional service'}
-                          </td>
-                          <td className="border border-gray-200 px-4 py-3 text-right font-medium text-gray-900">
-                            {formatCurrency(service.price)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Totals */}
-              <div className="border-t pt-6">
-                <div className="max-w-md ml-auto">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span className="font-medium">{formatCurrency(estimate.subtotal)}</span>
-                    </div>
-                    
-                    {(estimate.discountAmount ?? 0) > 0 && (
-                      <div className="flex justify-between items-center text-green-600">
-                        <span className="flex items-center gap-2">
-                          <Percent className="w-4 h-4" />
-                          Discount:
-                        </span>
-                        <span className="font-medium">-{formatCurrency(estimate.discountAmount ?? 0)}</span>
-                      </div>
-                    )}
-                    
-                    {(estimate.distanceFee ?? 0) > 0 && (
-                      <div className="flex justify-between items-center text-orange-600">
-                        <span className="flex items-center gap-2">
-                          <Truck className="w-4 h-4" />
-                          Travel Fee:
-                        </span>
-                        <span className="font-medium">{formatCurrency(estimate.distanceFee ?? 0)}</span>
-                      </div>
-                    )}
-                    
-                    {(estimate.taxAmount ?? 0) > 0 && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">Tax:</span>
-                        <span className="font-medium">{formatCurrency(estimate.taxAmount ?? 0)}</span>
-                      </div>
-                    )}
-                    
-                    <Separator />
-                    
-                    <div className="flex justify-between items-center text-xl font-bold text-gray-900">
-                      <span className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5" />
-                        Total:
-                      </span>
-                      <span>{formatCurrency(estimate.totalAmount)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div className="mt-8 pt-6 border-t text-center text-gray-600">
-                <p className="text-sm">
-                  This estimate is valid until {estimate.validUntil ? format(new Date(estimate.validUntil), 'MMMM dd, yyyy') : 'further notice'}.
-                </p>
-                <p className="text-sm mt-2">
-                  Thank you for choosing our services. We look forward to working with you!
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              <CardContent className={isMinimal ? "p-6" : "p-8"}>
+                {businessDetailsSection}
+                {customerInfoSection}
+                {messageSection}
+                {videoSection}
+                {attachmentsSection}
+                {servicesSection}
+                {totalsSection}
+                {footerSection}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

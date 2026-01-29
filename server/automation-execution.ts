@@ -1,6 +1,6 @@
 import { db } from './db';
-import { crmAutomations, crmAutomationSteps, crmAutomationRuns, crmAutomationStepRuns, leads, multiServiceLeads, crmSettings, leadTagAssignments } from '@shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { crmAutomations, crmAutomationSteps, crmAutomationRuns, crmAutomationStepRuns, leads, multiServiceLeads, crmSettings, leadTagAssignments, estimates } from '@shared/schema';
+import { eq, and, desc } from 'drizzle-orm';
 import Twilio from 'twilio';
 import { Resend } from 'resend';
 import { decrypt } from './encryption';
@@ -39,6 +39,8 @@ interface AutomationContext {
     id: number;
     total: number;
     status: string;
+    estimateNumber?: string;
+    estimateType?: string;
     customerName?: string;
     customerEmail?: string;
     validUntil?: Date;
@@ -82,6 +84,9 @@ export class AutomationExecutionService {
    */
   private replaceVariables(text: string, context: AutomationContext): string {
     let result = text;
+
+    // Normalize double-brace variables to single-brace format
+    result = result.replace(/\{\{([^}]+)\}\}/g, '{$1}');
     
     // Lead data variables - always replace, even if context.leadData is missing
     result = result.replace(/\{lead\.name\}/g, context.leadData?.name || '');
@@ -152,6 +157,11 @@ export class AutomationExecutionService {
     );
     
     // Estimate data variables - always replace
+    const estimateNumber =
+      context.estimateData?.estimateNumber || (context.leadData as any)?.estimateNumber;
+    const estimateType = (context.estimateData?.estimateType || '').toLowerCase();
+    const estimateLink = estimateNumber ? `${getBaseUrl()}/estimate/${estimateNumber}` : '';
+
     result = result.replace(/\{estimate\.id\}/g, context.estimateData?.id ? String(context.estimateData.id) : '');
     result = result.replace(/\{estimate\.total\}/g, 
       context.estimateData?.total !== undefined
@@ -166,14 +176,20 @@ export class AutomationExecutionService {
         ? new Date(context.estimateData.validUntil).toLocaleDateString()
         : ''
     );
-    result = result.replace(/\{estimate\.link\}/g, 
-      context.estimateData?.estimateNumber
-        ? `${getBaseUrl()}/estimate/${context.estimateData.estimateNumber}`
+    result = result.replace(/\{estimate\.link\}/g, estimateLink);
+    result = result.replace(/\{estimate\.button\}/g, 
+      estimateLink
+        ? `<div style="text-align: center; margin: 30px 0;"><a href="${estimateLink}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">View Estimate</a></div>`
         : ''
     );
-    result = result.replace(/\{estimate\.button\}/g, 
-      context.estimateData?.estimateNumber
-        ? `<div style="text-align: center; margin: 30px 0;"><a href="${getBaseUrl()}/estimate/${context.estimateData.estimateNumber}" style="display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">View Estimate</a></div>`
+    result = result.replace(/\{\s*estimate\.preEstimateLink\s*\}/g,
+      estimateLink
+        ? (estimateType === 'pre_estimate' ? `${estimateLink} (Pre-Estimate)` : estimateLink)
+        : ''
+    );
+    result = result.replace(/\{\s*estimate\.preEstimateButton\s*\}/g,
+      estimateLink
+        ? `<div style="text-align: center; margin: 30px 0;"><a href="${estimateLink}" style="display: inline-block; background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(71, 85, 105, 0.25);">View Pre-Estimate</a>${estimateType === 'pre_estimate' ? '<div style="margin-top: 8px; display: inline-block; background: #e2e8f0; color: #334155; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;">Pre-Estimate</div>' : ''}</div>`
         : ''
     );
     
@@ -211,6 +227,47 @@ export class AutomationExecutionService {
     );
     
     return result;
+  }
+
+  /**
+   * Ensure estimate data is present in context when possible.
+   */
+  private async hydrateEstimateContext(context: AutomationContext): Promise<AutomationContext> {
+    if (context.estimateData?.estimateNumber || context.estimateData?.id) {
+      return context;
+    }
+
+    let estimate: any | undefined;
+    if (context.estimateId) {
+      estimate = await db.query.estimates.findFirst({
+        where: eq(estimates.id, context.estimateId),
+      });
+    } else if (context.leadId) {
+      estimate = await db.query.estimates.findFirst({
+        where: eq(estimates.leadId, context.leadId),
+        orderBy: (estimates, { desc }) => [desc(estimates.createdAt)],
+      });
+    } else if (context.multiServiceLeadId) {
+      estimate = await db.query.estimates.findFirst({
+        where: eq(estimates.multiServiceLeadId, context.multiServiceLeadId),
+        orderBy: (estimates, { desc }) => [desc(estimates.createdAt)],
+      });
+    }
+
+    if (estimate) {
+      context.estimateData = {
+        id: estimate.id,
+        estimateNumber: estimate.estimateNumber,
+        total: estimate.totalAmount,
+        status: estimate.status,
+        estimateType: estimate.estimateType,
+        customerName: estimate.customerName,
+        customerEmail: estimate.customerEmail,
+        validUntil: estimate.validUntil || undefined,
+      };
+    }
+
+    return context;
   }
 
   /**
@@ -500,6 +557,8 @@ export class AutomationExecutionService {
         return;
       }
 
+      context = await this.hydrateEstimateContext(context);
+
       // Create automation run record
       const [automationRun] = await db.insert(crmAutomationRuns).values({
         automationId,
@@ -609,6 +668,8 @@ export class AutomationExecutionService {
         console.log(`Automation ${automationId} not found or inactive`);
         return null;
       }
+
+      context = await this.hydrateEstimateContext(context);
 
       // Get automation steps in order
       const steps = await db.query.crmAutomationSteps.findMany({

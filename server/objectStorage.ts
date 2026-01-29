@@ -184,6 +184,33 @@ export class ObjectStorageService {
     };
   }
 
+  async getEstimateAttachmentUploadURL(fileExtension: string): Promise<{uploadUrl: string, objectPath: string}> {
+    const privateObjectDir = this.getPrivateObjectDir();
+    if (!privateObjectDir) {
+      throw new Error(
+        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
+          "tool and set PRIVATE_OBJECT_DIR env var."
+      );
+    }
+
+    const objectId = randomUUID();
+    const fullPath = `${privateObjectDir}/estimate-attachments/${objectId}${fileExtension}`;
+
+    const { bucketName, objectName } = parseObjectPath(fullPath);
+
+    const uploadUrl = await signObjectURL({
+      bucketName,
+      objectName,
+      method: "PUT",
+      ttlSec: 900,
+    });
+
+    return {
+      uploadUrl,
+      objectPath: `/objects/estimate-attachments/${objectId}${fileExtension}`
+    };
+  }
+
   // Gets the object entity file from the object path.
   async getObjectEntityFile(objectPath: string): Promise<File> {
     if (!objectPath.startsWith("/objects/")) {

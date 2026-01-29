@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig } from "@shared/schema";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews } from "@shared/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
@@ -84,6 +84,16 @@ import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
 import { trackCompleteRegistration, trackStartTrial } from './facebook-capi';
 import webpush from 'web-push';
+
+function getBaseUrl(): string {
+  if (process.env.DOMAIN) {
+    return process.env.DOMAIN;
+  }
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
+  return "http://localhost:5000";
+}
 
 // Configure web-push with VAPID keys
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -537,6 +547,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const estimateAttachmentExtensions = new Set([
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".gif",
+    ".pdf",
+    ".doc",
+    ".docx",
+  ]);
+
+  // Endpoint to get presigned URL for estimate attachment upload
+  app.post("/api/objects/estimate-attachment-upload", requireAuth, async (req, res) => {
+    try {
+      const { fileExtension } = req.body;
+      if (!fileExtension) {
+        return res.status(400).json({ message: "File extension is required" });
+      }
+
+      const normalizedExtension = String(fileExtension).toLowerCase();
+      if (!estimateAttachmentExtensions.has(normalizedExtension)) {
+        return res.status(400).json({ message: "Unsupported file type" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const { uploadUrl, objectPath } = await objectStorageService.getEstimateAttachmentUploadURL(normalizedExtension);
+
+      res.json({ uploadUrl, objectPath });
+    } catch (error) {
+      console.error('Error getting estimate attachment upload URL:', error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  // Endpoint to set ACL policy after estimate attachment upload
+  app.post("/api/objects/set-estimate-attachment-acl", requireAuth, async (req, res) => {
+    try {
+      const { objectPath } = req.body;
+      if (!objectPath) {
+        return res.status(400).json({ message: "Object path is required" });
+      }
+
+      const userId = (req as any).currentUser?.id || "system";
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        objectPath,
+        {
+          owner: userId,
+          visibility: "public",
+        }
+      );
+
+      res.json({ objectPath: normalizedPath });
+    } catch (error) {
+      console.error('Error setting estimate attachment ACL:', error);
+      res.status(500).json({ message: "Failed to set estimate attachment policy" });
+    }
+  });
+
   // Updated icon upload endpoint using object storage
   app.post("/api/upload/icon", uploadIcon.single('icon'), async (req, res) => {
     try {
@@ -918,8 +987,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       // Filter formulas to only show those that are displayed AND active
+      // Use !== false to handle null/undefined values (treat as active by default)
       const activeFormulas = allFormulas.filter(formula =>
-        formula.isDisplayed !== false && formula.isActive === true
+        formula.isDisplayed !== false && formula.isActive !== false
       );
 
       // Determine if Autobidder branding should be shown based on user's plan
@@ -964,9 +1034,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get formulas for specific user that are marked as displayed AND active
+      // Use !== false to handle null/undefined values (treat as active by default)
       const allFormulas = await storage.getFormulasByUserId(userId);
-      const activeFormulas = allFormulas.filter(formula => 
-        formula.isDisplayed !== false && formula.isActive === true
+      const activeFormulas = allFormulas.filter(formula =>
+        formula.isDisplayed !== false && formula.isActive !== false
       );
       res.json(activeFormulas);
     } catch (error) {
@@ -1010,15 +1081,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to diagnose calculator data issues
+  app.get("/api/debug/calculator-data", async (req, res) => {
+    const { userId } = req.query;
+    const results: any = { userId, checks: {} };
+
+    try {
+      if (!userId || typeof userId !== 'string') {
+        return res.json({ error: 'userId parameter required', userId });
+      }
+
+      // Check user exists
+      try {
+        const user = await storage.getUser(userId);
+        results.checks.user = user ? { found: true, email: user.email, plan: user.plan } : { found: false };
+      } catch (e: any) {
+        results.checks.user = { error: e.message };
+      }
+
+      // Check formulas
+      try {
+        const formulas = await storage.getFormulasByUserId(userId);
+        results.checks.formulas = { count: formulas.length, ids: formulas.map(f => f.id) };
+      } catch (e: any) {
+        results.checks.formulas = { error: e.message };
+      }
+
+      // Check business settings
+      try {
+        const settings = await storage.getBusinessSettingsByUserId(userId);
+        results.checks.businessSettings = settings ? { found: true, id: settings.id } : { found: false };
+      } catch (e: any) {
+        results.checks.businessSettings = { error: e.message };
+      }
+
+      // Check design settings
+      try {
+        const design = await storage.getDesignSettingsByUserId(userId);
+        results.checks.designSettings = design ? { found: true, id: design.id } : { found: false };
+      } catch (e: any) {
+        results.checks.designSettings = { error: e.message };
+      }
+
+      res.json(results);
+    } catch (e: any) {
+      res.json({ error: e.message, stack: e.stack });
+    }
+  });
+
   // Combined calculator data endpoint for better performance
   app.get("/api/public/calculator-data", async (req, res) => {
-    // Allow short-lived caching for embed performance (30 seconds)
-    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
-    res.removeHeader('Pragma');
-    
+    const { userId: queryUserId, customFormId } = req.query;
+
+    // Debug logging
+    console.log('[calculator-data] queryUserId:', queryUserId);
+    console.log('[calculator-data] session exists:', !!req.session);
+    console.log('[calculator-data] session.user:', req.session?.user ? `id=${req.session.user.id}` : 'none');
+
+    // Set cache headers based on request type
+    // Public requests (with userId param) can be cached, authenticated requests should not
+    if (queryUserId) {
+      res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    } else {
+      res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    }
+
     try {
-      const { userId: queryUserId, customFormId } = req.query;
-      
       // Support both authenticated and public access
       // If no userId param, check if user is authenticated and use their ID
       let userId: string;
@@ -1027,22 +1155,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (req.session?.user) {
         userId = req.session.user.id;
       } else {
+        console.log('[calculator-data] No userId and no session - returning 400');
         return res.status(400).json({ message: "userId parameter is required or user must be authenticated" });
       }
 
-      // Fetch all data in parallel for better performance
-      const [allFormulas, businessSettings, designSettings, customForm, user] = await Promise.all([
-        storage.getFormulasByUserId(userId),
-        storage.getBusinessSettingsByUserId(userId),
-        storage.getDesignSettingsByUserId(userId),
-        customFormId ? storage.getCustomFormById(customFormId as string) : null,
-        storage.getUser(userId)
-      ]);
+      console.log('[calculator-data] Fetching data for userId:', userId);
+
+      // Fetch all data - handle each call separately to identify failures
+      let allFormulas: any[] = [];
+      let businessSettings: any = null;
+      let designSettings: any = null;
+      let customForm: any = null;
+      let user: any = null;
+
+      try {
+        allFormulas = await storage.getFormulasByUserId(userId);
+      } catch (e) {
+        console.error('[calculator-data] getFormulasByUserId failed:', e);
+        allFormulas = [];
+      }
+
+      try {
+        businessSettings = await storage.getBusinessSettingsByUserId(userId);
+      } catch (e) {
+        console.error('[calculator-data] getBusinessSettingsByUserId failed:', e);
+      }
+
+      try {
+        designSettings = await storage.getDesignSettingsByUserId(userId);
+      } catch (e) {
+        console.error('[calculator-data] getDesignSettingsByUserId failed:', e);
+      }
+
+      if (customFormId) {
+        try {
+          customForm = await storage.getCustomFormById(customFormId as string);
+        } catch (e) {
+          console.error('[calculator-data] getCustomFormById failed:', e);
+        }
+      }
+
+      try {
+        user = await storage.getUser(userId);
+      } catch (e) {
+        console.error('[calculator-data] getUser failed:', e);
+      }
+
+      console.log('[calculator-data] Data fetched - formulas:', allFormulas.length, 'user:', user?.email);
+      console.log('[calculator-data] allFormulas count:', allFormulas.length);
+      if (allFormulas.length > 0) {
+        console.log('[calculator-data] first formula isActive:', allFormulas[0].isActive, 'isDisplayed:', allFormulas[0].isDisplayed);
+      }
 
       // Filter formulas to only show those that are displayed AND active
-      let activeFormulas = allFormulas.filter(formula => 
-        formula.isDisplayed !== false && formula.isActive === true
+      // Use !== false to handle null/undefined values (treat as active by default)
+      let activeFormulas = allFormulas.filter(formula =>
+        formula.isDisplayed !== false && formula.isActive !== false
       );
+
+      console.log('[calculator-data] activeFormulas count after filter:', activeFormulas.length);
 
       // If this is a custom form, filter to only selected services
       if (customForm && customForm.selectedServices) {
@@ -1097,7 +1268,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('Error fetching calculator data:', error);
-      res.status(500).json({ message: "Failed to fetch calculator data" });
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+      res.status(500).json({
+        message: "Failed to fetch calculator data",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -1297,13 +1472,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existingFormula || existingFormula.userId !== effectiveUserId) {
         return res.status(404).json({ message: "Formula not found" });
       }
-      
+
+      // Delete related records first to avoid foreign key constraint violations
+      await db.delete(calculatorSessions).where(eq(calculatorSessions.formulaId, id));
+      await db.delete(pageViews).where(eq(pageViews.formulaId, id));
+
       const deleted = await storage.deleteFormula(id);
       if (!deleted) {
         return res.status(404).json({ message: "Formula not found" });
       }
       res.status(204).send();
     } catch (error) {
+      console.error("Error deleting formula:", error);
       res.status(500).json({ message: "Failed to delete formula" });
     }
   });
@@ -2657,6 +2837,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (businessOwnerId && businessOwnerId !== "default_owner") {
         await storage.updateLead(lead.id, { userId: businessOwnerId });
       }
+
+      // Create a pre-estimate immediately for new leads with a formula
+      let createdEstimate: any = null;
+      if (lead.formulaId && businessOwnerId && businessOwnerId !== "default_owner") {
+        try {
+          const formula = await storage.getFormula(lead.formulaId);
+          if (formula) {
+            const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const estimateData = {
+              userId: businessOwnerId,
+              leadId: lead.id,
+              estimateType: "pre_estimate",
+              estimateNumber,
+              customerName: lead.name,
+              customerEmail: lead.email,
+              customerPhone: lead.phone,
+              businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+              services: [{
+                name: formula.name,
+                description: formula.description || "",
+                variables: lead.variables,
+                price: lead.calculatedPrice,
+                category: "Service"
+              }],
+              subtotal: lead.calculatedPrice,
+              taxAmount: 0,
+              discountAmount: 0,
+              totalAmount: lead.calculatedPrice,
+              validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+              status: "draft"
+            };
+            createdEstimate = await storage.createEstimate(estimateData);
+          }
+        } catch (estimateError) {
+          console.error('Failed to create pre-estimate for lead:', estimateError);
+        }
+      }
       
       // Create BidRequest and send email notification to account owner (only for leads with formulas)
       try {
@@ -2766,8 +2983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Trigger automations for new lead (non-blocking, fire and forget)
       if (businessOwnerId && businessOwnerId !== "default_owner") {
         // Check if an estimate exists for this lead
-        const leadEstimates = await storage.getEstimatesByLeadId(lead.id);
-        const latestEstimate = leadEstimates.length > 0 ? leadEstimates[0] : null;
+        const latestEstimate = createdEstimate || (await storage.getEstimatesByLeadId(lead.id))[0] || null;
         
         automationService.triggerAutomations('lead_created', {
           userId: businessOwnerId,
@@ -2780,7 +2996,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             stage: lead.stage,
             source: lead.source || undefined,
             estimateNumber: latestEstimate?.estimateNumber,
-          }
+          },
+          ...(latestEstimate ? {
+            estimateId: latestEstimate.id,
+            estimateData: {
+              id: latestEstimate.id,
+              estimateNumber: latestEstimate.estimateNumber,
+              total: latestEstimate.totalAmount,
+              status: latestEstimate.status,
+              estimateType: latestEstimate.estimateType,
+              customerName: latestEstimate.customerName,
+              customerEmail: latestEstimate.customerEmail,
+              validUntil: latestEstimate.validUntil || undefined,
+            }
+          } : {})
         }).catch(automationError => {
           console.error('Failed to trigger automations for new lead:', automationError);
           // Errors are logged but don't affect lead creation
@@ -4006,6 +4235,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (businessOwnerId && businessOwnerId !== "default_owner") {
         await storage.updateMultiServiceLead(lead.id, { businessOwnerId });
       }
+
+      // Create a pre-estimate immediately for new multi-service leads
+      let createdEstimate: any = null;
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        try {
+          const services = lead.services.map(service => ({
+            name: service.formulaName,
+            description: `Service ID: ${service.formulaId}`,
+            variables: service.variables,
+            price: service.calculatedPrice,
+            category: "Service"
+          }));
+
+          const distanceFee = lead.totalDistanceFee || lead.distanceFee || 0;
+          const existingTaxAmount = lead.taxAmount || 0;
+          const existingDiscounts = (lead.bundleDiscountAmount || 0) +
+            (lead.appliedDiscounts?.reduce((sum: any, d: any) => sum + (d.amount || 0), 0) || 0);
+
+          const subtotal = services.reduce((sum, s) => sum + s.price, 0);
+          const discountAmount = existingDiscounts;
+          const taxAmount = existingTaxAmount;
+          const totalAmount = subtotal + distanceFee - discountAmount + taxAmount;
+
+          const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          const estimateData = {
+            userId: businessOwnerId,
+            multiServiceLeadId: lead.id,
+            estimateType: "pre_estimate",
+            estimateNumber,
+            customerName: lead.name,
+            customerEmail: lead.email,
+            customerPhone: lead.phone,
+            customerAddress: lead.address,
+            businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+            services,
+            subtotal,
+            taxAmount,
+            discountAmount,
+            distanceFee,
+            totalAmount,
+            validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+            status: "draft"
+          };
+
+          createdEstimate = await storage.createEstimate(estimateData);
+        } catch (estimateError) {
+          console.error('Failed to create pre-estimate for multi-service lead:', estimateError);
+        }
+      }
       
       // Create BidRequest and send email notification to account owner
       try {
@@ -4313,8 +4591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Trigger automations for new multi-service lead (non-blocking, fire and forget)
       if (businessOwnerId && businessOwnerId !== "default_owner") {
         // Check if an estimate exists for this multi-service lead
-        const leadEstimates = await storage.getEstimatesByMultiServiceLeadId(lead.id);
-        const latestEstimate = leadEstimates.length > 0 ? leadEstimates[0] : null;
+        const latestEstimate = createdEstimate || (await storage.getEstimatesByMultiServiceLeadId(lead.id))[0] || null;
         
         automationService.triggerAutomations('lead_created', {
           userId: businessOwnerId,
@@ -4694,7 +4971,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(settings);
     } catch (error) {
-      console.error('Business settings validation error (no ID):', error);
+      console.error('Business settings update error (no ID):', error);
+      console.error('Business settings update payload:', JSON.stringify(req.body, null, 2));
+      console.error('Business settings update user:', (req as any).currentUser?.id);
       if (error instanceof Error && error.message.includes('ENCRYPTION_KEY')) {
         return res.status(500).json({ message: error.message });
       }
@@ -6339,7 +6618,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessPhone: settings.businessPhone,
         businessEmail: settings.businessEmail,
         businessAddress: settings.businessAddress,
-        enableBooking: settings.enableBooking
+        enableBooking: settings.enableBooking,
+        estimatePageSettings: {
+          defaultShowBusinessLogo: settings.estimatePageSettings?.defaultShowBusinessLogo,
+          defaultLogoUrl: settings.estimatePageSettings?.defaultLogoUrl,
+          defaultShowBusinessName: settings.estimatePageSettings?.defaultShowBusinessName,
+          defaultShowBusinessAddress: settings.estimatePageSettings?.defaultShowBusinessAddress,
+          defaultShowBusinessEmail: settings.estimatePageSettings?.defaultShowBusinessEmail,
+          defaultShowBusinessPhone: settings.estimatePageSettings?.defaultShowBusinessPhone,
+        }
       };
       
       res.json(publicSettings);
@@ -9456,6 +9743,7 @@ The Autobidder Team`;
         console.error('Failed to send Zapier webhook for estimate created:', error);
       });
 
+
       res.status(201).json(estimate);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -9545,6 +9833,7 @@ The Autobidder Team`;
             estimateNumber: estimate.estimateNumber,
             total: estimate.totalAmount,
             status: estimate.status,
+            estimateType: estimate.estimateType,
             customerName: estimate.customerName,
             customerEmail: estimate.customerEmail,
             validUntil: estimate.validUntil || undefined,
@@ -9632,6 +9921,7 @@ The Autobidder Team`;
           estimateNumber: updatedEstimate.estimateNumber,
           total: updatedEstimate.totalAmount,
           status: updatedEstimate.status,
+          estimateType: updatedEstimate.estimateType,
           customerName: updatedEstimate.customerName,
           customerEmail: updatedEstimate.customerEmail,
           validUntil: updatedEstimate.validUntil || undefined,
@@ -10111,6 +10401,7 @@ The Autobidder Team`;
             estimateNumber: estimate.estimateNumber,
             total: estimate.totalAmount,
             status: estimate.status,
+            estimateType: estimate.estimateType,
             customerName: estimate.customerName,
             customerEmail: estimate.customerEmail,
             validUntil: estimate.validUntil || undefined,
@@ -10166,10 +10457,7 @@ The Autobidder Team`;
       // Get business settings for branding and Twilio config
       const businessSettings = await storage.getBusinessSettingsByUserId(userId);
       const businessName = businessSettings?.businessName || 'Your Business';
-      const baseUrl = process.env.REPL_SLUG 
-        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-        : 'http://localhost:5000';
-      const estimateLink = `${baseUrl}/estimate/${estimate.estimateNumber}`;
+      const estimateLink = `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
       
       const results = {
         emailSent: false,
@@ -10183,16 +10471,19 @@ The Autobidder Team`;
         const defaultAttachments = pageDefaults?.defaultIncludeAttachments === false
           ? []
           : (pageDefaults?.defaultAttachments || []);
+        const defaultVideoUrl = pageDefaults?.defaultShowVideo === false
+          ? undefined
+          : pageDefaults?.defaultVideoUrl;
 
         const resolvedAttachments = attachments
           ?? ((estimate.attachments && estimate.attachments.length > 0) ? estimate.attachments : defaultAttachments);
 
         const updatedEstimateData = {
-          customMessage: customMessage ?? estimate.customMessage ?? undefined,
+          customMessage: customMessage ?? estimate.customMessage ?? pageDefaults?.defaultMessage ?? undefined,
           layoutId: layoutId ?? estimate.layoutId ?? pageDefaults?.defaultLayoutId ?? undefined,
           theme: theme ?? estimate.theme ?? pageDefaults?.defaultTheme ?? undefined,
           attachments: resolvedAttachments,
-          videoUrl: videoUrl ?? estimate.videoUrl ?? pageDefaults?.defaultVideoUrl ?? undefined,
+          videoUrl: videoUrl ?? estimate.videoUrl ?? defaultVideoUrl ?? undefined,
         };
 
         await storage.updateEstimate(estimate.id, updatedEstimateData);
@@ -10208,9 +10499,8 @@ The Autobidder Team`;
           
           const emailSent = await sendEmailWithFallback({
             to: estimate.customerEmail,
-            from: businessSettings?.businessEmail 
-              ? `${businessName} <${businessSettings.businessEmail}>`
-              : 'noreply@autobidder.org',
+            fromName: businessName,
+            replyTo: businessSettings?.businessEmail || undefined,
             subject,
             text: emailMessage,
             html: `
@@ -14135,10 +14425,7 @@ This booking was created on ${new Date().toLocaleString()}.
       // Get business settings for branding and Twilio config
       const businessSettings = await storage.getBusinessSettings();
       const businessName = businessSettings?.businessName || 'Your Business';
-      const baseUrl = process.env.REPL_SLUG 
-        ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-        : 'http://localhost:5000';
-      const estimateLink = `${baseUrl}/estimate/${estimate.estimateNumber}`;
+      const estimateLink = `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
       
       const results = {
         emailSent: false,

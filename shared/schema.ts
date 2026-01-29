@@ -256,9 +256,18 @@ export const businessSettings = pgTable("business_settings", {
     defaultAttachments?: Array<{
       url: string;
       name?: string;
-      type: "image" | "pdf";
+      type: "image" | "pdf" | "file";
+      category?: "terms" | "insurance" | "custom";
     }>;
+    defaultShowBusinessLogo?: boolean;
+    defaultLogoUrl?: string;
+    defaultShowBusinessName?: boolean;
+    defaultShowBusinessAddress?: boolean;
+    defaultShowBusinessEmail?: boolean;
+    defaultShowBusinessPhone?: boolean;
+    defaultMessage?: string;
     defaultVideoUrl?: string;
+    defaultShowVideo?: boolean;
     defaultIncludeAttachments?: boolean;
   }>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -392,7 +401,8 @@ export const estimates = pgTable("estimates", {
   attachments: jsonb("attachments").default([]).$type<Array<{
     url: string;
     name?: string;
-    type: "image" | "pdf";
+    type: "image" | "pdf" | "file";
+    category?: "terms" | "insurance" | "custom";
   }>>(),
   videoUrl: text("video_url"),
   revisionReason: text("revision_reason"),
@@ -2648,7 +2658,8 @@ export const sendEstimateToCustomerSchema = z.object({
   attachments: z.array(z.object({
     url: z.string().min(1),
     name: z.string().optional(),
-    type: z.enum(["image", "pdf"]),
+    type: z.enum(["image", "pdf", "file"]),
+    category: z.enum(["terms", "insurance", "custom"]).optional(),
   })).optional(),
   videoUrl: z.string().optional(),
 });

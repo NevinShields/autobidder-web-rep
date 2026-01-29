@@ -489,11 +489,19 @@ export default function StyledCalculator(props: any = {}) {
   const search = useSearch();
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
-  
+
   // Get URL parameters first
   const searchParams = new URLSearchParams(search);
   const userId = searchParams.get('userId');
   const isPublicAccess = !!userId;
+
+  // Debug: Log auth state
+  console.log('[styled-calculator] Auth state:', {
+    authUser: authUser ? `id=${authUser.id}, email=${authUser.email}` : 'null',
+    userId,
+    isPublicAccess,
+    queryEnabled: !!authUser && !isPublicAccess
+  });
   
   // Determine effective business owner ID - use URL param for public access, or authenticated user ID
   const effectiveBusinessOwnerId = isPublicAccess ? userId : authUser?.id;
@@ -582,7 +590,7 @@ export default function StyledCalculator(props: any = {}) {
       if (isCustomForm && embedId) {
         params.append('customFormId', embedId);
       }
-      return fetch(`/api/public/calculator-data?${params}`).then(res => res.json());
+      return fetch(`/api/public/calculator-data?${params}`, { credentials: 'include' }).then(res => res.json());
     },
     enabled: !!userId || (isCustomForm && !!embedId),
     staleTime: 30 * 1000, // Cache for 30 seconds to avoid redundant requests
@@ -590,9 +598,18 @@ export default function StyledCalculator(props: any = {}) {
   });
 
   // Fetch authenticated user's data (for logged-in users viewing their own calculator)
-  const { data: authenticatedData, isLoading: isLoadingAuthData } = useQuery({
-    queryKey: ['/api/public/calculator-data', 'authenticated'],
-    queryFn: () => fetch('/api/public/calculator-data').then(res => res.json()),
+  const { data: authenticatedData, isLoading: isLoadingAuthData, error: authDataError } = useQuery({
+    queryKey: ['/api/public/calculator-data', 'authenticated', authUser?.id],
+    queryFn: async () => {
+      console.log('[styled-calculator] Fetching authenticated calculator data for user:', authUser?.id);
+      const res = await fetch('/api/public/calculator-data', { credentials: 'include' });
+      const data = await res.json();
+      console.log('[styled-calculator] Response:', res.status, data);
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to fetch calculator data');
+      }
+      return data;
+    },
     enabled: !!authUser && !isPublicAccess,
     staleTime: 30 * 1000,
     gcTime: 60 * 1000,

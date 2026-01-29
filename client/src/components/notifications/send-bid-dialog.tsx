@@ -19,14 +19,15 @@ type EstimatePageTheme = {
 type EstimateAttachmentDraft = {
   url: string;
   name?: string;
-  type: "image" | "pdf";
+  type: "image" | "pdf" | "file";
+  category?: "terms" | "insurance" | "custom";
   enabled: boolean;
 };
 
 type EstimatePageDefaults = {
   defaultLayoutId?: string;
   defaultTheme?: EstimatePageTheme;
-  defaultAttachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }>;
+  defaultAttachments?: Array<{ url: string; name?: string; type: "image" | "pdf" | "file"; category?: "terms" | "insurance" | "custom" }>;
   defaultVideoUrl?: string;
   defaultIncludeAttachments?: boolean;
 };
@@ -51,7 +52,7 @@ interface SendBidDialogProps {
     customMessage?: string;
     layoutId?: string;
     theme?: EstimatePageTheme;
-    attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }>;
+    attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" | "file"; category?: "terms" | "insurance" | "custom" }>;
     videoUrl?: string;
   }) => Promise<void>;
   customerName: string;
@@ -67,7 +68,7 @@ interface SendBidDialogProps {
     customMessage?: string | null;
     layoutId?: string | null;
     theme?: EstimatePageTheme | null;
-    attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }> | null;
+    attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" | "file"; category?: "terms" | "insurance" | "custom" }> | null;
     videoUrl?: string | null;
   };
   estimatePageDefaults?: EstimatePageDefaults;
@@ -143,7 +144,7 @@ export default function SendBidDialog({
         ? estimate.attachments
         : defaultAttachments;
 
-      setEstimateCustomMessage(estimate?.customMessage || "");
+      setEstimateCustomMessage(estimate?.customMessage || defaults?.defaultMessage || "");
       setEstimateLayoutId(estimate?.layoutId || defaults?.defaultLayoutId || "classic");
       setEstimateTheme({
         primaryColor: estimate?.theme?.primaryColor || defaults?.defaultTheme?.primaryColor || "",
@@ -157,7 +158,8 @@ export default function SendBidDialog({
           enabled: true,
         }))
       );
-      setEstimateVideoUrl(estimate?.videoUrl || defaults?.defaultVideoUrl || "");
+      const defaultVideoUrl = defaults?.defaultShowVideo === false ? "" : defaults?.defaultVideoUrl || "";
+      setEstimateVideoUrl(estimate?.videoUrl || defaultVideoUrl);
       setNewAttachmentUrl("");
       setNewAttachmentName("");
       setNewAttachmentType("image");
@@ -194,7 +196,7 @@ export default function SendBidDialog({
             theme: estimateTheme,
             attachments: estimateAttachments
               .filter((attachment) => attachment.enabled)
-              .map(({ url, name, type }) => ({ url, name, type })),
+              .map(({ url, name, type, category }) => ({ url, name, type, category })),
             videoUrl: estimateVideoUrl || undefined,
           }
         : {}),

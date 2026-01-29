@@ -697,19 +697,19 @@ export default function FormulaBuilderComponent({
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col gap-1.5 min-w-[140px]">
+                <div className="flex flex-col gap-1.5 min-w-[140px] lg:min-w-[180px]">
                   <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold ml-1">Icon Source</Label>
-                  <div className="flex items-center p-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                  <div className="flex items-center p-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
                     <IconSelector
                       selectedIconId={formula.iconId || undefined}
                       onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
                       triggerText="Library"
                       size="sm"
-                      className="flex-1 bg-transparent border-none shadow-none hover:bg-gray-100 dark:hover:bg-gray-800 h-8 text-xs font-medium rounded-lg"
+                      className="flex-1 bg-transparent border-none shadow-none hover:bg-gray-100 dark:hover:bg-gray-800 h-8 text-xs font-medium rounded-lg px-2"
                     />
-                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-                    <label className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 h-8 px-2 rounded-lg cursor-pointer transition-colors">
-                      <Upload className="w-3.5 h-3.5" />
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5 shrink-0" />
+                    <label className="flex-1 flex items-center justify-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 h-8 px-1.5 rounded-lg cursor-pointer transition-colors whitespace-nowrap">
+                      <Upload className="w-3 h-3" />
                       <span>Upload</span>
                       <input
                         type="file"
@@ -734,12 +734,12 @@ export default function FormulaBuilderComponent({
                         }}
                       />
                     </label>
-                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5 shrink-0" />
                     <a
                       href="/icon-generator"
-                      className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 h-8 px-2 rounded-lg transition-colors"
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 h-8 px-1.5 rounded-lg transition-colors whitespace-nowrap"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <Sparkles className="w-3 h-3" />
                       <span>AI</span>
                     </a>
                   </div>

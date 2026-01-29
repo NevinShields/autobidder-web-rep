@@ -148,7 +148,7 @@ function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
       <Card 
-        className="mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow bg-white dark:bg-gray-800 dark:bg-gray-800"
+        className="mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow bg-white dark:bg-gray-800/80 border-gray-100 dark:border-gray-700/50"
         onClick={onClick}
         data-testid={`kanban-lead-card-${lead.id}`}
       >
@@ -863,25 +863,43 @@ export default function LeadsPage() {
     },
   });
 
-  // Helper functions for stage management
+  // Helper functions for stage management - using new pipeline stages
   const getStageIcon = (stage: string) => {
     switch (stage) {
+      case "new": return <Circle className="w-4 h-4" />;
+      case "pre_estimate": return <FileText className="w-4 h-4" />;
+      case "estimate_approved": return <CheckCircle className="w-4 h-4" />;
+      case "booked": return <Calendar className="w-4 h-4" />;
+      case "completed": return <Check className="w-4 h-4" />;
+      // Legacy stages fallback
       case "open": return <Circle className="w-4 h-4" />;
-      case "booked": return <Clock className="w-4 h-4" />;
-      case "completed": return <CheckCircle className="w-4 h-4" />;
       case "lost": return <XCircle className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
+      default: return <Circle className="w-4 h-4" />;
     }
   };
 
   const getStageColor = (stage: string) => {
     switch (stage) {
-      case "open": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "booked": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "completed": return "bg-green-100 text-green-800 border-green-200";
-      case "lost": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200 dark:border-gray-700";
+      case "new": return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
+      case "pre_estimate": return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
+      case "estimate_approved": return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
+      case "booked": return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300";
+      case "completed": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300";
+      // Legacy "open" maps to pre_estimate (leads from calculator already have a quote)
+      case "open": return "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300";
+      case "lost": return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+      default: return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
     }
+  };
+
+  const getStageLabel = (stage: string) => {
+    // Map legacy "open" to "Pre-Estimate" since calculator leads already have a quote
+    if (stage === 'open') return 'Pre-Estimate';
+    const pipelineStage = PIPELINE_STAGES.find(s => s.value === stage);
+    if (pipelineStage) return pipelineStage.label;
+    const legacyStage = LEGACY_STAGES.find(s => s.value === stage);
+    if (legacyStage) return legacyStage.label;
+    return stage.replace(/_/g, ' ');
   };
 
   const handleStageUpdate = (leadId: number, newStage: string, isMultiService: boolean) => {
@@ -998,6 +1016,12 @@ export default function LeadsPage() {
   const totalLeads = allLeads.length;
   const totalValue = allLeads.reduce((sum, lead) => sum + lead.calculatedPrice, 0);
   const averageValue = totalLeads > 0 ? totalValue / totalLeads : 0;
+
+  // Conversions = leads that are scheduled (booked) or completed
+  const conversions = allLeads.filter(lead => lead.stage === 'booked' || lead.stage === 'completed');
+  const conversionCount = conversions.length;
+  const conversionRate = totalLeads > 0 ? Math.round((conversionCount / totalLeads) * 100) : 0;
+  const conversionValue = conversions.reduce((sum, lead) => sum + lead.calculatedPrice, 0);
 
   const handleLeadClick = (lead: any) => {
     setSelectedLead(lead);
@@ -1347,22 +1371,25 @@ export default function LeadsPage() {
             </div>
           </div>
 
-          {/* Average Value Card */}
+          {/* Conversions Card */}
           <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-6 shadow-sm transition-all hover:shadow-md">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
-                  <Calendar className="h-5 w-5 text-white" />
+                  <CheckCircle className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-xs font-medium text-violet-100 bg-white/10 dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
-                  Per lead
+                  {conversionRate}% rate
                 </span>
               </div>
               <div className="space-y-1">
-                <p className="text-violet-100 text-sm font-medium">Average Value</p>
+                <p className="text-violet-100 text-sm font-medium">Conversions</p>
                 <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                  ${Math.round(averageValue / 100).toLocaleString()}
+                  {conversionCount}
+                  <span className="text-lg font-normal text-violet-200 ml-2">
+                    (${(conversionValue / 100).toLocaleString()})
+                  </span>
                 </p>
               </div>
             </div>
@@ -1721,7 +1748,7 @@ export default function LeadsPage() {
                               className={`${getStageColor(lead.stage)} font-medium text-xs px-2 py-0.5`}
                             >
                               {getStageIcon(lead.stage)}
-                              <span className="ml-1 capitalize">{lead.stage.replace(/_/g, ' ')}</span>
+                              <span className="ml-1">{getStageLabel(lead.stage)}</span>
                             </Badge>
                             <span className="text-xs text-gray-400 dark:text-gray-500">
                               {format(new Date(lead.createdAt), "MMM d, yyyy")}
@@ -1757,27 +1784,31 @@ export default function LeadsPage() {
                                 <MoreHorizontal className="h-5 w-5" />
                               </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
+                            <DropdownMenuContent align="end" className="w-52 dark:bg-gray-800 dark:border-gray-700">
                               <DropdownMenuItem onClick={() => handleLeadClick(lead)} className="dark:text-gray-200 dark:focus:bg-gray-700">
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="dark:bg-gray-700" />
-                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'open', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                <Circle className="h-4 w-4 mr-2" />
-                                Mark as Open
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'new', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                <Circle className="h-4 w-4 mr-2 text-blue-500" />
+                                New Lead
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'pre_estimate', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                <FileText className="h-4 w-4 mr-2 text-purple-500" />
+                                Pre-Estimate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'estimate_approved', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                                Estimate Confirmed
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'booked', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Mark as Booked
+                                <Calendar className="h-4 w-4 mr-2 text-orange-500" />
+                                Scheduled
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'completed', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                <Check className="h-4 w-4 mr-2" />
-                                Mark as Completed
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'lost', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Mark as Lost
+                                <Check className="h-4 w-4 mr-2 text-emerald-500" />
+                                Completed
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -1861,7 +1892,7 @@ export default function LeadsPage() {
                               className={`${getStageColor(lead.stage)} font-medium text-xs`}
                             >
                               {getStageIcon(lead.stage)}
-                              <span className="ml-1 capitalize">{lead.stage.replace(/_/g, ' ')}</span>
+                              <span className="ml-1">{getStageLabel(lead.stage)}</span>
                             </Badge>
                           </td>
                           <td className="px-4 py-3">
@@ -1892,27 +1923,31 @@ export default function LeadsPage() {
                                   <MoreHorizontal className="h-4 w-4" />
                                 </button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
+                              <DropdownMenuContent align="end" className="w-52 dark:bg-gray-800 dark:border-gray-700">
                                 <DropdownMenuItem onClick={() => handleLeadClick(lead)} className="dark:text-gray-200 dark:focus:bg-gray-700">
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator className="dark:bg-gray-700" />
-                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'open', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                  <Circle className="h-4 w-4 mr-2" />
-                                  Mark as Open
+                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'new', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <Circle className="h-4 w-4 mr-2 text-blue-500" />
+                                  New Lead
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'pre_estimate', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <FileText className="h-4 w-4 mr-2 text-purple-500" />
+                                  Pre-Estimate
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'estimate_approved', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                                  Estimate Confirmed
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'booked', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Mark as Booked
+                                  <Calendar className="h-4 w-4 mr-2 text-orange-500" />
+                                  Scheduled
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'completed', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                  <Check className="h-4 w-4 mr-2" />
-                                  Mark as Completed
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'lost', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Mark as Lost
+                                  <Check className="h-4 w-4 mr-2 text-emerald-500" />
+                                  Completed
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

@@ -271,9 +271,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   // Status update mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ leadId, stage, leadType }: { leadId: number; stage: string; leadType: 'single' | 'multi' }) => {
-      const endpoint = leadType === 'multi' ? `/api/multi-service-leads/${leadId}` : `/api/leads/${leadId}`;
-      const res = await apiRequest("PATCH", endpoint, { stage });
-      return await res.json();
+      const endpoint = leadType === 'multi' ? `/api/multi-service-leads/${leadId}/stage` : `/api/leads/${leadId}/stage`;
+      return await apiRequest("PATCH", endpoint, { stage });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
@@ -769,9 +768,13 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'open': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'booked': return 'bg-green-100 text-green-700 border-green-200';
-      case 'completed': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'new': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'pre_estimate': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case 'estimate_approved': return 'bg-green-100 text-green-700 border-green-200';
+      case 'booked': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      // Legacy "open" maps to pre_estimate (calculator leads already have a quote)
+      case 'open': return 'bg-purple-100 text-purple-700 border-purple-200';
       case 'lost': return 'bg-red-100 text-red-700 border-red-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
@@ -779,11 +782,15 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'open': return 'Open';
-      case 'booked': return 'Booked';
+      case 'new': return 'New Lead';
+      case 'pre_estimate': return 'Pre-Estimate';
+      case 'estimate_approved': return 'Estimate Confirmed';
+      case 'booked': return 'Scheduled';
       case 'completed': return 'Completed';
+      // Legacy "open" maps to pre_estimate (calculator leads already have a quote)
+      case 'open': return 'Pre-Estimate';
       case 'lost': return 'Lost';
-      default: return status;
+      default: return status.replace(/_/g, ' ');
     }
   };
 
@@ -918,36 +925,42 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
               {/* Status Badge */}
               <Select
-                value={processedLead.stage || 'open'}
+                value={processedLead.stage === 'open' ? 'new' : (processedLead.stage || 'new')}
                 onValueChange={handleStatusChange}
                 disabled={updateStatusMutation.isPending}
               >
-                <SelectTrigger className="w-32 h-9 bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-colors">
+                <SelectTrigger className="w-40 h-9 bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-colors">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="open" data-testid="status-open">
+                  <SelectItem value="new" data-testid="status-new">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      Open
+                      New Lead
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="pre_estimate" data-testid="status-pre-estimate">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      Pre-Estimate
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="estimate_approved" data-testid="status-estimate-approved">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Estimate Confirmed
                     </div>
                   </SelectItem>
                   <SelectItem value="booked" data-testid="status-booked">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      Booked
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      Scheduled
                     </div>
                   </SelectItem>
                   <SelectItem value="completed" data-testid="status-completed">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                       Completed
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="lost" data-testid="status-lost">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      Lost
                     </div>
                   </SelectItem>
                 </SelectContent>

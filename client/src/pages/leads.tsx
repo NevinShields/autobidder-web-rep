@@ -384,6 +384,7 @@ export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [kanbanSelectedLead, setKanbanSelectedLead] = useState<KanbanLead | null>(null);
   const [kanbanDetailDialogOpen, setKanbanDetailDialogOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -1248,7 +1249,7 @@ export default function LeadsPage() {
                   data-testid="button-add-customer"
                   disabled={!user}
                   title={!user ? "Please log in to add customers" : "Add a new customer"}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Customer
@@ -1307,7 +1308,7 @@ export default function LeadsPage() {
         {/* Premium Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {/* Total Leads Card */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30">
+          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-sm transition-all hover:shadow-md">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
@@ -1326,7 +1327,7 @@ export default function LeadsPage() {
           </div>
 
           {/* Total Value Card */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-lg shadow-emerald-500/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30">
+          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-sm transition-all hover:shadow-md">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
@@ -1347,7 +1348,7 @@ export default function LeadsPage() {
           </div>
 
           {/* Average Value Card */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-6 shadow-lg shadow-violet-500/20 transition-all hover:shadow-xl hover:shadow-violet-500/30">
+          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-6 shadow-sm transition-all hover:shadow-md">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
@@ -1568,10 +1569,11 @@ export default function LeadsPage() {
           <>
             {/* Premium Leads Table */}
             <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    {sortedLeads.length > 0 && (
+                    {/* Show checkbox to select all only in selection mode */}
+                    {isSelectionMode && sortedLeads.length > 0 && (
                       <Checkbox
                         data-testid="checkbox-select-all"
                         checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
@@ -1582,44 +1584,75 @@ export default function LeadsPage() {
                     )}
                     <div>
                       <h3 className="font-semibold text-slate-800 dark:text-white">
-                        All Leads
-                        <span className="ml-2 text-sm font-normal text-slate-500 dark:text-gray-400">
-                          ({sortedLeads.length})
-                        </span>
+                        {isSelectionMode ? (
+                          selectedLeadIds.length > 0 ? `${selectedLeadIds.length} Selected` : 'Select Leads'
+                        ) : (
+                          <>
+                            All Leads
+                            <span className="ml-2 text-sm font-normal text-slate-500 dark:text-gray-400">
+                              ({sortedLeads.length})
+                            </span>
+                          </>
+                        )}
                       </h3>
-                      {selectedLeadIds.length > 0 && (
-                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                          {selectedLeadIds.length} selected
-                        </p>
-                      )}
                     </div>
                   </div>
 
-                  {selectedLeadIds.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        data-testid="button-export-csv"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleExportCSV}
-                        className="gap-2 border-slate-200 hover:bg-slate-50"
-                      >
-                        <Download className="h-4 w-4" />
-                        <span className="hidden sm:inline">Export</span>
-                      </Button>
-                      <Button
-                        data-testid="button-bulk-delete"
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleBulkDelete}
-                        disabled={bulkDeleteMutation.isPending}
-                        className="gap-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Delete</span>
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {/* Selection mode actions */}
+                    {isSelectionMode ? (
+                      <>
+                        {selectedLeadIds.length > 0 && (
+                          <>
+                            <Button
+                              data-testid="button-export-csv"
+                              variant="outline"
+                              size="sm"
+                              onClick={handleExportCSV}
+                              className="gap-1.5 border-slate-200 hover:bg-slate-50 h-8 px-2.5 sm:px-3"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline text-xs">Export</span>
+                            </Button>
+                            <Button
+                              data-testid="button-bulk-delete"
+                              variant="destructive"
+                              size="sm"
+                              onClick={handleBulkDelete}
+                              disabled={bulkDeleteMutation.isPending}
+                              className="gap-1.5 h-8 px-2.5 sm:px-3"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline text-xs">Delete</span>
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setIsSelectionMode(false);
+                            setSelectedLeadIds([]);
+                          }}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 h-8 px-3 text-xs font-medium"
+                        >
+                          Done
+                        </Button>
+                      </>
+                    ) : (
+                      /* Select button to enter selection mode */
+                      sortedLeads.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsSelectionMode(true)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20 h-8 px-3 text-xs font-medium"
+                        >
+                          Select
+                        </Button>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
               <div>
@@ -1636,114 +1669,93 @@ export default function LeadsPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-slate-50/80 dark:bg-gray-800">
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider w-12">
-                        <Checkbox
-                          data-testid="checkbox-select-all-table"
-                          checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
-                          onCheckedChange={handleSelectAll}
-                          aria-label="Select all leads"
-                          className="border-slate-300 dark:border-gray-600"
-                        />
-                      </th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Service</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Amount</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Tags</th>
-                      <th className="text-left px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
-                      <th className="text-right px-4 py-3.5 text-xs font-semibold text-slate-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-gray-700">
-                    {sortedLeads.map((lead) => (
-                      <tr
-                        key={`${lead.type}-${lead.id}`}
-                        className="group hover:bg-blue-50/50 dark:hover:bg-gray-700/50 transition-all cursor-pointer"
-                        onClick={() => handleLeadClick(lead)}
-                        data-testid={`lead-row-${lead.type}-${lead.id}`}
-                      >
-                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox
-                            data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
-                            checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
-                            onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
-                            className="border-slate-300"
-                          />
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                              <span className="text-white font-semibold text-sm">
-                                {lead.name.charAt(0).toUpperCase()}
-                              </span>
+              <>
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                  {sortedLeads.map((lead) => (
+                    <div
+                      key={`mobile-${lead.type}-${lead.id}`}
+                      className="p-4 active:bg-gray-50 dark:active:bg-gray-700/50 transition-colors"
+                      onClick={() => isSelectionMode ? handleSelectLead(`${lead.type}-${lead.id}`) : handleLeadClick(lead)}
+                      data-testid={`lead-card-${lead.type}-${lead.id}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox - only show in selection mode */}
+                        {isSelectionMode && (
+                          <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
+                              onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
+                              className="border-gray-300 dark:border-gray-600"
+                            />
+                          </div>
+                        )}
+
+                        {/* Avatar */}
+                        <div className="h-11 w-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-semibold text-base">
+                            {lead.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <h4 className="font-semibold text-gray-900 dark:text-white text-[15px] truncate">
+                                {lead.name}
+                              </h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                {lead.serviceNames}
+                              </p>
                             </div>
-                            <span className="text-sm font-semibold text-slate-800 dark:text-white group-hover:text-blue-600 transition-colors">{lead.name}</span>
+                            <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                              ${(lead.calculatedPrice / 100).toLocaleString()}
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
-                              <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                              <span className="truncate max-w-[180px]">{lead.email}</span>
+
+                          {/* Status and Date Row */}
+                          <div className="flex items-center justify-between mt-2.5">
+                            <Badge
+                              variant="secondary"
+                              className={`${getStageColor(lead.stage)} font-medium text-xs px-2 py-0.5`}
+                            >
+                              {getStageIcon(lead.stage)}
+                              <span className="ml-1 capitalize">{lead.stage.replace(/_/g, ' ')}</span>
+                            </Badge>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {format(new Date(lead.createdAt), "MMM d, yyyy")}
+                            </span>
+                          </div>
+
+                          {/* Tags Row */}
+                          {(lead as any).tags?.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                              {(lead as any).tags?.slice(0, 3).map((tag: any) => (
+                                <span
+                                  key={tag.id}
+                                  className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+                                  style={{ backgroundColor: `${tag.color}15`, color: tag.color }}
+                                >
+                                  {tag.displayName}
+                                </span>
+                              ))}
+                              {(lead as any).tags?.length > 3 && (
+                                <span className="text-[10px] text-gray-400">
+                                  +{(lead as any).tags.length - 3}
+                                </span>
+                              )}
                             </div>
-                            {lead.phone && (
-                              <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-                                <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                                {lead.phone}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="text-sm text-slate-700 dark:text-slate-200 truncate max-w-[180px] block" title={lead.serviceNames}>
-                            {lead.serviceNames}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="text-sm font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-lg">
-                            ${(lead.calculatedPrice / 100).toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4">
-                          <Badge
-                            variant="secondary"
-                            className={`${getStageColor(lead.stage)} font-medium`}
-                          >
-                            {getStageIcon(lead.stage)}
-                            <span className="ml-1 capitalize">{lead.stage.replace(/_/g, ' ')}</span>
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {(lead as any).tags?.map((tag: any) => (
-                              <Badge
-                                key={tag.id}
-                                variant="outline"
-                                className="text-xs font-medium"
-                                style={{ borderColor: tag.color, color: tag.color }}
-                              >
-                                <div className="w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: tag.color }} />
-                                {tag.displayName}
-                              </Badge>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4">
-                          <span className="text-sm text-slate-500 dark:text-slate-400">
-                            {format(new Date(lead.createdAt), "MMM dd, yyyy")}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-slate-100 dark:hover:bg-gray-800" data-testid={`button-actions-${lead.type}-${lead.id}`}>
-                                <MoreHorizontal className="h-4 w-4 text-slate-500 dark:text-gray-400" />
-                              </Button>
+                              <button className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <MoreHorizontal className="h-5 w-5" />
+                              </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
                               <DropdownMenuItem onClick={() => handleLeadClick(lead)} className="dark:text-gray-200 dark:focus:bg-gray-700">
@@ -1769,12 +1781,148 @@ export default function LeadsPage() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </td>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-100 dark:border-gray-700">
+                        {isSelectionMode && (
+                          <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 w-12">
+                            <Checkbox
+                              data-testid="checkbox-select-all-table"
+                              checked={selectedLeadIds.length === sortedLeads.length && sortedLeads.length > 0}
+                              onCheckedChange={handleSelectAll}
+                              aria-label="Select all leads"
+                              className="border-gray-300 dark:border-gray-600"
+                            />
+                          </th>
+                        )}
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400">Customer</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400">Contact</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400">Service</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400">Amount</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400">Tags</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400">Date</th>
+                        <th className="w-12"></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                      {sortedLeads.map((lead) => (
+                        <tr
+                          key={`desktop-${lead.type}-${lead.id}`}
+                          className={`group hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors cursor-pointer ${isSelectionMode && selectedLeadIds.includes(`${lead.type}-${lead.id}`) ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''}`}
+                          onClick={() => isSelectionMode ? handleSelectLead(`${lead.type}-${lead.id}`) : handleLeadClick(lead)}
+                          data-testid={`lead-row-${lead.type}-${lead.id}`}
+                        >
+                          {isSelectionMode && (
+                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                data-testid={`checkbox-lead-${lead.type}-${lead.id}`}
+                                checked={selectedLeadIds.includes(`${lead.type}-${lead.id}`)}
+                                onCheckedChange={() => handleSelectLead(`${lead.type}-${lead.id}`)}
+                                className="border-gray-300 dark:border-gray-600"
+                              />
+                            </td>
+                          )}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-9 w-9 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-medium text-sm">
+                                  {lead.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <span className="text-sm font-medium text-gray-900 dark:text-white">{lead.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-600 dark:text-gray-300">{lead.email}</div>
+                            {lead.phone && (
+                              <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{lead.phone}</div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-600 dark:text-gray-300 line-clamp-1">{lead.serviceNames}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                              ${(lead.calculatedPrice / 100).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge
+                              variant="secondary"
+                              className={`${getStageColor(lead.stage)} font-medium text-xs`}
+                            >
+                              {getStageIcon(lead.stage)}
+                              <span className="ml-1 capitalize">{lead.stage.replace(/_/g, ' ')}</span>
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {(lead as any).tags?.slice(0, 2).map((tag: any) => (
+                                <span
+                                  key={tag.id}
+                                  className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+                                  style={{ backgroundColor: `${tag.color}15`, color: tag.color }}
+                                >
+                                  {tag.displayName}
+                                </span>
+                              ))}
+                              {(lead as any).tags?.length > 2 && (
+                                <span className="text-[10px] text-gray-400">+{(lead as any).tags.length - 2}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-400 dark:text-gray-500">
+                              {format(new Date(lead.createdAt), "MMM d")}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 dark:bg-gray-800 dark:border-gray-700">
+                                <DropdownMenuItem onClick={() => handleLeadClick(lead)} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="dark:bg-gray-700" />
+                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'open', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <Circle className="h-4 w-4 mr-2" />
+                                  Mark as Open
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'booked', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Mark as Booked
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'completed', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <Check className="h-4 w-4 mr-2" />
+                                  Mark as Completed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleStageUpdate(lead.id, 'lost', lead.type === 'multi')} className="dark:text-gray-200 dark:focus:bg-gray-700">
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Mark as Lost
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
               </div>
             </div>

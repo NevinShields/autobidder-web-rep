@@ -339,7 +339,7 @@ export default function NotificationDropdown() {
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-md max-h-[85vh] p-0 gap-0 rounded-2xl overflow-hidden mx-4 sm:mx-0 shadow-2xl border-0">
+        <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md max-h-[85vh] p-0 gap-0 rounded-2xl overflow-hidden shadow-2xl border-0 mx-auto">
           {/* Header */}
           <DialogHeader className="p-4 pb-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
             <div className="flex items-center justify-between gap-3 pr-8">

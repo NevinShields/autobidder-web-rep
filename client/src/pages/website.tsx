@@ -29,6 +29,7 @@ import {
   Users,
   Zap,
   HeadphonesIcon,
+  Filter,
   X,
   Mail,
   AlertCircle,
@@ -82,6 +83,7 @@ export default function Website() {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);
   const [visibleTemplateCount, setVisibleTemplateCount] = useState(12); // 4 rows × 3 columns
+  const [selectedIndustryTags, setSelectedIndustryTags] = useState<number[]>([]);
   const [templateToCreate, setTemplateToCreate] = useState<any>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -110,11 +112,33 @@ export default function Website() {
     enabled: !!user
   });
 
-  // Fetch website templates
-  const { data: websiteTemplates = [], isLoading: templatesLoading } = useQuery<any[]>({
-    queryKey: ['/api/duda-templates'],
+  // Fetch template tags for filtering
+  const { data: templateTags = [] } = useQuery<any[]>({
+    queryKey: ['/api/duda-template-tags'],
     enabled: !!user
   });
+
+  // Fetch website templates with optional tag filtering
+  const { data: websiteTemplates = [], isLoading: templatesLoading } = useQuery<any[]>({
+    queryKey: ['/api/duda-templates', selectedIndustryTags.join(',')],
+    queryFn: async () => {
+      const tagsParam = selectedIndustryTags.length > 0 ? `?tags=${selectedIndustryTags.join(',')}` : '';
+      const response = await fetch(`/api/duda-templates${tagsParam}`);
+      if (!response.ok) throw new Error('Failed to fetch templates');
+      return response.json();
+    },
+    enabled: !!user
+  });
+
+  // Reset visible count when filters change
+  const handleTagToggle = (tagId: number) => {
+    setSelectedIndustryTags(prev =>
+      prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId]
+    );
+    setVisibleTemplateCount(12); // Reset to initial count when filter changes
+  };
 
   // SEO Tracker queries
   const { data: currentCycle, isLoading: cycleLoading } = useQuery<SeoCycle>({
@@ -512,14 +536,14 @@ export default function Website() {
 
           {/* Tabs for Websites and SEO Tracker */}
           <Tabs defaultValue="websites" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="websites" data-testid="tab-websites">
-                <Globe className="w-4 h-4 mr-2" />
-                Websites
+            <TabsList className="grid w-full grid-cols-2 h-auto p-1 overflow-hidden rounded-lg">
+              <TabsTrigger value="websites" data-testid="tab-websites" className="text-xs sm:text-sm py-2 px-2 sm:px-4 rounded-md data-[state=active]:shadow-sm">
+                <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span>Websites</span>
               </TabsTrigger>
-              <TabsTrigger value="seo" data-testid="tab-seo">
-                <TrendingUp className="w-4 h-4 mr-2" />
-                SEO Tracker
+              <TabsTrigger value="seo" data-testid="tab-seo" className="text-xs sm:text-sm py-2 px-2 sm:px-4 rounded-md data-[state=active]:shadow-sm">
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span>SEO Tracker</span>
               </TabsTrigger>
             </TabsList>
 
@@ -649,6 +673,72 @@ export default function Website() {
                     Template Library ({websiteTemplates.length} templates)
                   </CardTitle>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Browse our full collection of professional website templates</p>
+
+                  {/* Industry Filter Dropdown */}
+                  {templateTags.length > 0 && (
+                    <div className="flex items-center gap-3 mt-4">
+                      <Select
+                        value={selectedIndustryTags.length === 1 ? String(selectedIndustryTags[0]) : selectedIndustryTags.length > 1 ? "multiple" : "all"}
+                        onValueChange={(value) => {
+                          if (value === "all") {
+                            setSelectedIndustryTags([]);
+                          } else if (value !== "multiple") {
+                            setSelectedIndustryTags([parseInt(value)]);
+                          }
+                          setVisibleTemplateCount(12);
+                        }}
+                      >
+                        <SelectTrigger className="w-[200px] h-9 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Filter className="w-3.5 h-3.5 text-gray-500" />
+                            <SelectValue placeholder="Filter by Industry" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Industries</SelectItem>
+                          {templateTags.filter((tag: any) => tag.isActive).map((tag: any) => (
+                            <SelectItem key={tag.id} value={String(tag.id)}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: tag.color }}
+                                />
+                                {tag.displayName}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Show selected filter as a removable chip */}
+                      {selectedIndustryTags.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          {selectedIndustryTags.map(tagId => {
+                            const tag = templateTags.find((t: any) => t.id === tagId);
+                            if (!tag) return null;
+                            return (
+                              <span
+                                key={tag.id}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: tag.color }}
+                              >
+                                {tag.displayName}
+                                <button
+                                  onClick={() => {
+                                    setSelectedIndustryTags(prev => prev.filter(id => id !== tagId));
+                                    setVisibleTemplateCount(12);
+                                  }}
+                                  className="hover:bg-white/20 rounded-full p-0.5"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {/* Website Templates Grid */}

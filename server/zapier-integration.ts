@@ -329,7 +329,7 @@ export class ZapierIntegrationService {
           .where(eq(formulas.userId, userId))
           .orderBy(desc(leads.createdAt))
           .limit(limit);
-        
+
         // If no real leads exist, provide sample data for Zapier testing
         if (updatedLeads.length === 0) {
           return [
@@ -346,7 +346,7 @@ export class ZapierIntegrationService {
             }
           ].slice(0, limit);
         }
-        
+
         return updatedLeads.map(({ leads: lead }) => ({
           id: lead.id,
           name: lead.name,
@@ -358,6 +358,138 @@ export class ZapierIntegrationService {
           createdAt: lead.createdAt,
           updatedAt: lead.createdAt
         }));
+
+      case 'lead_stage_changed':
+        // Get recent leads as sample data for stage changes
+        const stageChangedLeads = await db.select()
+          .from(leads)
+          .leftJoin(formulas, eq(leads.formulaId, formulas.id))
+          .where(eq(formulas.userId, userId))
+          .orderBy(desc(leads.createdAt))
+          .limit(limit);
+
+        if (stageChangedLeads.length === 0) {
+          return [
+            {
+              id: "1",
+              name: "John Doe",
+              email: "john@example.com",
+              phone: "555-123-4567",
+              stage: "booked",
+              previousStage: "new",
+              calculatedPrice: 250,
+              changedAt: new Date().toISOString()
+            },
+            {
+              id: "2",
+              name: "Jane Smith",
+              email: "jane@example.com",
+              phone: "555-987-6543",
+              stage: "completed",
+              previousStage: "booked",
+              calculatedPrice: 380,
+              changedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+            }
+          ].slice(0, limit);
+        }
+
+        return stageChangedLeads.map(({ leads: lead }) => ({
+          id: lead.id,
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+          stage: lead.stage || 'new',
+          previousStage: 'new',
+          calculatedPrice: lead.calculatedPrice || 0,
+          changedAt: lead.createdAt
+        }));
+
+      case 'lead_tagged':
+        // Get recent leads as sample data for tag assignments
+        const taggedLeads = await db.select()
+          .from(leads)
+          .leftJoin(formulas, eq(leads.formulaId, formulas.id))
+          .where(eq(formulas.userId, userId))
+          .orderBy(desc(leads.createdAt))
+          .limit(limit);
+
+        if (taggedLeads.length === 0) {
+          return [
+            {
+              id: "1",
+              name: "John Doe",
+              email: "john@example.com",
+              tagId: 1,
+              tagName: "Hot Lead",
+              tagColor: "#ff0000",
+              taggedAt: new Date().toISOString()
+            },
+            {
+              id: "2",
+              name: "Jane Smith",
+              email: "jane@example.com",
+              tagId: 2,
+              tagName: "VIP Customer",
+              tagColor: "#ffd700",
+              taggedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+            }
+          ].slice(0, limit);
+        }
+
+        return taggedLeads.map(({ leads: lead }) => ({
+          id: lead.id,
+          name: lead.name,
+          email: lead.email,
+          tagId: 1,
+          tagName: "Sample Tag",
+          tagColor: "#007bff",
+          taggedAt: lead.createdAt
+        }));
+
+      case 'estimate_created':
+      case 'estimate_sent':
+      case 'estimate_viewed':
+      case 'estimate_accepted':
+        // For estimate events, return sample estimate data
+        const statusMap: Record<string, string> = {
+          'estimate_created': 'draft',
+          'estimate_sent': 'sent',
+          'estimate_viewed': 'viewed',
+          'estimate_accepted': 'accepted'
+        };
+
+        return [
+          {
+            id: 1,
+            estimateNumber: "EST-2024-001",
+            customerName: "John Doe",
+            customerEmail: "john@example.com",
+            customerPhone: "555-123-4567",
+            totalAmount: 450,
+            status: statusMap[event],
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 2,
+            estimateNumber: "EST-2024-002",
+            customerName: "Jane Smith",
+            customerEmail: "jane@example.com",
+            customerPhone: "555-987-6543",
+            totalAmount: 725,
+            status: statusMap[event],
+            createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+          },
+          {
+            id: 3,
+            estimateNumber: "EST-2024-003",
+            customerName: "Bob Wilson",
+            customerEmail: "bob@example.com",
+            customerPhone: "555-456-7890",
+            totalAmount: 320,
+            status: statusMap[event],
+            createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+          }
+        ].slice(0, limit);
 
       default:
         return [];

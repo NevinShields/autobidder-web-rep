@@ -64,6 +64,17 @@ module.exports = {
         helpText: 'Updated price for the service.',
       },
     ],
+    sample: {
+      success: true,
+      lead: {
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        stage: "contacted",
+        notes: "Customer confirmed appointment"
+      },
+      message: "Lead updated successfully"
+    },
     outputFields: [
       { key: 'id', label: 'Lead ID', type: 'string' },
       { key: 'name', label: 'Customer Name', type: 'string' },

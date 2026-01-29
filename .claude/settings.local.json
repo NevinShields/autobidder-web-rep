@@ -23,7 +23,16 @@
       "Bash(ls:*)",
       "Bash(psql:*)",
       "Bash(du:*)",
-      "Bash(timeout 15 npm run dev:*)"
+      "Bash(timeout 15 npm run dev:*)",
+      "Bash(zapier:*)",
+      "WebFetch(domain:docs.zapier.com)",
+      "WebFetch(domain:docs.api.zapier.com)",
+      "Bash(npx zapier whoami)",
+      "Bash(npx zapier login --help:*)",
+      "Bash(~/.zapierrc)",
+      "Bash(npx zapier push:*)",
+      "Bash(npx zapier:*)",
+      "WebFetch(domain:developer.duda.co)"
     ]
   }
 }

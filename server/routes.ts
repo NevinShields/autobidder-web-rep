@@ -2869,6 +2869,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).catch(error => {
         console.error('Failed to trigger stage change automations:', error);
       });
+
+      // Send Zapier webhook notification for lead stage changed
+      ZapierIntegrationService.sendWebhookNotification(
+        userId,
+        'lead_stage_changed',
+        {
+          id: updatedLead.id,
+          name: updatedLead.name,
+          email: updatedLead.email,
+          phone: updatedLead.phone,
+          stage: updatedLead.stage,
+          previousStage: stage, // The stage before update
+          calculatedPrice: updatedLead.calculatedPrice,
+          changedAt: new Date().toISOString()
+        }
+      ).catch(error => {
+        console.error('Failed to send Zapier webhook for lead stage changed:', error);
+      });
       
       res.json(updatedLead);
     } catch (error) {
@@ -6703,7 +6721,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let welcomeLink: string | null = null;
       try {
         console.log('🔗 Creating welcome link for account activation...');
-        welcomeLink = await dudaApi.createWelcomeLink(dudaAccount.account_name);
+        const welcomeResponse = await dudaApi.createWelcomeLink(dudaAccount.account_name);
+        welcomeLink = welcomeResponse.welcome_url;
         console.log('✅ Welcome link created successfully:', welcomeLink);
       } catch (welcomeError) {
         console.error('⚠️ Error creating welcome link:', welcomeError);
@@ -6928,52 +6947,26 @@ The Autobidder Team`;
       if (!accountEmail || !toEmail) {
         return res.status(400).json({ error: "Missing accountEmail or toEmail" });
       }
-      
-      const DUDA_USER = process.env.DUDA_API_KEY;
-      const DUDA_PASS = process.env.DUDA_API_PASSWORD;
+
       const FROM_EMAIL = process.env.FROM_EMAIL;
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
-      
-      if (!DUDA_USER || !DUDA_PASS || !RESEND_API_KEY || !FROM_EMAIL) {
-        return res.status(500).json({ error: "Missing required environment variables" });
+
+      if (!dudaApi.isConfigured()) {
+        return res.status(500).json({ error: "Duda API not configured" });
+      }
+
+      if (!RESEND_API_KEY || !FROM_EMAIL) {
+        return res.status(500).json({ error: "Email service not configured" });
       }
 
       // Initialize Resend
       const resend = new Resend(RESEND_API_KEY);
 
-      // 1) Create Welcome Link via Duda API
-      const welcomeUrl = `https://api.duda.co/api/accounts/${encodeURIComponent(accountEmail)}/welcome`;
-      const auth = Buffer.from(`${DUDA_USER}:${DUDA_PASS}`).toString('base64');
-
+      // 1) Create Welcome Link via Duda API service
       console.log(`Creating welcome link for account: ${accountEmail}`);
-      const dudaResponse = await fetch(welcomeUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const welcomeResponse = await dudaApi.createWelcomeLink(accountEmail);
+      const { welcome_url, expiration } = welcomeResponse;
 
-      const responseText = await dudaResponse.text();
-      console.log(`Duda welcome link response: ${dudaResponse.status} - ${responseText}`);
-      
-      if (!dudaResponse.ok) {
-        let detail = responseText;
-        try { detail = JSON.parse(responseText); } catch {}
-        return res.status(dudaResponse.status).json({
-          error: "Failed to create welcome link",
-          detail
-        });
-      }
-
-      let data;
-      try { 
-        data = JSON.parse(responseText); 
-      } catch {
-        return res.status(502).json({ error: "Invalid JSON from Duda welcome endpoint" });
-      }
-
-      const { welcome_url, expiration } = data || {};
       if (!welcome_url) {
         return res.status(502).json({ error: "Duda response missing welcome_url" });
       }
@@ -7061,6 +7054,18 @@ The Autobidder Team`;
     }
   });
 
+  // Helper function to sort templates: custom first, then duda
+  const sortTemplatesByType = <T extends { templateType?: string | null }>(templates: T[]): T[] => {
+    return [...templates].sort((a, b) => {
+      const typeA = a.templateType || '';
+      const typeB = b.templateType || '';
+      // 'custom' comes before 'duda' (and before any other type)
+      if (typeA === 'custom' && typeB !== 'custom') return -1;
+      if (typeA !== 'custom' && typeB === 'custom') return 1;
+      return 0; // Keep original order within same type
+    });
+  };
+
   // Get templates from Duda API
   app.get('/api/templates', async (req, res) => {
     try {
@@ -7069,7 +7074,15 @@ The Autobidder Team`;
       }
 
       const templates = await dudaApi.getTemplates();
-      res.json(templates);
+      // Sort: custom templates first, then duda templates
+      const sortedTemplates = [...templates].sort((a, b) => {
+        const typeA = a.template_properties?.type || '';
+        const typeB = b.template_properties?.type || '';
+        if (typeA === 'custom' && typeB !== 'custom') return -1;
+        if (typeA !== 'custom' && typeB === 'custom') return 1;
+        return 0;
+      });
+      res.json(sortedTemplates);
     } catch (error) {
       console.error('Error fetching templates:', error);
       const errorMessage = error instanceof Error ? error.message : "Failed to fetch templates";
@@ -7130,19 +7143,6 @@ The Autobidder Team`;
     try {
       const tags = await storage.getActiveDudaTemplateTags();
       res.json(tags);
-    } catch (error) {
-      console.error('Error fetching template tags:', error);
-      res.status(500).json({ message: "Failed to fetch template tags" });
-    }
-  });
-
-  // Public endpoint for website template filtering
-  app.get('/api/duda-template-tags', async (req, res) => {
-    try {
-      const tags = await storage.getAllDudaTemplateTags();
-      // Only return active tags for public filtering
-      const activeTags = tags.filter(tag => tag.isActive);
-      res.json(activeTags);
     } catch (error) {
       console.error('Error fetching template tags:', error);
       res.status(500).json({ message: "Failed to fetch template tags" });
@@ -7273,7 +7273,7 @@ The Autobidder Team`;
     try {
       const { tags } = req.query;
       let templates;
-      
+
       if (tags && typeof tags === 'string') {
         const tagIds = tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
         if (tagIds.length > 0) {
@@ -7284,8 +7284,10 @@ The Autobidder Team`;
       } else {
         templates = await storage.getVisibleDudaTemplateMetadata();
       }
-      
-      res.json(templates);
+
+      // Sort: custom templates first, then duda templates
+      const sortedTemplates = sortTemplatesByType(templates);
+      res.json(sortedTemplates);
     } catch (error) {
       console.error('Error fetching Duda templates:', error);
       res.status(500).json({ message: "Failed to fetch templates" });
@@ -7295,7 +7297,9 @@ The Autobidder Team`;
   app.get('/api/duda-templates-with-tags', async (req, res) => {
     try {
       const templates = await storage.getTemplatesWithTags();
-      res.json(templates);
+      // Sort: custom templates first, then duda templates
+      const sortedTemplates = sortTemplatesByType(templates);
+      res.json(sortedTemplates);
     } catch (error) {
       console.error('Error fetching templates with tags:', error);
       res.status(500).json({ message: "Failed to fetch templates with tags" });
@@ -7305,7 +7309,9 @@ The Autobidder Team`;
   app.get('/api/admin/duda-templates', requireSuperAdmin, async (req, res) => {
     try {
       const templates = await storage.getAllDudaTemplateMetadata();
-      res.json(templates);
+      // Sort: custom templates first, then duda templates
+      const sortedTemplates = sortTemplatesByType(templates);
+      res.json(sortedTemplates);
     } catch (error) {
       console.error('Error fetching all Duda templates:', error);
       res.status(500).json({ message: "Failed to fetch all templates" });
@@ -9387,6 +9393,27 @@ The Autobidder Team`;
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
+
+      // Send Zapier webhook notification for estimate viewed (public view)
+      if (estimate.userId) {
+        ZapierIntegrationService.sendWebhookNotification(
+          estimate.userId,
+          'estimate_viewed',
+          {
+            id: estimate.id,
+            estimateNumber: estimate.estimateNumber,
+            customerName: estimate.customerName,
+            customerEmail: estimate.customerEmail,
+            customerPhone: estimate.customerPhone,
+            totalAmount: estimate.totalAmount,
+            status: 'viewed',
+            createdAt: estimate.createdAt
+          }
+        ).catch(error => {
+          console.error('Failed to send Zapier webhook for estimate viewed:', error);
+        });
+      }
+
       res.json(estimate);
     } catch (error) {
       console.error('Error fetching estimate by number:', error);
@@ -9410,6 +9437,25 @@ The Autobidder Team`;
       console.log('[POST /api/estimates] Validated data, creating estimate...');
       const estimate = await storage.createEstimate(validatedData);
       console.log('[POST /api/estimates] Estimate created successfully:', estimate.id);
+
+      // Send Zapier webhook notification for estimate created
+      ZapierIntegrationService.sendWebhookNotification(
+        userId,
+        'estimate_created',
+        {
+          id: estimate.id,
+          estimateNumber: estimate.estimateNumber,
+          customerName: estimate.customerName,
+          customerEmail: estimate.customerEmail,
+          customerPhone: estimate.customerPhone,
+          totalAmount: estimate.totalAmount,
+          status: estimate.status,
+          createdAt: estimate.createdAt
+        }
+      ).catch(error => {
+        console.error('Failed to send Zapier webhook for estimate created:', error);
+      });
+
       res.status(201).json(estimate);
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -9580,7 +9626,25 @@ The Autobidder Team`;
       }).catch(error => {
         console.error('Failed to trigger customer accepted automations:', error);
       });
-      
+
+      // Send Zapier webhook notification for estimate accepted
+      ZapierIntegrationService.sendWebhookNotification(
+        userId,
+        'estimate_accepted',
+        {
+          id: updatedEstimate.id,
+          estimateNumber: updatedEstimate.estimateNumber,
+          customerName: updatedEstimate.customerName,
+          customerEmail: updatedEstimate.customerEmail,
+          customerPhone: updatedEstimate.customerPhone,
+          totalAmount: updatedEstimate.totalAmount,
+          status: 'accepted',
+          createdAt: updatedEstimate.createdAt
+        }
+      ).catch(error => {
+        console.error('Failed to send Zapier webhook for estimate accepted:', error);
+      });
+
       res.json(updatedEstimate);
     } catch (error) {
       console.error('Error marking estimate as customer approved:', error);
@@ -9665,7 +9729,27 @@ The Autobidder Team`;
         status: 'accepted',
         customerResponseAt: new Date(),
       });
-      
+
+      // Send Zapier webhook notification for estimate accepted (public endpoint)
+      if (estimate.userId) {
+        ZapierIntegrationService.sendWebhookNotification(
+          estimate.userId,
+          'estimate_accepted',
+          {
+            id: updatedEstimate.id,
+            estimateNumber: updatedEstimate.estimateNumber,
+            customerName: updatedEstimate.customerName,
+            customerEmail: updatedEstimate.customerEmail,
+            customerPhone: updatedEstimate.customerPhone,
+            totalAmount: updatedEstimate.totalAmount,
+            status: 'accepted',
+            createdAt: updatedEstimate.createdAt
+          }
+        ).catch(error => {
+          console.error('Failed to send Zapier webhook for estimate accepted:', error);
+        });
+      }
+
       res.json(updatedEstimate);
     } catch (error) {
       console.error('Error accepting estimate:', error);
@@ -10119,6 +10203,26 @@ The Autobidder Team`;
         }
       }
       
+      // Send Zapier webhook notification for estimate sent (if email or SMS was sent successfully)
+      if (results.emailSent || results.smsSent) {
+        ZapierIntegrationService.sendWebhookNotification(
+          userId,
+          'estimate_sent',
+          {
+            id: estimate.id,
+            estimateNumber: estimate.estimateNumber,
+            customerName: estimate.customerName,
+            customerEmail: estimate.customerEmail,
+            customerPhone: estimate.customerPhone,
+            totalAmount: estimate.totalAmount,
+            status: 'sent',
+            createdAt: estimate.createdAt
+          }
+        ).catch(error => {
+          console.error('Failed to send Zapier webhook for estimate sent:', error);
+        });
+      }
+
       // Return appropriate status
       if (results.errors.length > 0 && !results.emailSent && !results.smsSent) {
         res.status(500).json(results);
@@ -14850,8 +14954,28 @@ This booking was created on ${new Date().toLocaleString()}.
         }).catch(error => {
           console.error('Failed to trigger tag assigned automations:', error);
         });
+
+        // Send Zapier webhook notification for lead tagged
+        const tag = await storage.getLeadTag(tagId);
+        if (tag) {
+          ZapierIntegrationService.sendWebhookNotification(
+            userId,
+            'lead_tagged',
+            {
+              id: lead.id,
+              name: lead.name,
+              email: lead.email,
+              tagId: tag.id,
+              tagName: tag.name,
+              tagColor: tag.color,
+              taggedAt: new Date().toISOString()
+            }
+          ).catch(error => {
+            console.error('Failed to send Zapier webhook for lead tagged:', error);
+          });
+        }
       }
-      
+
       res.json(assignment);
     } catch (error) {
       console.error("Error assigning tag to lead:", error);

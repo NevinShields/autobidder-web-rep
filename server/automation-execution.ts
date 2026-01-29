@@ -9,10 +9,14 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper function to get the correct base URL for links
 function getBaseUrl(): string {
+  // Prioritize DOMAIN (production) over REPLIT_DEV_DOMAIN (development)
+  if (process.env.DOMAIN) {
+    return process.env.DOMAIN;
+  }
   if (process.env.REPLIT_DEV_DOMAIN) {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
-  return process.env.DOMAIN || 'https://localhost:5000';
+  return 'https://localhost:5000';
 }
 
 interface AutomationContext {

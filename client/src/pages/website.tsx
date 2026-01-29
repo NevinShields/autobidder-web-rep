@@ -29,7 +29,6 @@ import {
   Users,
   Zap,
   HeadphonesIcon,
-  Filter,
   X,
   Mail,
   AlertCircle,
@@ -81,8 +80,8 @@ export default function Website() {
   const { toast } = useToast();
   const [isCreatingWebsite, setIsCreatingWebsite] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const [selectedIndustryTags, setSelectedIndustryTags] = useState<number[]>([]);
   const [confirmationDialogOpen, setConfirmationDialogOpen] = useState(false);
+  const [visibleTemplateCount, setVisibleTemplateCount] = useState(12); // 4 rows × 3 columns
   const [templateToCreate, setTemplateToCreate] = useState<any>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -111,21 +110,9 @@ export default function Website() {
     enabled: !!user
   });
 
-  // Fetch template tags for filtering
-  const { data: templateTags = [] } = useQuery<any[]>({
-    queryKey: ['/api/duda-template-tags'],
-    enabled: !!user
-  });
-
-  // Fetch website templates with optional tag filtering
+  // Fetch website templates
   const { data: websiteTemplates = [], isLoading: templatesLoading } = useQuery<any[]>({
-    queryKey: ['/api/duda-templates', selectedIndustryTags.join(',')],
-    queryFn: async () => {
-      const tagsParam = selectedIndustryTags.length > 0 ? `?tags=${selectedIndustryTags.join(',')}` : '';
-      const response = await fetch(`/api/duda-templates${tagsParam}`);
-      if (!response.ok) throw new Error('Failed to fetch templates');
-      return response.json();
-    },
+    queryKey: ['/api/duda-templates'],
     enabled: !!user
   });
 
@@ -662,49 +649,6 @@ export default function Website() {
                     Template Library ({websiteTemplates.length} templates)
                   </CardTitle>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Browse our full collection of professional website templates</p>
-                  
-                  {/* Industry Filter */}
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700">
-                      <Filter className="w-3 h-3 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Filter by Industry:</span>
-                      <span className="sm:hidden">Filter:</span>
-                    </div>
-                    {templateTags.filter((tag: any) => tag.isActive).map((tag: any) => (
-                      <Badge
-                        key={tag.id}
-                        variant={selectedIndustryTags.includes(tag.id) ? "default" : "outline"}
-                        className="cursor-pointer text-[10px] px-2 py-0.5 h-auto min-h-0"
-                        style={{
-                          backgroundColor: selectedIndustryTags.includes(tag.id) ? tag.color : 'transparent',
-                          borderColor: tag.color,
-                          color: selectedIndustryTags.includes(tag.id) ? 'white' : tag.color
-                        }}
-                        onClick={() => {
-                          setSelectedIndustryTags(prev => 
-                            prev.includes(tag.id) 
-                              ? prev.filter(id => id !== tag.id)
-                              : [...prev, tag.id]
-                          );
-                        }}
-                      >
-                        {tag.displayName}
-                        {selectedIndustryTags.includes(tag.id) && (
-                          <X className="w-3 h-3 ml-1" />
-                        )}
-                      </Badge>
-                    ))}
-                    {selectedIndustryTags.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedIndustryTags([])}
-                        className="text-xs px-2 py-1 h-6"
-                      >
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
                 </CardHeader>
                 <CardContent>
                   {/* Website Templates Grid */}
@@ -715,82 +659,114 @@ export default function Website() {
                       ))}
                     </div>
                   ) : websiteTemplates.length > 0 ? (
+                    <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                       {[...websiteTemplates].sort((a, b) => {
-                        const typeA = a.template_properties?.type || 'Premium';
-                        const typeB = b.template_properties?.type || 'Premium';
-                        if (typeA === 'Custom' && typeB !== 'Custom') return -1;
-                        if (typeA !== 'Custom' && typeB === 'Custom') return 1;
+                        // Sort custom templates first (check both possible field locations)
+                        const typeA = a.templateType || a.template_properties?.type || '';
+                        const typeB = b.templateType || b.template_properties?.type || '';
+                        if (typeA === 'custom' && typeB !== 'custom') return -1;
+                        if (typeA !== 'custom' && typeB === 'custom') return 1;
                         return 0;
-                      }).map((template: any) => (
-                        <Card key={template.templateId || template.template_id} className="overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-md dark:bg-gray-800">
-                          <div className="aspect-[4/3] sm:aspect-video bg-gray-100 dark:bg-gray-900 relative">
-                            {template.thumbnailUrl || template.thumbnail_url ? (
+                      }).slice(0, visibleTemplateCount).map((template: any) => {
+                        const isCustom = (template.templateType || template.template_properties?.type) === 'custom';
+                        // Use desktop thumbnail for Duda templates (full screenshot), regular thumbnail for custom
+                        const thumbnailSrc = isCustom
+                          ? (template.thumbnailUrl || template.thumbnail_url)
+                          : (template.desktopThumbnailUrl || template.desktop_thumbnail_url || template.thumbnailUrl || template.thumbnail_url);
+
+                        return (
+                        <div
+                          key={template.templateId || template.template_id}
+                          className="group relative bg-white dark:bg-gray-800/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg dark:shadow-gray-900/20 transition-all duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 border border-gray-100 dark:border-gray-700/50 backdrop-blur-sm"
+                        >
+                          {/* Taller image container for better preview */}
+                          <div className="aspect-[3/4] sm:aspect-[4/5] bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative overflow-hidden">
+                            {thumbnailSrc ? (
                               <img
-                                src={template.thumbnailUrl || template.thumbnail_url}
+                                src={thumbnailSrc}
                                 alt={template.templateName || template.template_name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-pink-100">
-                                <Monitor className="w-8 h-8 text-gray-400" />
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                                <Monitor className="w-12 h-12 text-gray-300 dark:text-gray-600" />
                               </div>
                             )}
-                            
-                            {/* Template Type Badge */}
-                            <div className="absolute top-2 left-2">
-                              <Badge className="bg-purple-600 text-white text-xs">
-                                {template.template_properties?.type || 'Premium'}
-                              </Badge>
-                            </div>
+
+                            {/* Subtle gradient overlay at bottom */}
+                            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                            {/* Popular badge - iOS style pill */}
+                            {isCustom && (
+                              <div className="absolute top-3 left-3">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-green-500/90 text-white backdrop-blur-sm shadow-sm">
+                                  <Star className="w-3 h-3 fill-current" />
+                                  Popular
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Quick preview button - appears on hover */}
+                            {(template.previewUrl || template.preview_url) && (
+                              <button
+                                onClick={() => window.open(template.previewUrl || template.preview_url, '_blank')}
+                                className="absolute top-3 right-3 p-2 rounded-full bg-white/90 dark:bg-gray-800/90 text-gray-700 dark:text-gray-200 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white dark:hover:bg-gray-700 shadow-sm backdrop-blur-sm"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
-                          
-                          <CardContent className="p-3 sm:p-4">
-                            <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2" title={template.templateName || template.template_name}>
+
+                          {/* Card content - minimal iOS style */}
+                          <div className="p-4">
+                            <h3 className="font-medium text-sm text-gray-900 dark:text-white mb-3 line-clamp-1" title={template.templateName || template.template_name}>
                               {template.templateName || template.template_name}
                             </h3>
-                            
-                            <div className="flex gap-1 sm:gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  const customTemplate = {
-                                    id: 0,
-                                    templateId: template.templateId || template.template_id,
-                                    name: template.templateName || template.template_name,
-                                    industry: 'general',
-                                    previewUrl: template.previewUrl || template.preview_url,
-                                    thumbnailUrl: template.thumbnailUrl || template.thumbnail_url,
-                                    displayOrder: 0,
-                                    status: 'active' as const,
-                                    createdAt: '',
-                                    updatedAt: ''
-                                  };
-                                  setTemplateToCreate(customTemplate);
-                                  setConfirmationDialogOpen(true);
-                                }}
-                                disabled={isCreatingWebsite}
-                                className="flex-1 text-xs px-2 py-1 h-8"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                <span className="hidden sm:inline">Create</span>
-                                <span className="sm:hidden">Use</span>
-                              </Button>
-                              {(template.previewUrl || template.preview_url) && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(template.previewUrl || template.preview_url, '_blank')}
-                                  className="px-2 py-1 h-8 flex-shrink-0"
-                                >
-                                  <Eye className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+
+                            <button
+                              onClick={() => {
+                                const customTemplate = {
+                                  id: 0,
+                                  templateId: template.templateId || template.template_id,
+                                  name: template.templateName || template.template_name,
+                                  industry: 'general',
+                                  previewUrl: template.previewUrl || template.preview_url,
+                                  thumbnailUrl: template.thumbnailUrl || template.thumbnail_url,
+                                  displayOrder: 0,
+                                  status: 'active' as const,
+                                  createdAt: '',
+                                  updatedAt: ''
+                                };
+                                setTemplateToCreate(customTemplate);
+                                setConfirmationDialogOpen(true);
+                              }}
+                              disabled={isCreatingWebsite}
+                              className="w-full py-1.5 px-3 rounded-lg text-xs font-medium bg-gray-900 hover:bg-gray-800 active:bg-black dark:bg-white dark:hover:bg-gray-100 dark:active:bg-gray-200 text-white dark:text-gray-900 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Use Template
+                            </button>
+                          </div>
+                        </div>
+                        );
+                      })}
                     </div>
+
+                    {/* See More Button */}
+                    {visibleTemplateCount < websiteTemplates.length && (
+                      <div className="flex justify-center mt-8">
+                        <button
+                          onClick={() => setVisibleTemplateCount(prev => prev + 15)}
+                          className="px-6 py-2.5 rounded-full text-sm font-medium bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors duration-150 flex items-center gap-2"
+                        >
+                          See More Templates
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            ({websiteTemplates.length - visibleTemplateCount} remaining)
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                    </>
                   ) : (
                     <div className="text-center py-8">
                       <Monitor className="w-12 h-12 text-gray-300 mx-auto mb-4" />

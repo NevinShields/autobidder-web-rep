@@ -68,13 +68,139 @@ export function registerZapierRoutes(app: Express): void {
     try {
       const { userId } = (req as any).zapierAuth;
       const limit = parseInt(req.query.limit as string) || 25;
-      
+
       const calculators = await ZapierIntegrationService.getSampleData(userId, 'new_calculator', limit);
-      
+
       res.json(calculators);
     } catch (error) {
       console.error("Zapier new calculators trigger error:", error);
       res.status(500).json({ error: "Failed to fetch calculators" });
+    }
+  });
+
+  // Polling trigger: Get lead stage changes
+  app.get("/api/zapier/triggers/lead-stage-changed", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const limit = parseInt(req.query.limit as string) || 25;
+
+      const stageChanges = await ZapierIntegrationService.getSampleData(userId, 'lead_stage_changed', limit);
+
+      const wrappedData = stageChanges.map((data: any) => ({
+        event: 'lead_stage_changed',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedData);
+    } catch (error) {
+      console.error("Zapier lead stage changed trigger error:", error);
+      res.status(500).json({ error: "Failed to fetch lead stage changes" });
+    }
+  });
+
+  // Polling trigger: Get lead tag assignments
+  app.get("/api/zapier/triggers/lead-tagged", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const limit = parseInt(req.query.limit as string) || 25;
+
+      const taggedLeads = await ZapierIntegrationService.getSampleData(userId, 'lead_tagged', limit);
+
+      const wrappedData = taggedLeads.map((data: any) => ({
+        event: 'lead_tagged',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedData);
+    } catch (error) {
+      console.error("Zapier lead tagged trigger error:", error);
+      res.status(500).json({ error: "Failed to fetch tagged leads" });
+    }
+  });
+
+  // Polling trigger: Get created estimates
+  app.get("/api/zapier/triggers/estimate-created", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const limit = parseInt(req.query.limit as string) || 25;
+
+      const estimates = await ZapierIntegrationService.getSampleData(userId, 'estimate_created', limit);
+
+      const wrappedData = estimates.map((data: any) => ({
+        event: 'estimate_created',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedData);
+    } catch (error) {
+      console.error("Zapier estimate created trigger error:", error);
+      res.status(500).json({ error: "Failed to fetch created estimates" });
+    }
+  });
+
+  // Polling trigger: Get sent estimates
+  app.get("/api/zapier/triggers/estimate-sent", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const limit = parseInt(req.query.limit as string) || 25;
+
+      const estimates = await ZapierIntegrationService.getSampleData(userId, 'estimate_sent', limit);
+
+      const wrappedData = estimates.map((data: any) => ({
+        event: 'estimate_sent',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedData);
+    } catch (error) {
+      console.error("Zapier estimate sent trigger error:", error);
+      res.status(500).json({ error: "Failed to fetch sent estimates" });
+    }
+  });
+
+  // Polling trigger: Get viewed estimates
+  app.get("/api/zapier/triggers/estimate-viewed", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const limit = parseInt(req.query.limit as string) || 25;
+
+      const estimates = await ZapierIntegrationService.getSampleData(userId, 'estimate_viewed', limit);
+
+      const wrappedData = estimates.map((data: any) => ({
+        event: 'estimate_viewed',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedData);
+    } catch (error) {
+      console.error("Zapier estimate viewed trigger error:", error);
+      res.status(500).json({ error: "Failed to fetch viewed estimates" });
+    }
+  });
+
+  // Polling trigger: Get accepted estimates
+  app.get("/api/zapier/triggers/estimate-accepted", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const limit = parseInt(req.query.limit as string) || 25;
+
+      const estimates = await ZapierIntegrationService.getSampleData(userId, 'estimate_accepted', limit);
+
+      const wrappedData = estimates.map((data: any) => ({
+        event: 'estimate_accepted',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedData);
+    } catch (error) {
+      console.error("Zapier estimate accepted trigger error:", error);
+      res.status(500).json({ error: "Failed to fetch accepted estimates" });
     }
   });
 
@@ -179,6 +305,324 @@ export function registerZapierRoutes(app: Express): void {
       }
     } catch (error) {
       console.error("Zapier new calculators unsubscribe error:", error);
+      res.status(500).json({ error: "Failed to unsubscribe from webhook" });
+    }
+  });
+
+  // Subscribe to webhook for lead stage changes
+  app.post("/api/zapier/hooks/lead-stage-changed/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const webhook = await ZapierIntegrationService.subscribeWebhook(
+        userId,
+        target_url,
+        'lead_stage_changed'
+      );
+
+      res.json({
+        success: true,
+        webhook_id: webhook.id,
+        message: "Successfully subscribed to lead stage changes"
+      });
+    } catch (error) {
+      console.error("Zapier lead stage changed subscribe error:", error);
+      res.status(500).json({ error: "Failed to subscribe to webhook" });
+    }
+  });
+
+  // Unsubscribe from lead stage changed webhook
+  app.delete("/api/zapier/hooks/lead-stage-changed/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Successfully unsubscribed from lead stage changes"
+        });
+      } else {
+        res.status(404).json({ error: "Webhook not found" });
+      }
+    } catch (error) {
+      console.error("Zapier lead stage changed unsubscribe error:", error);
+      res.status(500).json({ error: "Failed to unsubscribe from webhook" });
+    }
+  });
+
+  // Subscribe to webhook for lead tagged
+  app.post("/api/zapier/hooks/lead-tagged/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const webhook = await ZapierIntegrationService.subscribeWebhook(
+        userId,
+        target_url,
+        'lead_tagged'
+      );
+
+      res.json({
+        success: true,
+        webhook_id: webhook.id,
+        message: "Successfully subscribed to lead tag assignments"
+      });
+    } catch (error) {
+      console.error("Zapier lead tagged subscribe error:", error);
+      res.status(500).json({ error: "Failed to subscribe to webhook" });
+    }
+  });
+
+  // Unsubscribe from lead tagged webhook
+  app.delete("/api/zapier/hooks/lead-tagged/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Successfully unsubscribed from lead tag assignments"
+        });
+      } else {
+        res.status(404).json({ error: "Webhook not found" });
+      }
+    } catch (error) {
+      console.error("Zapier lead tagged unsubscribe error:", error);
+      res.status(500).json({ error: "Failed to unsubscribe from webhook" });
+    }
+  });
+
+  // Subscribe to webhook for estimate created
+  app.post("/api/zapier/hooks/estimate-created/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const webhook = await ZapierIntegrationService.subscribeWebhook(
+        userId,
+        target_url,
+        'estimate_created'
+      );
+
+      res.json({
+        success: true,
+        webhook_id: webhook.id,
+        message: "Successfully subscribed to estimate created events"
+      });
+    } catch (error) {
+      console.error("Zapier estimate created subscribe error:", error);
+      res.status(500).json({ error: "Failed to subscribe to webhook" });
+    }
+  });
+
+  // Unsubscribe from estimate created webhook
+  app.delete("/api/zapier/hooks/estimate-created/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Successfully unsubscribed from estimate created events"
+        });
+      } else {
+        res.status(404).json({ error: "Webhook not found" });
+      }
+    } catch (error) {
+      console.error("Zapier estimate created unsubscribe error:", error);
+      res.status(500).json({ error: "Failed to unsubscribe from webhook" });
+    }
+  });
+
+  // Subscribe to webhook for estimate sent
+  app.post("/api/zapier/hooks/estimate-sent/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const webhook = await ZapierIntegrationService.subscribeWebhook(
+        userId,
+        target_url,
+        'estimate_sent'
+      );
+
+      res.json({
+        success: true,
+        webhook_id: webhook.id,
+        message: "Successfully subscribed to estimate sent events"
+      });
+    } catch (error) {
+      console.error("Zapier estimate sent subscribe error:", error);
+      res.status(500).json({ error: "Failed to subscribe to webhook" });
+    }
+  });
+
+  // Unsubscribe from estimate sent webhook
+  app.delete("/api/zapier/hooks/estimate-sent/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Successfully unsubscribed from estimate sent events"
+        });
+      } else {
+        res.status(404).json({ error: "Webhook not found" });
+      }
+    } catch (error) {
+      console.error("Zapier estimate sent unsubscribe error:", error);
+      res.status(500).json({ error: "Failed to unsubscribe from webhook" });
+    }
+  });
+
+  // Subscribe to webhook for estimate viewed
+  app.post("/api/zapier/hooks/estimate-viewed/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const webhook = await ZapierIntegrationService.subscribeWebhook(
+        userId,
+        target_url,
+        'estimate_viewed'
+      );
+
+      res.json({
+        success: true,
+        webhook_id: webhook.id,
+        message: "Successfully subscribed to estimate viewed events"
+      });
+    } catch (error) {
+      console.error("Zapier estimate viewed subscribe error:", error);
+      res.status(500).json({ error: "Failed to subscribe to webhook" });
+    }
+  });
+
+  // Unsubscribe from estimate viewed webhook
+  app.delete("/api/zapier/hooks/estimate-viewed/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Successfully unsubscribed from estimate viewed events"
+        });
+      } else {
+        res.status(404).json({ error: "Webhook not found" });
+      }
+    } catch (error) {
+      console.error("Zapier estimate viewed unsubscribe error:", error);
+      res.status(500).json({ error: "Failed to unsubscribe from webhook" });
+    }
+  });
+
+  // Subscribe to webhook for estimate accepted
+  app.post("/api/zapier/hooks/estimate-accepted/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const webhook = await ZapierIntegrationService.subscribeWebhook(
+        userId,
+        target_url,
+        'estimate_accepted'
+      );
+
+      res.json({
+        success: true,
+        webhook_id: webhook.id,
+        message: "Successfully subscribed to estimate accepted events"
+      });
+    } catch (error) {
+      console.error("Zapier estimate accepted subscribe error:", error);
+      res.status(500).json({ error: "Failed to subscribe to webhook" });
+    }
+  });
+
+  // Unsubscribe from estimate accepted webhook
+  app.delete("/api/zapier/hooks/estimate-accepted/subscribe", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { target_url } = req.body;
+
+      if (!target_url) {
+        return res.status(400).json({ error: "target_url is required" });
+      }
+
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
+
+      if (success) {
+        res.json({
+          success: true,
+          message: "Successfully unsubscribed from estimate accepted events"
+        });
+      } else {
+        res.status(404).json({ error: "Webhook not found" });
+      }
+    } catch (error) {
+      console.error("Zapier estimate accepted unsubscribe error:", error);
       res.status(500).json({ error: "Failed to unsubscribe from webhook" });
     }
   });
@@ -300,10 +744,118 @@ export function registerZapierRoutes(app: Express): void {
     try {
       const { userId } = (req as any).zapierAuth;
       const sampleData = await ZapierIntegrationService.getSampleData(userId, 'new_calculator', 3);
-      
+
       res.json(sampleData);
     } catch (error) {
       console.error("Zapier sample calculators error:", error);
+      res.status(500).json({ error: "Failed to get sample data" });
+    }
+  });
+
+  app.get("/api/zapier/sample/lead-stage-changed", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const sampleData = await ZapierIntegrationService.getSampleData(userId, 'lead_stage_changed', 3);
+
+      const wrappedSampleData = sampleData.map((data: any) => ({
+        event: 'lead_stage_changed',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedSampleData);
+    } catch (error) {
+      console.error("Zapier sample lead stage changed error:", error);
+      res.status(500).json({ error: "Failed to get sample data" });
+    }
+  });
+
+  app.get("/api/zapier/sample/lead-tagged", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const sampleData = await ZapierIntegrationService.getSampleData(userId, 'lead_tagged', 3);
+
+      const wrappedSampleData = sampleData.map((data: any) => ({
+        event: 'lead_tagged',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedSampleData);
+    } catch (error) {
+      console.error("Zapier sample lead tagged error:", error);
+      res.status(500).json({ error: "Failed to get sample data" });
+    }
+  });
+
+  app.get("/api/zapier/sample/estimate-created", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const sampleData = await ZapierIntegrationService.getSampleData(userId, 'estimate_created', 3);
+
+      const wrappedSampleData = sampleData.map((data: any) => ({
+        event: 'estimate_created',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedSampleData);
+    } catch (error) {
+      console.error("Zapier sample estimate created error:", error);
+      res.status(500).json({ error: "Failed to get sample data" });
+    }
+  });
+
+  app.get("/api/zapier/sample/estimate-sent", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const sampleData = await ZapierIntegrationService.getSampleData(userId, 'estimate_sent', 3);
+
+      const wrappedSampleData = sampleData.map((data: any) => ({
+        event: 'estimate_sent',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedSampleData);
+    } catch (error) {
+      console.error("Zapier sample estimate sent error:", error);
+      res.status(500).json({ error: "Failed to get sample data" });
+    }
+  });
+
+  app.get("/api/zapier/sample/estimate-viewed", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const sampleData = await ZapierIntegrationService.getSampleData(userId, 'estimate_viewed', 3);
+
+      const wrappedSampleData = sampleData.map((data: any) => ({
+        event: 'estimate_viewed',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedSampleData);
+    } catch (error) {
+      console.error("Zapier sample estimate viewed error:", error);
+      res.status(500).json({ error: "Failed to get sample data" });
+    }
+  });
+
+  app.get("/api/zapier/sample/estimate-accepted", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const sampleData = await ZapierIntegrationService.getSampleData(userId, 'estimate_accepted', 3);
+
+      const wrappedSampleData = sampleData.map((data: any) => ({
+        event: 'estimate_accepted',
+        timestamp: new Date().toISOString(),
+        data
+      }));
+
+      res.json(wrappedSampleData);
+    } catch (error) {
+      console.error("Zapier sample estimate accepted error:", error);
       res.status(500).json({ error: "Failed to get sample data" });
     }
   });

@@ -125,6 +125,17 @@ module.exports = {
         helpText: 'JSON string of calculator variables and their values.',
       },
     ],
+    sample: {
+      success: true,
+      lead: {
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        phone: "555-123-4567",
+        createdAt: "2024-01-15T12:00:00Z"
+      },
+      message: "Lead created successfully"
+    },
     outputFields: [
       { key: 'id', label: 'Lead ID', type: 'string' },
       { key: 'name', label: 'Customer Name', type: 'string' },

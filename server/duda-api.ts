@@ -65,6 +65,11 @@ interface DudaSSOResponse {
   url: string;
 }
 
+interface DudaWelcomeLinkResponse {
+  welcome_url: string;
+  expiration?: number;
+}
+
 interface DudaFormField {
   field_label: string;
   field_value: string;
@@ -152,8 +157,8 @@ export class DudaApiService {
     }
   }
 
-  async getWebsites(): Promise<DudaWebsiteResponse[]> {
-    const response = await fetch(`${this.config.baseUrl}/accounts/account-name/sites`, {
+  async getWebsites(accountName: string): Promise<DudaWebsiteResponse[]> {
+    const response = await fetch(`${this.config.baseUrl}/accounts/${encodeURIComponent(accountName)}/sites`, {
       method: 'GET',
       headers: this.getAuthHeaders()
     });
@@ -168,7 +173,7 @@ export class DudaApiService {
   }
 
   async getWebsite(siteName: string): Promise<DudaWebsiteResponse> {
-    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${siteName}`, {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}`, {
       method: 'GET',
       headers: this.getAuthHeaders()
     });
@@ -182,7 +187,7 @@ export class DudaApiService {
   }
 
   async deleteWebsite(siteName: string): Promise<void> {
-    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${siteName}`, {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders()
     });
@@ -194,7 +199,7 @@ export class DudaApiService {
   }
 
   async publishWebsite(siteName: string): Promise<void> {
-    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/publish/${siteName}`, {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/publish/${encodeURIComponent(siteName)}`, {
       method: 'POST',
       headers: this.getAuthHeaders()
     });
@@ -222,67 +227,78 @@ export class DudaApiService {
 
   async createAccount(data: CreateAccountRequest): Promise<DudaAccount> {
     const accountName = data.email; // Use email as account_name as Duda expects
-    
-    try {
-      console.log(`👤 Creating Duda account for: ${accountName}`);
-      const requestBody = {
+
+    console.log(`👤 Creating Duda account for: ${accountName}`);
+    const requestBody = {
+      account_name: accountName,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      email: data.email,
+      account_type: data.account_type || 'CUSTOMER'
+    };
+    console.log(`👤 Request body:`, JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch(`${this.config.baseUrl}/accounts/create`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify(requestBody)
+    });
+
+    console.log(`👤 Duda create account response status: ${response.status}`);
+
+    if (!response.ok) {
+      const error = await response.text();
+      const errorLower = error.toLowerCase();
+
+      // Handle account already exists - can be 409 Conflict or 400 Bad Request with specific message
+      // This is recoverable - the account exists in Duda, so we can still generate welcome links
+      const accountExistsPatterns = [
+        'already exists',
+        'alreadyexist',
+        'resourcealreadyexist',
+        'account_name already taken',
+        'duplicate',
+        'account exists'
+      ];
+      const isAccountExistsError = response.status === 409 ||
+        accountExistsPatterns.some(pattern => errorLower.includes(pattern));
+
+      if (isAccountExistsError) {
+        console.log(`👤 Account already exists for ${accountName}, continuing with existing account`);
+        return {
+          account_name: accountName,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          email: data.email,
+          account_type: data.account_type || 'CUSTOMER'
+        };
+      }
+
+      console.error(`❌ Duda create account error (${response.status}):`, error);
+      throw new Error(`Duda API error creating account: ${response.status} - ${error}`);
+    }
+
+    // Handle empty response (some Duda API endpoints return empty on success)
+    const responseText = await response.text();
+    console.log(`👤 Duda create account raw response:`, responseText);
+
+    if (!responseText.trim()) {
+      console.log('👤 Empty response, returning constructed account object');
+      return {
         account_name: accountName,
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
         account_type: data.account_type || 'CUSTOMER'
       };
-      console.log(`👤 Request body:`, JSON.stringify(requestBody, null, 2));
-      
-      const response = await fetch(`${this.config.baseUrl}/accounts/create`, {
-        method: 'POST',
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(requestBody)
-      });
+    }
 
-      console.log(`👤 Duda create account response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const error = await response.text();
-        console.error(`❌ Duda create account error (${response.status}):`, error);
-        throw new Error(`Duda API error creating account: ${response.status} - ${error}`);
-      }
-
-      // Handle empty response (some Duda API endpoints return empty on success)
-      const responseText = await response.text();
-      console.log(`👤 Duda create account raw response:`, responseText);
-      
-      if (!responseText.trim()) {
-        console.log('👤 Empty response, returning constructed account object');
-        // Return account info based on request since API returned empty success response
-        return {
-          account_name: accountName,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          account_type: data.account_type || 'CUSTOMER'
-        };
-      }
-
-      try {
-        const parsed = JSON.parse(responseText);
-        console.log('✅ Successfully parsed account creation JSON:', JSON.stringify(parsed, null, 2));
-        return parsed;
-      } catch (parseError) {
-        console.log('⚠️ JSON parse failed, returning constructed account object');
-        // If JSON parsing fails, return account info from request
-        return {
-          account_name: accountName,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          email: data.email,
-          account_type: data.account_type || 'CUSTOMER'
-        };
-      }
-    } catch (error) {
-      console.error('❌ Full error in createAccount:', error);
-      // If anything fails, skip account creation and return a mock account
-      console.log('⚠️ Returning fallback account object due to error');
+    try {
+      const parsed = JSON.parse(responseText);
+      console.log('✅ Successfully parsed account creation JSON:', JSON.stringify(parsed, null, 2));
+      return parsed;
+    } catch (parseError) {
+      console.log('⚠️ JSON parse failed, returning constructed account object');
       return {
         account_name: accountName,
         first_name: data.first_name,
@@ -323,7 +339,7 @@ export class DudaApiService {
       // Note: BOOKING_ADMIN requires BOOKING_USER to be granted first
     ];
 
-    const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/sites/${siteName}/permissions`, {
+    const response = await fetch(`${this.config.baseUrl}/accounts/${encodeURIComponent(accountName)}/sites/${encodeURIComponent(siteName)}/permissions`, {
       method: 'POST',
       headers: this.getAuthHeaders(),
       body: JSON.stringify({ permissions })
@@ -336,59 +352,57 @@ export class DudaApiService {
     }
   }
 
-  async createWelcomeLink(accountName: string): Promise<string> {
+  async createWelcomeLink(accountName: string): Promise<DudaWelcomeLinkResponse> {
+    console.log(`🔗 Creating welcome link for account: ${accountName}`);
+    console.log(`🔗 Endpoint: ${this.config.baseUrl}/accounts/${encodeURIComponent(accountName)}/welcome`);
+
+    const response = await fetch(`${this.config.baseUrl}/accounts/${encodeURIComponent(accountName)}/welcome`, {
+      method: 'POST',
+      headers: this.getAuthHeaders()
+    });
+
+    console.log(`🔗 Duda create welcome link response status: ${response.status}`);
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error(`❌ Duda create welcome link error (${response.status}):`, error);
+      throw new Error(`Duda API error creating welcome link: ${response.status} - ${error}`);
+    }
+
+    const responseText = await response.text();
+    console.log(`🔗 Duda welcome link raw response text:`, responseText);
+
+    // The response might be JSON with a URL or just the URL directly
     try {
-      console.log(`🔗 Creating welcome link for account: ${accountName}`);
-      console.log(`🔗 Endpoint: ${this.config.baseUrl}/accounts/${accountName}/welcome`);
-      
-      const response = await fetch(`${this.config.baseUrl}/accounts/${accountName}/welcome`, {
-        method: 'POST',
-        headers: this.getAuthHeaders()
-      });
+      const jsonResponse = JSON.parse(responseText);
+      console.log(`🔗 Parsed JSON response:`, JSON.stringify(jsonResponse, null, 2));
+      let welcomeLink = jsonResponse.welcome_url || jsonResponse.url || jsonResponse.link || responseText;
 
-      console.log(`🔗 Duda create welcome link response status: ${response.status}`);
-      console.log(`🔗 Response headers:`, JSON.stringify(Object.fromEntries(response.headers.entries())));
+      // Decode HTML entities (e.g., &amp; to &)
+      welcomeLink = welcomeLink.replace(/&amp;/g, '&');
 
-      if (!response.ok) {
-        const error = await response.text();
-        console.error(`❌ Duda create welcome link error (${response.status}):`, error);
-        throw new Error(`Duda API error creating welcome link: ${response.status} - ${error}`);
-      }
+      console.log(`✅ Welcome link extracted successfully:`, welcomeLink);
+      return {
+        welcome_url: welcomeLink,
+        expiration: jsonResponse.expiration
+      };
+    } catch (parseError) {
+      // If not JSON, assume the response is the URL directly
+      let welcomeLink = responseText.trim();
 
-      const responseText = await response.text();
-      console.log(`🔗 Duda welcome link raw response text:`, responseText);
-      console.log(`🔗 Response text length: ${responseText.length} characters`);
-      
-      // The response might be JSON with a URL or just the URL directly
-      try {
-        const jsonResponse = JSON.parse(responseText);
-        console.log(`🔗 Parsed JSON response:`, JSON.stringify(jsonResponse, null, 2));
-        let welcomeLink = jsonResponse.welcome_url || jsonResponse.url || jsonResponse.link || responseText;
-        
-        // Decode HTML entities (e.g., &amp; to &)
-        welcomeLink = welcomeLink.replace(/&amp;/g, '&');
-        
-        console.log(`✅ Welcome link extracted successfully:`, welcomeLink);
-        return welcomeLink;
-      } catch (parseError) {
-        // If not JSON, assume the response is the URL directly
-        let welcomeLink = responseText.trim();
-        
-        // Decode HTML entities (e.g., &amp; to &)
-        welcomeLink = welcomeLink.replace(/&amp;/g, '&');
-        
-        console.log(`✅ Welcome link (direct text response):`, welcomeLink);
-        return welcomeLink;
-      }
-    } catch (error) {
-      console.error('❌ Full error in createWelcomeLink:', error);
-      throw error;
+      // Decode HTML entities (e.g., &amp; to &)
+      welcomeLink = welcomeLink.replace(/&amp;/g, '&');
+
+      console.log(`✅ Welcome link (direct text response):`, welcomeLink);
+      return {
+        welcome_url: welcomeLink
+      };
     }
   }
 
   async generateSSOActivationLink(accountName: string, siteName: string): Promise<string> {
     // Use the correct Duda SSO endpoint format with SWITCH_TEMPLATE target for template selection
-    const ssoUrl = `${this.config.baseUrl}/accounts/sso/${accountName}/link?target=SWITCH_TEMPLATE&site_name=${siteName}`;
+    const ssoUrl = `${this.config.baseUrl}/accounts/sso/${encodeURIComponent(accountName)}/link?target=SWITCH_TEMPLATE&site_name=${encodeURIComponent(siteName)}`;
     
     const response = await fetch(ssoUrl, {
       method: 'GET',
@@ -415,7 +429,7 @@ export class DudaApiService {
 
   async generateSSOEditorLink(accountName: string, siteName: string): Promise<string> {
     // Generate SSO link that goes directly to the site editor (not template selection)
-    const ssoUrl = `${this.config.baseUrl}/accounts/sso/${accountName}/link?site_name=${siteName}`;
+    const ssoUrl = `${this.config.baseUrl}/accounts/sso/${encodeURIComponent(accountName)}/link?site_name=${encodeURIComponent(siteName)}`;
     
     const response = await fetch(ssoUrl, {
       method: 'GET',
@@ -444,7 +458,7 @@ export class DudaApiService {
     try {
       console.log(`Resetting password for account: ${accountName}`);
       
-      const response = await fetch(`${this.config.baseUrl}/accounts/reset-password/${accountName}`, {
+      const response = await fetch(`${this.config.baseUrl}/accounts/reset-password/${encodeURIComponent(accountName)}`, {
         method: 'POST',
         headers: this.getAuthHeaders()
       });
@@ -468,7 +482,7 @@ export class DudaApiService {
     try {
       console.log(`📋 Fetching form submissions for site: ${siteName}`);
       
-      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/get-forms/${siteName}`, {
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/get-forms/${encodeURIComponent(siteName)}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });

@@ -7,10 +7,12 @@ type StepSectionProps = {
   bullets: string[];
   intro?: string;
   proTip?: string;
+  videoUrl?: string;
+  videoTitle?: string;
 };
 
 const StepSection = forwardRef<HTMLDivElement, StepSectionProps>(
-  ({ step, title, bullets, intro, proTip }, ref) => {
+  ({ step, title, bullets, intro, proTip, videoUrl, videoTitle }, ref) => {
     const { ref: revealRef, isVisible, hasRevealed } = useRevealOnScroll();
 
     return (
@@ -42,9 +44,22 @@ const StepSection = forwardRef<HTMLDivElement, StepSectionProps>(
               data-reveal={hasRevealed}
             >
               <div className="setup-video-frame">
-                <div className="setup-video-icon">▶</div>
-                <div className="setup-video-label">Video placeholder</div>
-                <div className="setup-video-sheen" aria-hidden="true" />
+                {videoUrl ? (
+                  <iframe
+                    src={videoUrl}
+                    title={videoTitle ?? `${title} video`}
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                ) : (
+                  <>
+                    <div className="setup-video-icon">▶</div>
+                    <div className="setup-video-label">Video coming soon</div>
+                    <div className="setup-video-sheen" aria-hidden="true" />
+                  </>
+                )}
               </div>
             </div>
           </div>

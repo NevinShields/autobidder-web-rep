@@ -8,6 +8,7 @@ const steps = [
   {
     step: "01",
     title: "Set up your calculators",
+    videoUrl: "https://www.youtube.com/embed/IKir-Vxi0XM",
     bullets: [
       "Add a calculator for each of the services that you want to offer",
       "Add the necessary variables for each service",
@@ -20,6 +21,7 @@ const steps = [
   {
     step: "02",
     title: "Optimize your form logic",
+    videoUrl: "https://www.youtube.com/embed/_cBjLvCJ4ak",
     intro: "This includes:",
     bullets: [
       "Setting taxes",
@@ -34,6 +36,7 @@ const steps = [
   {
     step: "03",
     title: "Customize the design",
+    videoUrl: "https://www.youtube.com/embed/s-eJFmDtqlk",
     bullets: [
       "Use the visual editor to edit the form to your liking",
       "Use the AI + CSS editor to create truly unique and deeply detailed designs",
@@ -42,6 +45,7 @@ const steps = [
   {
     step: "04",
     title: "Setup Calendar",
+    videoUrl: "https://www.youtube.com/embed/P_4F6LjYTD4",
     bullets: [
       "Setup your availability times",
       "Setup route booking optimization",
@@ -51,6 +55,7 @@ const steps = [
   {
     step: "05",
     title: "Integrate With Website",
+    videoUrl: "https://www.youtube.com/embed/Uj4L69U17Ek",
     bullets: [
       "Use the integration tool to setup the form on your site",
       "Setup the primary form with all your services or setup individual forms for each of your services on their own pages",
@@ -84,7 +89,7 @@ export default function SetupStepByStepPage() {
           </p>
           <div className="setup-hero-cta">
             <a href="#step-1" className="setup-cta">Start Step 1</a>
-            <Link href="/signup" className="setup-cta ghost">Create account</Link>
+            <Link href="/onboarding" className="setup-cta ghost">Create account</Link>
           </div>
         </div>
       </header>
@@ -114,6 +119,8 @@ export default function SetupStepByStepPage() {
                 intro={(step as any).intro}
                 bullets={step.bullets}
                 proTip={index === 0 ? "Use real pricing data from past jobs for the first formula." : undefined}
+                videoUrl={(step as any).videoUrl}
+                videoTitle={`${step.title} video`}
               />
             </div>
           ))}

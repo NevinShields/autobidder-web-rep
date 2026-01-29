@@ -188,7 +188,7 @@ export default function IntegrationsPage() {
             <CardContent className="pt-0">
               <div className="space-y-3">
                 <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                  <strong>Triggers:</strong> New Lead
+                  <strong>Triggers:</strong> New Lead, Lead Stage Changed, Lead Tagged, Estimate Created, Estimate Sent, Estimate Viewed, Estimate Accepted
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                   <strong>Popular connections:</strong> Gmail, Slack, Google Sheets, HubSpot

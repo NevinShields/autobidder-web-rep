@@ -579,20 +579,20 @@ export default function VisualComponentEditor({
   };
 
   return (
-    <Card className="mb-4">
-      <CardHeader className="pb-2 pt-0 cursor-pointer hover:bg-gray-100 transition-colors" onClick={onToggle}>
-        <div 
+    <Card className="mb-4 overflow-hidden">
+      <CardHeader className="pb-2 pt-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-t-lg" onClick={onToggle}>
+        <div
           className="flex items-center justify-between"
         >
           <div className="flex items-center space-x-3">
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-500" />
+              <ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             )}
             <div className="flex flex-col justify-center">
               <CardTitle className="text-base">{title}</CardTitle>
-              <p className="text-xs text-gray-600 mt-1">{description}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{description}</p>
             </div>
           </div>
         </div>
@@ -603,7 +603,7 @@ export default function VisualComponentEditor({
           {/* Visual Preview - Compact */}
           <div className="mb-4">
             <Label className="text-xs font-medium mb-1 block">Preview</Label>
-            <div className="border rounded-lg p-3 bg-gray-50 min-h-20 relative">
+            <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 min-h-20 relative">
               {renderExampleComponent()}
             </div>
           </div>
@@ -640,7 +640,7 @@ export default function VisualComponentEditor({
                     <span className="text-xs text-gray-500 min-w-10">{style.borderColorAlpha ?? 100}%</span>
                   </div>
                   {showTransparency.borderColor && (
-                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                    <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                       <RgbaColorPicker
                         color={hexToRgba(style.borderColor || '#E5E7EB', style.borderColorAlpha ?? 100)}
                         onChange={(color) => {
@@ -688,7 +688,7 @@ export default function VisualComponentEditor({
                     <span className="text-xs text-gray-500 min-w-10">{style.backgroundColorAlpha ?? 100}%</span>
                   </div>
                   {showTransparency.backgroundColor && (
-                    <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                    <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                       <RgbaColorPicker
                         color={hexToRgba(style.backgroundColor || '#FFFFFF', style.backgroundColorAlpha ?? 100)}
                         onChange={(color) => {
@@ -976,7 +976,7 @@ export default function VisualComponentEditor({
                         <span className="text-xs text-gray-500 min-w-10">{style.textColorAlpha ?? 100}%</span>
                       </div>
                       {showTransparency.textColor && (
-                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                        <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                           <RgbaColorPicker
                             color={hexToRgba(style.textColor || '#374151', style.textColorAlpha ?? 100)}
                             onChange={(color) => {
@@ -1169,7 +1169,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.activeBackground && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.serviceSelectorActiveBackgroundColor || '#3B82F6', styling.serviceSelectorActiveBackgroundColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1214,7 +1214,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorActiveBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.activeBorder && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.serviceSelectorActiveBorderColor || '#2563EB', styling.serviceSelectorActiveBorderColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1258,7 +1258,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.hoverBackground && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.serviceSelectorHoverBackgroundColor || '#F3F4F6', styling.serviceSelectorHoverBackgroundColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1297,7 +1297,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorHoverBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.hoverBorder && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.serviceSelectorHoverBorderColor || '#D1D5DB', styling.serviceSelectorHoverBorderColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1371,7 +1371,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorTextColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.selectorTextColor && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.serviceSelectorTextColor || styling.textColor || '#000000', styling.serviceSelectorTextColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1412,7 +1412,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.serviceSelectorSelectedTextColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.selectedTextColor && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.serviceSelectorSelectedTextColor || styling.primaryColor || '#3B82F6', styling.serviceSelectorSelectedTextColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1574,7 +1574,7 @@ export default function VisualComponentEditor({
                         />
                       </div>
                       {showTransparency.trackColor && (
-                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-10 left-0">
+                        <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-10 left-0">
                           <RgbaColorPicker
                             color={hexToRgba(style.backgroundColor, 100)}
                             onChange={(color) => {
@@ -1607,7 +1607,7 @@ export default function VisualComponentEditor({
                         />
                       </div>
                       {showTransparency.trackBgColor && (
-                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-10 left-0">
+                        <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-10 left-0">
                           <RgbaColorPicker
                             color={hexToRgba(style.trackBackgroundColor || '#E2E8F0', 100)}
                             onChange={(color) => {
@@ -1640,7 +1640,7 @@ export default function VisualComponentEditor({
                         />
                       </div>
                       {showTransparency.thumbColor && (
-                        <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-10 left-0">
+                        <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-10 left-0">
                           <RgbaColorPicker
                             color={hexToRgba(style.thumbColor || style.backgroundColor, 100)}
                             onChange={(color) => {
@@ -1861,7 +1861,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcActiveBackground && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.multipleChoiceActiveBackgroundColor || '#3B82F6', styling.multipleChoiceActiveBackgroundColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1900,7 +1900,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceActiveBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcActiveBorder && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.multipleChoiceActiveBorderColor || '#2563EB', styling.multipleChoiceActiveBorderColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1943,7 +1943,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBackgroundColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcHoverBackground && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.multipleChoiceHoverBackgroundColor || '#F3F4F6', styling.multipleChoiceHoverBackgroundColorAlpha ?? 100)}
                                 onChange={(color) => {
@@ -1982,7 +1982,7 @@ export default function VisualComponentEditor({
                             <span className="text-xs text-gray-500 min-w-10">{styling.multipleChoiceHoverBorderColorAlpha ?? 100}%</span>
                           </div>
                           {showTransparency.mcHoverBorder && (
-                            <div className="p-2 border rounded-md bg-white shadow-lg absolute z-50 top-8 left-0">
+                            <div className="p-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 shadow-lg absolute z-50 top-8 left-0">
                               <RgbaColorPicker
                                 color={hexToRgba(styling.multipleChoiceHoverBorderColor || '#D1D5DB', styling.multipleChoiceHoverBorderColorAlpha ?? 100)}
                                 onChange={(color) => {

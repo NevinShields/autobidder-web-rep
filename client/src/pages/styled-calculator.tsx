@@ -2926,7 +2926,7 @@ export default function StyledCalculator(props: any = {}) {
               {/* Address Field - Show only if enabled */}
               {businessSettings?.styling?.enableAddress && (
                 <div className="ab-question-card">
-                  <Label htmlFor="address" className="ab-label ab-question-label" style={{ color: styling.textColor || '#374151' }}>
+                  <Label htmlFor="address" className="ab-label ab-question-label" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                     {businessSettings?.styling?.addressLabel || 'Address'} {businessSettings?.styling?.requireAddress ? '*' : ''}
                   </Label>
                   <Suspense fallback={<Skeleton className="h-12 w-full" />}>
@@ -2952,6 +2952,7 @@ export default function StyledCalculator(props: any = {}) {
                         styling={styling}
                         componentStyles={designSettings?.componentStyles}
                         className="w-full"
+                        hasCustomCSS={hasCustomCSS}
                       />
                     </GoogleMapsLoader>
                   </Suspense>

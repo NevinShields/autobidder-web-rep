@@ -22,6 +22,7 @@ interface GooglePlacesAutocompleteProps {
   // Design system props
   styling?: any;
   componentStyles?: any;
+  hasCustomCSS?: boolean;
 }
 
 export function GooglePlacesAutocomplete({
@@ -33,7 +34,8 @@ export function GooglePlacesAutocomplete({
   fields = ['formatted_address', 'geometry'],
   componentRestrictions,
   styling = {},
-  componentStyles
+  componentStyles,
+  hasCustomCSS = false
 }: GooglePlacesAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
@@ -175,7 +177,8 @@ export function GooglePlacesAutocomplete({
     };
   };
 
-  const inputStyle = getInputStyle();
+  // Only apply inline styles when custom CSS is not being used
+  const inputStyle = hasCustomCSS ? {} : getInputStyle();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;

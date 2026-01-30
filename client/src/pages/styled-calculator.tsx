@@ -942,10 +942,14 @@ export default function StyledCalculator(props: any = {}) {
 
       return apiRequest("POST", "/api/estimates", estimateData);
     },
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      // Invalidate the specific lead's estimates to update the customer modal
+      if (variables.leadId) {
+        queryClient.invalidateQueries({ queryKey: [`/api/leads/${variables.leadId}/estimates`] });
+      }
     },
     onError: (error: any) => {
       console.error("Failed to create estimate:", error);

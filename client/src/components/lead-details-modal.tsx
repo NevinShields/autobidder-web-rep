@@ -1723,19 +1723,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                   variant="outline"
                                   className="w-full sm:w-auto"
                                   onClick={() => {
-                                    setSelectedEstimateId(estimate.id);
-                                    setShowRevisionDialog(true);
-                                  }}
-                                  data-testid={`button-request-revision-pre-${estimate.id}`}
-                                >
-                                  <XCircle className="h-4 w-4 mr-2" />
-                                  Request Revision
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="w-full sm:w-auto"
-                                  onClick={() => {
                                     setEditingEstimate(estimate);
                                   }}
                                   data-testid={`button-edit-pre-estimate-${estimate.id}`}

@@ -142,6 +142,11 @@ function getEffectiveOwnerId(currentUser: any): string {
 
 // Helper function to check if user has permission for an action
 function hasPermission(currentUser: any, permission: string): boolean {
+  // Admin impersonating a user has all permissions (only super admins can impersonate)
+  if (currentUser.isImpersonating) {
+    return true;
+  }
+  
   // Owners and super admins have all permissions
   if (currentUser.userType === 'owner' || currentUser.userType === 'super_admin') {
     return true;

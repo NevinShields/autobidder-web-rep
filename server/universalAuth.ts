@@ -46,7 +46,9 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
     
     // Add user to request for downstream handlers
-    (req as any).currentUser = user;
+    // Include isImpersonating flag so admin has full permissions while viewing user accounts
+    const isImpersonating = (req.session as any).isImpersonating || false;
+    (req as any).currentUser = { ...user, isImpersonating };
     next();
     
   } catch (error) {

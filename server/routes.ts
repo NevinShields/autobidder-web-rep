@@ -10143,6 +10143,10 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Formula not found" });
       }
 
+      // Fetch business settings for design defaults
+      const settings = await storage.getBusinessSettingsByUserId(userId);
+      const estimateDefaults = settings?.estimatePageSettings || {};
+
       // Generate unique estimate number
       const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -10154,7 +10158,13 @@ The Autobidder Team`;
         customerName: lead.name,
         customerEmail: lead.email,
         customerPhone: lead.phone,
+        // Use provided message, or default from settings, or fallback
         businessMessage: businessMessage || "Thank you for your interest in our services. Please find the detailed estimate below.",
+        customMessage: estimateDefaults.defaultMessage,
+        layoutId: estimateDefaults.defaultLayoutId || "classic",
+        theme: estimateDefaults.defaultTheme || {},
+        attachments: estimateDefaults.defaultIncludeAttachments !== false ? (estimateDefaults.defaultAttachments || []) : [],
+        videoUrl: estimateDefaults.defaultShowVideo !== false ? estimateDefaults.defaultVideoUrl : undefined,
         services: [{
           name: formula.name,
           description: formula.description || "",
@@ -10189,6 +10199,10 @@ The Autobidder Team`;
       if (!lead) {
         return res.status(404).json({ message: "Multi-service lead not found" });
       }
+
+      // Fetch business settings for design defaults
+      const settings = await storage.getBusinessSettingsByUserId(userId);
+      const estimateDefaults = settings?.estimatePageSettings || {};
 
       // Generate unique estimate number
       const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -10225,7 +10239,13 @@ The Autobidder Team`;
         customerEmail: lead.email,
         customerPhone: lead.phone,
         customerAddress: lead.address,
+        // Use provided message, or default from settings, or fallback
         businessMessage: businessMessage || "Thank you for your interest in our services. Please find the detailed estimate below.",
+        customMessage: estimateDefaults.defaultMessage,
+        layoutId: estimateDefaults.defaultLayoutId || "classic",
+        theme: estimateDefaults.defaultTheme || {},
+        attachments: estimateDefaults.defaultIncludeAttachments !== false ? (estimateDefaults.defaultAttachments || []) : [],
+        videoUrl: estimateDefaults.defaultShowVideo !== false ? estimateDefaults.defaultVideoUrl : undefined,
         services,
         subtotal,
         taxAmount,
@@ -10281,6 +10301,10 @@ The Autobidder Team`;
       // Generate unique estimate number
       const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
+      // Fetch business settings for design defaults
+      const settings = await storage.getBusinessSettingsByUserId(userId);
+      const estimateDefaults = settings?.estimatePageSettings || {};
+
       let estimateData: any;
 
       if (isMultiService) {
@@ -10319,6 +10343,12 @@ The Autobidder Team`;
           customerPhone: lead.phone,
           customerAddress: (lead as any).address,
           businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+          // Use default settings for design
+          customMessage: estimateDefaults.defaultMessage,
+          layoutId: estimateDefaults.defaultLayoutId || "classic",
+          theme: estimateDefaults.defaultTheme || {},
+          attachments: estimateDefaults.defaultIncludeAttachments !== false ? (estimateDefaults.defaultAttachments || []) : [],
+          videoUrl: estimateDefaults.defaultShowVideo !== false ? estimateDefaults.defaultVideoUrl : undefined,
           services,
           subtotal,
           taxAmount,
@@ -10373,6 +10403,12 @@ The Autobidder Team`;
           customerPhone: lead.phone,
           customerAddress: (lead as any).address,
           businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+          // Use default settings for design
+          customMessage: estimateDefaults.defaultMessage,
+          layoutId: estimateDefaults.defaultLayoutId || "classic",
+          theme: estimateDefaults.defaultTheme || {},
+          attachments: estimateDefaults.defaultIncludeAttachments !== false ? (estimateDefaults.defaultAttachments || []) : [],
+          videoUrl: estimateDefaults.defaultShowVideo !== false ? estimateDefaults.defaultVideoUrl : undefined,
           services: [{
             name: formula.name,
             description: formula.description || "",

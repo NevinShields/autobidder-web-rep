@@ -263,7 +263,7 @@ export default function EstimatePage() {
     }
   };
 
-  const layoutId = estimate.layoutId || "classic";
+  const layoutId = estimate.layoutId || estimateDefaults.defaultLayoutId || "classic";
   const isMinimal = layoutId === "minimal";
   const isDetailed = layoutId === "detailed";
   const pageBackgroundClass = isMinimal
@@ -566,11 +566,11 @@ export default function EstimatePage() {
     <div className={`force-light-mode min-h-screen ${pageBackgroundClass} p-4`}>
       <div className={`${containerWidthClass} mx-auto`}>
         {/* Header Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
             Estimate {estimate.estimateNumber}
           </h1>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <Badge className={estimate.estimateType === "pre_estimate" ? "bg-orange-100 text-orange-800" : "bg-emerald-100 text-emerald-800"}>
               {estimate.estimateType === "pre_estimate" ? "Pre-Estimate" : "Confirmed Estimate"}
             </Badge>
@@ -581,18 +581,18 @@ export default function EstimatePage() {
               variant="outline"
               size="sm"
               onClick={handlePrint}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-black"
             >
               <Printer className="w-4 h-4" />
-              Print
+              <span className="hidden sm:inline">Print</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-black"
             >
               <Download className="w-4 h-4" />
-              Download PDF
+              <span className="hidden sm:inline">Download PDF</span>
             </Button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,9 +89,11 @@ export default function EstimatePageSettings() {
 
   const { data: businessSettings, isLoading } = useQuery({
     queryKey: ["/api/business-settings"],
-    onSuccess: (data: BusinessSettings) => {
-      if (!data) return;
-      const savedSettings = (data as any).estimatePageSettings || {};
+  });
+
+  useEffect(() => {
+    if (businessSettings) {
+      const savedSettings = (businessSettings as any).estimatePageSettings || {};
       const normalizedAttachments = (savedSettings.defaultAttachments || []).map((attachment: EstimateAttachment) => ({
         ...attachment,
         category: attachment.category || "custom",
@@ -105,8 +107,8 @@ export default function EstimatePageSettings() {
         },
         defaultAttachments: normalizedAttachments,
       });
-    },
-  });
+    }
+  }, [businessSettings]);
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (data: { estimatePageSettings: EstimatePageSettings }) => {
@@ -836,7 +838,7 @@ export default function EstimatePageSettings() {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                           <CardTitle className={`text-2xl font-bold mb-2 ${previewHeaderTitleClass}`}>
                             Professional Estimate
@@ -848,7 +850,7 @@ export default function EstimatePageSettings() {
                             Layout: {previewLayoutId}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left md:text-right">
                           <p className={previewHeaderMutedClass}>Issue Date</p>
                           <p className={`font-semibold ${previewHeaderTitleClass}`}>
                             {formatPreviewDate(previewEstimate.createdAt)}

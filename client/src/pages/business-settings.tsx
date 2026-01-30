@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,17 +59,18 @@ export default function BusinessSettings() {
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ["/api/business-settings"],
-    onSuccess: (data: BusinessSettings) => {
-      if (data) {
-        setBusinessName(data.businessName);
-        setBusinessEmail(data.businessEmail || "");
-        setEnableLeadCapture(data.enableLeadCapture);
-        setEnableBooking(data.enableBooking);
-        setEnableServiceCart(data.enableServiceCart || false);
-        setStyling(data.styling);
-      }
-    },
   });
+
+  useEffect(() => {
+    if (settings) {
+      setBusinessName(settings.businessName);
+      setBusinessEmail(settings.businessEmail || "");
+      setEnableLeadCapture(settings.enableLeadCapture);
+      setEnableBooking(settings.enableBooking);
+      setEnableServiceCart(settings.enableServiceCart || false);
+      setStyling(settings.styling);
+    }
+  }, [settings]);
 
   const saveSettingsMutation = useMutation({
     mutationFn: async (data: {

@@ -849,7 +849,7 @@ export default function AutomationBuilder() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                <Link href="/leads?tab=automations">
+                <Link href="/crm/automations">
                   <Button variant="ghost" size="sm" data-testid="button-back" className="flex-shrink-0">
                     <ChevronLeft className="h-4 w-4 sm:mr-1" />
                     <span className="hidden sm:inline">Back</span>
@@ -862,7 +862,7 @@ export default function AutomationBuilder() {
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Link href="/leads?tab=automations">
+                <Link href="/crm/automations">
                   <Button variant="outline" size="sm" data-testid="button-cancel" className="hidden sm:inline-flex">
                     Cancel
                   </Button>

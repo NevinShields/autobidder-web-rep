@@ -3968,14 +3968,14 @@ export default function StyledCalculator(props: any = {}) {
   const hasCustomCSS = !!designSettings?.customCSS;
 
   return (
-    <div className="force-light-mode min-h-screen flex items-start justify-center p-1 sm:p-2" style={{ margin: '0' }}>
+    <div className="force-light-mode min-h-screen flex items-start justify-center p-0" style={{ margin: '0' }}>
       <div 
         id="autobidder-form"
         className="ab-form-container form-container max-w-4xl w-full mx-auto"
         style={hasCustomCSS ? {} : {
           backgroundColor: styling.backgroundColor || 'transparent',
           borderRadius: `${styling.containerBorderRadius || 16}px`,
-          padding: `${styling.containerPadding || 8}px`,
+          padding: `${styling.containerPadding || 0}px`,
           margin: `${styling.containerMargin || 0}px`,
           boxShadow: styling.containerShadow === 'xl' 
             ? '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)'

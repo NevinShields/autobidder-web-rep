@@ -408,11 +408,28 @@ IMPORTANT RULES:
 3. Use realistic contractor pricing (research actual market rates)
 4. Include 3-8 relevant variables that affect pricing
 5. Use appropriate units (sq ft, linear ft, hours, etc.)
-6. For dropdown/select variables, include numericValue for calculations
-7. Formula should be a mathematical expression using +, -, *, /, parentheses, and ternary operators
-8. Boolean variables use ternary: (variableId ? cost : 0)
-9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
-10. Provide a relevant icon URL from a professional icon service (preferably from lucide icons, heroicons, or similar)
+6. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
+7. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
+8. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
+
+*** CRITICAL FORMULA REQUIREMENT ***
+The formula field MUST be simple arithmetic using ONLY:
+- Addition (+) and multiplication (*)
+- Variable IDs (which get replaced with numbers)
+
+FORBIDDEN in formulas (will cause errors):
+- NO parentheses: ( )
+- NO ternary operators: ? :
+- NO comparison operators: === == !== != > < >= <=
+- NO division: /
+- NO subtraction: -
+- NO string comparisons
+- NO boolean logic
+
+CORRECT formula: "squareFootage * 4 + gutterType + storyCount * 25 + basePrice"
+WRONG formula: "(squareFootage * rate) + (gutterType === 'premium' ? 50 : 0)"
+
+Each variable's numericValue IS the pricing - the formula just combines them.
 
 CRITICAL: PRIORITIZE THESE INPUT TYPES (IN ORDER OF PREFERENCE)
 - MOST PREFERRED: number inputs (for measurements, quantities, counts - these are essential for accurate pricing)
@@ -517,10 +534,18 @@ RESPONSE FORMAT: JSON with these exact fields:
   "title": "Customer-facing calculator title",
   "description": "2-3 sentence description of the service",
   "bulletPoints": ["Benefit 1", "Benefit 2", "Benefit 3", "Benefit 4"],
-  "formula": "mathematical expression using variable IDs",
+  "formula": "SIMPLE formula with + and * ONLY",
   "variables": [array of variable objects],
   "iconUrl": "https://icon-url-or-emoji"
 }
+
+CRITICAL FORMULA RULES (MUST FOLLOW):
+- Formula MUST use ONLY + (addition) and * (multiplication)
+- NEVER use: parentheses (), ternary operators (? :), === or ==, division /, subtraction -
+- All dropdown/multiple-choice options MUST have numericValue that gets used directly in the formula
+- GOOD formula example: "squareFootage * 3 + gutterType + difficultyLevel + basePrice"
+- BAD formula (NEVER DO THIS): "(squareFootage * rate) + (type === 'premium' ? 100 : 0)"
+- The formula is evaluated by replacing variable IDs with their numericValue, then computing the math
 
 VARIABLE STRUCTURE:
 {
@@ -558,7 +583,7 @@ Create realistic pricing that reflects actual market rates for contractors.`;
         },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
+      temperature: 0.3,
     });
 
     const content = response.choices[0].message.content;

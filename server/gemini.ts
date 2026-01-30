@@ -47,11 +47,28 @@ IMPORTANT RULES:
 3. Use realistic contractor pricing (research actual market rates)
 4. Include 3-8 relevant variables that affect pricing
 5. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
-6. For dropdown/select variables, include numericValue for calculations
-7. Formula should be a mathematical expression using +, -, *, /, parentheses, and ternary operators
-8. Boolean variables use ternary: (variableId ? cost : 0)
-9. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
-10. Provide a relevant emoji icon that represents the service
+6. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
+7. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
+8. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
+
+*** CRITICAL FORMULA REQUIREMENT ***
+The formula field MUST be simple arithmetic using ONLY:
+- Addition (+) and multiplication (*)
+- Variable IDs (which get replaced with numbers)
+
+FORBIDDEN in formulas (will cause errors):
+- NO parentheses: ( )
+- NO ternary operators: ? :
+- NO comparison operators: === == !== != > < >= <=
+- NO division: /
+- NO subtraction: -
+- NO string comparisons
+- NO boolean logic
+
+CORRECT formula: "squareFootage * 4 + gutterType + storyCount * 25 + basePrice"
+WRONG formula: "(squareFootage * rate) + (gutterType === 'premium' ? 50 : 0)"
+
+Each variable's numericValue IS the pricing - the formula just combines them.
 
 CRITICAL: PRIORITIZE THESE INPUT TYPES (IN ORDER OF PREFERENCE)
 - MOST PREFERRED: number inputs (for measurements, quantities, counts - these are essential for accurate pricing)
@@ -185,6 +202,7 @@ Response format (JSON):
       model: "gemini-2.0-flash-exp",
       config: {
         systemInstruction: systemPrompt,
+        temperature: 0.3,
         responseMimeType: "application/json",
         responseSchema: {
           type: "object",
@@ -265,12 +283,25 @@ IMPORTANT RULES:
 2. Formula must use ONLY variable IDs (not variable names)
 3. Use realistic contractor pricing (research actual market rates)
 4. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
-5. For dropdown/select variables, include numericValue for calculations
-6. Formula should be a mathematical expression using +, -, *, /, parentheses, and ternary operators
-7. Boolean variables use ternary: (variableId ? cost : 0)
-8. You can add, remove, or modify variables as needed
-9. Update descriptions and bullet points to reflect changes
-10. Maintain service quality and professionalism
+5. EVERY dropdown/multiple-choice option MUST have a numericValue field
+6. You can add, remove, or modify variables as needed
+7. Update descriptions and bullet points to reflect changes
+8. Maintain service quality and professionalism
+
+*** CRITICAL FORMULA REQUIREMENT ***
+The formula field MUST be simple arithmetic using ONLY:
+- Addition (+) and multiplication (*)
+- Variable IDs (which get replaced with numbers)
+
+FORBIDDEN in formulas (will cause errors):
+- NO parentheses: ( )
+- NO ternary operators: ? :
+- NO comparison operators: === == !== != > < >= <=
+- NO division: /
+- NO subtraction: -
+
+CORRECT formula: "squareFootage * 4 + gutterType + storyCount * 25"
+WRONG formula: "(squareFootage * rate) + (type === 'premium' ? 50 : 0)"
 
 CRITICAL: PRIORITIZE THESE INPUT TYPES (IN ORDER OF PREFERENCE)
 - MOST PREFERRED: number inputs (for measurements, quantities, counts - these are essential for accurate pricing)

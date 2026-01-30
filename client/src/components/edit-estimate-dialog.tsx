@@ -23,13 +23,6 @@ interface LineItem {
   category?: string;
 }
 
-interface EstimateAttachment {
-  url: string;
-  name?: string;
-  type: "image" | "pdf" | "file";
-  category?: "terms" | "insurance" | "custom";
-}
-
 interface EditEstimateDialogProps {
   estimate: any | null;
   open: boolean;
@@ -48,14 +41,6 @@ export default function EditEstimateDialog({
   ]);
   const [businessMessage, setBusinessMessage] = useState("");
   const [customMessage, setCustomMessage] = useState("");
-  const [layoutId, setLayoutId] = useState("classic");
-  const [theme, setTheme] = useState({
-    primaryColor: "",
-    accentColor: "",
-    backgroundColor: "",
-    textColor: "",
-  });
-  const [attachments, setAttachments] = useState<EstimateAttachment[]>([]);
   const [videoUrl, setVideoUrl] = useState("");
   const [revisionReason, setRevisionReason] = useState("");
   const [travelFee, setTravelFee] = useState(0);
@@ -63,9 +48,6 @@ export default function EditEstimateDialog({
   const [taxRate, setTaxRate] = useState(0);
   const [autoCalculateTax, setAutoCalculateTax] = useState(false);
   const [taxAmount, setTaxAmount] = useState(0);
-  const [newAttachmentUrl, setNewAttachmentUrl] = useState("");
-  const [newAttachmentName, setNewAttachmentName] = useState("");
-  const [newAttachmentType, setNewAttachmentType] = useState<"image" | "pdf">("image");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -80,14 +62,6 @@ export default function EditEstimateDialog({
       setLineItems(items.length > 0 ? items : [{ name: '', description: '', price: 0 }]);
       setBusinessMessage(estimate.businessMessage || '');
       setCustomMessage(estimate.customMessage || '');
-      setLayoutId(estimate.layoutId || 'classic');
-      setTheme({
-        primaryColor: estimate.theme?.primaryColor || '',
-        accentColor: estimate.theme?.accentColor || '',
-        backgroundColor: estimate.theme?.backgroundColor || '',
-        textColor: estimate.theme?.textColor || '',
-      });
-      setAttachments(estimate.attachments || []);
       setVideoUrl(estimate.videoUrl || '');
       setRevisionReason(estimate.revisionReason || '');
       setTravelFee((estimate.distanceFee || 0) / 100);
@@ -95,9 +69,6 @@ export default function EditEstimateDialog({
       setTaxAmount((estimate.taxAmount || 0) / 100);
       setTaxRate(0);
       setAutoCalculateTax(false);
-      setNewAttachmentUrl("");
-      setNewAttachmentName("");
-      setNewAttachmentType("image");
     }
   }, [estimate, open]);
 
@@ -112,19 +83,11 @@ export default function EditEstimateDialog({
   }, [autoCalculateTax, taxRate, lineItems, travelFee, discountAmount]);
 
   const updateEstimateMutation = useMutation({
-    mutationFn: async ({ estimateId, lineItems, businessMessage, customMessage, layoutId, theme, attachments, videoUrl, revisionReason, travelFee, discountAmount, taxAmount }: {
+    mutationFn: async ({ estimateId, lineItems, businessMessage, customMessage, videoUrl, revisionReason, travelFee, discountAmount, taxAmount }: {
       estimateId: number;
       lineItems: LineItem[];
       businessMessage: string;
       customMessage: string;
-      layoutId: string;
-      theme: {
-        primaryColor?: string;
-        accentColor?: string;
-        backgroundColor?: string;
-        textColor?: string;
-      };
-      attachments: EstimateAttachment[];
       videoUrl: string;
       revisionReason: string;
       travelFee: number;
@@ -151,9 +114,6 @@ export default function EditEstimateDialog({
       const updateData = {
         businessMessage,
         customMessage,
-        layoutId,
-        theme,
-        attachments,
         videoUrl,
         revisionReason,
         services,
@@ -173,14 +133,6 @@ export default function EditEstimateDialog({
       setLineItems([{ name: '', description: '', price: 0 }]);
       setBusinessMessage("");
       setCustomMessage("");
-      setLayoutId("classic");
-      setTheme({
-        primaryColor: "",
-        accentColor: "",
-        backgroundColor: "",
-        textColor: "",
-      });
-      setAttachments([]);
       setVideoUrl("");
       setRevisionReason("");
       setTravelFee(0);
@@ -188,9 +140,6 @@ export default function EditEstimateDialog({
       setTaxAmount(0);
       setTaxRate(0);
       setAutoCalculateTax(false);
-      setNewAttachmentUrl("");
-      setNewAttachmentName("");
-      setNewAttachmentType("image");
       onOpenChange(false);
       toast({
         title: "Estimate Updated",
@@ -237,9 +186,6 @@ export default function EditEstimateDialog({
         lineItems,
         businessMessage,
         customMessage,
-        layoutId,
-        theme,
-        attachments,
         videoUrl,
         revisionReason,
         travelFee,
@@ -254,14 +200,6 @@ export default function EditEstimateDialog({
       setLineItems([{ name: '', description: '', price: 0 }]);
       setBusinessMessage("");
       setCustomMessage("");
-      setLayoutId("classic");
-      setTheme({
-        primaryColor: "",
-        accentColor: "",
-        backgroundColor: "",
-        textColor: "",
-      });
-      setAttachments([]);
       setVideoUrl("");
       setRevisionReason("");
       setTravelFee(0);
@@ -269,9 +207,6 @@ export default function EditEstimateDialog({
       setTaxAmount(0);
       setTaxRate(0);
       setAutoCalculateTax(false);
-      setNewAttachmentUrl("");
-      setNewAttachmentName("");
-      setNewAttachmentType("image");
     }
     onOpenChange(open);
   };
@@ -522,116 +457,6 @@ export default function EditEstimateDialog({
               onChange={(e) => setVideoUrl(e.target.value)}
               placeholder="https://..."
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-layout">Layout Preset</Label>
-            <select
-              id="edit-layout"
-              value={layoutId}
-              onChange={(e) => setLayoutId(e.target.value)}
-              className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm"
-            >
-              <option value="classic">Classic</option>
-              <option value="minimal">Minimal</option>
-              <option value="detailed">Detailed</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="edit-theme-primary">Primary Color</Label>
-              <Input
-                id="edit-theme-primary"
-                type="color"
-                value={theme.primaryColor || "#2563eb"}
-                onChange={(e) => setTheme((prev) => ({ ...prev, primaryColor: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-theme-accent">Accent Color</Label>
-              <Input
-                id="edit-theme-accent"
-                type="color"
-                value={theme.accentColor || "#16a34a"}
-                onChange={(e) => setTheme((prev) => ({ ...prev, accentColor: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-theme-background">Background Color</Label>
-              <Input
-                id="edit-theme-background"
-                type="color"
-                value={theme.backgroundColor || "#ffffff"}
-                onChange={(e) => setTheme((prev) => ({ ...prev, backgroundColor: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-theme-text">Text Color</Label>
-              <Input
-                id="edit-theme-text"
-                type="color"
-                value={theme.textColor || "#111827"}
-                onChange={(e) => setTheme((prev) => ({ ...prev, textColor: e.target.value }))}
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Attachments (Images/PDFs)</Label>
-            {attachments.length === 0 && (
-              <p className="text-sm text-gray-500">No attachments added yet.</p>
-            )}
-            <div className="space-y-2">
-              {attachments.map((attachment, index) => (
-                <div key={`${attachment.url}-${index}`} className="flex items-center justify-between border rounded-md p-2">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{attachment.name || attachment.url}</p>
-                    <p className="text-xs text-gray-500">{attachment.type.toUpperCase()}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== index))}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <Input
-                placeholder="Attachment URL"
-                value={newAttachmentUrl}
-                onChange={(e) => setNewAttachmentUrl(e.target.value)}
-              />
-              <Input
-                placeholder="Display name (optional)"
-                value={newAttachmentName}
-                onChange={(e) => setNewAttachmentName(e.target.value)}
-              />
-              <select
-                value={newAttachmentType}
-                onChange={(e) => setNewAttachmentType(e.target.value as "image" | "pdf")}
-                className="border border-gray-200 rounded-md px-3 py-2 text-sm"
-              >
-                <option value="image">Image</option>
-                <option value="pdf">PDF</option>
-              </select>
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (!newAttachmentUrl.trim()) return;
-                setAttachments((prev) => [
-                  ...prev,
-                  { url: newAttachmentUrl.trim(), name: newAttachmentName.trim() || undefined, type: newAttachmentType },
-                ]);
-                setNewAttachmentUrl("");
-                setNewAttachmentName("");
-                setNewAttachmentType("image");
-              }}
-              disabled={!newAttachmentUrl.trim()}
-            >
-              Add Attachment
-            </Button>
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-revision-reason">Price Adjustment Reason (Optional)</Label>

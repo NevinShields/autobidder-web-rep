@@ -4217,6 +4217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadData = {
         ...validatedData,
         totalPrice: distanceAdjustedPrice,
+        totalDistanceFee: distanceInfo ? distanceInfo.distanceFee : (validatedData.distanceInfo?.fee || 0),
         ipAddress: clientIp,
         ...(addressLatitude && { addressLatitude }),
         ...(addressLongitude && { addressLongitude }),

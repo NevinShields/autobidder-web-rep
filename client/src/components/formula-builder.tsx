@@ -547,8 +547,6 @@ export default function FormulaBuilderComponent({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
-                            <SelectItem value="claude">Claude 3.5 Sonnet - Intelligent</SelectItem>
-                            <SelectItem value="gemini">Google Gemini - Versatile</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -624,8 +622,6 @@ export default function FormulaBuilderComponent({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
-                        <SelectItem value="claude">Claude 3.5 Sonnet - Intelligent</SelectItem>
-                        <SelectItem value="gemini">Google Gemini - Versatile</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

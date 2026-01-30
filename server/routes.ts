@@ -4407,6 +4407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subtotal: lead.subtotal,
             taxAmount: lead.taxAmount,
             bundleDiscountAmount: lead.bundleDiscountAmount,
+            distanceFee: lead.totalDistanceFee || lead.distanceFee || 0,
             appliedDiscounts: lead.appliedDiscounts || [],
             selectedUpsells: lead.selectedUpsells || [],
             createdAt: lead.createdAt

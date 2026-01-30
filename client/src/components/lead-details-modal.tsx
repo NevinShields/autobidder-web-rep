@@ -1717,12 +1717,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                 </p>
                               </div>
 
-                              <div className="flex gap-2 mt-3">
+                              <div className="flex flex-col sm:flex-row gap-2 mt-3">
                                 <Button
                                   size="sm"
                                   onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
                                   disabled={approveEstimateMutation.isPending}
-                                  className="bg-green-600 hover:bg-green-700"
+                                  className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
                                   data-testid={`button-approve-pre-estimate-${estimate.id}`}
                                 >
                                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -1731,6 +1731,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="w-full sm:w-auto"
                                   onClick={() => {
                                     setSelectedEstimateId(estimate.id);
                                     setShowRevisionDialog(true);
@@ -1743,6 +1744,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  className="w-full sm:w-auto"
                                   onClick={() => {
                                     setEditingEstimate(estimate);
                                   }}

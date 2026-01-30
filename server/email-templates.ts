@@ -780,6 +780,7 @@ export async function sendNewMultiServiceLeadNotification(
     subtotal?: number;
     taxAmount?: number;
     bundleDiscountAmount?: number;
+    distanceFee?: number;
     appliedDiscounts?: Array<{
       id: string;
       name: string;
@@ -1004,6 +1005,14 @@ export async function sendNewMultiServiceLeadNotification(
             <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
               <span style="color: #16a34a; font-size: 14px;">Bundle Discount:</span>
               <span style="color: #16a34a; font-size: 14px; font-weight: 500;">-$${((lead.bundleDiscountAmount) / 100).toLocaleString()}</span>
+            </div>
+            ` : ''}
+
+            <!-- Travel Fee (if applicable) -->
+            ${lead.distanceFee && lead.distanceFee > 0 ? `
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #6b7280; font-size: 14px;">Travel Fee:</span>
+              <span style="color: #1f2937; font-size: 14px; font-weight: 500;">$${((lead.distanceFee) / 100).toLocaleString()}</span>
             </div>
             ` : ''}
             

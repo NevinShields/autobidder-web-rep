@@ -547,6 +547,7 @@ export default function FormulaBuilderComponent({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
+                            <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -622,6 +623,7 @@ export default function FormulaBuilderComponent({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
+                        <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

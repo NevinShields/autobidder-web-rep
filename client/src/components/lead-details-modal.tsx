@@ -1643,16 +1643,6 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     </Badge>
                   )}
                 </div>
-                <Button
-                  size="sm"
-                  onClick={() => setShowCreateEstimateDialog(true)}
-                  disabled={createEstimateMutation.isPending}
-                  data-testid="button-create-estimate"
-                  className="bg-violet-600 hover:bg-violet-700 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Estimate
-                </Button>
               </div>
             </div>
             <div className="p-5">

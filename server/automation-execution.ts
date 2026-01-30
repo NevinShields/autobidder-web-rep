@@ -162,6 +162,11 @@ export class AutomationExecutionService {
     const estimateType = (context.estimateData?.estimateType || '').toLowerCase();
     const estimateLink = estimateNumber ? `${getBaseUrl()}/estimate/${estimateNumber}` : '';
 
+    // Debug log if estimate variables are being used but data is missing
+    if (text.includes('{estimate.') && !estimateNumber) {
+      console.log(`Warning: Email contains estimate variables but no estimateNumber available. estimateData: ${JSON.stringify(context.estimateData)}, leadData.estimateNumber: ${(context.leadData as any)?.estimateNumber}`);
+    }
+
     result = result.replace(/\{estimate\.id\}/g, context.estimateData?.id ? String(context.estimateData.id) : '');
     result = result.replace(/\{estimate\.total\}/g, 
       context.estimateData?.total !== undefined
@@ -233,28 +238,37 @@ export class AutomationExecutionService {
    * Ensure estimate data is present in context when possible.
    */
   private async hydrateEstimateContext(context: AutomationContext): Promise<AutomationContext> {
-    if (context.estimateData?.estimateNumber || context.estimateData?.id) {
+    // If we already have complete estimate data, skip hydration
+    if (context.estimateData?.estimateNumber && context.estimateData?.id) {
+      console.log(`Estimate context already hydrated: estimateNumber=${context.estimateData.estimateNumber}`);
       return context;
     }
 
+    // Try to fetch estimate from database
     let estimate: any | undefined;
     if (context.estimateId) {
+      console.log(`Hydrating estimate by estimateId: ${context.estimateId}`);
       estimate = await db.query.estimates.findFirst({
         where: eq(estimates.id, context.estimateId),
       });
     } else if (context.leadId) {
+      console.log(`Hydrating estimate by leadId: ${context.leadId}`);
       estimate = await db.query.estimates.findFirst({
         where: eq(estimates.leadId, context.leadId),
         orderBy: (estimates, { desc }) => [desc(estimates.createdAt)],
       });
     } else if (context.multiServiceLeadId) {
+      console.log(`Hydrating estimate by multiServiceLeadId: ${context.multiServiceLeadId}`);
       estimate = await db.query.estimates.findFirst({
         where: eq(estimates.multiServiceLeadId, context.multiServiceLeadId),
         orderBy: (estimates, { desc }) => [desc(estimates.createdAt)],
       });
+    } else {
+      console.log('No leadId, multiServiceLeadId, or estimateId available for estimate hydration');
     }
 
     if (estimate) {
+      console.log(`Found estimate ${estimate.estimateNumber} (type: ${estimate.estimateType}) for automation context`);
       context.estimateData = {
         id: estimate.id,
         estimateNumber: estimate.estimateNumber,
@@ -265,6 +279,8 @@ export class AutomationExecutionService {
         customerEmail: estimate.customerEmail,
         validUntil: estimate.validUntil || undefined,
       };
+    } else {
+      console.log('No estimate found during hydration - estimate variables will be empty');
     }
 
     return context;

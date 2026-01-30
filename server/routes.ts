@@ -2838,41 +2838,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateLead(lead.id, { userId: businessOwnerId });
       }
 
-      // Create a pre-estimate immediately for new leads with a formula
+      // Create a pre-estimate immediately for new leads
       let createdEstimate: any = null;
-      if (lead.formulaId && businessOwnerId && businessOwnerId !== "default_owner") {
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
         try {
-          const formula = await storage.getFormula(lead.formulaId);
-          if (formula) {
-            const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-            const estimateData = {
-              userId: businessOwnerId,
-              leadId: lead.id,
-              estimateType: "pre_estimate",
-              estimateNumber,
-              customerName: lead.name,
-              customerEmail: lead.email,
-              customerPhone: lead.phone,
-              businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
-              services: [{
-                name: formula.name,
-                description: formula.description || "",
-                variables: lead.variables,
-                price: lead.calculatedPrice,
-                category: "Service"
-              }],
-              subtotal: lead.calculatedPrice,
-              taxAmount: 0,
-              discountAmount: 0,
-              totalAmount: lead.calculatedPrice,
-              validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-              status: "draft"
-            };
-            createdEstimate = await storage.createEstimate(estimateData);
+          // Get formula name if available, otherwise use a default
+          let serviceName = "Service";
+          let serviceDescription = "";
+          if (lead.formulaId) {
+            const formula = await storage.getFormula(lead.formulaId);
+            if (formula) {
+              serviceName = formula.name;
+              serviceDescription = formula.description || "";
+            }
           }
+
+          const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+          const estimateData = {
+            userId: businessOwnerId,
+            leadId: lead.id,
+            estimateType: "pre_estimate",
+            estimateNumber,
+            customerName: lead.name,
+            customerEmail: lead.email,
+            customerPhone: lead.phone,
+            businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+            services: [{
+              name: serviceName,
+              description: serviceDescription,
+              variables: lead.variables,
+              price: lead.calculatedPrice,
+              category: "Service"
+            }],
+            subtotal: lead.calculatedPrice,
+            taxAmount: 0,
+            discountAmount: 0,
+            totalAmount: lead.calculatedPrice,
+            validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+            status: "draft"
+          };
+          createdEstimate = await storage.createEstimate(estimateData);
+          console.log(`Created pre-estimate ${estimateNumber} for lead ${lead.id}`);
         } catch (estimateError) {
           console.error('Failed to create pre-estimate for lead:', estimateError);
         }
+      } else {
+        console.log(`Skipping pre-estimate creation: businessOwnerId=${businessOwnerId}`);
       }
       
       // Create BidRequest and send email notification to account owner (only for leads with formulas)
@@ -4280,11 +4291,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           createdEstimate = await storage.createEstimate(estimateData);
+          console.log(`Created pre-estimate ${estimateNumber} for multi-service lead ${lead.id}`);
         } catch (estimateError) {
           console.error('Failed to create pre-estimate for multi-service lead:', estimateError);
         }
+      } else {
+        console.log(`Skipping pre-estimate creation for multi-service lead: businessOwnerId=${businessOwnerId}`);
       }
-      
+
       // Create BidRequest and send email notification to account owner
       try {
         

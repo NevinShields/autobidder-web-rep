@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { storage } from "./storage";
+import { issueAccessToken, issueRefreshToken } from "./jwt";
 import type { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import session from "express-session";
@@ -488,12 +489,17 @@ export function setupEmailAuth(app: Express) {
           });
         }
         
+        const accessToken = issueAccessToken(user.id);
+        const refreshToken = issueRefreshToken(user.id);
+
         res.json({
           success: true,
           user: {
             ...user,
             passwordHash: undefined, // Don't send password hash
           },
+          accessToken,
+          refreshToken,
           trialStatus,
           message: "Login successful"
         });

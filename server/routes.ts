@@ -12,6 +12,8 @@ import { eq, desc, and, gte } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
+import { requireMobileAuth, requireWebOrMobileAuth } from "./mobileAuth";
+import { issueAccessToken, verifyRefreshToken } from "./jwt";
 import { 
   insertFormulaSchema,
   insertFormulaTemplateSchema,
@@ -369,6 +371,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Mobile: get current user via JWT
+  app.get("/api/mobile/me", requireMobileAuth, async (req, res) => {
+    try {
+      const userId = (req as any).mobileUserId as string | undefined;
+      if (!userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user || !user.isActive) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      res.json({
+        ...user,
+        passwordHash: undefined,
+      });
+    } catch (error) {
+      console.error("Mobile me error:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Mobile: refresh access token
+  app.post("/api/mobile/refresh", async (req, res) => {
+    try {
+      const refreshToken = req.body?.refreshToken;
+      if (!refreshToken || typeof refreshToken !== "string") {
+        return res.status(400).json({ message: "refreshToken is required" });
+      }
+
+      const payload = verifyRefreshToken(refreshToken);
+      const user = await storage.getUser(payload.sub);
+      if (!user || !user.isActive) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const accessToken = issueAccessToken(user.id);
+      res.json({ accessToken });
+    } catch (error) {
+      console.error("Mobile refresh error:", error);
+      res.status(401).json({ message: "Unauthorized" });
     }
   });
 
@@ -2641,10 +2688,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lead routes
-  app.get("/api/leads", requireAuth, async (req, res) => {
+  app.get("/api/leads", requireWebOrMobileAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const authPath = req.headers.authorization?.startsWith("Bearer ") ? "jwt" : "session";
+      console.log(`[auth-debug] /api/leads auth=${authPath} userId=${effectiveUserId}`);
       const formulaId = req.query.formulaId ? parseInt(req.query.formulaId as string) : undefined;
       const includeTags = req.query.includeTags === 'true';
       
@@ -4047,10 +4096,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Multi-service lead routes
-  app.get("/api/multi-service-leads", requireAuth, async (req, res) => {
+  app.get("/api/multi-service-leads", requireWebOrMobileAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const authPath = req.headers.authorization?.startsWith("Bearer ") ? "jwt" : "session";
+      console.log(`[auth-debug] /api/multi-service-leads auth=${authPath} userId=${effectiveUserId}`);
       const includeTags = req.query.includeTags === 'true';
       
       const leads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
@@ -9675,7 +9726,7 @@ The Autobidder Team`;
     }
   });
 
-  app.get("/api/leads/:leadId/estimates", requireAuth, async (req, res) => {
+  app.get("/api/leads/:leadId/estimates", requireWebOrMobileAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       
@@ -14268,7 +14319,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/leads/:leadId/work-orders", requireAuth, async (req, res) => {
+  app.get("/api/leads/:leadId/work-orders", requireWebOrMobileAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const lead = await storage.getLead(leadId);
@@ -14285,7 +14336,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/multi-service-leads/:leadId/work-orders", requireAuth, async (req, res) => {
+  app.get("/api/multi-service-leads/:leadId/work-orders", requireWebOrMobileAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const lead = await storage.getMultiServiceLead(leadId);
@@ -15089,7 +15140,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/leads/:leadId/communications", requireAuth, async (req, res) => {
+  app.get("/api/leads/:leadId/communications", requireWebOrMobileAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const communications = await storage.getCrmCommunicationsByLeadId(leadId);
@@ -15100,7 +15151,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/multi-service-leads/:leadId/communications", requireAuth, async (req, res) => {
+  app.get("/api/multi-service-leads/:leadId/communications", requireWebOrMobileAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const communications = await storage.getCrmCommunicationsByMultiServiceLeadId(leadId);
@@ -15312,7 +15363,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Get tags for a lead (returns full tag data, not just assignments)
-  app.get("/api/leads/:id/tags", requireAuth, async (req, res) => {
+  app.get("/api/leads/:id/tags", requireWebOrMobileAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
       const isMultiService = req.query.isMultiService === 'true';

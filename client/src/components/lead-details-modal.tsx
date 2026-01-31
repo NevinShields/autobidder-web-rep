@@ -2016,19 +2016,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             )}
 
                             {!leadWorkOrders.find((wo: any) => wo.estimateId === estimate.id) && (
-                              <Button
-                                size="sm"
-                                className="bg-indigo-600 hover:bg-indigo-700"
-                                onClick={() => {
-                                  setSelectedEstimateId(estimate.id);
-                                  setShowScheduleDialog(true);
-                                }}
-                                disabled={convertToWorkOrderMutation.isPending}
-                                data-testid={`button-convert-to-work-order-${estimate.id}`}
-                              >
-                                <FileCheck className="h-4 w-4 mr-2" />
-                                Convert to Work Order
-                              </Button>
+                              null
                             )}
                           </div>
                         )}

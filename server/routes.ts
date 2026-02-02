@@ -8873,8 +8873,14 @@ The Autobidder Team`;
       }));
 
       res.json({ invoices: formattedInvoices });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching invoices:', error);
+      
+      // Handle Stripe resource_missing error (customer deleted/doesn't exist)
+      if (error?.code === 'resource_missing' || error?.statusCode === 404) {
+        return res.json({ invoices: [] });
+      }
+      
       res.status(500).json({ message: 'Failed to fetch invoices' });
     }
   });

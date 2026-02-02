@@ -36,7 +36,8 @@
       "Bash(timeout 10 npm run dev:*)",
       "Bash(lsof:*)",
       "Bash(netstat:*)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(killall:*)"
     ]
   }
 }

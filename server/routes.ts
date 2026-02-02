@@ -8769,8 +8769,24 @@ The Autobidder Team`;
 
       
       res.json(realSubscription);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching subscription details:', error);
+      
+      // Handle Stripe resource_missing error (subscription deleted/doesn't exist)
+      if (error?.code === 'resource_missing' || error?.statusCode === 404) {
+        // Clear the invalid subscription ID from the user's profile
+        const userId = (req as any).currentUser.id;
+        try {
+          await storage.updateUserSubscription(userId, {
+            stripeSubscriptionId: null,
+            subscriptionStatus: 'canceled'
+          });
+        } catch (updateError) {
+          console.error('Failed to clear invalid subscription ID:', updateError);
+        }
+        return res.json({ hasSubscription: false });
+      }
+      
       res.status(500).json({ message: 'Failed to fetch subscription details' });
     }
   });

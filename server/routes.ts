@@ -7,8 +7,8 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews } from "@shared/schema";
-import { eq, desc, and, gte } from "drizzle-orm";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema } from "@shared/schema";
+import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
@@ -16633,6 +16633,856 @@ This booking was created on ${new Date().toLocaleString()}.
         res.status(500).json({ message: "Failed to upload image" });
       }
     });
+  });
+
+  // ==================== Public Homeowner Directory Routes ====================
+
+  // Helper function to generate URL-friendly slugs
+  function generateSlug(name: string): string {
+    return name.toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .substring(0, 50);
+  }
+
+  // PUBLIC: Get all approved directory categories
+  app.get("/api/public/directory/categories", async (req, res) => {
+    try {
+      const categories = await db
+        .select()
+        .from(directoryCategories)
+        .where(eq(directoryCategories.status, "approved"))
+        .orderBy(directoryCategories.displayOrder);
+
+      res.json(categories);
+    } catch (error) {
+      console.error("[Directory] Error fetching categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // PUBLIC: Get cities with listings for a category
+  app.get("/api/public/directory/cities/:categorySlug", async (req, res) => {
+    try {
+      const { categorySlug } = req.params;
+
+      // Get the category first
+      const [category] = await db
+        .select()
+        .from(directoryCategories)
+        .where(and(
+          eq(directoryCategories.slug, categorySlug),
+          eq(directoryCategories.status, "approved")
+        ))
+        .limit(1);
+
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+
+      // Get cities from cache with at least one listing
+      const cities = await db
+        .select({
+          city: directoryIndexCache.city,
+          state: directoryIndexCache.state,
+          citySlug: directoryIndexCache.citySlug,
+          profileCount: directoryIndexCache.profileCount,
+        })
+        .from(directoryIndexCache)
+        .where(and(
+          eq(directoryIndexCache.categoryId, category.id),
+          eq(directoryIndexCache.isIndexable, true)
+        ))
+        .orderBy(desc(directoryIndexCache.profileCount));
+
+      res.json({ category, cities });
+    } catch (error) {
+      console.error("[Directory] Error fetching cities:", error);
+      res.status(500).json({ message: "Failed to fetch cities" });
+    }
+  });
+
+  // PUBLIC: Get business listings for a category + city
+  app.get("/api/public/directory/listings/:categorySlug/:citySlug", async (req, res) => {
+    try {
+      const { categorySlug, citySlug } = req.params;
+
+      // First check cache
+      const [cacheEntry] = await db
+        .select()
+        .from(directoryIndexCache)
+        .where(and(
+          eq(directoryIndexCache.categorySlug, categorySlug),
+          eq(directoryIndexCache.citySlug, citySlug)
+        ))
+        .limit(1);
+
+      if (!cacheEntry || cacheEntry.profileCount === 0) {
+        // Get category for meta info even if no listings
+        const [category] = await db
+          .select()
+          .from(directoryCategories)
+          .where(eq(directoryCategories.slug, categorySlug))
+          .limit(1);
+
+        return res.json({
+          category: category || null,
+          city: cacheEntry?.city || citySlug.split('-').slice(0, -1).join(' '),
+          state: cacheEntry?.state || citySlug.split('-').pop()?.toUpperCase(),
+          listings: [],
+          isIndexable: false
+        });
+      }
+
+      // Get category
+      const [category] = await db
+        .select()
+        .from(directoryCategories)
+        .where(eq(directoryCategories.id, cacheEntry.categoryId))
+        .limit(1);
+
+      // Fetch profiles by IDs
+      const profileIds = cacheEntry.profileIds as number[];
+      const profiles = await db
+        .select({
+          id: directoryProfiles.id,
+          companySlug: directoryProfiles.companySlug,
+          companyName: directoryProfiles.companyName,
+          companyDescription: directoryProfiles.companyDescription,
+          companyLogoUrl: directoryProfiles.companyLogoUrl,
+          city: directoryProfiles.city,
+          state: directoryProfiles.state,
+          totalServices: directoryProfiles.totalServices,
+        })
+        .from(directoryProfiles)
+        .where(and(
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true)
+        ));
+
+      // Filter to only profiles in our cache
+      const filteredProfiles = profiles.filter(p => profileIds.includes(p.id));
+
+      res.json({
+        category,
+        city: cacheEntry.city,
+        state: cacheEntry.state,
+        listings: filteredProfiles,
+        isIndexable: cacheEntry.isIndexable
+      });
+    } catch (error) {
+      console.error("[Directory] Error fetching listings:", error);
+      res.status(500).json({ message: "Failed to fetch listings" });
+    }
+  });
+
+  // PUBLIC: Get company profile with services
+  app.get("/api/public/directory/company/:companySlug", async (req, res) => {
+    try {
+      const { companySlug } = req.params;
+
+      // Get profile
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(and(
+          eq(directoryProfiles.companySlug, companySlug),
+          eq(directoryProfiles.isActive, true)
+        ))
+        .limit(1);
+
+      if (!profile) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+
+      // Get service listings with formula and category info
+      const services = await db
+        .select({
+          id: directoryServiceListings.id,
+          formulaId: directoryServiceListings.formulaId,
+          categoryId: directoryServiceListings.categoryId,
+          customDisplayName: directoryServiceListings.customDisplayName,
+          displayOrder: directoryServiceListings.displayOrder,
+          formulaName: formulas.name,
+          formulaTitle: formulas.title,
+          formulaDescription: formulas.description,
+          formulaEmbedId: formulas.embedId,
+          formulaIconUrl: formulas.iconUrl,
+          categoryName: directoryCategories.name,
+          categorySlug: directoryCategories.slug,
+        })
+        .from(directoryServiceListings)
+        .innerJoin(formulas, eq(directoryServiceListings.formulaId, formulas.id))
+        .innerJoin(directoryCategories, eq(directoryServiceListings.categoryId, directoryCategories.id))
+        .where(and(
+          eq(directoryServiceListings.directoryProfileId, profile.id),
+          eq(directoryServiceListings.isActive, true),
+          eq(formulas.isActive, true)
+        ))
+        .orderBy(directoryServiceListings.displayOrder);
+
+      res.json({
+        profile,
+        services,
+        isIndexable: profile.showOnDirectory
+      });
+    } catch (error) {
+      console.error("[Directory] Error fetching company:", error);
+      res.status(500).json({ message: "Failed to fetch company" });
+    }
+  });
+
+  // AUTHENTICATED: Get current user's directory profile
+  app.get("/api/directory/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      res.json(profile || null);
+    } catch (error) {
+      console.error("[Directory] Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  // AUTHENTICATED: Create directory profile
+  app.post("/api/directory/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      // Check if profile already exists
+      const [existing] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      if (existing) {
+        return res.status(400).json({ message: "Profile already exists" });
+      }
+
+      const validatedData = insertDirectoryProfileSchema.parse({
+        ...req.body,
+        userId,
+        companySlug: generateSlug(req.body.companyName || 'company'),
+      });
+
+      // Ensure unique slug
+      let slug = validatedData.companySlug;
+      let counter = 1;
+      while (true) {
+        const [existingSlug] = await db
+          .select()
+          .from(directoryProfiles)
+          .where(eq(directoryProfiles.companySlug, slug))
+          .limit(1);
+        if (!existingSlug) break;
+        slug = `${validatedData.companySlug}-${counter}`;
+        counter++;
+      }
+
+      const [profile] = await db
+        .insert(directoryProfiles)
+        .values({ ...validatedData, companySlug: slug })
+        .returning();
+
+      res.status(201).json(profile);
+    } catch (error) {
+      console.error("[Directory] Error creating profile:", error);
+      res.status(500).json({ message: "Failed to create profile" });
+    }
+  });
+
+  // AUTHENTICATED: Update directory profile
+  app.patch("/api/directory/profile", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      const [existing] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      // Don't allow changing userId or companySlug through update
+      const { userId: _, companySlug: __, ...updateData } = req.body;
+
+      const [updated] = await db
+        .update(directoryProfiles)
+        .set({ ...updateData, updatedAt: new Date() })
+        .where(eq(directoryProfiles.id, existing.id))
+        .returning();
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[Directory] Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // AUTHENTICATED: Get user's service listings
+  app.get("/api/directory/services", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      if (!profile) {
+        return res.json([]);
+      }
+
+      const services = await db
+        .select({
+          id: directoryServiceListings.id,
+          formulaId: directoryServiceListings.formulaId,
+          categoryId: directoryServiceListings.categoryId,
+          isActive: directoryServiceListings.isActive,
+          displayOrder: directoryServiceListings.displayOrder,
+          customDisplayName: directoryServiceListings.customDisplayName,
+          formulaName: formulas.name,
+          categoryName: directoryCategories.name,
+          categorySlug: directoryCategories.slug,
+        })
+        .from(directoryServiceListings)
+        .innerJoin(formulas, eq(directoryServiceListings.formulaId, formulas.id))
+        .innerJoin(directoryCategories, eq(directoryServiceListings.categoryId, directoryCategories.id))
+        .where(eq(directoryServiceListings.directoryProfileId, profile.id))
+        .orderBy(directoryServiceListings.displayOrder);
+
+      res.json(services);
+    } catch (error) {
+      console.error("[Directory] Error fetching services:", error);
+      res.status(500).json({ message: "Failed to fetch services" });
+    }
+  });
+
+  // AUTHENTICATED: Add service listing
+  app.post("/api/directory/services", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      if (!profile) {
+        return res.status(400).json({ message: "Create a profile first" });
+      }
+
+      const { formulaId, categoryId, customDisplayName } = req.body;
+
+      // Verify formula belongs to user
+      const [formula] = await db
+        .select()
+        .from(formulas)
+        .where(and(
+          eq(formulas.id, formulaId),
+          eq(formulas.userId, userId)
+        ))
+        .limit(1);
+
+      if (!formula) {
+        return res.status(400).json({ message: "Formula not found or not owned by you" });
+      }
+
+      // Get max display order
+      const existingServices = await db
+        .select({ displayOrder: directoryServiceListings.displayOrder })
+        .from(directoryServiceListings)
+        .where(eq(directoryServiceListings.directoryProfileId, profile.id))
+        .orderBy(desc(directoryServiceListings.displayOrder))
+        .limit(1);
+
+      const nextOrder = existingServices.length > 0 ? existingServices[0].displayOrder + 1 : 0;
+
+      const [listing] = await db
+        .insert(directoryServiceListings)
+        .values({
+          directoryProfileId: profile.id,
+          formulaId,
+          categoryId,
+          customDisplayName,
+          displayOrder: nextOrder,
+        })
+        .returning();
+
+      // Update profile's total services count
+      await db
+        .update(directoryProfiles)
+        .set({ totalServices: profile.totalServices + 1, updatedAt: new Date() })
+        .where(eq(directoryProfiles.id, profile.id));
+
+      // Update category listing count
+      await db
+        .update(directoryCategories)
+        .set({ listingCount: sql`${directoryCategories.listingCount} + 1`, updatedAt: new Date() })
+        .where(eq(directoryCategories.id, categoryId));
+
+      res.status(201).json(listing);
+    } catch (error) {
+      console.error("[Directory] Error adding service:", error);
+      res.status(500).json({ message: "Failed to add service" });
+    }
+  });
+
+  // AUTHENTICATED: Delete service listing
+  app.delete("/api/directory/services/:id", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+      const listingId = parseInt(req.params.id);
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      if (!profile) {
+        return res.status(404).json({ message: "Profile not found" });
+      }
+
+      // Get the listing first
+      const [listing] = await db
+        .select()
+        .from(directoryServiceListings)
+        .where(and(
+          eq(directoryServiceListings.id, listingId),
+          eq(directoryServiceListings.directoryProfileId, profile.id)
+        ))
+        .limit(1);
+
+      if (!listing) {
+        return res.status(404).json({ message: "Listing not found" });
+      }
+
+      await db
+        .delete(directoryServiceListings)
+        .where(eq(directoryServiceListings.id, listingId));
+
+      // Update profile's total services count
+      await db
+        .update(directoryProfiles)
+        .set({ totalServices: Math.max(0, profile.totalServices - 1), updatedAt: new Date() })
+        .where(eq(directoryProfiles.id, profile.id));
+
+      // Update category listing count
+      await db
+        .update(directoryCategories)
+        .set({ listingCount: sql`GREATEST(0, ${directoryCategories.listingCount} - 1)`, updatedAt: new Date() })
+        .where(eq(directoryCategories.id, listing.categoryId));
+
+      res.json({ message: "Service removed" });
+    } catch (error) {
+      console.error("[Directory] Error deleting service:", error);
+      res.status(500).json({ message: "Failed to delete service" });
+    }
+  });
+
+  // AUTHENTICATED: Get user's service areas
+  app.get("/api/directory/service-areas", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      if (!profile) {
+        return res.json([]);
+      }
+
+      const areas = await db
+        .select()
+        .from(directoryServiceAreas)
+        .where(eq(directoryServiceAreas.directoryProfileId, profile.id));
+
+      res.json(areas);
+    } catch (error) {
+      console.error("[Directory] Error fetching service areas:", error);
+      res.status(500).json({ message: "Failed to fetch service areas" });
+    }
+  });
+
+  // AUTHENTICATED: Create/update service area (one per profile)
+  app.post("/api/directory/service-areas", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      if (!profile) {
+        return res.status(400).json({ message: "Create a profile first" });
+      }
+
+      // Delete existing areas and replace
+      await db
+        .delete(directoryServiceAreas)
+        .where(eq(directoryServiceAreas.directoryProfileId, profile.id));
+
+      const validatedData = insertDirectoryServiceAreaSchema.parse({
+        ...req.body,
+        directoryProfileId: profile.id,
+      });
+
+      const [area] = await db
+        .insert(directoryServiceAreas)
+        .values(validatedData)
+        .returning();
+
+      // Trigger cache update
+      await updateDirectoryIndexCache(profile.id);
+
+      res.status(201).json(area);
+    } catch (error) {
+      console.error("[Directory] Error creating service area:", error);
+      res.status(500).json({ message: "Failed to create service area" });
+    }
+  });
+
+  // AUTHENTICATED: Search/suggest categories
+  app.get("/api/directory/categories/search", requireAuth, async (req, res) => {
+    try {
+      const query = (req.query.q as string || '').toLowerCase();
+
+      // Get all categories (approved + user can see their pending ones too)
+      const categories = await db
+        .select()
+        .from(directoryCategories)
+        .orderBy(directoryCategories.displayOrder);
+
+      // Filter by search term
+      const filtered = query
+        ? categories.filter(c =>
+            c.name.toLowerCase().includes(query) ||
+            c.slug.includes(query)
+          )
+        : categories;
+
+      res.json(filtered);
+    } catch (error) {
+      console.error("[Directory] Error searching categories:", error);
+      res.status(500).json({ message: "Failed to search categories" });
+    }
+  });
+
+  // AUTHENTICATED: Suggest a new category
+  app.post("/api/directory/categories/suggest", requireAuth, async (req, res) => {
+    try {
+      const { name, description } = req.body;
+
+      if (!name) {
+        return res.status(400).json({ message: "Category name is required" });
+      }
+
+      const slug = generateSlug(name);
+
+      // Check if already exists
+      const [existing] = await db
+        .select()
+        .from(directoryCategories)
+        .where(eq(directoryCategories.slug, slug))
+        .limit(1);
+
+      if (existing) {
+        return res.json(existing); // Return existing category
+      }
+
+      // Create as pending
+      const [category] = await db
+        .insert(directoryCategories)
+        .values({
+          name,
+          slug,
+          description,
+          status: "pending",
+          displayOrder: 999, // Will be adjusted when approved
+        })
+        .returning();
+
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("[Directory] Error suggesting category:", error);
+      res.status(500).json({ message: "Failed to suggest category" });
+    }
+  });
+
+  // ADMIN: Get all categories (including pending)
+  app.get("/api/admin/directory/categories", requireSuperAdmin, async (req, res) => {
+    try {
+      const categories = await db
+        .select()
+        .from(directoryCategories)
+        .orderBy(directoryCategories.displayOrder);
+
+      res.json(categories);
+    } catch (error) {
+      console.error("[Directory] Error fetching admin categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // ADMIN: Create category
+  app.post("/api/admin/directory/categories", requireSuperAdmin, async (req, res) => {
+    try {
+      const validatedData = insertDirectoryCategorySchema.parse({
+        ...req.body,
+        slug: generateSlug(req.body.name),
+      });
+
+      const [category] = await db
+        .insert(directoryCategories)
+        .values(validatedData)
+        .returning();
+
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("[Directory] Error creating category:", error);
+      res.status(500).json({ message: "Failed to create category" });
+    }
+  });
+
+  // ADMIN: Update category
+  app.patch("/api/admin/directory/categories/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { slug: _, ...updateData } = req.body;
+
+      const [updated] = await db
+        .update(directoryCategories)
+        .set({ ...updateData, updatedAt: new Date() })
+        .where(eq(directoryCategories.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[Directory] Error updating category:", error);
+      res.status(500).json({ message: "Failed to update category" });
+    }
+  });
+
+  // ADMIN: Approve category
+  app.post("/api/admin/directory/categories/:id/approve", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { seoTitle, seoDescription } = req.body;
+
+      const [updated] = await db
+        .update(directoryCategories)
+        .set({
+          status: "approved",
+          seoTitle,
+          seoDescription,
+          updatedAt: new Date(),
+        })
+        .where(eq(directoryCategories.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[Directory] Error approving category:", error);
+      res.status(500).json({ message: "Failed to approve category" });
+    }
+  });
+
+  // Helper function to update the directory index cache for a profile
+  async function updateDirectoryIndexCache(profileId: number) {
+    try {
+      // Get profile
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.id, profileId))
+        .limit(1);
+
+      if (!profile || !profile.isActive || !profile.showOnDirectory) {
+        return;
+      }
+
+      // Get service listings with categories
+      const services = await db
+        .select({
+          categoryId: directoryServiceListings.categoryId,
+          categorySlug: directoryCategories.slug,
+        })
+        .from(directoryServiceListings)
+        .innerJoin(directoryCategories, eq(directoryServiceListings.categoryId, directoryCategories.id))
+        .where(and(
+          eq(directoryServiceListings.directoryProfileId, profileId),
+          eq(directoryServiceListings.isActive, true),
+          eq(directoryCategories.status, "approved")
+        ));
+
+      // Get service areas
+      const [area] = await db
+        .select()
+        .from(directoryServiceAreas)
+        .where(and(
+          eq(directoryServiceAreas.directoryProfileId, profileId),
+          eq(directoryServiceAreas.isActive, true)
+        ))
+        .limit(1);
+
+      if (!area) {
+        return; // No service area defined yet
+      }
+
+      // Determine which cities this profile covers
+      let cities: Array<{ city: string; state: string; citySlug: string }> = [];
+
+      if (area.areaType === "radius" && profile.city && profile.state) {
+        // For radius type, just use the profile's city for now
+        // In production, you'd calculate nearby cities within radius
+        cities = [{
+          city: profile.city,
+          state: profile.state,
+          citySlug: generateSlug(`${profile.city}-${profile.state}`),
+        }];
+      } else if (area.areaType === "cities" && area.cities) {
+        cities = (area.cities as Array<{ city: string; state: string }>).map(c => ({
+          city: c.city,
+          state: c.state,
+          citySlug: generateSlug(`${c.city}-${c.state}`),
+        }));
+      } else if (area.areaType === "states" && area.states) {
+        // For states, we'd ideally have a list of cities per state
+        // For now, skip state-wide listings in cache
+        return;
+      }
+
+      // Update cache for each category + city combination
+      for (const service of services) {
+        for (const cityInfo of cities) {
+          // Check if cache entry exists
+          const [existing] = await db
+            .select()
+            .from(directoryIndexCache)
+            .where(and(
+              eq(directoryIndexCache.categoryId, service.categoryId),
+              eq(directoryIndexCache.citySlug, cityInfo.citySlug)
+            ))
+            .limit(1);
+
+          if (existing) {
+            // Update existing entry
+            const currentIds = (existing.profileIds as number[]) || [];
+            if (!currentIds.includes(profileId)) {
+              const newIds = [...currentIds, profileId];
+              await db
+                .update(directoryIndexCache)
+                .set({
+                  profileIds: newIds,
+                  profileCount: newIds.length,
+                  isIndexable: newIds.length >= 1,
+                  lastUpdatedAt: new Date(),
+                })
+                .where(eq(directoryIndexCache.id, existing.id));
+            }
+          } else {
+            // Create new entry
+            await db
+              .insert(directoryIndexCache)
+              .values({
+                categoryId: service.categoryId,
+                categorySlug: service.categorySlug,
+                city: cityInfo.city,
+                state: cityInfo.state,
+                citySlug: cityInfo.citySlug,
+                profileIds: [profileId],
+                profileCount: 1,
+                isIndexable: true,
+              });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("[Directory] Error updating index cache:", error);
+    }
+  }
+
+  // Sitemap endpoint for directory pages
+  app.get("/sitemap-directory.xml", async (req, res) => {
+    try {
+      const baseUrl = getBaseUrl();
+
+      // Get approved categories
+      const categories = await db
+        .select()
+        .from(directoryCategories)
+        .where(eq(directoryCategories.status, "approved"));
+
+      // Get indexable cache entries
+      const indexablePages = await db
+        .select()
+        .from(directoryIndexCache)
+        .where(eq(directoryIndexCache.isIndexable, true));
+
+      // Get active company profiles
+      const profiles = await db
+        .select({ companySlug: directoryProfiles.companySlug })
+        .from(directoryProfiles)
+        .where(and(
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true)
+        ));
+
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+      // Directory home
+      xml += `  <url>\n    <loc>${baseUrl}/directory</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+
+      // Category pages
+      for (const cat of categories) {
+        xml += `  <url>\n    <loc>${baseUrl}/quotes/${cat.slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+      }
+
+      // Category + city pages
+      for (const page of indexablePages) {
+        xml += `  <url>\n    <loc>${baseUrl}/quotes/${page.categorySlug}/${page.citySlug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+      }
+
+      // Company pages
+      for (const profile of profiles) {
+        xml += `  <url>\n    <loc>${baseUrl}/directory/company/${profile.companySlug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+      }
+
+      xml += '</urlset>';
+
+      res.header('Content-Type', 'application/xml');
+      res.send(xml);
+    } catch (error) {
+      console.error("[Directory] Error generating sitemap:", error);
+      res.status(500).send('Error generating sitemap');
+    }
   });
 
   const httpServer = createServer(app);

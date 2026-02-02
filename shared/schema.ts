@@ -2843,3 +2843,182 @@ export const pageSupportVideoAssignmentRelations = relations(pageSupportVideoAss
     references: [supportVideos.id],
   }),
 }));
+
+// ==================== Public Homeowner Directory System ====================
+
+// Directory Categories - Standardized service categories for the public directory
+export const directoryCategories = pgTable("directory_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),           // "Pressure Washing"
+  slug: text("slug").notNull().unique(),           // "pressure-washing"
+  description: text("description"),
+  iconUrl: text("icon_url"),
+  parentCategoryId: integer("parent_category_id").references(() => directoryCategories.id),
+  status: varchar("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  displayOrder: integer("display_order").notNull().default(0),
+  listingCount: integer("listing_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDirectoryCategorySchema = createInsertSchema(directoryCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type DirectoryCategory = typeof directoryCategories.$inferSelect;
+export type InsertDirectoryCategory = z.infer<typeof insertDirectoryCategorySchema>;
+
+// Directory Profiles - Business opt-in profiles for the public directory
+export const directoryProfiles = pgTable("directory_profiles", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(),
+  companySlug: text("company_slug").notNull().unique(),
+  companyName: text("company_name").notNull(),
+  companyDescription: text("company_description"),
+  companyLogoUrl: text("company_logo_url"),
+  websiteUrl: text("website_url"),
+  phoneNumber: text("phone_number"),
+  email: text("email"),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zipCode: text("zip_code"),
+  latitude: text("latitude"),
+  longitude: text("longitude"),
+  isActive: boolean("is_active").notNull().default(true),
+  showOnDirectory: boolean("show_on_directory").notNull().default(true),
+  metaDescription: text("meta_description"),
+  totalServices: integer("total_services").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertDirectoryProfileSchema = createInsertSchema(directoryProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type DirectoryProfile = typeof directoryProfiles.$inferSelect;
+export type InsertDirectoryProfile = z.infer<typeof insertDirectoryProfileSchema>;
+
+// Directory Service Listings - Links formulas to directory categories
+export const directoryServiceListings = pgTable("directory_service_listings", {
+  id: serial("id").primaryKey(),
+  directoryProfileId: integer("directory_profile_id").notNull()
+    .references(() => directoryProfiles.id, { onDelete: "cascade" }),
+  formulaId: integer("formula_id").notNull()
+    .references(() => formulas.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").notNull()
+    .references(() => directoryCategories.id),
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  customDisplayName: text("custom_display_name"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDirectoryServiceListingSchema = createInsertSchema(directoryServiceListings).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type DirectoryServiceListing = typeof directoryServiceListings.$inferSelect;
+export type InsertDirectoryServiceListing = z.infer<typeof insertDirectoryServiceListingSchema>;
+
+// Directory Service Areas - Geographic coverage for business profiles
+export const directoryServiceAreas = pgTable("directory_service_areas", {
+  id: serial("id").primaryKey(),
+  directoryProfileId: integer("directory_profile_id").notNull()
+    .references(() => directoryProfiles.id, { onDelete: "cascade" }),
+  areaType: varchar("area_type", { enum: ["radius", "zip_codes", "cities", "states"] }).notNull().default("radius"),
+  radiusMiles: integer("radius_miles"),
+  centerLatitude: text("center_latitude"),
+  centerLongitude: text("center_longitude"),
+  zipCodes: jsonb("zip_codes").$type<string[]>(),
+  cities: jsonb("cities").$type<Array<{ city: string; state: string }>>(),
+  states: jsonb("states").$type<string[]>(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDirectoryServiceAreaSchema = createInsertSchema(directoryServiceAreas).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type DirectoryServiceArea = typeof directoryServiceAreas.$inferSelect;
+export type InsertDirectoryServiceArea = z.infer<typeof insertDirectoryServiceAreaSchema>;
+
+// Directory Index Cache - Denormalized for performance on public pages
+export const directoryIndexCache = pgTable("directory_index_cache", {
+  id: serial("id").primaryKey(),
+  categoryId: integer("category_id").notNull().references(() => directoryCategories.id),
+  categorySlug: text("category_slug").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  citySlug: text("city_slug").notNull(),       // "philadelphia-pa"
+  profileIds: jsonb("profile_ids").$type<number[]>().notNull(),
+  profileCount: integer("profile_count").notNull(),
+  isIndexable: boolean("is_indexable").notNull().default(false),
+  lastUpdatedAt: timestamp("last_updated_at").notNull().defaultNow(),
+}, (table) => ({
+  categoryCityIdx: index("directory_index_cache_category_city_idx").on(table.categorySlug, table.citySlug),
+  categoryIdx: index("directory_index_cache_category_idx").on(table.categoryId),
+}));
+
+export type DirectoryIndexCache = typeof directoryIndexCache.$inferSelect;
+
+// Directory Relations
+export const directoryCategoryRelations = relations(directoryCategories, ({ one, many }) => ({
+  parentCategory: one(directoryCategories, {
+    fields: [directoryCategories.parentCategoryId],
+    references: [directoryCategories.id],
+    relationName: "CategoryHierarchy",
+  }),
+  childCategories: many(directoryCategories, {
+    relationName: "CategoryHierarchy",
+  }),
+  serviceListings: many(directoryServiceListings),
+  indexCache: many(directoryIndexCache),
+}));
+
+export const directoryProfileRelations = relations(directoryProfiles, ({ one, many }) => ({
+  user: one(users, {
+    fields: [directoryProfiles.userId],
+    references: [users.id],
+  }),
+  serviceListings: many(directoryServiceListings),
+  serviceAreas: many(directoryServiceAreas),
+}));
+
+export const directoryServiceListingRelations = relations(directoryServiceListings, ({ one }) => ({
+  profile: one(directoryProfiles, {
+    fields: [directoryServiceListings.directoryProfileId],
+    references: [directoryProfiles.id],
+  }),
+  formula: one(formulas, {
+    fields: [directoryServiceListings.formulaId],
+    references: [formulas.id],
+  }),
+  category: one(directoryCategories, {
+    fields: [directoryServiceListings.categoryId],
+    references: [directoryCategories.id],
+  }),
+}));
+
+export const directoryServiceAreaRelations = relations(directoryServiceAreas, ({ one }) => ({
+  profile: one(directoryProfiles, {
+    fields: [directoryServiceAreas.directoryProfileId],
+    references: [directoryProfiles.id],
+  }),
+}));
+
+export const directoryIndexCacheRelations = relations(directoryIndexCache, ({ one }) => ({
+  category: one(directoryCategories, {
+    fields: [directoryIndexCache.categoryId],
+    references: [directoryCategories.id],
+  }),
+}));

@@ -96,6 +96,14 @@ const TryCalculator = lazy(() => import("@/pages/try-calculator"));
 const IconGeneratorPage = lazy(() => import("@/pages/icon-generator"));
 const SetupStepByStepPage = lazy(() => import("@/pages/setup-step-by-step"));
 
+// Directory pages
+const DirectoryHome = lazy(() => import("@/pages/directory/directory-home"));
+const DirectoryCategoryPage = lazy(() => import("@/pages/directory/category-page"));
+const DirectoryCityCategoryPage = lazy(() => import("@/pages/directory/city-category-page"));
+const DirectoryCompanyPage = lazy(() => import("@/pages/directory/company-page"));
+const DirectorySetup = lazy(() => import("@/pages/directory/directory-setup"));
+const DirectoryDashboard = lazy(() => import("@/pages/directory/directory-dashboard"));
+
 // Generic loading fallback for lazy-loaded pages
 function PageLoader() {
   return (
@@ -204,6 +212,11 @@ function Router() {
         <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route path="/try" component={TryCalculator} />
         <Route path="/icon-generator" component={IconGeneratorPage} />
+        {/* Public Directory Routes */}
+        <Route path="/directory" component={DirectoryHome} />
+        <Route path="/quotes/:categorySlug/:citySlug" component={DirectoryCityCategoryPage} />
+        <Route path="/quotes/:categorySlug" component={DirectoryCategoryPage} />
+        <Route path="/directory/company/:companySlug" component={DirectoryCompanyPage} />
         <Route component={Landing} />
       </Switch>
       </Suspense>
@@ -309,6 +322,13 @@ function Router() {
         <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route path="/try" component={TryCalculator} />
         <Route path="/icon-generator" component={IconGeneratorPage} />
+        {/* Directory routes (public pages accessible when authenticated + owner pages) */}
+        <Route path="/directory" component={DirectoryHome} />
+        <Route path="/quotes/:categorySlug/:citySlug" component={DirectoryCityCategoryPage} />
+        <Route path="/quotes/:categorySlug" component={DirectoryCategoryPage} />
+        <Route path="/directory/company/:companySlug" component={DirectoryCompanyPage} />
+        <Route path="/directory-setup" component={DirectorySetup} />
+        <Route path="/directory-dashboard" component={DirectoryDashboard} />
         <Route component={NotFound} />
       </Switch>
       </Suspense>

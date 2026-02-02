@@ -32,7 +32,8 @@
       "Bash(~/.zapierrc)",
       "Bash(npx zapier push:*)",
       "Bash(npx zapier:*)",
-      "WebFetch(domain:developer.duda.co)"
+      "WebFetch(domain:developer.duda.co)",
+      "Bash(timeout 10 npm run dev:*)"
     ]
   }
 }

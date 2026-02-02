@@ -1267,37 +1267,60 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  // Helper function to decrypt Twilio auth token in business settings
-  private decryptTwilioToken(settings: BusinessSettings | undefined): BusinessSettings | undefined {
-    if (!settings || !settings.twilioAuthToken) return settings;
-    
-    // If token appears encrypted, decrypt it (throw on failure)
-    if (isEncrypted(settings.twilioAuthToken)) {
+  // Helper function to decrypt sensitive tokens in business settings (Twilio + Facebook)
+  private decryptSensitiveTokens(settings: BusinessSettings | undefined): BusinessSettings | undefined {
+    if (!settings) return settings;
+
+    let result = { ...settings };
+
+    // Decrypt Twilio auth token if present and encrypted
+    if (settings.twilioAuthToken && isEncrypted(settings.twilioAuthToken)) {
       try {
-        return {
-          ...settings,
-          twilioAuthToken: decrypt(settings.twilioAuthToken)
-        };
+        result.twilioAuthToken = decrypt(settings.twilioAuthToken);
       } catch (error) {
         console.error('Failed to decrypt Twilio token - ENCRYPTION_KEY may be missing or incorrect:', error);
         throw new Error('Cannot decrypt Twilio credentials. ENCRYPTION_KEY environment variable may be missing or incorrect.');
       }
     }
-    
-    // If token is not encrypted (legacy plaintext), return as-is
-    // These should be re-encrypted via the migration endpoint
-    return settings;
+
+    // Decrypt Facebook access token if present and encrypted
+    if (settings.fbAccessToken && isEncrypted(settings.fbAccessToken)) {
+      try {
+        result.fbAccessToken = decrypt(settings.fbAccessToken);
+      } catch (error) {
+        console.error('Failed to decrypt Facebook access token - ENCRYPTION_KEY may be missing or incorrect:', error);
+        throw new Error('Cannot decrypt Facebook credentials. ENCRYPTION_KEY environment variable may be missing or incorrect.');
+      }
+    }
+
+    return result;
   }
 
-  // Helper function to encrypt Twilio auth token before saving
-  private encryptTwilioToken(data: Partial<InsertBusinessSettings>): Partial<InsertBusinessSettings> {
+  // Helper function to encrypt sensitive tokens before saving (Twilio + Facebook)
+  private encryptSensitiveTokens(data: Partial<InsertBusinessSettings>): Partial<InsertBusinessSettings> {
+    let result = { ...data };
+
+    // Encrypt Twilio auth token if present and not already encrypted
     if (data.twilioAuthToken && !isEncrypted(data.twilioAuthToken)) {
-      return {
-        ...data,
-        twilioAuthToken: encrypt(data.twilioAuthToken)
-      };
+      result.twilioAuthToken = encrypt(data.twilioAuthToken);
     }
-    return data;
+
+    // Encrypt Facebook access token if present and not already encrypted
+    if (data.fbAccessToken && !isEncrypted(data.fbAccessToken)) {
+      result.fbAccessToken = encrypt(data.fbAccessToken);
+    }
+
+    return result;
+  }
+
+  // Legacy helper - kept for backward compatibility
+  private decryptTwilioToken(settings: BusinessSettings | undefined): BusinessSettings | undefined {
+    return this.decryptSensitiveTokens(settings);
+  }
+
+  // Legacy helper - kept for backward compatibility
+  private encryptTwilioToken(data: Partial<InsertBusinessSettings>): Partial<InsertBusinessSettings> {
+    return this.encryptSensitiveTokens(data);
   }
 
   // Business settings operations
@@ -4131,6 +4154,7 @@ export class DatabaseStorage implements IStorage {
         ownerApprovedAt: new Date(),
         ownerNotes: notes,
         status: 'approved',
+        estimateType: 'confirmed',
         updatedAt: new Date()
       })
       .where(eq(estimates.id, estimateId))

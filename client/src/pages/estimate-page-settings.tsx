@@ -38,6 +38,7 @@ type EstimatePageSettings = {
   defaultShowBusinessAddress?: boolean;
   defaultShowBusinessEmail?: boolean;
   defaultShowBusinessPhone?: boolean;
+  defaultShowAcceptDecline?: boolean;
   defaultMessage?: string;
   defaultVideoUrl?: string;
   defaultShowVideo?: boolean;
@@ -59,6 +60,7 @@ const defaultEstimatePageSettings: EstimatePageSettings = {
   defaultShowBusinessAddress: false,
   defaultShowBusinessEmail: false,
   defaultShowBusinessPhone: false,
+  defaultShowAcceptDecline: true,
   defaultMessage: "",
   defaultVideoUrl: "",
   defaultShowVideo: true,
@@ -1020,6 +1022,37 @@ export default function EstimatePageSettings() {
                         />
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm border-gray-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Layout className="h-5 w-5 text-blue-600" />
+                    Customer Actions
+                  </CardTitle>
+                  <CardDescription>
+                    Control which actions customers can take on the estimate page.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between gap-6">
+                    <div>
+                      <Label htmlFor="estimate-show-accept-decline" className="text-base font-medium">
+                        Show Accept/Decline Buttons
+                      </Label>
+                      <p className="text-sm text-gray-500">
+                        When enabled, customers can accept or decline estimates directly.
+                      </p>
+                    </div>
+                    <Switch
+                      id="estimate-show-accept-decline"
+                      checked={estimatePageSettings.defaultShowAcceptDecline !== false}
+                      onCheckedChange={(checked) =>
+                        setEstimatePageSettings((prev) => ({ ...prev, defaultShowAcceptDecline: checked }))
+                      }
+                    />
                   </div>
                 </CardContent>
               </Card>

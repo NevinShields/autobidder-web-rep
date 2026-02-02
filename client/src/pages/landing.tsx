@@ -88,6 +88,29 @@ export default function Landing() {
     }
   ];
 
+  const demoSites = [
+    {
+      title: "Pressure Washing",
+      description: "High-converting demo for exterior cleaning services with instant pricing.",
+      href: "https://mysite.autobidder.org/preview/19d655c0?t=176988756660"
+    },
+    {
+      title: "Holiday Lighting",
+      description: "Seasonal quoting experience built for fast booking and upsells.",
+      href: "https://mysite.autobidder.org/preview/cfa077a2?t=1769887566696"
+    },
+    {
+      title: "Pest Control",
+      description: "Lead-friendly flow that captures service type, property size, and urgency.",
+      href: "https://mysite.autobidder.org/preview/654c1998?t=1769887566590"
+    },
+    {
+      title: "Epoxy Flooring",
+      description: "Premium look-and-feel with detailed scope inputs and instant estimates.",
+      href: "https://mysite.autobidder.org/preview/cb7a5041?t=1769887566755"
+    }
+  ];
+
   const pricingPlans = [
     {
       name: "Standard",
@@ -347,6 +370,52 @@ export default function Landing() {
                   </div>
                   <h3 className="text-xl font-bold text-white mb-4">{feature.title}</h3>
                   <p className="text-white/70 leading-relaxed">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Demo Gallery Section */}
+      <section id="demos" className="relative py-20 bg-gradient-to-b from-slate-900 to-slate-800">
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-14">
+            <div className="mb-6 inline-block">
+              <div className="bg-gradient-to-r from-blue-400/20 to-purple-400/20 backdrop-blur-xl border border-white/20 rounded-full px-6 py-2">
+                <span className="text-sm font-medium text-white/90">Live Demos</span>
+              </div>
+            </div>
+            <h2 className="text-4xl md:text-6xl font-bold mb-5">
+              <span className="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                Explore Real-World Templates
+              </span>
+            </h2>
+            <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
+              Jump into live, interactive demos built for different service businesses. See the full customer experience.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {demoSites.map((demo) => (
+              <div key={demo.title} className="group">
+                <div className="h-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:bg-white/10 transition-all duration-500 hover:border-white/20 hover:shadow-2xl hover:shadow-blue-500/20 transform hover:-translate-y-1">
+                  <div>
+                    <div className="w-12 h-12 mb-4 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-600/20 border border-white/20 flex items-center justify-center">
+                      <Globe className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">{demo.title}</h3>
+                    <p className="text-sm text-white/70 leading-relaxed">{demo.description}</p>
+                  </div>
+                  <a
+                    href={demo.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-5 inline-flex items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
+                  >
+                    View Demo
+                    <ArrowRight className="h-4 w-4" />
+                  </a>
                 </div>
               </div>
             ))}

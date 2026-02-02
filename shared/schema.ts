@@ -223,6 +223,12 @@ export const businessSettings = pgTable("business_settings", {
   twilioAccountSid: text("twilio_account_sid"),
   twilioAuthToken: text("twilio_auth_token"), // Should be encrypted
   twilioPhoneNumber: text("twilio_phone_number"),
+  // Facebook Conversion Tracking (per-user hybrid Pixel + CAPI)
+  fbPixelId: text("fb_pixel_id"),
+  fbAccessToken: text("fb_access_token"), // Encrypted like twilioAuthToken
+  fbTestEventCode: text("fb_test_event_code"),
+  fbBusinessUrl: text("fb_business_url"),
+  enableFacebookTracking: boolean("enable_facebook_tracking").notNull().default(false),
   // Stripe configuration
   stripeConfig: jsonb("stripe_config").$type<{
     standard: {
@@ -265,6 +271,7 @@ export const businessSettings = pgTable("business_settings", {
     defaultShowBusinessAddress?: boolean;
     defaultShowBusinessEmail?: boolean;
     defaultShowBusinessPhone?: boolean;
+    defaultShowAcceptDecline?: boolean;
     defaultMessage?: string;
     defaultVideoUrl?: string;
     defaultShowVideo?: boolean;

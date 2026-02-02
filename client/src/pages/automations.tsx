@@ -1,3 +1,4 @@
+import { CrmAutomation, CrmSettings, crmAutomationSteps } from "@/../../shared/schema";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useRoute, useLocation, Link } from "wouter";
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus, ChevronDown, ChevronUp, Tags, MinusCircle, Lock } from "lucide-react";
+import { Zap, Plus, Trash2, Mail, Clock, Save, X, ChevronLeft, Tag, FileText, MessageSquare, Settings, AlertCircle, Sparkles, Calendar, CheckCircle, DollarSign, UserPlus, ChevronDown, ChevronUp, Tags, MinusCircle, Lock, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -18,6 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
+
+type AutomationWithSteps = CrmAutomation & { steps: typeof crmAutomationSteps.$inferSelect[] };
 
 // Plans that have access to automations
 const AUTOMATIONS_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
@@ -46,13 +49,9 @@ interface AutomationStep {
 const TRIGGER_TYPES = [
   { value: 'lead_created', label: 'New Lead', icon: UserPlus },
   { value: 'pre_booking_scheduled', label: 'Pre-Booking (Lead Books After Getting Price)', icon: Calendar },
+  { value: 'estimate_viewed', label: 'Estimate Viewed by Customer', icon: Eye },
   { value: 'estimate_approved', label: 'Bid Confirmed by Business Owner', icon: CheckCircle },
   { value: 'estimate_customer_accepted', label: 'Confirmed Bid Accepted by Customer', icon: Sparkles },
-  { value: 'work_order_created', label: 'Job Converted to Work Order', icon: FileText },
-  { value: 'work_order_scheduled', label: 'Work Order Scheduled', icon: Calendar },
-  { value: 'work_order_completed', label: 'Work Order Completed', icon: CheckCircle },
-  { value: 'invoice_created', label: 'Invoice Created', icon: FileText },
-  { value: 'invoice_paid', label: 'Invoice Paid', icon: DollarSign },
   { value: 'lead_tag_assigned', label: 'New Tag Assigned to Lead', icon: Tag },
   { value: 'lead_stage_changed', label: 'Stage Change', icon: Tag },
 ];
@@ -104,29 +103,9 @@ const getAvailableVariables = (triggerType: string) => {
     { name: '{estimate.preEstimateButton}', description: 'Button to view pre-estimate with Unconfirmed tag' },
   ];
 
-  const workOrderVariables = [
-    { name: '{workOrder.id}', description: 'Work order ID' },
-    { name: '{workOrder.title}', description: 'Work order title' },
-    { name: '{workOrder.description}', description: 'Work details' },
-    { name: '{workOrder.scheduledDate}', description: 'Scheduled date' },
-    { name: '{workOrder.status}', description: 'Current status' },
-  ];
-
-  const invoiceVariables = [
-    { name: '{invoice.id}', description: 'Invoice number' },
-    { name: '{invoice.amount}', description: 'Invoice amount' },
-    { name: '{invoice.dueDate}', description: 'Payment due date' },
-    { name: '{invoice.status}', description: 'Payment status' },
-    { name: '{invoice.link}', description: 'Link URL to view/pay invoice' },
-    { name: '{invoice.button}', description: 'Clickable button to pay invoice' },
-  ];
 
   if (triggerType === 'lead_created' || triggerType?.includes('estimate')) {
     return [...baseVariables, ...estimateVariables];
-  } else if (triggerType?.includes('work_order')) {
-    return [...baseVariables, ...workOrderVariables];
-  } else if (triggerType?.includes('invoice')) {
-    return [...baseVariables, ...invoiceVariables];
   }
   
   return baseVariables;
@@ -164,12 +143,12 @@ export default function AutomationBuilder() {
   });
   const [expandedVariables, setExpandedVariables] = useState<Set<number>>(new Set());
 
-  const { data: automation, isLoading } = useQuery({
+  const { data: automation, isLoading } = useQuery<AutomationWithSteps>({
     queryKey: ['/api/crm/automations', automationId],
     enabled: !!automationId,
   });
 
-  const { data: crmSettings } = useQuery({
+  const { data: crmSettings } = useQuery<CrmSettings>({
     queryKey: ['/api/crm/settings'],
   });
 

@@ -340,5 +340,72 @@ export async function trackCustomEvent(
   return sendEvent(event);
 }
 
+/**
+ * Options for sending user-specific Lead events (per-business owner credentials)
+ */
+interface UserEventOptions {
+  pixelId: string;
+  accessToken: string;
+  testEventCode?: string | null;
+  eventId: string;
+  userData: UserData;
+  customData?: CustomData;
+  eventSourceUrl?: string | null;
+}
+
+/**
+ * Send a Lead event using per-user Facebook credentials (for embedded calculators)
+ * This enables business owners to track conversions on their own Facebook Ads account
+ */
+export async function sendUserLeadEvent(options: UserEventOptions): Promise<{ success: boolean; eventId: string; error?: string }> {
+  const apiUrl = `https://graph.facebook.com/${FB_API_VERSION}/${options.pixelId}/events`;
+
+  const event: FacebookEvent = {
+    eventName: 'Lead',
+    eventTime: Math.floor(Date.now() / 1000),
+    eventId: options.eventId,
+    eventSourceUrl: options.eventSourceUrl || undefined,
+    userData: normalizeUserData(options.userData),
+    customData: options.customData,
+    actionSource: 'website',
+  };
+
+  const payload: any = {
+    data: [event],
+    access_token: options.accessToken,
+  };
+
+  // Add test event code if configured (for debugging in Events Manager)
+  if (options.testEventCode) {
+    payload.test_event_code = options.testEventCode;
+  }
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      console.log(`[Facebook CAPI] User Lead event sent successfully for pixel ${options.pixelId}`, {
+        eventId: options.eventId,
+        eventsReceived: result.events_received,
+      });
+      return { success: true, eventId: options.eventId };
+    } else {
+      console.error(`[Facebook CAPI] Error sending user Lead event for pixel ${options.pixelId}`, result);
+      return { success: false, eventId: options.eventId, error: JSON.stringify(result.error || result) };
+    }
+  } catch (error) {
+    console.error(`[Facebook CAPI] Network error sending user Lead event for pixel ${options.pixelId}`, error);
+    return { success: false, eventId: options.eventId, error: (error as Error).message };
+  }
+}
+
 // Export types for use in other modules
 export type { UserData, CustomData };

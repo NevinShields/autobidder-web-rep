@@ -51,12 +51,20 @@ type PublicBusinessSettings = {
   businessEmail?: string | null;
   businessAddress?: string | null;
   estimatePageSettings?: {
+    defaultLayoutId?: string;
+    defaultTheme?: {
+      primaryColor?: string;
+      accentColor?: string;
+      backgroundColor?: string;
+      textColor?: string;
+    };
     defaultShowBusinessLogo?: boolean;
     defaultLogoUrl?: string;
     defaultShowBusinessName?: boolean;
     defaultShowBusinessAddress?: boolean;
     defaultShowBusinessEmail?: boolean;
     defaultShowBusinessPhone?: boolean;
+    defaultShowAcceptDecline?: boolean;
   };
 };
 
@@ -116,41 +124,185 @@ export default function EstimatePage() {
     },
   });
 
-  const handlePrint = () => {
-    if (printRef.current) {
-      const printContent = printRef.current.innerHTML;
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Estimate ${estimate?.estimateNumber}</title>
-              <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; }
-                .estimate-container { max-width: 800px; margin: 0 auto; }
-                .header { border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; margin-bottom: 20px; }
-                .customer-info { margin: 20px 0; }
-                .services-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                .services-table th, .services-table td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
-                .services-table th { background-color: #f9fafb; }
-                .totals { margin-top: 30px; border-top: 2px solid #e5e7eb; padding-top: 20px; }
-                .total-row { display: flex; justify-content: space-between; margin: 10px 0; }
-                .final-total { font-weight: bold; font-size: 1.2em; border-top: 1px solid #e5e7eb; padding-top: 10px; }
-                .message { background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                @media print { body { margin: 0; } }
-              </style>
-            </head>
-            <body>
-              <div class="estimate-container">
-                ${printContent}
+  const buildPrintHtml = () => {
+    if (!estimate) return "";
+
+    const issuedDate = format(new Date(estimate.createdAt), "MMMM dd, yyyy");
+    const validUntil = estimate.validUntil ? format(new Date(estimate.validUntil), "MMMM dd, yyyy") : "Further notice";
+
+    const businessLines = [
+      publicBusinessSettings?.businessName,
+      publicBusinessSettings?.businessAddress,
+      publicBusinessSettings?.businessEmail,
+      publicBusinessSettings?.businessPhone,
+    ].filter(Boolean);
+
+    const customerLines = [
+      estimate.customerName,
+      estimate.customerAddress,
+      estimate.customerEmail,
+      estimate.customerPhone,
+    ].filter(Boolean);
+
+    const servicesRows = estimate.services
+      .map(
+        (service) => `
+          <tr>
+            <td>${service.name}</td>
+            <td>${service.description || "Professional service"}</td>
+            <td class="right">${formatCurrency(service.price)}</td>
+          </tr>
+        `
+      )
+      .join("");
+
+    const totalsRows = [
+      `<div class="row"><span>Subtotal</span><span>${formatCurrency(estimate.subtotal)}</span></div>`,
+      (estimate.distanceFee ?? 0) > 0
+        ? `<div class="row"><span>Travel Fee</span><span>${formatCurrency(estimate.distanceFee ?? 0)}</span></div>`
+        : "",
+      (estimate.discountAmount ?? 0) > 0
+        ? `<div class="row"><span>Discount</span><span>-${formatCurrency(estimate.discountAmount ?? 0)}</span></div>`
+        : "",
+      (estimate.taxAmount ?? 0) > 0
+        ? `<div class="row"><span>Tax</span><span>${formatCurrency(estimate.taxAmount ?? 0)}</span></div>`
+        : "",
+    ].join("");
+
+    const messageBlock = resolvedMessage
+      ? `<div class="note"><strong>Message</strong><p>${resolvedMessage.replace(/\n/g, "<br />")}</p></div>`
+      : "";
+
+    const revisionBlock = revisionReason
+      ? `<div class="note"><strong>Price Revision Note</strong><p>${revisionReason.replace(/\n/g, "<br />")}</p></div>`
+      : "";
+
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Estimate ${estimate.estimateNumber}</title>
+          <style>
+            body { font-family: "Arial", sans-serif; margin: 24px; color: #111827; }
+            .page { max-width: 900px; margin: 0 auto; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; }
+            h1 { margin: 0; font-size: 24px; }
+            .meta { margin-top: 6px; font-size: 12px; color: #6b7280; }
+            .total { text-align: right; font-size: 18px; font-weight: 700; }
+            .section { margin-top: 20px; }
+            .section h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 6px; }
+            .info { font-size: 14px; line-height: 1.4; }
+            .services { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            .services th, .services td { border: 1px solid #e5e7eb; padding: 10px; font-size: 13px; }
+            .services th { background: #f9fafb; text-align: left; }
+            .right { text-align: right; }
+            .totals { margin-top: 16px; border-top: 2px solid #e5e7eb; padding-top: 12px; max-width: 320px; margin-left: auto; }
+            .totals .row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+            .totals .final { font-size: 16px; font-weight: 700; border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 8px; }
+            .note { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-top: 12px; font-size: 13px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="page">
+            <div class="header">
+              <div>
+                <h1>Estimate ${estimate.estimateNumber}</h1>
+                <div class="meta">Issued ${issuedDate} - Valid until ${validUntil}</div>
               </div>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
+              <div class="total">Total ${formatCurrency(estimate.totalAmount)}</div>
+            </div>
+
+            <div class="section">
+              <h2>Business</h2>
+              <div class="info">${businessLines.join("<br />") || "Business details"}</div>
+            </div>
+
+            <div class="section">
+              <h2>Customer</h2>
+              <div class="info">${customerLines.join("<br />") || "Customer details"}</div>
+            </div>
+
+            ${messageBlock}
+            ${revisionBlock}
+
+            <div class="section">
+              <h2>Services</h2>
+              <table class="services">
+                <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th>Description</th>
+                    <th class="right">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${servicesRows}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="totals">
+              ${totalsRows}
+              <div class="row final">
+                <span>Total</span>
+                <span>${formatCurrency(estimate.totalAmount)}</span>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const openPrintWindow = (autoPrint: boolean) => {
+    const html = buildPrintHtml();
+    if (!html) return null;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast({
+        title: "Unable to open print preview",
+        description: "Please allow pop-ups and try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+
+    if (autoPrint) {
+      printWindow.onload = () => {
+        printWindow.focus();
         printWindow.print();
-      }
+      };
+      setTimeout(() => {
+        try {
+          printWindow.focus();
+          printWindow.print();
+        } catch (error) {
+          console.error("Failed to open print dialog:", error);
+        }
+      }, 500);
+    }
+
+    return printWindow;
+  };
+
+  const handlePrint = () => {
+    openPrintWindow(true);
+  };
+
+  const handleDownloadPdf = () => {
+    const printWindow = openPrintWindow(true);
+    if (printWindow) {
+      toast({
+        title: "Download PDF",
+        description: "Use your browser's Save as PDF option in the print dialog.",
+      });
     }
   };
 
@@ -213,6 +365,7 @@ export default function EstimatePage() {
     showBusinessAddress ||
     showBusinessEmail ||
     showBusinessPhone;
+  const showAcceptDecline = estimateDefaults.defaultShowAcceptDecline !== false;
 
   // Helper to get video embed URL
   const getVideoEmbedUrl = (url: string): string | null => {
@@ -258,12 +411,26 @@ export default function EstimatePage() {
       case 'sent': return 'bg-blue-100 text-blue-800';
       case 'viewed': return 'bg-yellow-100 text-yellow-800';
       case 'accepted': return 'bg-green-100 text-green-800';
+      case 'approved': return 'bg-blue-100 text-blue-800';
       case 'expired': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const layoutId = estimate.layoutId || estimateDefaults.defaultLayoutId || "classic";
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'accepted': return 'Customer Approved';
+      case 'rejected': return 'Customer Declined';
+      case 'approved': return 'Owner Approved';
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
+    }
+  };
+
+  const isOwnerApproved = estimate.ownerApprovalStatus === "approved";
+  const isConfirmedEstimate = estimate.estimateType === "confirmed" || isOwnerApproved;
+  const layoutId = estimate.estimateType === "pre_estimate"
+    ? (estimateDefaults.defaultLayoutId || estimate.layoutId || "classic")
+    : (estimate.layoutId || estimateDefaults.defaultLayoutId || "classic");
   const isMinimal = layoutId === "minimal";
   const isDetailed = layoutId === "detailed";
   const pageBackgroundClass = isMinimal
@@ -296,7 +463,7 @@ export default function EstimatePage() {
       </h3>
       <div className={sectionInnerClassName}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ backgroundColor: `${themeStyles.primaryColor}20` }}
@@ -306,34 +473,34 @@ export default function EstimatePage() {
               </span>
             </div>
             <div>
-              <p className="font-medium text-gray-900">{estimate.customerName}</p>
+              <p className="font-medium text-gray-900 break-words">{estimate.customerName}</p>
               <p className="text-sm text-gray-600">Customer</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Mail className="w-5 h-5 text-gray-400" />
             <div>
-              <p className="font-medium text-gray-900">{estimate.customerEmail}</p>
+              <p className="font-medium text-gray-900 break-words">{estimate.customerEmail}</p>
               <p className="text-sm text-gray-600">Email</p>
             </div>
           </div>
 
           {estimate.customerPhone && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Phone className="w-5 h-5 text-gray-400" />
               <div>
-                <p className="font-medium text-gray-900">{estimate.customerPhone}</p>
+                <p className="font-medium text-gray-900 break-words">{estimate.customerPhone}</p>
                 <p className="text-sm text-gray-600">Phone</p>
               </div>
             </div>
           )}
 
           {estimate.customerAddress && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <MapPin className="w-5 h-5 text-gray-400" />
               <div>
-                <p className="font-medium text-gray-900">{estimate.customerAddress}</p>
+                <p className="font-medium text-gray-900 break-words">{estimate.customerAddress}</p>
                 <p className="text-sm text-gray-600">Address</p>
               </div>
             </div>
@@ -368,7 +535,7 @@ export default function EstimatePage() {
               className="h-12 w-auto object-contain"
             />
           )}
-          <div className="space-y-1 text-sm text-gray-700">
+          <div className="space-y-1 text-sm text-gray-700 break-words">
             {showBusinessName && publicBusinessSettings?.businessName && (
               <div className="font-semibold text-gray-900">{publicBusinessSettings.businessName}</div>
             )}
@@ -571,11 +738,11 @@ export default function EstimatePage() {
             Estimate {estimate.estimateNumber}
           </h1>
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <Badge className={estimate.estimateType === "pre_estimate" ? "bg-orange-100 text-orange-800" : "bg-emerald-100 text-emerald-800"}>
-              {estimate.estimateType === "pre_estimate" ? "Pre-Estimate" : "Confirmed Estimate"}
+            <Badge className={isConfirmedEstimate ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"}>
+              {isConfirmedEstimate ? "Confirmed Estimate" : "Pre-Estimate"}
             </Badge>
             <Badge className={getStatusColor(estimate.status)}>
-              {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
+              {getStatusLabel(estimate.status)}
             </Badge>
             <Button
               variant="outline"
@@ -590,6 +757,7 @@ export default function EstimatePage() {
               variant="outline"
               size="sm"
               className="flex items-center gap-2 text-black"
+              onClick={handleDownloadPdf}
             >
               <Download className="w-4 h-4" />
               <span className="hidden sm:inline">Download PDF</span>
@@ -598,10 +766,10 @@ export default function EstimatePage() {
         </div>
 
         {/* Accept/Decline Actions - Only show for confirmed estimates approved by owner and not yet responded */}
-        {estimate.estimateType === "confirmed" &&
-         estimate.ownerApprovalStatus === 'approved' && 
+        {estimate.ownerApprovalStatus === 'approved' && 
          estimate.status !== 'accepted' && 
-         estimate.status !== 'rejected' && (
+         estimate.status !== 'rejected' &&
+         showAcceptDecline && (
           <Card className="mb-6 border-2 border-blue-200 bg-blue-50/50">
             <CardContent className="p-6">
               <div className="text-center">
@@ -609,7 +777,7 @@ export default function EstimatePage() {
                   Ready to Move Forward?
                 </h2>
                 <p className="text-gray-600 mb-6">
-                  This estimate has been approved and is ready for your response.
+                  This estimate has been confirmed by the business and is ready for your response.
                 </p>
                 <div className="flex items-center justify-center gap-4">
                   <Button
@@ -699,14 +867,16 @@ export default function EstimatePage() {
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={estimate.estimateType === "pre_estimate" ? "bg-orange-100 text-orange-800" : "bg-emerald-100 text-emerald-800"}>
-                        {estimate.estimateType === "pre_estimate" ? "Pre-Estimate" : "Confirmed Estimate"}
+                      <Badge className={isConfirmedEstimate ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"}>
+                        {isConfirmedEstimate ? "Confirmed Estimate" : "Pre-Estimate"}
                       </Badge>
                       <Badge className={getStatusColor(estimate.status)}>
-                        {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
+                        {getStatusLabel(estimate.status)}
                       </Badge>
-                      <span className="ml-2 text-sm text-gray-500">Total</span>
-                      <span className="text-lg font-semibold text-gray-900">{formatCurrency(estimate.totalAmount)}</span>
+                      <div className="flex items-baseline gap-2 w-full sm:w-auto sm:ml-2">
+                        <span className="text-sm text-gray-500">Total</span>
+                        <span className="text-lg font-semibold text-gray-900">{formatCurrency(estimate.totalAmount)}</span>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -727,7 +897,7 @@ export default function EstimatePage() {
                     <div>
                       <p className="text-sm text-gray-500">Status</p>
                       <Badge className={getStatusColor(estimate.status)}>
-                        {estimate.status.charAt(0).toUpperCase() + estimate.status.slice(1)}
+                        {getStatusLabel(estimate.status)}
                       </Badge>
                     </div>
                     <div>
@@ -753,9 +923,9 @@ export default function EstimatePage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {estimate.services.map((service, index) => (
-                      <div key={index} className="flex items-center justify-between text-sm">
-                        <span className="text-gray-700">{service.name}</span>
-                        <span className="font-semibold text-gray-900">{formatCurrency(service.price)}</span>
+                      <div key={index} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-gray-700 min-w-0 flex-1 truncate">{service.name}</span>
+                        <span className="font-semibold text-gray-900 shrink-0">{formatCurrency(service.price)}</span>
                       </div>
                     ))}
                   </CardContent>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, X, Truck, Percent, Receipt } from "lucide-react";
+import { Plus, X, Truck, Percent, Receipt, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import type { BusinessSettings } from "@shared/schema";
 
 interface LineItem {
   name: string;
@@ -45,11 +46,23 @@ export default function EditEstimateDialog({
   const [revisionReason, setRevisionReason] = useState("");
   const [travelFee, setTravelFee] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
-  const [taxRate, setTaxRate] = useState(0);
-  const [autoCalculateTax, setAutoCalculateTax] = useState(false);
+  const [applyTax, setApplyTax] = useState(false);
   const [taxAmount, setTaxAmount] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: businessSettings } = useQuery<BusinessSettings>({
+    queryKey: ["/api/business-settings"],
+  });
+
+  const salesTaxEnabled = businessSettings?.styling?.enableSalesTax ?? false;
+  const salesTaxRate = businessSettings?.styling?.salesTaxRate ?? 0;
+  const salesTaxLabel = businessSettings?.styling?.salesTaxLabel || "Sales Tax";
+
+  useEffect(() => {
+    if (!salesTaxEnabled) {
+      setApplyTax(false);
+    }
+  }, [salesTaxEnabled]);
 
   useEffect(() => {
     if (estimate && open) {
@@ -67,20 +80,22 @@ export default function EditEstimateDialog({
       setTravelFee((estimate.distanceFee || 0) / 100);
       setDiscountAmount((estimate.discountAmount || 0) / 100);
       setTaxAmount((estimate.taxAmount || 0) / 100);
-      setTaxRate(0);
-      setAutoCalculateTax(false);
+      setApplyTax((estimate.taxAmount || 0) > 0);
     }
   }, [estimate, open]);
 
-  // Calculate tax when auto-calculate is enabled
+  // Calculate tax based on business settings
   useEffect(() => {
-    if (autoCalculateTax && taxRate > 0) {
-      const subtotal = lineItems.reduce((sum, item) => sum + (item.price || 0), 0);
-      const adjustedSubtotal = subtotal + travelFee - discountAmount;
-      const calculatedTax = adjustedSubtotal * (taxRate / 100);
-      setTaxAmount(Math.round(calculatedTax * 100) / 100);
+    if (!applyTax || !salesTaxEnabled || salesTaxRate <= 0) {
+      setTaxAmount(0);
+      return;
     }
-  }, [autoCalculateTax, taxRate, lineItems, travelFee, discountAmount]);
+
+    const subtotal = lineItems.reduce((sum, item) => sum + (item.price || 0), 0);
+    const adjustedSubtotal = Math.max(subtotal + travelFee - discountAmount, 0);
+    const calculatedTax = adjustedSubtotal * (salesTaxRate / 100);
+    setTaxAmount(Math.round(calculatedTax * 100) / 100);
+  }, [applyTax, salesTaxEnabled, salesTaxRate, lineItems, travelFee, discountAmount]);
 
   const updateEstimateMutation = useMutation({
     mutationFn: async ({ estimateId, lineItems, businessMessage, customMessage, videoUrl, revisionReason, travelFee, discountAmount, taxAmount }: {
@@ -106,7 +121,8 @@ export default function EditEstimateDialog({
       const subtotalCents = services.reduce((sum, s) => sum + s.price, 0);
       const travelFeeCents = Math.round(travelFee * 100);
       const discountCents = Math.round(discountAmount * 100);
-      const taxCents = Math.round(taxAmount * 100);
+      const resolvedTaxAmount = applyTax && salesTaxEnabled ? taxAmount : 0;
+      const taxCents = Math.round(resolvedTaxAmount * 100);
 
       // Total = subtotal + travel fee - discount + tax
       const totalAmountCents = subtotalCents + travelFeeCents - discountCents + taxCents;
@@ -138,8 +154,7 @@ export default function EditEstimateDialog({
       setTravelFee(0);
       setDiscountAmount(0);
       setTaxAmount(0);
-      setTaxRate(0);
-      setAutoCalculateTax(false);
+      setApplyTax(false);
       onOpenChange(false);
       toast({
         title: "Estimate Updated",
@@ -205,8 +220,7 @@ export default function EditEstimateDialog({
       setTravelFee(0);
       setDiscountAmount(0);
       setTaxAmount(0);
-      setTaxRate(0);
-      setAutoCalculateTax(false);
+      setApplyTax(false);
     }
     onOpenChange(open);
   };
@@ -230,8 +244,8 @@ export default function EditEstimateDialog({
           <div className="space-y-3">
             <Label>Line Items</Label>
             {lineItems.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-2 items-start border p-3 rounded">
-                <div className="col-span-4">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start border p-3 rounded">
+                <div className="md:col-span-4">
                   <Input
                     placeholder="Item name"
                     value={item.name}
@@ -243,7 +257,7 @@ export default function EditEstimateDialog({
                     data-testid={`input-edit-line-item-name-${index}`}
                   />
                 </div>
-                <div className="col-span-5">
+                <div className="md:col-span-5">
                   <Input
                     placeholder="Description"
                     value={item.description}
@@ -255,9 +269,10 @@ export default function EditEstimateDialog({
                     data-testid={`input-edit-line-item-description-${index}`}
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="md:col-span-2">
                   <Input
                     type="number"
+                    step="0.01"
                     placeholder="Price"
                     value={item.price === 0 ? '' : item.price}
                     onChange={(e) => {
@@ -265,10 +280,11 @@ export default function EditEstimateDialog({
                       newItems[index].price = parseFloat(e.target.value) || 0;
                       setLineItems(newItems);
                     }}
+                    className="text-right"
                     data-testid={`input-edit-line-item-price-${index}`}
                   />
                 </div>
-                <div className="col-span-1">
+                <div className="md:col-span-1 flex justify-end">
                   {lineItems.length > 1 && (
                     <Button
                       variant="ghost"
@@ -351,7 +367,7 @@ export default function EditEstimateDialog({
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 w-32">
                   <Receipt className="h-4 w-4 text-blue-500" />
-                  <Label className="text-sm">Tax</Label>
+                  <Label className="text-sm">{salesTaxLabel}</Label>
                 </div>
                 <div className="flex-1">
                   <div className="relative">
@@ -361,47 +377,33 @@ export default function EditEstimateDialog({
                       step="0.01"
                       min="0"
                       value={taxAmount === 0 ? '' : taxAmount}
-                      onChange={(e) => {
-                        setTaxAmount(parseFloat(e.target.value) || 0);
-                        setAutoCalculateTax(false);
-                      }}
                       className="pl-7"
                       placeholder="0.00"
-                      disabled={autoCalculateTax}
+                      disabled
                       data-testid="input-edit-tax"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Auto-calculate tax checkbox */}
-              <div className="flex items-center gap-3 ml-32 pl-3">
+              {/* Apply tax checkbox */}
+              <div className="flex flex-wrap items-center gap-3 ml-32 pl-3">
                 <Checkbox
-                  id="auto-calc-tax"
-                  checked={autoCalculateTax}
-                  onCheckedChange={(checked) => setAutoCalculateTax(checked as boolean)}
+                  id="apply-tax"
+                  checked={applyTax}
+                  onCheckedChange={(checked) => setApplyTax(checked as boolean)}
+                  disabled={!salesTaxEnabled}
                   data-testid="checkbox-auto-calculate-tax"
                 />
-                <Label htmlFor="auto-calc-tax" className="text-sm cursor-pointer">
-                  Auto-calculate tax at
+                <Label htmlFor="apply-tax" className={`text-sm cursor-pointer ${!salesTaxEnabled ? 'text-gray-400' : ''}`}>
+                  Apply {salesTaxLabel} {salesTaxRate > 0 ? `(${salesTaxRate}%)` : ""}
                 </Label>
-                <div className="w-20">
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      value={taxRate === 0 ? '' : taxRate}
-                      onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                      className="pr-6 text-sm"
-                      placeholder="0"
-                      disabled={!autoCalculateTax}
-                      data-testid="input-tax-rate"
-                    />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%</span>
+                {!salesTaxEnabled && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Info className="h-3.5 w-3.5" />
+                    Sales tax is disabled in settings.
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -426,15 +428,15 @@ export default function EditEstimateDialog({
             )}
             {taxAmount > 0 && (
               <div className="flex justify-between text-sm text-blue-600">
-                <span>Tax{autoCalculateTax && taxRate > 0 ? ` (${taxRate}%)` : ''}:</span>
+                <span>{salesTaxLabel}{salesTaxRate > 0 ? ` (${salesTaxRate}%)` : ''}:</span>
                 <span>+${taxAmount.toFixed(2)}</span>
               </div>
             )}
-          <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-            <span>Total:</span>
-            <span>${calculatedTotal.toFixed(2)}</span>
+            <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+              <span>Total:</span>
+              <span>${calculatedTotal.toFixed(2)}</span>
+            </div>
           </div>
-        </div>
 
         {/* Estimate Page Details */}
         <div className="space-y-3">

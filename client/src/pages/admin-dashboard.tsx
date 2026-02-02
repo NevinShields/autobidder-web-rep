@@ -64,7 +64,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag, TemplateCategory, InsertTemplateCategory, CallBooking, CallAvailabilitySlot, insertCallAvailabilitySlotSchema } from "@shared/schema";
 import IconSelector from "@/components/icon-selector";
-import { format, addDays, startOfWeek } from "date-fns";
+import { format, addDays, startOfWeek, differenceInCalendarDays } from "date-fns";
 
 interface AdminStats {
   totalUsers: number;
@@ -90,6 +90,8 @@ interface AdminUser {
   isBetaTester: boolean;
   createdAt: string;
   lastActivity?: string;
+  trialStartDate?: string | null;
+  trialEndDate?: string | null;
 }
 
 interface AdminLead {
@@ -218,6 +220,11 @@ export default function AdminDashboard() {
   const [selectedIconFiles, setSelectedIconFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: {uploading: boolean, success: boolean, error: string | null}}>({});
   const [iconUploadDialogOpen, setIconUploadDialogOpen] = useState(false);
+
+  const getTrialDaysRemaining = (user: AdminUser) => {
+    if (!user.trialEndDate) return null;
+    return differenceInCalendarDays(new Date(user.trialEndDate), new Date());
+  };
   const [iconSearchQuery, setIconSearchQuery] = useState("");
   const [iconCategoryFilter, setIconCategoryFilter] = useState("all");
   const [iconStatusFilter, setIconStatusFilter] = useState("all");
@@ -1250,14 +1257,15 @@ export default function AdminDashboard() {
                     <Table>
                       <TableHeader>
                         <TableRow className="border-b">
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap min-w-[120px]">Actions</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">User</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap min-w-[120px]">Organization</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Plan</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Status</TableHead>
+                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Trial</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Tags</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap">Permissions</TableHead>
                           <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap min-w-[100px]">Joined</TableHead>
-                          <TableHead className="px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap text-right min-w-[120px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1272,11 +1280,32 @@ export default function AdminDashboard() {
                               <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                              <TableCell className="px-4 py-3"><div className="h-3 sm:h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                             </TableRow>
                           ))
                         ) : (
                           filteredUsers?.map((user) => (
                             <TableRow key={user.id} className="border-b hover:bg-gray-50">
+                              <TableCell className="px-4 py-3">
+                                <div className="flex items-center gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleImpersonateUser(user)}
+                                    className="text-blue-600 hover:text-blue-700 h-8 w-8 p-0"
+                                  >
+                                    <LogIn className="h-3 w-3" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleEditUser(user)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
                               <TableCell className="px-4 py-3">
                                 <div className="min-w-[140px]">
                                   <div className="font-medium text-gray-900 text-xs sm:text-sm truncate">
@@ -1306,6 +1335,26 @@ export default function AdminDashboard() {
                                 </div>
                               </TableCell>
                               <TableCell className="px-4 py-3">
+                                {(() => {
+                                  const isTrialing = user.subscriptionStatus === "trialing" || user.plan === "trial";
+                                  if (!isTrialing) {
+                                    return <span className="text-xs sm:text-sm text-gray-400">—</span>;
+                                  }
+                                  const daysRemaining = getTrialDaysRemaining(user);
+                                  if (daysRemaining === null) {
+                                    return <span className="text-xs sm:text-sm text-gray-400">—</span>;
+                                  }
+                                  if (daysRemaining < 0) {
+                                    return <span className="text-xs sm:text-sm text-red-600">Expired</span>;
+                                  }
+                                  return (
+                                    <span className="text-xs sm:text-sm font-medium text-gray-700">
+                                      {daysRemaining}d left
+                                    </span>
+                                  );
+                                })()}
+                              </TableCell>
+                              <TableCell className="px-4 py-3">
                                 <div className="flex items-center gap-1 flex-wrap">
                                   {getBetaTesterBadge(user.isBetaTester)}
                                   {user.userType === 'super_admin' && (
@@ -1327,26 +1376,6 @@ export default function AdminDashboard() {
                               <TableCell className="px-4 py-3">
                                 <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap">
                                   {formatDate(user.createdAt)}
-                                </div>
-                              </TableCell>
-                              <TableCell className="px-4 py-3 text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => handleImpersonateUser(user)}
-                                    className="text-blue-600 hover:text-blue-700 h-8 w-8 p-0"
-                                  >
-                                    <LogIn className="h-3 w-3" />
-                                  </Button>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => handleEditUser(user)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </Button>
                                 </div>
                               </TableCell>
                             </TableRow>

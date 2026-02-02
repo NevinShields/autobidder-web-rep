@@ -118,6 +118,12 @@ const LEGACY_STAGES = [
   { value: "lost", label: "Lost", color: "bg-red-500" }
 ];
 
+const ESTIMATE_KANBAN_STAGES = [
+  { value: "pre_estimate", label: "Pre-Estimate" },
+  { value: "owner_confirmed", label: "Owner Confirmed" },
+  { value: "customer_approved", label: "Customer Approved" }
+];
+
 type KanbanLead = (Lead | MultiServiceLead) & { type: "single" | "multi"; serviceNames: string; totalServices: number };
 
 function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () => void }) {
@@ -435,6 +441,12 @@ export default function LeadsPage() {
     queryKey: ["/api/invoices"],
     enabled: activeTab === "invoices",
   });
+
+  const getEstimateStage = (estimate: any) => {
+    if (estimate?.status === "accepted") return "customer_approved";
+    if (estimate?.ownerApprovalStatus === "approved") return "owner_confirmed";
+    return "pre_estimate";
+  };
 
   const isLoading = singleLeadsLoading || multiServiceLeadsLoading;
   
@@ -1268,17 +1280,6 @@ export default function LeadsPage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <Button
-                  onClick={() => setIsAddCustomerDialogOpen(true)}
-                  data-testid="button-add-customer"
-                  disabled={!user}
-                  title={!user ? "Please log in to add customers" : "Add a new customer"}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Customer
-                </Button>
-
                 <div className="flex bg-white dark:bg-gray-800/10 rounded-lg p-1 backdrop-blur-sm">
                   <Button
                     variant="ghost"
@@ -1319,79 +1320,92 @@ export default function LeadsPage() {
         {/* Main Tabs */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "leads" | "estimates" | "work-orders" | "invoices" | "automations")} className="mb-8">
           <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-            <TabsList className="inline-flex w-auto min-w-full md:grid md:w-full md:max-w-3xl md:grid-cols-4 h-auto gap-1">
-              <TabsTrigger value="leads" data-testid="tab-leads" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Customers</TabsTrigger>
-              <TabsTrigger value="estimates" data-testid="tab-estimates" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Estimates</TabsTrigger>
-              <TabsTrigger value="work-orders" data-testid="tab-work-orders" className="flex-shrink-0 min-w-[120px] h-11 md:min-w-0">Work Orders</TabsTrigger>
-              <TabsTrigger value="invoices" data-testid="tab-invoices" className="flex-shrink-0 min-w-[100px] h-11 md:min-w-0">Invoices</TabsTrigger>
+            <TabsList className="inline-flex w-auto min-w-fit rounded-full bg-slate-100/80 dark:bg-gray-800/70 p-1 shadow-sm ring-1 ring-slate-200/70 dark:ring-gray-700/70 backdrop-blur">
+              <TabsTrigger
+                value="leads"
+                data-testid="tab-leads"
+                className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+              >
+                Customers
+              </TabsTrigger>
+              <TabsTrigger
+                value="estimates"
+                data-testid="tab-estimates"
+                className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+              >
+                Estimates
+              </TabsTrigger>
             </TabsList>
           </div>
 
           {/* Leads Tab */}
           <TabsContent value="leads">
-        {/* Premium Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {/* Total Leads Card */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 p-6 shadow-sm transition-all hover:shadow-md">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
-                  <Users className="h-5 w-5 text-white" />
+        {/* Compact Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6">
+          {/* Total Leads */}
+          <div className="rounded-xl border border-slate-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-9 w-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                  <Users className="h-4 w-4 text-blue-600 dark:text-blue-300" />
                 </div>
-                <span className="text-xs font-medium text-blue-100 bg-white/10 dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
-                  All time
-                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">
+                    Total Leads
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">{totalLeads}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-blue-100 text-sm font-medium">Total Leads</p>
-                <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">{totalLeads}</p>
-              </div>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-gray-700/60 px-2 py-0.5 rounded-full">
+                All time
+              </span>
             </div>
           </div>
 
-          {/* Total Value Card */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 p-6 shadow-sm transition-all hover:shadow-md">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
-                  <DollarSign className="h-5 w-5 text-white" />
+          {/* Total Value */}
+          <div className="rounded-xl border border-slate-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-9 w-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+                  <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
                 </div>
-                <span className="text-xs font-medium text-emerald-100 bg-white/10 dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
-                  Pipeline value
-                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">
+                    Total Value
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                    ${(totalValue / 100).toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-emerald-100 text-sm font-medium">Total Value</p>
-                <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                  ${(totalValue / 100).toLocaleString()}
-                </p>
-              </div>
+              <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full">
+                Pipeline
+              </span>
             </div>
           </div>
 
-          {/* Conversions Card */}
-          <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 p-6 shadow-sm transition-all hover:shadow-md">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-gray-800/10 rounded-full blur-2xl transform translate-x-8 -translate-y-8" />
-            <div className="relative">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-white/20 dark:bg-gray-800/20 rounded-xl backdrop-blur-sm">
-                  <CheckCircle className="h-5 w-5 text-white" />
+          {/* Conversions */}
+          <div className="rounded-xl border border-slate-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-9 w-9 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 text-violet-600 dark:text-violet-300" />
                 </div>
-                <span className="text-xs font-medium text-violet-100 bg-white/10 dark:bg-gray-800/10 px-2.5 py-1 rounded-full">
-                  {conversionRate}% rate
-                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">
+                    Conversions
+                  </p>
+                  <p className="text-lg font-semibold text-slate-900 dark:text-white">
+                    {conversionCount}
+                    <span className="text-xs font-normal text-slate-500 dark:text-gray-400 ml-2">
+                      (${(conversionValue / 100).toLocaleString()})
+                    </span>
+                  </p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-violet-100 text-sm font-medium">Conversions</p>
-                <p className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                  {conversionCount}
-                  <span className="text-lg font-normal text-violet-200 ml-2">
-                    (${(conversionValue / 100).toLocaleString()})
-                  </span>
-                </p>
-              </div>
+              <span className="text-[11px] font-medium text-violet-700 dark:text-violet-200 bg-violet-50 dark:bg-violet-900/40 px-2 py-0.5 rounded-full">
+                {conversionRate}% rate
+              </span>
             </div>
           </div>
         </div>
@@ -2273,7 +2287,7 @@ export default function LeadsPage() {
                   All Estimates ({allEstimates.length})
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className={viewMode === "kanban" ? "p-4" : "p-0"}>
                 {estimatesLoading ? (
                   <div className="text-center py-12">
                     <p className="text-gray-500">Loading estimates...</p>
@@ -2283,6 +2297,147 @@ export default function LeadsPage() {
                     <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No estimates found</h3>
                     <p className="text-gray-500">Estimates will appear here once you create them for your leads</p>
+                  </div>
+                ) : viewMode === "kanban" ? (
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {ESTIMATE_KANBAN_STAGES.map((stage) => {
+                      const stageEstimates = allEstimates.filter(
+                        (estimate: any) => getEstimateStage(estimate) === stage.value
+                      );
+
+                      return (
+                        <div key={stage.value} className="min-w-[280px] w-80 shrink-0">
+                          <div className="flex items-center justify-between mb-3 px-1">
+                            <h3 className="text-sm font-semibold text-slate-700 dark:text-gray-200">{stage.label}</h3>
+                            <span className="text-xs text-slate-500 dark:text-gray-400 bg-slate-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                              {stageEstimates.length}
+                            </span>
+                          </div>
+                          <div className="space-y-3">
+                            {stageEstimates.length === 0 ? (
+                              <div className="text-xs text-slate-400 dark:text-gray-500 px-3 py-6 text-center border border-dashed border-slate-200 dark:border-gray-700 rounded-xl">
+                                No estimates
+                              </div>
+                            ) : (
+                              stageEstimates.map((estimate: any) => (
+                                <Card
+                                  key={estimate.id}
+                                  className="border border-slate-200/80 dark:border-gray-700 bg-white dark:bg-gray-800/80 shadow-sm rounded-2xl"
+                                  data-testid={`estimate-kanban-card-${estimate.id}`}
+                                >
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4 text-slate-400" />
+                                          <a
+                                            href={`/estimate/${estimate.estimateNumber}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm font-semibold text-blue-600 hover:text-blue-700 hover:underline inline-flex items-center gap-1"
+                                          >
+                                            {estimate.estimateNumber}
+                                            <ExternalLink className="h-3 w-3" />
+                                          </a>
+                                        </div>
+                                        <div className="mt-2">
+                                          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                            {estimate.customerName}
+                                          </p>
+                                          <p className="text-xs text-slate-500 dark:text-gray-400 truncate">
+                                            {estimate.customerEmail}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-col items-end gap-2">
+                                        <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                          ${(estimate.totalAmount / 100).toFixed(2)}
+                                        </span>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="h-8 w-8 p-0"
+                                              data-testid={`button-actions-${estimate.id}`}
+                                            >
+                                              <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end" className="w-48">
+                                            {estimate.ownerApprovalStatus !== "approved" && (
+                                              <DropdownMenuItem
+                                                onClick={() => approveEstimateMutation.mutate({ estimateId: estimate.id })}
+                                                disabled={approveEstimateMutation.isPending}
+                                                data-testid={`button-confirm-bid-${estimate.id}`}
+                                              >
+                                                <CheckCircle className="h-4 w-4 mr-2" />
+                                                Confirm Bid
+                                              </DropdownMenuItem>
+                                            )}
+                                            {estimate.ownerApprovalStatus === "approved" && estimate.status !== "accepted" && (
+                                              <DropdownMenuItem
+                                                onClick={() => markCustomerApprovedMutation.mutate({ estimateId: estimate.id })}
+                                                disabled={markCustomerApprovedMutation.isPending}
+                                                data-testid={`button-mark-customer-approved-${estimate.id}`}
+                                              >
+                                                <CheckCircle className="h-4 w-4 mr-2" />
+                                                Mark Customer Approved
+                                              </DropdownMenuItem>
+                                            )}
+                                            {estimate.status === "accepted" && (
+                                              <>
+                                                <DropdownMenuItem
+                                                  onClick={() => convertToWorkOrderMutation.mutate({ estimateId: estimate.id })}
+                                                  disabled={convertToWorkOrderMutation.isPending}
+                                                  data-testid={`button-convert-to-work-order-${estimate.id}`}
+                                                >
+                                                  <FileText className="h-4 w-4 mr-2" />
+                                                  Convert to Work Order
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                              </>
+                                            )}
+                                            <DropdownMenuItem
+                                              onClick={() => setEditingEstimate(estimate)}
+                                              data-testid={`button-adjust-bid-${estimate.id}`}
+                                            >
+                                              <Edit2 className="h-4 w-4 mr-2" />
+                                              Adjust Bid
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-between">
+                                      <Badge
+                                        variant="secondary"
+                                        className={
+                                          estimate.status === "accepted"
+                                            ? "bg-green-100 text-green-800 border-green-200"
+                                            : estimate.ownerApprovalStatus === "approved"
+                                            ? "bg-blue-100 text-blue-800 border-blue-200"
+                                            : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                                        }
+                                      >
+                                        {estimate.status === "accepted"
+                                          ? "Customer Approved"
+                                          : estimate.ownerApprovalStatus === "approved"
+                                          ? "Owner Confirmed"
+                                          : "Pre-estimate"}
+                                      </Badge>
+                                      <span className="text-xs text-slate-400 dark:text-gray-500">
+                                        {format(new Date(estimate.createdAt), "MMM d, yyyy")}
+                                      </span>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -2346,32 +2501,44 @@ export default function LeadsPage() {
                                 </Badge>
                               </td>
                               <td className="px-6 py-4">
-                                {/* Compact horizontal stepper */}
+                                {/* iOS-style compact stepper */}
                                 <div className="flex items-center gap-2 min-w-[180px]">
                                   {/* Step 1 */}
-                                  <div className="flex flex-col items-center gap-1">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      currentStage >= 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-400'
-                                    }`}>
-                                      {currentStage > 1 ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">1</span>}
+                                  <div className="flex items-center">
+                                    <div
+                                      className={`h-7 w-7 rounded-full flex items-center justify-center border ${
+                                        currentStage >= 1
+                                          ? "bg-blue-600 border-blue-600 text-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+                                          : "bg-white border-slate-300 text-slate-400"
+                                      }`}
+                                    >
+                                      {currentStage > 1 ? <Check className="h-3.5 w-3.5" /> : <span className="text-[11px] font-semibold">1</span>}
                                     </div>
                                   </div>
-                                  <div className={`flex-1 h-0.5 ${currentStage >= 2 ? 'bg-blue-500' : 'bg-gray-200'}`} />
+                                  <div className={`flex-1 h-[3px] rounded-full ${currentStage >= 2 ? "bg-blue-500" : "bg-slate-200"}`} />
                                   {/* Step 2 */}
-                                  <div className="flex flex-col items-center gap-1">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      currentStage >= 2 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
-                                    }`}>
-                                      {currentStage > 2 ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">2</span>}
+                                  <div className="flex items-center">
+                                    <div
+                                      className={`h-7 w-7 rounded-full flex items-center justify-center border ${
+                                        currentStage >= 2
+                                          ? "bg-green-600 border-green-600 text-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+                                          : "bg-white border-slate-300 text-slate-400"
+                                      }`}
+                                    >
+                                      {currentStage > 2 ? <Check className="h-3.5 w-3.5" /> : <span className="text-[11px] font-semibold">2</span>}
                                     </div>
                                   </div>
-                                  <div className={`flex-1 h-0.5 ${currentStage >= 3 ? 'bg-green-500' : 'bg-gray-200'}`} />
+                                  <div className={`flex-1 h-[3px] rounded-full ${currentStage >= 3 ? "bg-green-500" : "bg-slate-200"}`} />
                                   {/* Step 3 */}
-                                  <div className="flex flex-col items-center gap-1">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      currentStage >= 3 ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-400'
-                                    }`}>
-                                      {currentStage >= 3 ? <Check className="h-4 w-4" /> : <span className="text-xs font-semibold">3</span>}
+                                  <div className="flex items-center">
+                                    <div
+                                      className={`h-7 w-7 rounded-full flex items-center justify-center border ${
+                                        currentStage >= 3
+                                          ? "bg-indigo-600 border-indigo-600 text-white shadow-[0_1px_2px_rgba(0,0,0,0.15)]"
+                                          : "bg-white border-slate-300 text-slate-400"
+                                      }`}
+                                    >
+                                      {currentStage >= 3 ? <Check className="h-3.5 w-3.5" /> : <span className="text-[11px] font-semibold">3</span>}
                                     </div>
                                   </div>
                                 </div>

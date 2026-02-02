@@ -84,7 +84,7 @@ import { ObjectPermission } from "./objectAcl";
 import { getGoogleCalendarBusyTimes, getGoogleCalendarEvents, checkUserGoogleCalendarConnection, getGoogleOAuthUrl, exchangeCodeForTokens, getAvailableCalendars } from "./google-calendar";
 import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
-import { trackCompleteRegistration, trackStartTrial } from './facebook-capi';
+import { trackCompleteRegistration, trackStartTrial, sendUserLeadEvent } from './facebook-capi';
 import webpush from 'web-push';
 
 function getBaseUrl(): string {
@@ -317,6 +317,22 @@ const uploadFormImage = multer({
   limits: {
     fileSize: 50 * 1024 * 1024 // 50MB limit (configurable via form settings)
   }
+});
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = path.resolve(process.cwd(), "uploads");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    },
+  }),
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1288,7 +1304,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessAddress: businessSettings.businessAddress,
         serviceRadius: businessSettings.serviceRadius,
         guideVideos: businessSettings.guideVideos,
-        enableAutoExpandCollapse: businessSettings.enableAutoExpandCollapse
+        enableAutoExpandCollapse: businessSettings.enableAutoExpandCollapse,
+        // Facebook tracking config (no access token - that's server-side only)
+        facebookTracking: {
+          enabled: businessSettings.enableFacebookTracking || false,
+          pixelId: businessSettings.fbPixelId || null,
+          businessUrl: businessSettings.fbBusinessUrl || null,
+        },
       } : null;
 
       // Prepare design settings or defaults
@@ -1362,7 +1384,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Facebook Conversions API endpoint for server-side tracking
+  // This endpoint allows embedded calculators to send Lead events via CAPI
+  // using the business owner's configured Facebook credentials
+  app.post("/api/facebook-capi/track-lead", async (req, res) => {
+    try {
+      const { businessOwnerId, eventId, userData, customData, eventSourceUrl } = req.body;
 
+      if (!businessOwnerId || !eventId) {
+        return res.status(400).json({
+          success: false,
+          reason: 'missing_required_fields',
+          message: 'businessOwnerId and eventId are required'
+        });
+      }
+
+      // Get business settings for the owner
+      const settings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+
+      if (!settings?.enableFacebookTracking || !settings?.fbPixelId || !settings?.fbAccessToken) {
+        return res.json({
+          success: false,
+          reason: 'tracking_not_configured',
+          message: 'Facebook tracking is not configured for this business'
+        });
+      }
+
+      // Send the Lead event to Facebook CAPI using the business owner's credentials
+      // Note: fbAccessToken is already decrypted by storage.getBusinessSettingsByUserId
+      const result = await sendUserLeadEvent({
+        pixelId: settings.fbPixelId,
+        accessToken: settings.fbAccessToken,
+        testEventCode: settings.fbTestEventCode,
+        eventId,
+        userData: userData || {},
+        customData: customData || {},
+        eventSourceUrl: eventSourceUrl || settings.fbBusinessUrl,
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error('[Facebook CAPI] Error in track-lead endpoint:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error'
+      });
+    }
+  });
 
   // Preview route for custom forms (auth required)
   app.get("/api/dashboard/forms/:formId/preview", requireAuth, async (req, res) => {
@@ -2907,6 +2975,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
+          // Fetch business settings for design defaults
+          const settings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+          const estimateDefaults = settings?.estimatePageSettings || {};
+
           const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
           const estimateData = {
             userId: businessOwnerId,
@@ -2917,6 +2989,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerEmail: lead.email,
             customerPhone: lead.phone,
             businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+            customMessage: estimateDefaults.defaultMessage,
+            layoutId: estimateDefaults.defaultLayoutId || "classic",
+            theme: estimateDefaults.defaultTheme || {},
+            attachments: estimateDefaults.defaultIncludeAttachments !== false ? (estimateDefaults.defaultAttachments || []) : [],
+            videoUrl: estimateDefaults.defaultShowVideo !== false ? estimateDefaults.defaultVideoUrl : undefined,
             services: [{
               name: serviceName,
               description: serviceDescription,
@@ -4308,6 +4385,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let createdEstimate: any = null;
       if (businessOwnerId && businessOwnerId !== "default_owner") {
         try {
+          const settings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+          const estimateDefaults = settings?.estimatePageSettings || {};
+
           const services = lead.services.map(service => ({
             name: service.formulaName,
             description: `Service ID: ${service.formulaId}`,
@@ -4337,6 +4417,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerPhone: lead.phone,
             customerAddress: lead.address,
             businessMessage: "Thank you for your interest in our services. Please find the detailed estimate below.",
+            customMessage: estimateDefaults.defaultMessage,
+            layoutId: estimateDefaults.defaultLayoutId || "classic",
+            theme: estimateDefaults.defaultTheme || {},
+            attachments: estimateDefaults.defaultIncludeAttachments !== false ? (estimateDefaults.defaultAttachments || []) : [],
+            videoUrl: estimateDefaults.defaultShowVideo !== false ? estimateDefaults.defaultVideoUrl : undefined,
             services,
             subtotal,
             taxAmount,
@@ -5028,9 +5113,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
-        'enableRouteOptimization', 'routeOptimizationThreshold'
+        'enableRouteOptimization', 'routeOptimizationThreshold',
+        // Facebook Conversion Tracking fields
+        'fbPixelId', 'fbAccessToken', 'fbTestEventCode', 'fbBusinessUrl', 'enableFacebookTracking'
       ];
-      
+
       for (const field of allowedFields) {
         if (req.body[field] !== undefined) {
           validatedData[field] = req.body[field];
@@ -5068,7 +5155,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
-        'enableRouteOptimization', 'routeOptimizationThreshold'
+        'enableRouteOptimization', 'routeOptimizationThreshold',
+        // Facebook Conversion Tracking fields
+        'fbPixelId', 'fbAccessToken', 'fbTestEventCode', 'fbBusinessUrl', 'enableFacebookTracking'
       ];
       const cleanData: any = {};
       
@@ -6692,12 +6781,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessAddress: settings.businessAddress,
         enableBooking: settings.enableBooking,
         estimatePageSettings: {
+          defaultLayoutId: settings.estimatePageSettings?.defaultLayoutId,
+          defaultTheme: settings.estimatePageSettings?.defaultTheme,
           defaultShowBusinessLogo: settings.estimatePageSettings?.defaultShowBusinessLogo,
           defaultLogoUrl: settings.estimatePageSettings?.defaultLogoUrl,
           defaultShowBusinessName: settings.estimatePageSettings?.defaultShowBusinessName,
           defaultShowBusinessAddress: settings.estimatePageSettings?.defaultShowBusinessAddress,
           defaultShowBusinessEmail: settings.estimatePageSettings?.defaultShowBusinessEmail,
           defaultShowBusinessPhone: settings.estimatePageSettings?.defaultShowBusinessPhone,
+          defaultShowAcceptDecline: settings.estimatePageSettings?.defaultShowAcceptDecline,
         }
       };
       
@@ -9753,27 +9845,60 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Estimate not found" });
       }
 
-      // Send Zapier webhook notification for estimate viewed (public view)
-      if (estimate.userId) {
-        ZapierIntegrationService.sendWebhookNotification(
-          estimate.userId,
-          'estimate_viewed',
-          {
-            id: estimate.id,
-            estimateNumber: estimate.estimateNumber,
-            customerName: estimate.customerName,
-            customerEmail: estimate.customerEmail,
-            customerPhone: estimate.customerPhone,
-            totalAmount: estimate.totalAmount,
-            status: 'viewed',
-            createdAt: estimate.createdAt
-          }
-        ).catch(error => {
-          console.error('Failed to send Zapier webhook for estimate viewed:', error);
+      let updatedEstimate = estimate;
+      const alreadyViewed = !!estimate.viewedByCustomerAt;
+      const shouldMarkViewed = !alreadyViewed && estimate.status !== 'accepted' && estimate.status !== 'rejected';
+
+      if (shouldMarkViewed) {
+        updatedEstimate = await storage.updateEstimate(estimate.id, {
+          viewedByCustomerAt: new Date(),
+          status: 'viewed',
         });
+
+        if (estimate.userId) {
+          // Trigger automations for estimate viewed (non-blocking)
+          Promise.resolve(automationService.triggerAutomations('estimate_viewed', {
+            userId: estimate.userId,
+            estimateId: estimate.id,
+            estimateData: {
+              id: estimate.id,
+              estimateNumber: estimate.estimateNumber,
+              total: estimate.totalAmount,
+              status: 'viewed',
+              estimateType: estimate.estimateType,
+              customerName: estimate.customerName,
+              customerEmail: estimate.customerEmail,
+              validUntil: estimate.validUntil || undefined,
+            },
+            leadData: {
+              name: estimate.customerName,
+              email: estimate.customerEmail,
+            }
+          })).catch(error => {
+            console.error('Failed to trigger estimate viewed automations:', error);
+          });
+
+          // Send Zapier webhook notification for estimate viewed (public view)
+          ZapierIntegrationService.sendWebhookNotification(
+            estimate.userId,
+            'estimate_viewed',
+            {
+              id: estimate.id,
+              estimateNumber: estimate.estimateNumber,
+              customerName: estimate.customerName,
+              customerEmail: estimate.customerEmail,
+              customerPhone: estimate.customerPhone,
+              totalAmount: estimate.totalAmount,
+              status: 'viewed',
+              createdAt: estimate.createdAt
+            }
+          ).catch(error => {
+            console.error('Failed to send Zapier webhook for estimate viewed:', error);
+          });
+        }
       }
 
-      res.json(estimate);
+      res.json(updatedEstimate);
     } catch (error) {
       console.error('Error fetching estimate by number:', error);
       res.status(500).json({ message: "Failed to fetch estimate" });
@@ -16427,6 +16552,87 @@ This booking was created on ${new Date().toLocaleString()}.
       console.error("Error reordering videos:", error);
       res.status(500).json({ message: "Failed to reorder videos" });
     }
+  });
+
+  // Image Upload
+  app.post("/api/leads/:id/upload", requireWebOrMobileAuth, (req: any, res: any) => {
+    upload.single("image")(req, res, async (err: any) => {
+      if (err) {
+        console.error("[Upload] Multer error:", err);
+        return res.status(500).json({ message: "File upload error", error: String(err) });
+      }
+
+      console.log(`[Upload] Starting logic for lead ${req.params.id}`);
+      
+      try {
+        const id = parseInt(req.params.id);
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const lead = await storage.getLead(id);
+        if (!lead) {
+          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        
+        const userId = (req as any).currentUser?.id;
+        if (lead.userId !== userId) {
+          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        const imageUrl = `/uploads/${req.file.filename}`;
+        const currentImages = lead.uploadedImages || [];
+        const updatedImages = [...currentImages, imageUrl];
+
+        const updated = await storage.updateLead(id, { uploadedImages: updatedImages });
+        res.json(updated);
+      } catch (error) {
+        console.error("[Upload] Logic error:", error);
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ message: "Failed to upload image" });
+      }
+    });
+  });
+
+  app.post("/api/multi-service-leads/:id/upload", requireWebOrMobileAuth, (req: any, res: any) => {
+    upload.single("image")(req, res, async (err: any) => {
+      if (err) {
+        console.error("[Upload] Multer error:", err);
+        return res.status(500).json({ message: "File upload error", error: String(err) });
+      }
+
+      try {
+        const id = parseInt(req.params.id);
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const lead = await storage.getMultiServiceLead(id);
+        if (!lead) {
+          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        
+        const userId = (req as any).currentUser?.id;
+        if (lead.businessOwnerId !== userId) {
+          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          return res.status(403).json({ message: "Unauthorized" });
+        }
+
+        const imageUrl = `/uploads/${req.file.filename}`;
+        const currentImages = lead.uploadedImages || [];
+        const updatedImages = [...currentImages, imageUrl];
+
+        const updated = await storage.updateMultiServiceLead(id, { uploadedImages: updatedImages });
+        res.json(updated);
+      } catch (error) {
+        console.error("[Upload] Error:", error);
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ message: "Failed to upload image" });
+      }
+    });
   });
 
   const httpServer = createServer(app);

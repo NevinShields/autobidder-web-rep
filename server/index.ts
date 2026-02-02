@@ -9,6 +9,25 @@ const app = express();
 // Enable gzip compression for faster asset delivery
 app.use(compression());
 
+// CORS setup for mobile app support and dev environments
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // Allow any origin in development or requests from known dev URLs
+  if (origin) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+    res.header("Access-Control-Allow-Credentials", "true");
+  }
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
 // Register Stripe webhook BEFORE json parsing middleware
 // This ensures the raw body is preserved for signature verification
 // Handle both webhook paths for compatibility  

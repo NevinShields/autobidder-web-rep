@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Copy, ExternalLink, Code, Eye, Settings, Palette, Monitor, Smartphone } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Copy, ExternalLink, Code, Eye, Settings, Palette, Monitor, Smartphone, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard-layout";
-import type { Formula } from "@shared/schema";
+import type { Formula, BusinessSettings } from "@shared/schema";
 
 export default function EmbedCode() {
   const { toast } = useToast();
@@ -29,6 +30,13 @@ export default function EmbedCode() {
   const { data: user } = useQuery<{id: string}>({
     queryKey: ["/api/auth/user"],
   });
+
+  const { data: businessSettings } = useQuery<BusinessSettings>({
+    queryKey: ["/api/business-settings"],
+  });
+
+  // Check if Facebook tracking is enabled
+  const fbTrackingEnabled = businessSettings?.enableFacebookTracking && businessSettings?.fbPixelId;
 
   const formulaList = (formulas as Formula[]) || [];
   const activeFormulas = formulaList.filter(f => f.isActive && f.isDisplayed);
@@ -88,6 +96,53 @@ export default function EmbedCode() {
   loading="lazy"
   title="Styled Service Calculator">
 </iframe>`;
+  };
+
+  // Generate Facebook tracking script for embedding alongside the calculator
+  const generateFbTrackingScript = () => {
+    if (!fbTrackingEnabled || !businessSettings?.fbPixelId) return '';
+
+    return `<!-- Autobidder Facebook Conversion Tracking -->
+<script>
+(function() {
+  // Initialize Facebook Pixel if not already present
+  if (!window.fbq) {
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '${businessSettings.fbPixelId}');
+    fbq('track', 'PageView');
+  }
+
+  // Listen for conversion events from Autobidder calculator
+  window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'AUTOBIDDER_CONVERSION') {
+      var data = event.data;
+      // Fire Lead event with matching event_id for server-side deduplication
+      fbq('trackSingle', data.pixel_id, 'Lead', {
+        value: data.value,
+        currency: data.currency || 'USD'
+      }, { eventID: data.event_id });
+    }
+  });
+})();
+</script>
+<!-- End Autobidder Facebook Conversion Tracking -->
+
+`;
+  };
+
+  // Generate complete embed code with optional FB tracking
+  const getFullEmbedCode = (iframeCode: string) => {
+    if (fbTrackingEnabled) {
+      return generateFbTrackingScript() + iframeCode;
+    }
+    return iframeCode;
   };
 
   const copyToClipboard = (text: string, type: string) => {
@@ -234,18 +289,26 @@ export default function EmbedCode() {
                     <div>
                       <div className="flex items-center justify-between mb-2">
                         <Label>Embed Code</Label>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyToClipboard(generateSingleFormulaIframe(), "Single calculator embed code")}
-                          className="flex items-center gap-2"
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy Code
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {fbTrackingEnabled && (
+                            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                              <Share2 className="h-3 w-3 mr-1" />
+                              FB Tracking
+                            </Badge>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard(getFullEmbedCode(generateSingleFormulaIframe()), "Single calculator embed code")}
+                            className="flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            Copy Code
+                          </Button>
+                        </div>
                       </div>
                       <Textarea
-                        value={generateSingleFormulaIframe()}
+                        value={getFullEmbedCode(generateSingleFormulaIframe())}
                         readOnly
                         className="font-mono text-sm h-32"
                       />
@@ -301,18 +364,26 @@ export default function EmbedCode() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label>Embed Code</Label>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => copyToClipboard(generateStyledCalculatorIframe(), "Styled calculator embed code")}
-                      className="flex items-center gap-2"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Copy Code
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {fbTrackingEnabled && (
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          <Share2 className="h-3 w-3 mr-1" />
+                          FB Tracking
+                        </Badge>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(getFullEmbedCode(generateStyledCalculatorIframe()), "Styled calculator embed code")}
+                        className="flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copy Code
+                      </Button>
+                    </div>
                   </div>
                   <Textarea
-                    value={generateStyledCalculatorIframe()}
+                    value={getFullEmbedCode(generateStyledCalculatorIframe())}
                     readOnly
                     className="font-mono text-sm h-32"
                   />
@@ -369,6 +440,16 @@ export default function EmbedCode() {
                     Use the Design Dashboard to customize colors, fonts, and styling. Changes will automatically apply to all embedded calculators.
                   </p>
                 </div>
+
+                {fbTrackingEnabled && (
+                  <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
+                    <Share2 className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                      <strong>Meta Tracking Enabled:</strong> Your embed code includes Facebook Pixel initialization and conversion tracking.
+                      Lead events will be sent via both client-side Pixel and server-side Conversions API for optimal attribution.
+                    </AlertDescription>
+                  </Alert>
+                )}
               </CardContent>
             </Card>
           </div>

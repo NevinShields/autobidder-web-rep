@@ -855,7 +855,7 @@ export default function StyledCalculator(props: any = {}) {
       // Use the same endpoint for both public and authenticated access
       return apiRequest("POST", "/api/multi-service-leads", payload);
     },
-    onSuccess: async (response: Response) => {
+    onSuccess: async (response: Response, variables) => {
       const data = await response.json();
 
       // Invalidate leads cache to ensure new lead appears
@@ -869,6 +869,54 @@ export default function StyledCalculator(props: any = {}) {
 
       // Clear photo measurements after successful submission
       setPhotoMeasurements([]);
+
+      // Facebook Hybrid Tracking: Send Lead event via client-side postMessage + server-side CAPI
+      const fbConfig = businessSettings?.facebookTracking;
+      if (fbConfig?.enabled && fbConfig?.pixelId && effectiveBusinessOwnerId) {
+        // Generate unique event ID for deduplication between Pixel and CAPI
+        const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+        const leadValue = (variables.totalPrice || 0) / 100; // Convert cents to dollars
+
+        // 1. PostMessage to parent window for client-side Pixel tracking (for embedded iframes)
+        if (window.parent !== window) {
+          try {
+            window.parent.postMessage({
+              type: 'AUTOBIDDER_CONVERSION',
+              event_id: eventId,
+              pixel_id: fbConfig.pixelId,
+              value: leadValue,
+              currency: 'USD'
+            }, '*');
+          } catch (err) {
+            console.log('[FB Tracking] PostMessage failed:', err);
+          }
+        }
+
+        // 2. Server-side CAPI call for improved attribution
+        try {
+          await fetch('/api/facebook-capi/track-lead', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              businessOwnerId: effectiveBusinessOwnerId,
+              eventId,
+              userData: {
+                email: variables.leadInfo.email,
+                phone: variables.leadInfo.phone,
+                firstName: variables.leadInfo.name?.split(' ')[0],
+                lastName: variables.leadInfo.name?.split(' ').slice(1).join(' '),
+                clientUserAgent: navigator.userAgent,
+              },
+              customData: {
+                value: leadValue,
+                currency: 'USD',
+              },
+            }),
+          });
+        } catch (err) {
+          console.log('[FB CAPI] Server-side tracking failed:', err);
+        }
+      }
 
       // Mark sessions as converted (for stats tracking)
       if (formulas && formulas.length > 0) {

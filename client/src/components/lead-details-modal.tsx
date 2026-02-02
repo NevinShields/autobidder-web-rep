@@ -34,7 +34,8 @@ import {
   Link,
   Check,
   Tag,
-  Ban
+  Ban,
+  Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -176,6 +177,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const { data: estimates = [] } = useQuery<any[]>({
     queryKey: [`/api/leads/${lead?.id}/estimates`],
     enabled: !!lead?.id && isOpen,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: isOpen ? 15000 : false,
+    staleTime: 0,
   });
 
   // Fetch work orders for this user
@@ -589,6 +594,27 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       toast({
         title: "Request Failed",
         description: "Failed to request revision. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const markCustomerApprovedMutation = useMutation({
+    mutationFn: async ({ estimateId }: { estimateId: number }) => {
+      return await apiRequest("POST", `/api/estimates/${estimateId}/mark-customer-approved`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/estimates`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
+      toast({
+        title: "Marked Customer Approved",
+        description: "Estimate has been marked as customer approved.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error?.message || "Failed to mark estimate as customer approved.",
         variant: "destructive",
       });
     },
@@ -1671,7 +1697,15 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             <div key={estimate.id} className="bg-white dark:bg-gray-800 rounded-lg p-4">
                               <div className="flex justify-between items-start mb-3">
                                 <div>
-                                  <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
+                                    {(estimate.viewedByCustomerAt || ['viewed', 'accepted', 'rejected'].includes(estimate.status)) && (
+                                      <Eye
+                                        className="h-4 w-4 text-blue-600"
+                                        title={`Viewed ${estimate.viewedByCustomerAt ? new Date(estimate.viewedByCustomerAt).toLocaleDateString() : ''}`.trim()}
+                                      />
+                                    )}
+                                  </div>
                                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                     Created {new Date(estimate.createdAt).toLocaleDateString()}
                                   </p>
@@ -1941,7 +1975,15 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <div key={estimate.id} className="border dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
                       <div className="flex justify-between items-start mb-3">
                         <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-gray-900 dark:text-white">Estimate #{estimate.estimateNumber}</h4>
+                            {(estimate.viewedByCustomerAt || ['viewed', 'accepted', 'rejected'].includes(estimate.status)) && (
+                              <Eye
+                                className="h-4 w-4 text-blue-600"
+                                title={`Viewed ${estimate.viewedByCustomerAt ? new Date(estimate.viewedByCustomerAt).toLocaleDateString() : ''}`.trim()}
+                              />
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">${(estimate.totalAmount / 100).toLocaleString()}</p>
                         </div>
                         <div className="flex flex-col gap-2 items-end">
@@ -2023,6 +2065,18 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
                         {/* Secondary Actions */}
                         <div className="flex flex-wrap gap-2">
+                          {estimate.ownerApprovalStatus === 'approved' && estimate.status !== 'accepted' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => markCustomerApprovedMutation.mutate({ estimateId: estimate.id })}
+                              disabled={markCustomerApprovedMutation.isPending}
+                              data-testid={`button-mark-customer-approved-${estimate.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Mark Customer Approved
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"

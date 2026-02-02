@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload, Tag, Plus, Trash2, Edit2, Video, Play, Filter } from "lucide-react";
+import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload, Tag, Plus, Trash2, Edit2, Video, Play, Filter, Share2 } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -104,6 +104,13 @@ export default function FormSettings() {
       pricingVideo: '',
       scheduleVideo: ''
     } as { introVideo?: string; pricingVideo?: string; scheduleVideo?: string; },
+
+    // Facebook/Meta Conversion Tracking
+    enableFacebookTracking: false,
+    fbPixelId: '',
+    fbAccessToken: '',
+    fbBusinessUrl: '',
+    fbTestEventCode: '',
     
     // Custom button settings
     enableCustomButton: false,
@@ -200,7 +207,14 @@ export default function FormSettings() {
           pricingVideo: '',
           scheduleVideo: ''
         },
-        
+
+        // Facebook/Meta Conversion Tracking
+        enableFacebookTracking: businessSettings.enableFacebookTracking || false,
+        fbPixelId: businessSettings.fbPixelId || '',
+        fbAccessToken: businessSettings.fbAccessToken || '',
+        fbBusinessUrl: businessSettings.fbBusinessUrl || '',
+        fbTestEventCode: businessSettings.fbTestEventCode || '',
+
         // Custom button settings
         enableCustomButton: businessSettings.styling.enableCustomButton ?? false,
         customButtonText: businessSettings.styling.customButtonText || 'Get Another Quote',
@@ -295,9 +309,16 @@ export default function FormSettings() {
         // Discount system - Add these critical missing fields
         discounts: updatedSettings.discounts,
         allowDiscountStacking: updatedSettings.allowDiscountStacking,
-        
+
         // Guide videos
         guideVideos: updatedSettings.guideVideos,
+
+        // Facebook/Meta Conversion Tracking
+        enableFacebookTracking: updatedSettings.enableFacebookTracking,
+        fbPixelId: updatedSettings.fbPixelId,
+        fbAccessToken: updatedSettings.fbAccessToken,
+        fbBusinessUrl: updatedSettings.fbBusinessUrl,
+        fbTestEventCode: updatedSettings.fbTestEventCode,
       };
       
       console.log('Request data being sent:', requestData);
@@ -1708,8 +1729,104 @@ export default function FormSettings() {
               {!formSettings.enableDistancePricing && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Enable distance-based pricing to automatically charge travel fees for customers outside your service area. 
+                    Enable distance-based pricing to automatically charge travel fees for customers outside your service area.
                     Make sure to enable address collection in Customer Flow settings.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Meta Conversion Tracking */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Share2 className="h-5 w-5 text-blue-600" />
+                <CardTitle>Meta Conversion Tracking</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label>Enable Facebook/Meta Tracking</Label>
+                </div>
+                <MobileToggle
+                  checked={formSettings.enableFacebookTracking}
+                  onCheckedChange={(checked) => handleSettingChange('enableFacebookTracking', checked)}
+                />
+              </div>
+
+              {formSettings.enableFacebookTracking && (
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="fbPixelId">Facebook Pixel ID</Label>
+                    <Input
+                      id="fbPixelId"
+                      placeholder="e.g., 123456789012345"
+                      value={formSettings.fbPixelId}
+                      onChange={(e) => handleSettingChange('fbPixelId', e.target.value)}
+                    />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Find this in Meta Events Manager under Data Sources
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fbAccessToken">Conversions API Access Token</Label>
+                    <Input
+                      id="fbAccessToken"
+                      type="password"
+                      placeholder="Enter your access token"
+                      value={formSettings.fbAccessToken}
+                      onChange={(e) => handleSettingChange('fbAccessToken', e.target.value)}
+                    />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Generate in Meta Events Manager → Settings → Conversions API
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fbBusinessUrl">Business Website URL</Label>
+                    <Input
+                      id="fbBusinessUrl"
+                      type="url"
+                      placeholder="https://yourbusiness.com"
+                      value={formSettings.fbBusinessUrl}
+                      onChange={(e) => handleSettingChange('fbBusinessUrl', e.target.value)}
+                    />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      The URL where your calculator is embedded (used for event attribution)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fbTestEventCode">Test Event Code (Optional)</Label>
+                    <Input
+                      id="fbTestEventCode"
+                      placeholder="e.g., TEST12345"
+                      value={formSettings.fbTestEventCode}
+                      onChange={(e) => handleSettingChange('fbTestEventCode', e.target.value)}
+                    />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      For testing in Events Manager. Remove for production use.
+                    </p>
+                  </div>
+
+                  <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800">
+                    <Share2 className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800 dark:text-blue-200">
+                      <strong>Hybrid Tracking:</strong> This enables both client-side Pixel and server-side Conversions API
+                      for improved attribution accuracy. Lead events are sent with matching event IDs for automatic deduplication.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              {!formSettings.enableFacebookTracking && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Enable Meta/Facebook conversion tracking to measure lead generation from your Facebook Ads.
+                    This uses hybrid tracking (Pixel + Conversions API) for optimal attribution.
                   </p>
                 </div>
               )}

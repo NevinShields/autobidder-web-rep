@@ -265,6 +265,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [bulkStyleDescription, setBulkStyleDescription] = useState('');
   const [bulkReferenceImage, setBulkReferenceImage] = useState<string | null>(null);
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
+  const tooltipImageInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingTooltipImage, setIsUploadingTooltipImage] = useState(false);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -301,6 +303,74 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       });
     }
     setIsEditingTooltip(false);
+  };
+
+  const handleTooltipImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Please select an image file", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Image must be less than 5MB", variant: "destructive" });
+      return;
+    }
+
+    setIsUploadingTooltipImage(true);
+
+    try {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'png';
+      
+      const presignedResponse = await fetch('/api/objects/reference-image-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileExtension })
+      });
+
+      if (!presignedResponse.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      const { uploadUrl, objectPath } = await presignedResponse.json();
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+          'Content-Length': file.size.toString(),
+        },
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const aclResponse = await fetch('/api/objects/set-reference-image-acl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ objectPath })
+      });
+
+      if (!aclResponse.ok) {
+        throw new Error('Failed to set image permissions');
+      }
+
+      const { publicUrl } = await aclResponse.json();
+      setEditTooltipImageUrl(publicUrl);
+      toast({ title: "Image uploaded successfully" });
+    } catch (error) {
+      console.error('Tooltip image upload error:', error);
+      toast({ title: "Failed to upload image", variant: "destructive" });
+    } finally {
+      setIsUploadingTooltipImage(false);
+      if (tooltipImageInputRef.current) {
+        tooltipImageInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSaveUnit = () => {
@@ -1019,14 +1089,68 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   <div>
                     <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
                       <ImageIcon className="w-3 h-3" />
-                      Image URL
+                      Image
                     </Label>
-                    <Input
-                      value={editTooltipImageUrl}
-                      onChange={(e) => setEditTooltipImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="h-8 text-xs"
+                    <input
+                      ref={tooltipImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleTooltipImageUpload}
+                      className="hidden"
                     />
+                    {editTooltipImageUrl ? (
+                      <div className="flex items-center gap-2">
+                        <div className="relative group">
+                          <img
+                            src={editTooltipImageUrl}
+                            alt="Tooltip preview"
+                            className="w-10 h-10 object-cover rounded border border-gray-200 dark:border-gray-600"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setEditTooltipImageUrl('')}
+                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => tooltipImageInputRef.current?.click()}
+                          disabled={isUploadingTooltipImage}
+                          className="h-7 text-xs"
+                        >
+                          {isUploadingTooltipImage ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            "Change"
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => tooltipImageInputRef.current?.click()}
+                        disabled={isUploadingTooltipImage}
+                        className="h-8 text-xs w-full"
+                      >
+                        {isUploadingTooltipImage ? (
+                          <>
+                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-3 h-3 mr-1" />
+                            Upload Image
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="flex justify-end gap-1">

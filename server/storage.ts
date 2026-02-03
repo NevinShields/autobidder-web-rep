@@ -51,6 +51,7 @@ import {
   crmCommunications,
   leadTags,
   leadTagAssignments,
+  leadActivities,
   type Formula, 
   type InsertFormula, 
   type FormulaTemplate,
@@ -171,6 +172,8 @@ import {
   type InsertLeadTag,
   type LeadTagAssignment,
   type InsertLeadTagAssignment,
+  type LeadActivity,
+  type InsertLeadActivity,
   tutorials,
   type Tutorial,
   type InsertTutorial,
@@ -180,9 +183,70 @@ import {
   type InsertWhiteLabelVideo
 } from "@shared/schema";
 import { nanoid } from "nanoid";
+import { createHash } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, count, desc, sql, lt, inArray, or, isNotNull, isNull } from "drizzle-orm";
 import { encrypt, decrypt, isEncrypted } from './encryption';
+
+const PERMISSION_FLAGS = [
+  "canManageUsers",
+  "canEditFormulas",
+  "canViewLeads",
+  "canManageLeads",
+  "canAccessDesign",
+  "canViewStats",
+  "canManageCalendar",
+  "canManageSettings",
+  "canCreateWebsites",
+  "canManageWebsites",
+  "canAccessAI",
+  "canUseMeasureMap",
+  "canCreateUpsells",
+  "canAccessZapier",
+  "canManageEmailTemplates",
+  "canViewReports",
+  "canExportData",
+  "canManageTeam",
+  "canManageBilling",
+  "canAccessAPI",
+  "canManageIntegrations",
+  "canCustomizeBranding",
+  "canImpersonateUsers",
+  "canViewSystemLogs",
+  "canManageSystemSettings",
+];
+
+const PERMISSION_LIMITS = [
+  "maxFormulas",
+  "maxLeadsPerMonth",
+  "maxWebsites",
+  "maxTeamMembers",
+];
+
+function normalizePermissions(input: Record<string, any> | null | undefined) {
+  if (!input) return undefined;
+  const normalized: Record<string, any> = { ...input };
+
+  for (const key of PERMISSION_FLAGS) {
+    if (Object.prototype.hasOwnProperty.call(normalized, key)) {
+      normalized[key] = Boolean(normalized[key]);
+    }
+  }
+
+  for (const key of PERMISSION_LIMITS) {
+    if (Object.prototype.hasOwnProperty.call(normalized, key)) {
+      const value = normalized[key];
+      if (value === null || value === undefined || value === "") {
+        delete normalized[key];
+      } else {
+        const parsed = Number(value);
+        normalized[key] = Number.isFinite(parsed) ? parsed : value;
+      }
+    }
+  }
+
+  return normalized;
+}
 
 export interface IStorage {
   // Formula operations
@@ -309,6 +373,7 @@ export interface IStorage {
   getUserCalendarEvents(userId: string): Promise<CalendarEvent[]>;
   getUserCalendarEventsByDateRange(userId: string, startDate: Date, endDate: Date): Promise<CalendarEvent[]>;
   getUserCalendarEventsByType(userId: string, type: string): Promise<CalendarEvent[]>;
+  getUserCalendarEventsByLeadId(userId: string, leadId: number): Promise<CalendarEvent[]>;
   createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent>;
   updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined>;
   deleteCalendarEvent(userId: string, id: number): Promise<boolean>;
@@ -652,6 +717,10 @@ export interface IStorage {
   // White Label Video Download tracking
   getVideoDownloadsCount(userId: string, month: number, year: number): Promise<number>;
   recordVideoDownload(userId: string, videoId: number, month: number, year: number): Promise<void>;
+
+  // Lead Activity operations
+  getLeadActivities(leadId: number, isMultiService: boolean): Promise<LeadActivity[]>;
+  createLeadActivity(activity: InsertLeadActivity): Promise<LeadActivity>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1649,22 +1718,54 @@ export class DatabaseStorage implements IStorage {
       canManageUsers: true,
       canEditFormulas: true,
       canViewLeads: true,
+      canManageLeads: true,
       canManageCalendar: true,
       canAccessDesign: true,
       canViewStats: true,
+      canManageSettings: true,
+      canCreateWebsites: true,
+      canManageWebsites: true,
+      canAccessAI: true,
+      canUseMeasureMap: true,
+      canCreateUpsells: true,
+      canAccessZapier: true,
+      canManageEmailTemplates: true,
+      canViewReports: true,
+      canExportData: true,
+      canManageTeam: true,
+      canManageBilling: true,
+      canAccessAPI: true,
+      canManageIntegrations: true,
+      canCustomizeBranding: true,
     } : {
       canEditFormulas: true,
       canViewLeads: true,
+      canManageLeads: false,
       canManageCalendar: false,
       canAccessDesign: false,
       canViewStats: false,
+      canManageSettings: false,
+      canCreateWebsites: false,
+      canManageWebsites: false,
+      canAccessAI: false,
+      canUseMeasureMap: false,
+      canCreateUpsells: false,
+      canAccessZapier: false,
+      canManageEmailTemplates: false,
+      canViewReports: false,
+      canExportData: false,
+      canManageTeam: false,
+      canManageBilling: false,
+      canAccessAPI: false,
+      canManageIntegrations: false,
+      canCustomizeBranding: false,
     };
 
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
-        permissions,
+        permissions: normalizePermissions(permissions),
       })
       .onConflictDoUpdate({
         target: users.id,
@@ -1706,15 +1807,47 @@ export class DatabaseStorage implements IStorage {
       canManageUsers: true,
       canEditFormulas: true,
       canViewLeads: true,
+      canManageLeads: true,
       canManageCalendar: true,
       canAccessDesign: true,
       canViewStats: true,
+      canManageSettings: true,
+      canCreateWebsites: true,
+      canManageWebsites: true,
+      canAccessAI: true,
+      canUseMeasureMap: true,
+      canCreateUpsells: true,
+      canAccessZapier: true,
+      canManageEmailTemplates: true,
+      canViewReports: true,
+      canExportData: true,
+      canManageTeam: true,
+      canManageBilling: true,
+      canAccessAPI: true,
+      canManageIntegrations: true,
+      canCustomizeBranding: true,
     } : {
       canEditFormulas: true,
       canViewLeads: true,
+      canManageLeads: false,
       canManageCalendar: false,
       canAccessDesign: false,
       canViewStats: false,
+      canManageSettings: false,
+      canCreateWebsites: false,
+      canManageWebsites: false,
+      canAccessAI: false,
+      canUseMeasureMap: false,
+      canCreateUpsells: false,
+      canAccessZapier: false,
+      canManageEmailTemplates: false,
+      canViewReports: false,
+      canExportData: false,
+      canManageTeam: false,
+      canManageBilling: false,
+      canAccessAPI: false,
+      canManageIntegrations: false,
+      canCustomizeBranding: false,
     };
 
     const [user] = await db
@@ -1741,7 +1874,7 @@ export class DatabaseStorage implements IStorage {
         businessInfo: userData.businessInfo,
         onboardingCompleted: userData.onboardingCompleted ?? false,
         onboardingStep: userData.onboardingStep ?? 1,
-        permissions,
+        permissions: normalizePermissions(permissions),
       })
       .returning();
     return user;
@@ -1752,7 +1885,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByInviteToken(token: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.inviteToken, token));
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(or(eq(users.inviteToken, token), eq(users.inviteToken, tokenHash)));
     return user || undefined;
   }
 
@@ -1760,13 +1897,29 @@ export class DatabaseStorage implements IStorage {
     const defaultPermissions = {
       canEditFormulas: true,
       canViewLeads: true,
+      canManageLeads: false,
       canManageCalendar: false,
       canAccessDesign: false,
       canViewStats: false,
+      canManageSettings: false,
+      canCreateWebsites: false,
+      canManageWebsites: false,
+      canAccessAI: false,
+      canUseMeasureMap: false,
+      canCreateUpsells: false,
+      canAccessZapier: false,
+      canManageEmailTemplates: false,
+      canViewReports: false,
+      canExportData: false,
+      canManageTeam: false,
+      canManageBilling: false,
+      canAccessAPI: false,
+      canManageIntegrations: false,
+      canCustomizeBranding: false,
     };
     
     // Use passed permissions or defaults
-    const permissions = employee.permissions || defaultPermissions;
+    const permissions = normalizePermissions(employee.permissions || defaultPermissions);
 
     const [user] = await db
       .insert(users)
@@ -1802,16 +1955,15 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: string, userData: UpdateUser): Promise<User | undefined> {
     const updateData = { ...userData, updatedAt: new Date() };
     
-    // Ensure permissions are properly typed
     if (updateData.permissions) {
-      updateData.permissions = {
-        canManageUsers: Boolean(updateData.permissions.canManageUsers),
-        canEditFormulas: Boolean(updateData.permissions.canEditFormulas),
-        canViewLeads: Boolean(updateData.permissions.canViewLeads),
-        canManageCalendar: Boolean(updateData.permissions.canManageCalendar),
-        canAccessDesign: Boolean(updateData.permissions.canAccessDesign),
-        canViewStats: Boolean(updateData.permissions.canViewStats),
-      };
+      const [existing] = await db
+        .select({ permissions: users.permissions })
+        .from(users)
+        .where(eq(users.id, id));
+      updateData.permissions = normalizePermissions({
+        ...(existing?.permissions || {}),
+        ...updateData.permissions,
+      });
     }
     
     const [user] = await db
@@ -3299,6 +3451,17 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(calendarEvents.userId, userId),
         eq(calendarEvents.type, type)
+      ))
+      .orderBy(calendarEvents.startsAt);
+  }
+
+  async getUserCalendarEventsByLeadId(userId: string, leadId: number): Promise<CalendarEvent[]> {
+    return await db.select()
+      .from(calendarEvents)
+      .where(and(
+        eq(calendarEvents.userId, userId),
+        eq(calendarEvents.type, "booking"),
+        eq(calendarEvents.leadId, leadId)
       ))
       .orderBy(calendarEvents.startsAt);
   }
@@ -4847,6 +5010,28 @@ export class DatabaseStorage implements IStorage {
         downloadMonth: month,
         downloadYear: year
       });
+  }
+
+  // Lead Activity operations
+  async getLeadActivities(leadId: number, isMultiService: boolean): Promise<LeadActivity[]> {
+    const activities = await db
+      .select()
+      .from(leadActivities)
+      .where(
+        isMultiService
+          ? eq(leadActivities.multiServiceLeadId, leadId)
+          : eq(leadActivities.leadId, leadId)
+      )
+      .orderBy(desc(leadActivities.createdAt));
+    return activities;
+  }
+
+  async createLeadActivity(activity: InsertLeadActivity): Promise<LeadActivity> {
+    const [newActivity] = await db
+      .insert(leadActivities)
+      .values(activity)
+      .returning();
+    return newActivity;
   }
 }
 

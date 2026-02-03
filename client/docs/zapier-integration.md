@@ -1,34 +1,33 @@
 # Zapier Integration
 
-## What it does
-Zapier connects Autobidder to thousands of other apps. The integration currently supports one trigger: **New Lead**, which fires when a `/styled-calculator` form is completed.
+## What It Does
+Our Zapier integration allows you to connect Autobidder to thousands of other apps. The integration currently supports one trigger: **New Lead**, which fires when a `/styled-calculator` form is completed.
 
-## When to use it
+## When to Use It
 
-- Send new leads to a CRM or spreadsheet
-- Notify your team in Slack when a lead arrives
-- Create a lead in Autobidder from another system
+- Send new leads to your CRM or a Google Sheet.
+- Notify your team in Slack when a new lead comes in.
+- Create a new lead in Autobidder from another system.
 
-## How to connect
+## How to Connect
 
-1. Go to **Integrations** (`/integrations`).
-2. Generate a **Zapier API key** and copy it (shown once).
-3. Note your **Server URL** (from the Integrations dialog).
-4. In Zapier, connect Autobidder using API key auth:
-   - `Authorization: Bearer <api_key>`
-   - Alternatives: `X-API-Key` header or `api_key` query param
-5. Test authentication.
+1.  Go to the **Integrations** section (`/integrations`).
+2.  Generate a **Zapier API Key** and copy it (it will only be shown once).
+3.  Take note of your **Server URL** (also found in the Integrations dialog).
+4.  In Zapier, connect to Autobidder using API key authentication:
+    *   `Authorization: Bearer <api_key>`
+    *   Alternatively, you can use the `X-API-Key` header or the `api_key` query parameter.
+5.  Test the authentication to ensure everything is working correctly.
 
-## How to test
+## How to Test
 
-- Auth: `/api/zapier/auth/test`
-- Trigger: `/api/zapier/triggers/new-leads`
-- Use the Zapier test step to confirm sample data loads.
+-   **Authentication:** `/api/zapier/auth/test`
+-   **Trigger:** `/api/zapier/triggers/new-leads`
+-   Use the test step in Zapier to confirm that sample data is being loaded correctly.
 
-## Common issues
+## Common Issues
 
-- 401 errors usually mean the Authorization header is wrong.
-- API keys are shown once. Generate a new one if lost.
-- Server URL must match the exact base URL in Integrations.
-- Access is limited to certain plans (trial, standard, plus, plus_seo).
-
+-   **401 Errors:** A 401 error usually means that the Authorization header is incorrect.
+-   **Lost API Keys:** API keys are only shown once. If you lose your key, you will need to generate a new one.
+-   **Incorrect Server URL:** The server URL must match the base URL shown in the Integrations dialog exactly.
+-   **Plan Access:** Access to the Zapier integration is limited to certain plans (Trial, Standard, Plus, Plus_SEO).

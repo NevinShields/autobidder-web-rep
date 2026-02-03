@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Minus, Plus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { evaluateConditionalLogic } from "@shared/conditional-logic";
 
@@ -256,6 +256,7 @@ export default function EnhancedVariableInput({
   };
 
   const inputStyle = hasCustomCSS ? {} : getInputStyle();
+  const { width: inputWidth, ...inputStyleWithoutWidth } = inputStyle as React.CSSProperties;
 
   // Question card container styling
   const getPadding = (padding: string) => {
@@ -373,6 +374,116 @@ export default function EnhancedVariableInput({
           </div>
         </div>
       );
+
+    case 'stepper': {
+      const minValue = variable.min ?? 0;
+      const maxValue = variable.max ?? 100;
+      const step = 1;
+      const currentValue = typeof value === 'number' ? value : Number(value);
+      const normalizedValue = Number.isFinite(currentValue) ? currentValue : minValue;
+
+      const clampValue = (nextValue: number) => {
+        let clamped = nextValue;
+        if (variable.min !== undefined) {
+          clamped = Math.max(variable.min, clamped);
+        }
+        if (variable.max !== undefined) {
+          clamped = Math.min(variable.max, clamped);
+        }
+        return clamped;
+      };
+
+      const handleInputChange = (rawValue: string) => {
+        const parsed = rawValue === '' ? NaN : Number(rawValue);
+        if (Number.isNaN(parsed)) {
+          onChange(clampValue(minValue));
+          return;
+        }
+        onChange(clampValue(parsed));
+      };
+
+      const handleStep = (direction: 'up' | 'down') => {
+        const delta = direction === 'up' ? step : -step;
+        onChange(clampValue(normalizedValue + delta));
+      };
+
+      const stepperContainerStyle = hasCustomCSS
+        ? {}
+        : {
+            backgroundColor: (inputStyle as React.CSSProperties).backgroundColor,
+            borderRadius: (inputStyle as React.CSSProperties).borderRadius,
+            borderWidth: (inputStyle as React.CSSProperties).borderWidth,
+            borderColor: (inputStyle as React.CSSProperties).borderColor,
+            borderStyle: 'solid',
+            height: (inputStyle as React.CSSProperties).height,
+            boxShadow: (inputStyle as React.CSSProperties).boxShadow,
+          };
+
+      const displayLength = Math.max(2, String(normalizedValue).length);
+      const inputChWidth = `calc(${displayLength}ch + 20px)`;
+      const stepperHeight = typeof (inputStyle as React.CSSProperties).height === 'number'
+        ? (inputStyle as React.CSSProperties).height
+        : Number.parseFloat(String((inputStyle as React.CSSProperties).height || 40)) || 40;
+      const inputFontSize = Number.parseFloat(String((inputStyle as React.CSSProperties).fontSize || 14)) || 14;
+      const inputVerticalPadding = Math.max(2, Math.round((stepperHeight - inputFontSize) / 2));
+
+      return (
+        <div className="ab-question-card question-card" style={questionCardStyle}>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+              <div
+                className="inline-flex items-center overflow-hidden border border-gray-200 rounded-md"
+                style={stepperContainerStyle}
+                data-testid={`stepper-${variable.id}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleStep('down')}
+                  className="w-9 h-full flex items-center justify-center text-gray-600 hover:text-gray-800"
+                  aria-label={`Decrease ${variable.name}`}
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <div className="h-full w-px bg-gray-200" />
+                <div className="h-full flex items-center justify-center px-2">
+                  <Input
+                    id={variable.id}
+                    type="number"
+                    value={normalizedValue}
+                    min={minValue}
+                    max={maxValue}
+                    onChange={(e) => handleInputChange(e.target.value)}
+                    className="ab-input ab-number-input text-input border-0 bg-transparent text-center font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 h-full px-2 leading-none no-spinner"
+                    style={{
+                      ...inputStyleWithoutWidth,
+                      width: inputChWidth,
+                      paddingTop: inputVerticalPadding,
+                      paddingBottom: inputVerticalPadding,
+                      lineHeight: 1.1,
+                    }}
+                    data-testid={`input-${variable.id}`}
+                    data-variable-id={variable.id}
+                  />
+                </div>
+                <div className="h-full w-px bg-gray-200" />
+                <button
+                  type="button"
+                  onClick={() => handleStep('up')}
+                  className="w-9 h-full flex items-center justify-center text-gray-600 hover:text-gray-800"
+                  aria-label={`Increase ${variable.name}`}
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            {variable.unit && (
+              <div className="text-xs text-gray-500">{variable.unit}</div>
+            )}
+          </div>
+        </div>
+      );
+    }
 
     case 'text':
       return (

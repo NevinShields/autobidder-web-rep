@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DollarSign, Calculator, CheckCircle, RotateCcw } from 'lucide-react';
+import { DollarSign, Calculator, CheckCircle, RotateCcw, Minus, Plus } from 'lucide-react';
 import { AIFormulaResponse } from '@/lib/calculator-storage';
 
 interface GuestCalculatorPreviewProps {
@@ -23,6 +23,8 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
     formula.variables.forEach((variable) => {
       if (variable.defaultValue !== undefined) {
         defaults[variable.id] = variable.defaultValue;
+      } else if (variable.type === 'slider' || variable.type === 'stepper') {
+        defaults[variable.id] = variable.min ?? 0;
       } else if (variable.type === 'number') {
         defaults[variable.id] = 0;
       } else if (variable.type === 'multiple-choice' || variable.type === 'select' || variable.type === 'dropdown') {
@@ -73,7 +75,7 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
           } else {
             variableValue = 0;
           }
-        } else if (variable.type === 'number') {
+        } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
           variableValue = Number(variableValue) || 0;
         } else {
           variableValue = 0;
@@ -99,6 +101,8 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
     formula.variables.forEach((variable) => {
       if (variable.defaultValue !== undefined) {
         defaults[variable.id] = variable.defaultValue;
+      } else if (variable.type === 'slider' || variable.type === 'stepper') {
+        defaults[variable.id] = variable.min ?? 0;
       } else if (variable.type === 'number') {
         defaults[variable.id] = 0;
       } else if (variable.type === 'multiple-choice' || variable.type === 'select' || variable.type === 'dropdown') {
@@ -131,6 +135,62 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
             />
           </div>
         );
+      case 'stepper': {
+        const minValue = variable.min ?? 0;
+        const maxValue = variable.max ?? 100;
+        const currentValue = Number(value);
+        const normalizedValue = Number.isFinite(currentValue) ? currentValue : minValue;
+        const clampValue = (nextValue: number) => Math.min(maxValue, Math.max(minValue, nextValue));
+        return (
+          <div className="space-y-2">
+            <Label htmlFor={variable.id} className="text-white/90 font-medium">
+              {variable.name}
+              {variable.unit && <span className="text-white/60 ml-1">({variable.unit})</span>}
+            </Label>
+            <div className="inline-flex items-center overflow-hidden border border-white/20 rounded-md bg-white/10 h-10">
+              <button
+                type="button"
+                onClick={() => handleVariableChange(variable.id, clampValue(normalizedValue - 1))}
+                className="w-9 h-full flex items-center justify-center text-white hover:bg-white/10"
+                aria-label={`Decrease ${variable.name}`}
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <div className="h-full w-px bg-white/20" />
+              <div className="h-full flex items-center justify-center px-2">
+                <Input
+                  id={variable.id}
+                  type="number"
+                  value={normalizedValue}
+                  min={minValue}
+                  max={maxValue}
+                  onChange={(e) => {
+                    const parsed = e.target.value === '' ? minValue : Number(e.target.value);
+                    handleVariableChange(variable.id, clampValue(Number.isNaN(parsed) ? minValue : parsed));
+                  }}
+                  className="bg-transparent border-0 text-white placeholder:text-white/40 text-center font-semibold h-full px-2 py-0 leading-none focus-visible:ring-0 focus-visible:ring-offset-0 no-spinner"
+                  style={{
+                    width: `calc(${Math.max(2, String(normalizedValue).length)}ch + 20px)`,
+                    paddingTop: 6,
+                    paddingBottom: 6,
+                    lineHeight: 1.1,
+                  }}
+                  placeholder={`Enter ${variable.name.toLowerCase()}`}
+                />
+              </div>
+              <div className="h-full w-px bg-white/20" />
+              <button
+                type="button"
+                onClick={() => handleVariableChange(variable.id, clampValue(normalizedValue + 1))}
+                className="w-9 h-full flex items-center justify-center text-white hover:bg-white/10"
+                aria-label={`Increase ${variable.name}`}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        );
+      }
 
       case 'select':
       case 'dropdown':

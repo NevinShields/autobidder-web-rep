@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -60,9 +61,25 @@ interface UserProfile {
     canManageUsers?: boolean;
     canEditFormulas?: boolean;
     canViewLeads?: boolean;
+    canManageLeads?: boolean;
     canManageCalendar?: boolean;
     canAccessDesign?: boolean;
     canViewStats?: boolean;
+    canManageSettings?: boolean;
+    canCreateWebsites?: boolean;
+    canManageWebsites?: boolean;
+    canAccessAI?: boolean;
+    canUseMeasureMap?: boolean;
+    canCreateUpsells?: boolean;
+    canAccessZapier?: boolean;
+    canManageEmailTemplates?: boolean;
+    canViewReports?: boolean;
+    canExportData?: boolean;
+    canManageTeam?: boolean;
+    canManageBilling?: boolean;
+    canAccessAPI?: boolean;
+    canManageIntegrations?: boolean;
+    canCustomizeBranding?: boolean;
   };
   createdAt?: string;
   updatedAt?: string;
@@ -70,6 +87,7 @@ interface UserProfile {
 
 export default function ProfilePage() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState<Partial<UserProfile>>({});
   const [notifications, setNotifications] = useState({
@@ -253,9 +271,14 @@ export default function ProfilePage() {
       case 'canManageUsers': return <Users className="w-4 h-4" />;
       case 'canEditFormulas': return <FileText className="w-4 h-4" />;
       case 'canViewLeads': return <Eye className="w-4 h-4" />;
+      case 'canManageLeads': return <TrendingUp className="w-4 h-4" />;
       case 'canManageCalendar': return <Calendar className="w-4 h-4" />;
       case 'canAccessDesign': return <Palette className="w-4 h-4" />;
       case 'canViewStats': return <BarChart3 className="w-4 h-4" />;
+      case 'canManageSettings': return <Settings className="w-4 h-4" />;
+      case 'canManageTeam': return <Users className="w-4 h-4" />;
+      case 'canManageBilling': return <CreditCard className="w-4 h-4" />;
+      case 'canAccessAPI': return <Shield className="w-4 h-4" />;
       default: return <Shield className="w-4 h-4" />;
     }
   };
@@ -265,9 +288,25 @@ export default function ProfilePage() {
       case 'canManageUsers': return 'Manage Users';
       case 'canEditFormulas': return 'Edit Formulas';
       case 'canViewLeads': return 'View Leads';
+      case 'canManageLeads': return 'Manage Leads';
       case 'canManageCalendar': return 'Manage Calendar';
       case 'canAccessDesign': return 'Access Design';
       case 'canViewStats': return 'View Statistics';
+      case 'canManageSettings': return 'Manage Settings';
+      case 'canCreateWebsites': return 'Create Websites';
+      case 'canManageWebsites': return 'Manage Websites';
+      case 'canAccessAI': return 'Access AI';
+      case 'canUseMeasureMap': return 'Use Measure Map';
+      case 'canCreateUpsells': return 'Create Upsells';
+      case 'canAccessZapier': return 'Access Zapier';
+      case 'canManageEmailTemplates': return 'Manage Email Templates';
+      case 'canViewReports': return 'View Reports';
+      case 'canExportData': return 'Export Data';
+      case 'canManageTeam': return 'Manage Team';
+      case 'canManageBilling': return 'Manage Billing';
+      case 'canAccessAPI': return 'Access API';
+      case 'canManageIntegrations': return 'Manage Integrations';
+      case 'canCustomizeBranding': return 'Customize Branding';
       default: return permission;
     }
   };
@@ -643,6 +682,12 @@ export default function ProfilePage() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
+                  {profile?.userType === 'owner' && (
+                    <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/users")}>
+                      <Users className="w-4 h-4 mr-2" />
+                      Manage Team
+                    </Button>
+                  )}
                   <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" className="w-full justify-start">

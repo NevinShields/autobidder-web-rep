@@ -7,6 +7,9 @@ const estimateCreatedTrigger = require('./triggers/estimate_created');
 const estimateSentTrigger = require('./triggers/estimate_sent');
 const estimateViewedTrigger = require('./triggers/estimate_viewed');
 const estimateAcceptedTrigger = require('./triggers/estimate_accepted');
+// Dynamic dropdown triggers for filtering
+const getStagesTrigger = require('./triggers/get_stages');
+const getTagsTrigger = require('./triggers/get_tags');
 const createLeadAction = require('./creates/create_lead');
 const updateLeadAction = require('./creates/update_lead');
 
@@ -25,6 +28,9 @@ module.exports = {
     [estimateSentTrigger.key]: estimateSentTrigger,
     [estimateViewedTrigger.key]: estimateViewedTrigger,
     [estimateAcceptedTrigger.key]: estimateAcceptedTrigger,
+    // Dynamic dropdown triggers (hidden)
+    [getStagesTrigger.key]: getStagesTrigger,
+    [getTagsTrigger.key]: getTagsTrigger,
   },
 
   creates: {

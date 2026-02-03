@@ -1,44 +1,43 @@
-# Troubleshooting
+# Troubleshooting Guide
 
-## Formula not showing to customers
+## My formula is not showing up for customers.
 
-- Ensure the formula is **Active** and **Displayed**.
-- Confirm the embed or custom form is pointing to the right formula.
+-   Ensure that the formula is marked as both **Active** and **Displayed** in the Formula Builder.
+-   Confirm that your embed code or custom form is pointing to the correct formula.
 
-## Prices look wrong
+## The prices look wrong.
 
-- Verify the formula expression uses the correct variable IDs.
-- Ensure option numeric values are set.
-- Check global pricing modifiers (bundle discount, sales tax, distance pricing).
+-   Double-check that the formula expression is using the correct variable IDs.
+-   Make sure that you have set the numeric values for all of your options.
+-   Check the global pricing modifiers in the **Logic** section (bundle discount, sales tax, distance pricing).
 
-## Variable not visible
+## A variable is not appearing.
 
-- Conditional logic only references variables above it.
-- Confirm the expected value and condition type.
+-   Remember that conditional logic can only reference variables that appear above it in the variable list.
+-   Confirm that the expected value and condition type are set correctly.
 
-## Custom CSS not applying
+## My custom CSS is not being applied.
 
-- Fix invalid CSS (the editor will show errors).
-- Use the correct selectors (for example `.ab-service-card`, `.ab-button-primary`).
+-   The CSS editor will show an error if your CSS is invalid.
+-   Make sure you are using the correct selectors (e.g., `.ab-service-card`, `.ab-button-primary`).
 
-## AI features fail
+## The AI features are failing.
 
-- AI tools require API keys on the server.
-- Production uses OpenAI and Gemini for AI features.
+-   AI-powered tools require API keys to be configured on the server.
+-   In a production environment, this typically means connecting to OpenAI and Gemini for AI features.
 
-## Distance pricing not working
+## Distance pricing is not working.
 
-- Business address is required.
-- Without a Google Maps API key, distance pricing uses a fallback and may be less accurate.
+-   A valid business address is required for distance pricing to work correctly.
+-   Without a Google Maps API key, distance pricing will use a fallback method that may be less accurate.
 
-## Automations not running
+## My automations are not running.
 
-- Confirm your plan includes Automations.
-- SMS requires Twilio.
-- Email requires a configured provider.
+-   Confirm that your current plan includes access to Automations.
+-   Sending SMS messages requires a configured Twilio account.
+-   Sending emails requires a configured email provider.
 
-## Zapier authentication errors
+## I'm getting Zapier authentication errors.
 
-- Use `Authorization: Bearer <api_key>`.
-- Verify the server URL is correct.
-
+-   Make sure you are using the correct `Authorization: Bearer <api_key>` header.
+-   Verify that the server URL is correct.

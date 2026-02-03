@@ -161,6 +161,7 @@ export function getConditionLabel(condition: string): string {
 export function getAvailableConditions(variableType: string): string[] {
   switch (variableType) {
     case 'number':
+    case 'stepper':
       return ['equals', 'not_equals', 'greater_than', 'less_than', 'is_empty', 'is_not_empty'];
     case 'select':
     case 'dropdown':
@@ -242,6 +243,7 @@ export function getDefaultValueForHiddenVariable(variable: Variable): any {
     case 'checkbox':
       return false; // Unchecked by default
     case 'number':
+    case 'stepper':
     case 'slider':
       return 0; // Zero for numeric values
     case 'select':

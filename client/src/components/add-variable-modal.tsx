@@ -18,6 +18,7 @@ interface AddVariableModalProps {
 
 const variableTypeConfig = {
   number: { icon: Hash, label: "Number", description: "Numeric input for calculations" },
+  stepper: { icon: Plus, label: "Stepper", description: "Number input with +/- controls" },
   text: { icon: Type, label: "Text", description: "Text input field" },
   checkbox: { icon: CheckSquare, label: "Checkbox", description: "Yes/No toggle option" },
   slider: { icon: SlidersHorizontal, label: "Slider", description: "Range slider with min/max" },
@@ -69,8 +70,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
             };
           })
         : undefined,
-      min: type === 'slider' ? min : undefined,
-      max: type === 'slider' ? max : undefined,
+      min: type === 'slider' || type === 'stepper' ? min : undefined,
+      max: type === 'slider' || type === 'stepper' ? max : undefined,
       step: type === 'slider' ? step : undefined,
       checkedValue: type === 'checkbox' ? (checkedValue || undefined) : undefined,
       uncheckedValue: type === 'checkbox' ? (uncheckedValue || undefined) : undefined,
@@ -145,6 +146,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
 
   const needsOptions = ['select', 'dropdown', 'multiple-choice'].includes(type);
   const needsSliderConfig = type === 'slider';
+  const needsStepperConfig = type === 'stepper';
   const needsCheckboxConfig = type === 'checkbox';
   const TypeIcon = variableTypeConfig[type as keyof typeof variableTypeConfig]?.icon || Hash;
 
@@ -225,7 +227,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
           </div>
 
           {/* Unit Field (for number/text types) */}
-          {!needsOptions && !needsSliderConfig && !needsCheckboxConfig && (
+          {!needsOptions && !needsSliderConfig && !needsStepperConfig && !needsCheckboxConfig && (
             <div className="pt-2">
               <Label htmlFor="variable-unit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Unit Label <span className="text-gray-400 font-normal">(optional)</span>
@@ -335,6 +337,53 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                   value={unit}
                   onChange={(e) => setUnit(e.target.value.substring(0, 15))}
                   placeholder="e.g., sq ft, %"
+                  maxLength={15}
+                  className="h-10"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Stepper Configuration */}
+          {needsStepperConfig && (
+            <div className="pt-2 space-y-3">
+              <div className="flex items-center gap-2">
+                <Plus className="w-4 h-4 text-gray-500" />
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Stepper Range</Label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="stepper-min" className="text-xs text-gray-600 dark:text-gray-400 block mb-1.5">Min</Label>
+                  <Input
+                    id="stepper-min"
+                    type="number"
+                    value={min}
+                    onChange={(e) => setMin(Number(e.target.value))}
+                    placeholder="0"
+                    className="h-10"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="stepper-max" className="text-xs text-gray-600 dark:text-gray-400 block mb-1.5">Max</Label>
+                  <Input
+                    id="stepper-max"
+                    type="number"
+                    value={max}
+                    onChange={(e) => setMax(Number(e.target.value))}
+                    placeholder="10"
+                    className="h-10"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="stepper-unit" className="text-xs text-gray-600 dark:text-gray-400 block mb-1.5">
+                  Unit Label <span className="text-gray-400">(optional)</span>
+                </Label>
+                <Input
+                  id="stepper-unit"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value.substring(0, 15))}
+                  placeholder="e.g., items"
                   maxLength={15}
                   className="h-10"
                 />

@@ -1,6 +1,6 @@
 # Core Concepts
 
-Short definitions for the main building blocks.
+This page provides short definitions for the main building blocks of Autobidder. Understanding these concepts will help you get the most out of the platform.
 
 ## Formula
 A formula is a pricing calculator with variables, a formula expression, and optional styling.
@@ -28,4 +28,3 @@ A lead is created when a customer submits a calculator. It includes answers, cal
 
 ## Automations
 Automations are triggered workflows (email, SMS, tags, stage changes, tasks) based on lead or job events.
-

@@ -35,7 +35,12 @@ import {
   Check,
   Tag,
   Ban,
-  Eye
+  Eye,
+  Activity,
+  UserPlus,
+  Send,
+  ThumbsUp,
+  CalendarCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -107,6 +112,14 @@ interface LeadDetailsModalProps {
   lead: Lead | null;
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface LeadBookingEvent {
+  id: number;
+  startsAt: string;
+  endsAt: string;
+  status: 'confirmed' | 'tentative' | 'cancelled';
+  title?: string | null;
 }
 
 export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsModalProps) {
@@ -203,6 +216,23 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   // Fetch tags assigned to this lead
   const { data: leadTags = [], refetch: refetchLeadTags } = useQuery<any[]>({
     queryKey: [`/api/leads/${lead?.id}/tags?isMultiService=${lead?.type === 'multi'}`],
+    enabled: !!lead?.id && isOpen,
+  });
+
+  const { data: leadBookings = [] } = useQuery<LeadBookingEvent[]>({
+    queryKey: [`/api/leads/${lead?.id}/bookings`],
+    queryFn: async () => {
+      if (!lead) return [];
+      const response = await fetch(`/api/leads/${lead.id}/bookings`);
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !!lead?.id && isOpen,
+  });
+
+  // Fetch activity feed for this lead
+  const { data: activities = [] } = useQuery<any[]>({
+    queryKey: [`/api/leads/${lead?.id}/activities?isMultiService=${lead?.type === 'multi'}`],
     enabled: !!lead?.id && isOpen,
   });
 
@@ -620,6 +650,28 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     },
   });
 
+  const confirmBookingMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      return await apiRequest("POST", `/api/calendar-events/${eventId}/confirm`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/bookings`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/availability-slots"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      toast({
+        title: "Booking confirmed",
+        description: "The soft booking has been confirmed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Confirmation failed",
+        description: "Unable to confirm this booking. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const convertToWorkOrderMutation = useMutation({
     mutationFn: async ({ estimateId, scheduledDate }: { estimateId: number; scheduledDate?: string }) => {
       return await apiRequest("POST", `/api/estimates/${estimateId}/convert-to-work-order`, { scheduledDate });
@@ -848,6 +900,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     totalServices: lead.totalServices || lead.services?.length || 1,
     calculatedPrice: lead.calculatedPrice / 100 // Convert from cents to dollars for display
   } : null;
+
+  const softBookings = leadBookings.filter(booking => booking.status === 'tentative');
+  const canConfirmSoftBooking = processedLead?.stage === 'estimate_approved'
+    || processedLead?.stage === 'booked'
+    || processedLead?.stage === 'completed'
+    || processedLead?.stage === 'paid';
 
   const { data: config } = useQuery({
     queryKey: ["/api/config"],
@@ -1259,6 +1317,58 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 )}
               </div>
 
+              {softBookings.length > 0 && (
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+                  <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                    Soft Booking
+                  </h4>
+                  <div className="space-y-2">
+                    {softBookings.map((booking) => {
+                      const start = new Date(booking.startsAt);
+                      const end = new Date(booking.endsAt);
+                      return (
+                        <div
+                          key={booking.id}
+                          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2"
+                        >
+                          <div className="text-sm font-semibold text-amber-800">
+                            Pending confirmation
+                          </div>
+                          <div className="text-xs text-amber-700 mt-1">
+                            {format(start, "MMMM dd, yyyy")} • {format(start, "h:mm a")} - {format(end, "h:mm a")}
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              className="bg-amber-600 hover:bg-amber-700 text-white"
+                              onClick={() => confirmBookingMutation.mutate(booking.id)}
+                              disabled={!canConfirmSoftBooking || confirmBookingMutation.isPending}
+                            >
+                              <CheckCircle className="h-3.5 w-3.5 mr-2" />
+                              Confirm Booking
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-amber-200 text-amber-700 hover:bg-amber-100"
+                              onClick={() => setLocation("/calendar")}
+                            >
+                              <Calendar className="h-3.5 w-3.5 mr-2" />
+                              Adjust Schedule
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {!canConfirmSoftBooking && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      Confirm this booking once the estimate is approved.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Quick Actions */}
               <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
                 <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h4>
@@ -1653,6 +1763,129 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
               </div>
             </div>
           )}
+
+          {/* Activity Feed */}
+          <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-gray-700/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-xl">
+                  <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h3 className="font-semibold text-slate-800 dark:text-white">Activity Feed</h3>
+                {activities.length > 0 && (
+                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                    {activities.length} event{activities.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="p-5">
+              {activities.length === 0 ? (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No activity recorded yet</p>
+                  <p className="text-xs mt-1">Events will appear here as they happen</p>
+                </div>
+              ) : (
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700" />
+
+                  <div className="space-y-4">
+                    {activities.map((activity: any, index: number) => {
+                      // Determine icon and colors based on event type
+                      const getEventStyles = (eventType: string) => {
+                        switch (eventType) {
+                          case 'lead_created':
+                            return {
+                              icon: UserPlus,
+                              bgColor: 'bg-blue-500',
+                              textColor: 'text-blue-600 dark:text-blue-400'
+                            };
+                          case 'stage_changed':
+                            return {
+                              icon: AlertCircle,
+                              bgColor: 'bg-purple-500',
+                              textColor: 'text-purple-600 dark:text-purple-400'
+                            };
+                          case 'estimate_confirmed':
+                            return {
+                              icon: FileCheck,
+                              bgColor: 'bg-green-500',
+                              textColor: 'text-green-600 dark:text-green-400'
+                            };
+                          case 'estimate_sent':
+                            return {
+                              icon: Send,
+                              bgColor: 'bg-cyan-500',
+                              textColor: 'text-cyan-600 dark:text-cyan-400'
+                            };
+                          case 'estimate_viewed':
+                            return {
+                              icon: Eye,
+                              bgColor: 'bg-amber-500',
+                              textColor: 'text-amber-600 dark:text-amber-400'
+                            };
+                          case 'estimate_approved':
+                            return {
+                              icon: ThumbsUp,
+                              bgColor: 'bg-emerald-500',
+                              textColor: 'text-emerald-600 dark:text-emerald-400'
+                            };
+                          case 'booking_confirmed':
+                            return {
+                              icon: CalendarCheck,
+                              bgColor: 'bg-orange-500',
+                              textColor: 'text-orange-600 dark:text-orange-400'
+                            };
+                          default:
+                            return {
+                              icon: Activity,
+                              bgColor: 'bg-slate-500',
+                              textColor: 'text-slate-600 dark:text-slate-400'
+                            };
+                        }
+                      };
+
+                      const { icon: Icon, bgColor, textColor } = getEventStyles(activity.eventType);
+
+                      return (
+                        <div key={activity.id} className="relative pl-10">
+                          {/* Timeline dot */}
+                          <div className={`absolute left-2 w-5 h-5 rounded-full ${bgColor} flex items-center justify-center ring-4 ring-white dark:ring-gray-800`}>
+                            <Icon className="h-3 w-3 text-white" />
+                          </div>
+
+                          <div className="bg-slate-50 dark:bg-gray-700/50 rounded-lg p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <p className={`text-sm font-medium ${textColor}`}>
+                                  {activity.description || activity.eventType.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                                </p>
+                                {activity.eventData?.estimateNumber && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Estimate: {activity.eventData.estimateNumber}
+                                  </p>
+                                )}
+                                {activity.eventData?.newStage && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    New stage: {activity.eventData.newStage.replace(/_/g, ' ')}
+                                  </p>
+                                )}
+                              </div>
+                              <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                                {format(new Date(activity.createdAt), "MMM d, h:mm a")}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Workflow Management - Estimate → Work Order → Invoice */}
           <div className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">

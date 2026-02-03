@@ -173,7 +173,8 @@
 .docs-content h2,
 .docs-content h3 {
   font-family: "Montserrat", "Open Sans", sans-serif;
-  color: var(--docs-text);
+  color: #e2e2f0;
+  position: relative;
 }
 
 .docs-content h1 {
@@ -267,11 +268,14 @@
 }
 
 .docs-anchor {
+  position: absolute;
+  left: -24px;
   opacity: 0;
-  margin-right: 6px;
   color: var(--docs-accent);
   text-decoration: none;
   font-weight: 600;
+  width: 20px;
+  text-align: right;
 }
 
 .docs-content h2:hover .docs-anchor,

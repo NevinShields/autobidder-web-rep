@@ -37,7 +37,8 @@
       "Bash(lsof:*)",
       "Bash(netstat:*)",
       "Bash(ss:*)",
-      "Bash(killall:*)"
+      "Bash(killall:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

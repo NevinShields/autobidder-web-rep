@@ -13,12 +13,12 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTr
 import { Textarea } from "@/components/ui/textarea";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Calendar, Settings, Save, Clock, CheckCircle, X, ChevronLeft, ChevronRight, Plus, ArrowLeft, MapPin, Phone, Mail, User, Ban, Trash2, ChevronDown, ExternalLink, Edit2 } from "lucide-react";
-import { useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
+import LeadDetailsModal from "@/components/lead-details-modal";
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -40,6 +40,8 @@ interface AvailabilitySlot {
   endTime: string;
   isBooked: boolean;
   bookedBy?: number;
+  bookingStatus?: 'confirmed' | 'tentative' | 'cancelled';
+  calendarEventId?: number;
   title: string;
   notes?: string;
   createdAt: string;
@@ -64,21 +66,32 @@ interface BookedLead {
   email: string;
   phone?: string;
   address?: string;
-  services: Array<{
+  services?: Array<{
     formulaId: number;
     formulaName: string;
     variables: Record<string, any>;
     calculatedPrice: number;
   }>;
-  totalPrice: number;
+  totalPrice?: number;
   stage: string;
   createdAt: string;
 }
 
+type CalendarLead = (BookedLead & {
+  type: 'single' | 'multi';
+  serviceNames: string;
+  totalServices: number;
+  calculatedPrice: number;
+  formulaId?: number;
+  formula?: {
+    name: string;
+    title: string;
+  };
+});
+
 export default function CalendarPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, navigate] = useLocation();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -159,6 +172,8 @@ export default function CalendarPage() {
   const [editMode, setEditMode] = useState(false);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
+  const [selectedLead, setSelectedLead] = useState<CalendarLead | null>(null);
+  const [leadDetailsOpen, setLeadDetailsOpen] = useState(false);
 
   // Global cleanup for drag selection
   useEffect(() => {
@@ -233,11 +248,49 @@ export default function CalendarPage() {
     enabled: !!selectedDate,
   });
 
-  // Fetch lead details for booked appointments
-  const { data: bookedLeads = [], isLoading: loadingLeads } = useQuery({
+  const { data: singleLeads = [] } = useQuery({
+    queryKey: ['/api/leads'],
+    queryFn: () => fetch('/api/leads').then(res => res.json()),
+  });
+
+  const { data: multiServiceLeads = [] } = useQuery({
     queryKey: ['/api/multi-service-leads'],
     queryFn: () => fetch('/api/multi-service-leads').then(res => res.json()),
   });
+
+  const { data: formulas = [] } = useQuery({
+    queryKey: ['/api/formulas'],
+    queryFn: () => fetch('/api/formulas').then(res => res.json()),
+  });
+
+  const cleanServiceName = (serviceName: string | undefined | null) => {
+    if (!serviceName) return 'Unknown Service';
+    return serviceName
+      .replace(/\s*Service Calculator$/i, '')
+      .replace(/\s*Calculator$/i, '')
+      .trim();
+  };
+
+  const processedSingleLeads: CalendarLead[] = (singleLeads as any[] || []).map((lead: any) => {
+    const formula = (formulas as any[] || []).find((f: any) => f.id === lead.formulaId);
+    return {
+      ...lead,
+      type: 'single' as const,
+      formula,
+      totalServices: 1,
+      serviceNames: cleanServiceName(formula?.name || 'Unknown Service'),
+    };
+  });
+
+  const processedMultiServiceLeads: CalendarLead[] = (multiServiceLeads as any[] || []).map((lead: any) => ({
+    ...lead,
+    type: 'multi' as const,
+    calculatedPrice: lead.totalPrice,
+    totalServices: lead.services?.length || 0,
+    serviceNames: (lead.services || []).map((s: any) => cleanServiceName(s.formulaName)).join(', ')
+  }));
+
+  const allLeads = [...processedSingleLeads, ...processedMultiServiceLeads];
 
   // Fetch blocked dates for the current month
   const { data: blockedDates = [] } = useQuery({
@@ -464,6 +517,27 @@ export default function CalendarPage() {
     },
   });
 
+  const confirmBookingMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      return apiRequest('POST', `/api/calendar-events/${eventId}/confirm`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/multi-service-leads'] });
+      toast({
+        title: "Booking confirmed",
+        description: "The soft booking has been confirmed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Confirmation failed",
+        description: "Unable to confirm this booking. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Save availability mutation - saves both schedule and maxDaysOut
   const saveAvailabilityMutation = useMutation({
     mutationFn: async () => {
@@ -596,7 +670,52 @@ export default function CalendarPage() {
   };
 
   const getLeadDetails = (leadId: number) => {
-    return bookedLeads.find((lead: BookedLead) => lead.id === leadId);
+    return processedMultiServiceLeads.find(lead => lead.id === leadId)
+      || processedSingleLeads.find(lead => lead.id === leadId)
+      || allLeads.find(lead => lead.id === leadId);
+  };
+
+  const buildFallbackLeadFromSlot = (slot: AvailabilitySlot): CalendarLead | null => {
+    if (!slot.bookedBy) return null;
+    const services = slot.leadServices || [];
+    const serviceNames = services.length > 0
+      ? services.map(s => cleanServiceName(s.formulaName)).join(', ')
+      : 'Unknown Service';
+    const calculatedPrice = typeof slot.leadTotalPrice === 'number'
+      ? slot.leadTotalPrice
+      : services.reduce((sum, service) => sum + (service.calculatedPrice || 0), 0);
+    const totalServices = services.length || 1;
+
+    return {
+      id: slot.bookedBy,
+      name: slot.leadName || 'Unknown Customer',
+      email: slot.leadEmail || '',
+      phone: slot.leadPhone,
+      address: slot.leadAddress,
+      notes: slot.notes,
+      services,
+      totalPrice: calculatedPrice,
+      calculatedPrice,
+      createdAt: slot.createdAt || new Date().toISOString(),
+      stage: slot.leadStage || 'booked',
+      type: totalServices > 1 ? 'multi' : 'single',
+      serviceNames,
+      totalServices
+    };
+  };
+
+  const openLeadDetailsModal = (leadId: number, slot?: AvailabilitySlot) => {
+    const lead = getLeadDetails(leadId) || (slot ? buildFallbackLeadFromSlot(slot) : null);
+    if (!lead) {
+      toast({
+        title: "Lead not found",
+        description: "We couldn't load the full lead details for this booking.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSelectedLead(lead);
+    setLeadDetailsOpen(true);
   };
 
   const isDateBlocked = (dateStr: string) => {
@@ -782,6 +901,7 @@ export default function CalendarPage() {
       const dateStr = formatDateForAPI(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
       const dayBookings = getBookingsForDate(dateStr);
       const bookedCount = dayBookings.filter((b: any) => b.isBooked).length;
+      const softBookedCount = dayBookings.filter((b: any) => b.isBooked && b.bookingStatus === 'tentative').length;
       const availableCount = dayBookings.filter((b: any) => !b.isBooked).length;
       const blocked = isDateBlocked(dateStr);
       const googleEvents = getGoogleEventsForDate(dateStr);
@@ -828,6 +948,11 @@ export default function CalendarPage() {
                   {bookedCount > 0 && (
                     <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate dark:bg-red-900/40 dark:text-red-300">
                       {bookedCount} booked
+                    </div>
+                  )}
+                  {softBookedCount > 0 && (
+                    <div className="text-xs bg-amber-100 text-amber-700 px-1 py-0.5 rounded truncate dark:bg-amber-900/40 dark:text-amber-300">
+                      {softBookedCount} soft
                     </div>
                   )}
                   {availableCount > 0 && (
@@ -1019,9 +1144,24 @@ export default function CalendarPage() {
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <Clock className="w-3 h-3" />
                       <span>{formatTime(slot.startTime)} - {formatTime(slot.endTime)}</span>
-                      <Badge variant={slot.isBooked ? "destructive" : "default"} className="text-xs">
-                        {slot.isBooked ? "Booked" : "Available"}
-                      </Badge>
+                      {(() => {
+                        const isSoftBooking = slot.isBooked && slot.bookingStatus === 'tentative';
+                        if (!slot.isBooked) {
+                          return (
+                            <Badge variant="default" className="text-xs">
+                              Available
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge
+                            variant={isSoftBooking ? "secondary" : "destructive"}
+                            className={isSoftBooking ? "text-xs bg-amber-100 text-amber-700 border border-amber-200" : "text-xs"}
+                          >
+                            {isSoftBooking ? "Soft Booking" : "Booked"}
+                          </Badge>
+                        );
+                      })()}
                     </div>
 
                     {slot.isBooked && (slot.leadName || leadDetails) && (
@@ -2033,9 +2173,24 @@ export default function CalendarPage() {
                                       <span className="font-medium">
                                         {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
                                       </span>
-                                      <Badge variant={slot.isBooked ? "destructive" : "default"}>
-                                        {slot.isBooked ? "Booked" : "Available"}
-                                      </Badge>
+                                      {(() => {
+                                        const isSoftBooking = slot.isBooked && slot.bookingStatus === 'tentative';
+                                        if (!slot.isBooked) {
+                                          return (
+                                            <Badge variant="default">
+                                              Available
+                                            </Badge>
+                                          );
+                                        }
+                                        return (
+                                          <Badge
+                                            variant={isSoftBooking ? "secondary" : "destructive"}
+                                            className={isSoftBooking ? "bg-amber-100 text-amber-700 border border-amber-200" : ""}
+                                          >
+                                            {isSoftBooking ? "Soft Booking" : "Booked"}
+                                          </Badge>
+                                        );
+                                      })()}
                                     </div>
 
                                     {slot.isBooked && (slot.leadName || leadDetails) && (
@@ -2125,9 +2280,11 @@ export default function CalendarPage() {
               const customerPhone = selectedBooking.leadPhone || leadDetails?.phone;
               const customerAddress = selectedBooking.leadAddress || leadDetails?.address;
               const customerServices = selectedBooking.leadServices || leadDetails?.services;
-              const customerTotalPrice = selectedBooking.leadTotalPrice || leadDetails?.totalPrice;
+              const customerTotalPrice = selectedBooking.leadTotalPrice ?? leadDetails?.totalPrice ?? leadDetails?.calculatedPrice;
               const customerStage = selectedBooking.leadStage || leadDetails?.stage;
               const hasCustomerData = customerName || customerEmail || customerPhone;
+              const bookingStatus = selectedBooking.bookingStatus || (selectedBooking.isBooked ? 'confirmed' : undefined);
+              const isSoftBooking = selectedBooking.isBooked && bookingStatus === 'tentative';
 
               return (
                 <>
@@ -2213,7 +2370,7 @@ export default function CalendarPage() {
                                 <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 flex justify-between items-center">
                                   <span className="text-sm font-medium text-gray-900 dark:text-white">{service.formulaName}</span>
                                   <span className="text-sm font-semibold text-green-600">
-                                    ${typeof service.calculatedPrice === 'number' ? service.calculatedPrice.toFixed(2) : service.calculatedPrice}
+                                    ${typeof service.calculatedPrice === 'number' ? (service.calculatedPrice / 100).toFixed(2) : service.calculatedPrice}
                                   </span>
                                 </div>
                               ))}
@@ -2226,7 +2383,9 @@ export default function CalendarPage() {
                           <div className="border-t pt-4">
                             <div className="flex justify-between items-center">
                               <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
-                              <span className="text-xl font-bold text-green-600">${customerTotalPrice}</span>
+                              <span className="text-xl font-bold text-green-600">
+                                ${typeof customerTotalPrice === 'number' ? (customerTotalPrice / 100).toFixed(2) : customerTotalPrice}
+                              </span>
                             </div>
                           </div>
                         )}
@@ -2236,6 +2395,18 @@ export default function CalendarPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-500">Status:</span>
                             <Badge variant="secondary" className="capitalize">{customerStage}</Badge>
+                          </div>
+                        )}
+
+                        {selectedBooking.isBooked && bookingStatus && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">Booking:</span>
+                            <Badge
+                              variant={isSoftBooking ? "secondary" : "default"}
+                              className={isSoftBooking ? "bg-amber-100 text-amber-700 border border-amber-200" : ""}
+                            >
+                              {isSoftBooking ? "Soft Booking" : "Confirmed"}
+                            </Badge>
                           </div>
                         )}
                       </>
@@ -2297,13 +2468,23 @@ export default function CalendarPage() {
                       )}
                     </div>
 
+                    {isSoftBooking && selectedBooking.calendarEventId && (
+                      <Button
+                        className="w-full bg-amber-500 hover:bg-amber-600 text-white"
+                        onClick={() => confirmBookingMutation.mutate(selectedBooking.calendarEventId!)}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Confirm Booking
+                      </Button>
+                    )}
+
                     {/* View Lead Button */}
                     {selectedBooking.bookedBy && (
                       <Button
                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                         onClick={() => {
                           setBookingDetailsOpen(false);
-                          navigate(`/leads/${selectedBooking.bookedBy}`);
+                          openLeadDetailsModal(selectedBooking.bookedBy, selectedBooking);
                         }}
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
@@ -2316,6 +2497,15 @@ export default function CalendarPage() {
             })()}
           </DialogContent>
         </Dialog>
+
+        <LeadDetailsModal
+          lead={selectedLead}
+          isOpen={leadDetailsOpen}
+          onClose={() => {
+            setLeadDetailsOpen(false);
+            setSelectedLead(null);
+          }}
+        />
 
         {/* Mobile Daily Schedule Sheet */}
         <Sheet open={scheduleSheetOpen} onOpenChange={setScheduleSheetOpen}>

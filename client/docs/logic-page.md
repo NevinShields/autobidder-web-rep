@@ -1,49 +1,48 @@
 # Logic Page
 
-## What it is
-The Logic page (Form Settings) controls global calculator behavior: pricing rules, lead capture requirements, and flow settings.
+## What It Is
+The **Logic** page (also known as Form Settings) is where you control the global behavior of your calculators. This includes pricing rules, lead capture requirements, and user flow settings.
 
-## Typical use cases
+## Typical Use Cases
 
-- Require contact info before showing price
-- Add sales tax or bundle discounts
-- Enable distance-based pricing
-- Turn on image uploads
-- Update step titles and messaging
+- Require customers to enter their contact information before seeing a price.
+- Add sales tax or bundle discounts to your pricing.
+- Enable distance-based pricing for your services.
+- Allow customers to upload images.
+- Update the titles and messaging for each step of the calculator.
 
-## Step-by-step setup / usage
+## Step-by-Step Setup
 
-1. Go to **Logic** (`/form-settings`).
-2. Configure pricing modifiers:
-   - bundle discount
-   - sales tax label and rate
-   - distance pricing rate and type
-3. Configure lead capture fields (name, email, phone, address).
-4. Enable optional features (image upload, booking).
-5. Update step titles and subtitles.
-6. Save settings.
+1.  Go to the **Logic** section (`/form-settings`).
+2.  Configure your pricing modifiers:
+    *   **Bundle Discount:** Offer a discount when customers select multiple services.
+    *   **Sales Tax:** Set the label and rate for sales tax.
+    *   **Distance Pricing:** Set the rate and type for distance-based pricing.
+3.  Configure your lead capture fields (name, email, phone, address).
+4.  Enable optional features like image uploads and booking.
+5.  Update the step titles and subtitles to guide your users.
+6.  Save your settings.
 
-## How it affects pricing/output/results
+## How It Affects Pricing
 
-- Bundle discount reduces totals.
-- Sales tax adds a percentage.
-- Distance pricing adds a travel fee beyond a service radius.
-- Required fields block submission until completed.
+-   **Bundle Discount:** Reduces the total price when multiple services are selected.
+-   **Sales Tax:** Adds a percentage to the total price.
+-   **Distance Pricing:** Adds a travel fee based on the distance to the customer's location.
+-   **Required Fields:** Prevents customers from submitting the form until all required fields are completed.
 
 ## Examples
 
-- Enable a 10% bundle discount when multiple services are selected.
-- Add sales tax at 8.25% with label "State Tax".
+-   Enable a 10% bundle discount when a customer selects more than one service.
+-   Add an 8.25% sales tax with the label "State Tax".
 
-## Gotchas / common mistakes
+## Common Mistakes
 
-- Distance pricing needs a business address.
-- Too many required fields can reduce completion rates.
-- These settings are global across calculators.
+-   **Business Address:** Distance pricing requires a valid business address to be set.
+-   **Too Many Required Fields:** Requiring too many fields can reduce the number of submissions.
+-   **Global Settings:** These settings apply to all of your calculators.
 
-## Related pages
+## Related Pages
 
 - [Formula Builder](/docs/formula-builder)
 - [Design & Theming](/docs/design-theming)
 - [Troubleshooting](/docs/troubleshooting)
-

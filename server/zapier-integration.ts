@@ -111,6 +111,29 @@ export class ZapierIntegrationService {
       ));
   }
 
+  // Check if data matches webhook filters
+  static matchesFilters(data: any, filters: Record<string, any>): boolean {
+    if (!filters || Object.keys(filters).length === 0) {
+      return true; // No filters = match all
+    }
+
+    // Check stage filter (for lead_stage_changed)
+    if (filters.stage && filters.stage !== 'any') {
+      if (data.stage !== filters.stage) {
+        return false;
+      }
+    }
+
+    // Check tag filter (for lead_tagged)
+    if (filters.tagId && filters.tagId !== 0) {
+      if (data.tagId !== filters.tagId) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   // Send webhook notification
   static async sendWebhookNotification(
     userId: string,
@@ -119,9 +142,9 @@ export class ZapierIntegrationService {
   ): Promise<void> {
     console.log(`🔔 Checking for webhooks - userId: ${userId}, event: ${event}`);
     const webhooks = await this.getActiveWebhooks(userId, event);
-    
+
     console.log(`📡 Found ${webhooks.length} active webhooks for event "${event}"`);
-    
+
     if (webhooks.length === 0) {
       console.log(`⚠️ No active webhooks found for user ${userId} and event ${event}`);
       return;
@@ -132,13 +155,27 @@ export class ZapierIntegrationService {
       timestamp: new Date().toISOString(),
       data
     };
-    
+
     console.log(`📤 Sending webhook payload:`, JSON.stringify(webhookPayload, null, 2));
 
     const promises = webhooks.map(async (webhook) => {
       try {
+        // Parse webhook filters
+        let filters: Record<string, any> = {};
+        try {
+          filters = JSON.parse(webhook.filters || '{}');
+        } catch (e) {
+          // Ignore parse errors, use empty filters
+        }
+
+        // Check if data matches filters
+        if (!this.matchesFilters(data, filters)) {
+          console.log(`⏭️ Skipping webhook ${webhook.targetUrl} - data does not match filters: ${JSON.stringify(filters)}`);
+          return;
+        }
+
         console.log(`🚀 Sending webhook to: ${webhook.targetUrl}`);
-        
+
         const response = await fetch(webhook.targetUrl, {
           method: 'POST',
           headers: {
@@ -149,7 +186,7 @@ export class ZapierIntegrationService {
         });
 
         console.log(`📬 Webhook response for ${webhook.targetUrl}: ${response.status} ${response.statusText}`);
-        
+
         if (!response.ok) {
           const responseText = await response.text();
           console.error(`❌ Webhook failed for ${webhook.targetUrl}: ${response.status} - ${responseText}`);
@@ -375,33 +412,63 @@ export class ZapierIntegrationService {
               name: "John Doe",
               email: "john@example.com",
               phone: "555-123-4567",
+              address: "123 Main St, Anytown, CA 12345",
+              company: "Acme Corp",
               stage: "booked",
               previousStage: "new",
-              calculatedPrice: 250,
-              changedAt: new Date().toISOString()
+              calculatedPrice: 25000,
+              notes: "Customer prefers morning appointments",
+              source: "Calculator Form",
+              formulaId: 1,
+              formulaName: "Roof Cleaning Calculator",
+              variables: { houseSize: "Large", roofType: "Shingle" },
+              appliedDiscounts: [],
+              selectedUpsells: [],
+              changedAt: new Date().toISOString(),
+              createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
             },
             {
               id: "2",
               name: "Jane Smith",
               email: "jane@example.com",
               phone: "555-987-6543",
+              address: "456 Oak Ave, Springfield, ST 54321",
+              company: "",
               stage: "completed",
               previousStage: "booked",
-              calculatedPrice: 380,
-              changedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+              calculatedPrice: 38000,
+              notes: "Completed successfully",
+              source: "Calculator Form",
+              formulaId: 2,
+              formulaName: "Driveway Cleaning Calculator",
+              variables: { squareFootage: 2500 },
+              appliedDiscounts: [{ name: "Returning Customer", percentage: 10 }],
+              selectedUpsells: [{ name: "Sealing", amount: 5000 }],
+              changedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+              createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
             }
           ].slice(0, limit);
         }
 
-        return stageChangedLeads.map(({ leads: lead }) => ({
+        return stageChangedLeads.map(({ leads: lead, formulas: formula }) => ({
           id: lead.id,
           name: lead.name,
           email: lead.email,
           phone: lead.phone,
+          address: lead.address,
+          company: lead.company,
           stage: lead.stage || 'new',
           previousStage: 'new',
           calculatedPrice: lead.calculatedPrice || 0,
-          changedAt: lead.createdAt
+          notes: lead.notes,
+          source: lead.source,
+          formulaId: lead.formulaId,
+          formulaName: formula?.name || '',
+          variables: lead.variables,
+          appliedDiscounts: lead.appliedDiscounts,
+          selectedUpsells: lead.selectedUpsells,
+          changedAt: lead.lastStageChange || lead.createdAt,
+          createdAt: lead.createdAt
         }));
 
       case 'lead_tagged':
@@ -419,31 +486,76 @@ export class ZapierIntegrationService {
               id: "1",
               name: "John Doe",
               email: "john@example.com",
+              phone: "555-123-4567",
+              address: "123 Main St, Anytown, CA 12345",
+              company: "Acme Corp",
+              stage: "new",
+              calculatedPrice: 25000,
+              notes: "Customer prefers morning appointments",
+              source: "Calculator Form",
+              formulaId: 1,
+              formulaName: "Roof Cleaning Calculator",
+              variables: { houseSize: "Large", roofType: "Shingle" },
+              appliedDiscounts: [],
+              selectedUpsells: [],
               tagId: 1,
               tagName: "Hot Lead",
               tagColor: "#ff0000",
-              taggedAt: new Date().toISOString()
+              tagDescription: "High-priority leads ready to convert",
+              taggedAt: new Date().toISOString(),
+              taggedBy: "user@example.com",
+              createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
             },
             {
               id: "2",
               name: "Jane Smith",
               email: "jane@example.com",
+              phone: "555-987-6543",
+              address: "456 Oak Ave, Springfield, ST 54321",
+              company: "",
+              stage: "booked",
+              calculatedPrice: 38000,
+              notes: "VIP customer - high value",
+              source: "Calculator Form",
+              formulaId: 2,
+              formulaName: "Driveway Cleaning Calculator",
+              variables: { squareFootage: 2500 },
+              appliedDiscounts: [{ name: "Returning Customer", percentage: 10 }],
+              selectedUpsells: [{ name: "Sealing", amount: 5000 }],
               tagId: 2,
               tagName: "VIP Customer",
               tagColor: "#ffd700",
-              taggedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+              tagDescription: "Top-tier customers with high lifetime value",
+              taggedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+              taggedBy: "user@example.com",
+              createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
             }
           ].slice(0, limit);
         }
 
-        return taggedLeads.map(({ leads: lead }) => ({
+        return taggedLeads.map(({ leads: lead, formulas: formula }) => ({
           id: lead.id,
           name: lead.name,
           email: lead.email,
+          phone: lead.phone,
+          address: lead.address,
+          company: lead.company,
+          stage: lead.stage,
+          calculatedPrice: lead.calculatedPrice || 0,
+          notes: lead.notes,
+          source: lead.source,
+          formulaId: lead.formulaId,
+          formulaName: formula?.name || '',
+          variables: lead.variables,
+          appliedDiscounts: lead.appliedDiscounts,
+          selectedUpsells: lead.selectedUpsells,
           tagId: 1,
           tagName: "Sample Tag",
           tagColor: "#007bff",
-          taggedAt: lead.createdAt
+          tagDescription: "Sample tag description",
+          taggedAt: lead.createdAt,
+          taggedBy: userId,
+          createdAt: lead.createdAt
         }));
 
       case 'estimate_created':

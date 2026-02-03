@@ -52,7 +52,7 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
           } else {
             variableValue = 0;
           }
-        } else if (variable.type === 'number' || variable.type === 'slider') {
+        } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
           variableValue = Number(variableValue) || 0;
         } else if (variable.type === 'checkbox') {
           const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;

@@ -1735,7 +1735,7 @@ export default function StyledCalculator(props: any = {}) {
                 value = Number(defaultValue) || 0;
               }
             }
-          } else if (variable.type === 'number' || variable.type === 'slider') {
+          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
             value = Number(defaultValue) || 0;
           } else {
             value = 0; // Safe fallback for calculation
@@ -1761,7 +1761,7 @@ export default function StyledCalculator(props: any = {}) {
             } else {
               value = 0;
             }
-          } else if (variable.type === 'number' || variable.type === 'slider') {
+          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
             value = Number(value) || 0;
           } else if (variable.type === 'checkbox') {
             const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
@@ -2572,7 +2572,7 @@ export default function StyledCalculator(props: any = {}) {
                             if (measurementType === 'area') {
                               // For area measurements, look for area/size/square footage variables
                               targetVariable = service.variables.find((v: any) =>
-                                v.type === 'number' && (
+                                ['number', 'slider', 'stepper'].includes(v.type) && (
                                   v.name.toLowerCase().includes('size') ||
                                   v.name.toLowerCase().includes('area') ||
                                   v.name.toLowerCase().includes('square') ||
@@ -2583,7 +2583,7 @@ export default function StyledCalculator(props: any = {}) {
                             } else if (['length', 'width', 'height', 'perimeter'].includes(measurementType)) {
                               // For linear measurements, look for matching dimension variables
                               targetVariable = service.variables.find((v: any) =>
-                                v.type === 'number' && (
+                                ['number', 'slider', 'stepper'].includes(v.type) && (
                                   v.name.toLowerCase().includes(measurementType) ||
                                   v.name.toLowerCase().includes('distance') ||
                                   v.name.toLowerCase().includes('dimension')
@@ -2593,7 +2593,7 @@ export default function StyledCalculator(props: any = {}) {
 
                             // Fallback to first number variable if no match found
                             if (!targetVariable) {
-                              targetVariable = service.variables.find((v: any) => v.type === 'number');
+                              targetVariable = service.variables.find((v: any) => ['number', 'slider', 'stepper'].includes(v.type));
                             }
 
                             if (targetVariable) {

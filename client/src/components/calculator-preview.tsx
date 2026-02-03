@@ -111,7 +111,7 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
           } else {
             value = 0;
           }
-        } else if (variable.type === 'number') {
+        } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
           value = Number(value) || 0;
         } else if (variable.type === 'checkbox') {
           value = value ? 1 : 0;

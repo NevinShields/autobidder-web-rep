@@ -2,6 +2,9 @@ import type { Express } from "express";
 import { ZapierIntegrationService, requireZapierAuth } from "./zapier-integration";
 import { storage } from "./storage";
 import { requireAuth } from "./universalAuth";
+import { db } from "./db";
+import { leadTags } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 // Plans that have access to Zapier
 const ZAPIER_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
@@ -9,6 +12,20 @@ const ZAPIER_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
 function canAccessZapier(plan: string | null | undefined): boolean {
   return ZAPIER_ALLOWED_PLANS.includes(plan || 'free');
 }
+
+// CRM Pipeline stages
+const CRM_STAGES = [
+  { id: 'any', name: 'Any Stage' },
+  { id: 'new', name: 'New' },
+  { id: 'open', name: 'Open' },
+  { id: 'estimate_sent', name: 'Estimate Sent' },
+  { id: 'estimate_viewed', name: 'Estimate Viewed' },
+  { id: 'estimate_approved', name: 'Estimate Approved' },
+  { id: 'booked', name: 'Booked' },
+  { id: 'completed', name: 'Completed' },
+  { id: 'paid', name: 'Paid' },
+  { id: 'lost', name: 'Lost' },
+];
 
 export function registerZapierRoutes(app: Express): void {
   
@@ -35,6 +52,47 @@ export function registerZapierRoutes(app: Express): void {
     } catch (error) {
       console.error("Zapier auth test error:", error);
       res.status(500).json({ error: "Authentication test failed" });
+    }
+  });
+
+  // ===== OPTIONS ENDPOINTS (for dynamic dropdowns) =====
+
+  // Get available CRM stages for dropdown
+  app.get("/api/zapier/options/stages", requireZapierAuth, async (req, res) => {
+    try {
+      res.json(CRM_STAGES);
+    } catch (error) {
+      console.error("Zapier stages options error:", error);
+      res.status(500).json({ error: "Failed to fetch stages" });
+    }
+  });
+
+  // Get available tags for dropdown
+  app.get("/api/zapier/options/tags", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+
+      // Get user's tags
+      const tags = await db.select()
+        .from(leadTags)
+        .where(and(
+          eq(leadTags.businessOwnerId, userId),
+          eq(leadTags.isActive, true)
+        ));
+
+      // Format for Zapier dropdown - include "Any Tag" option
+      const formattedTags = [
+        { id: 0, name: 'Any Tag' },
+        ...tags.map(tag => ({
+          id: tag.id,
+          name: tag.displayName || tag.name
+        }))
+      ];
+
+      res.json(formattedTags);
+    } catch (error) {
+      console.error("Zapier tags options error:", error);
+      res.status(500).json({ error: "Failed to fetch tags" });
     }
   });
 
@@ -313,22 +371,27 @@ export function registerZapierRoutes(app: Express): void {
   app.post("/api/zapier/hooks/lead-stage-changed/subscribe", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
-      const { target_url } = req.body;
+      const { target_url, filters } = req.body;
 
       if (!target_url) {
         return res.status(400).json({ error: "target_url is required" });
       }
 
+      // Parse filters if provided (e.g., { stage: 'booked' })
+      const webhookFilters = filters || {};
+
       const webhook = await ZapierIntegrationService.subscribeWebhook(
         userId,
         target_url,
-        'lead_stage_changed'
+        'lead_stage_changed',
+        webhookFilters
       );
 
       res.json({
         success: true,
         webhook_id: webhook.id,
-        message: "Successfully subscribed to lead stage changes"
+        message: "Successfully subscribed to lead stage changes",
+        filters: webhookFilters
       });
     } catch (error) {
       console.error("Zapier lead stage changed subscribe error:", error);
@@ -366,22 +429,27 @@ export function registerZapierRoutes(app: Express): void {
   app.post("/api/zapier/hooks/lead-tagged/subscribe", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
-      const { target_url } = req.body;
+      const { target_url, filters } = req.body;
 
       if (!target_url) {
         return res.status(400).json({ error: "target_url is required" });
       }
 
+      // Parse filters if provided (e.g., { tagId: 1 })
+      const webhookFilters = filters || {};
+
       const webhook = await ZapierIntegrationService.subscribeWebhook(
         userId,
         target_url,
-        'lead_tagged'
+        'lead_tagged',
+        webhookFilters
       );
 
       res.json({
         success: true,
         webhook_id: webhook.id,
-        message: "Successfully subscribed to lead tag assignments"
+        message: "Successfully subscribed to lead tag assignments",
+        filters: webhookFilters
       });
     } catch (error) {
       console.error("Zapier lead tagged subscribe error:", error);
@@ -869,7 +937,7 @@ export function registerZapierRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // Check plan access for Zapier
+      // Check plan access and permissions for Zapier
       const currentUser = (req as any).currentUser;
       if (!canAccessZapier(currentUser.plan)) {
         return res.status(403).json({
@@ -877,6 +945,9 @@ export function registerZapierRoutes(app: Express): void {
           message: "Upgrade to connect Zapier integrations.",
           upgradeRequired: true
         });
+      }
+      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin' && currentUser.permissions?.canAccessZapier !== true) {
+        return res.status(403).json({ error: "You don't have permission to access Zapier integrations" });
       }
 
       const { name } = req.body;
@@ -910,7 +981,7 @@ export function registerZapierRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // Check plan access for Zapier
+      // Check plan access and permissions for Zapier
       const currentUser = (req as any).currentUser;
       if (!canAccessZapier(currentUser.plan)) {
         return res.status(403).json({
@@ -918,6 +989,9 @@ export function registerZapierRoutes(app: Express): void {
           message: "Upgrade to connect Zapier integrations.",
           upgradeRequired: true
         });
+      }
+      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin' && currentUser.permissions?.canAccessZapier !== true) {
+        return res.status(403).json({ error: "You don't have permission to access Zapier integrations" });
       }
 
       const userId = currentUser.id;
@@ -948,7 +1022,11 @@ export function registerZapierRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin' && currentUser.permissions?.canAccessZapier !== true) {
+        return res.status(403).json({ error: "You don't have permission to access Zapier integrations" });
+      }
+      const userId = currentUser.id;
       const keyId = parseInt(req.params.keyId);
 
       const success = await storage.deactivateZapierApiKey(keyId, userId);

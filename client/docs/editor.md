@@ -1,44 +1,43 @@
-# Editor
+# Custom Form Editor
 
-## What it is
-The Editor refers to the **Custom Form Editor**. It lets you bundle multiple formulas into one public page with a clean URL.
+## What It Is
+The **Custom Form Editor** allows you to bundle multiple formulas into a single public page with a clean, shareable URL.
 
-## Typical use cases
+## Typical Use Cases
 
-- Create a single "Request a Quote" page with multiple services
-- Build a campaign-specific intake form
-- Temporarily disable a form without deleting formulas
+- Create a single "Request a Quote" page that includes multiple services.
+- Build a campaign-specific intake form for marketing purposes.
+- Temporarily disable a form without deleting the underlying formulas.
 
-## Step-by-step setup / usage
+## Step-by-Step Setup
 
-1. Go to **Custom Forms**.
-2. Click **Create Custom Form**.
-3. Set a name and URL slug.
-4. Select at least one formula.
-5. Save the form.
-6. Open **Edit** to adjust name, slug, description, or services.
-7. Use **Preview** to open the public link.
+1.  Go to the **Custom Forms** section.
+2.  Click **Create Custom Form**.
+3.  Set a name and a custom URL slug.
+4.  Select at least one formula to include in the form.
+5.  Save the form.
+6.  Click **Edit** to adjust the name, slug, description, or the list of included services.
+7.  Use the **Preview** button to view the public link.
 
-## How it affects pricing/output/results
+## How It Affects Pricing
 
-- Selected services determine which formulas are available in the form.
-- Formulas not marked as displayed will not appear.
-- Changing the slug updates the public URL.
+- The services you select determine which formulas are available on the form.
+- Formulas that are not marked as "displayed" will not appear.
+- Changing the slug will update the public URL of the form.
 
 ## Examples
 
-- Create "House Cleaning Estimate" and select two formulas.
-- Use the form's embed code on a landing page.
+- Create a "House Cleaning Estimate" form and select two different cleaning service formulas.
+- Use the form's embed code to add the calculator to a landing page.
 
-## Gotchas / common mistakes
+## Common Mistakes
 
-- Changing the slug breaks old links.
-- You must select at least one service to save.
-- Hidden formulas are excluded.
+-   **Broken Links:** Changing the slug of a custom form will break any existing links to that form.
+-   **No Services Selected:** You must select at least one service to save a custom form.
+-   **Hidden Formulas:** Formulas that are marked as "hidden" will be excluded from the form.
 
-## Related pages
+## Related Pages
 
 - [Formula Builder](/docs/formula-builder)
 - [Design & Theming](/docs/design-theming)
 - [Quick Start](/docs/quick-start)
-

@@ -579,6 +579,32 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Lead activity tracking table for timeline/activity feed
+export const leadActivities = pgTable("lead_activities", {
+  id: serial("id").primaryKey(),
+  leadId: integer("lead_id"), // For single-service leads
+  multiServiceLeadId: integer("multi_service_lead_id"), // For multi-service leads
+  userId: varchar("user_id").references(() => users.id), // Business owner
+  eventType: text("event_type").notNull(), // 'lead_created', 'estimate_created', 'estimate_sent', 'estimate_viewed', 'estimate_approved', 'booking_confirmed', 'stage_changed', etc.
+  eventData: jsonb("event_data").$type<{
+    previousStage?: string;
+    newStage?: string;
+    estimateId?: number;
+    estimateNumber?: string;
+    bookingId?: number;
+    bookingDate?: string;
+    changedBy?: string;
+    notes?: string;
+    source?: string;
+    [key: string]: any;
+  }>().default({}),
+  description: text("description"), // Human-readable description
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type LeadActivity = typeof leadActivities.$inferSelect;
+export type InsertLeadActivity = typeof leadActivities.$inferInsert;
+
 // Proposals table for customizing customer proposals
 export const proposals = pgTable("proposals", {
   id: serial("id").primaryKey(),
@@ -995,6 +1021,7 @@ export const users = pgTable("users", {
     canAccessDesign?: boolean;
     canViewStats?: boolean;
     canManageCalendar?: boolean;
+    canManageSettings?: boolean;
     
     // Advanced Features
     canCreateWebsites?: boolean;
@@ -1446,7 +1473,7 @@ export interface DistanceInfo {
 export const variableSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.enum(['number', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown', 'slider']),
+  type: z.enum(['number', 'stepper', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown', 'slider']),
   unit: z.string().optional(),
   tooltip: z.string().optional(), // Optional description/help text for the question
   tooltipVideoUrl: z.string().optional(), // Optional video URL for tooltip (YouTube, Vimeo, etc.)

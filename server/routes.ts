@@ -154,17 +154,27 @@ function hasPermission(currentUser: any, permission: string): boolean {
     return true;
   }
   
-  // Check employee permissions
-  if (currentUser.permissions && Array.isArray(currentUser.permissions)) {
-    return currentUser.permissions.includes(permission);
-  }
-  
-  return false;
+  return currentUser.permissions?.[permission] === true;
+}
+
+function requirePermission(permission: string) {
+  return (req: any, res: any, next: any) => {
+    const currentUser = req.currentUser;
+    if (!hasPermission(currentUser, permission)) {
+      return res.status(403).json({ message: "You don't have permission to access this feature" });
+    }
+    next();
+  };
+}
+
+function hashInviteToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
 // Plan limits configuration for feature gating
 interface PlanLimits {
   maxLeadsPerMonth: number;
+  maxTeamMembers: number;
   canAccessZapier: boolean;
   canAccessMeasureTool: boolean;
   canAccessStats: boolean;
@@ -178,6 +188,7 @@ function getPlanLimits(plan: string): PlanLimits {
   const limits: Record<string, PlanLimits> = {
     free: {
       maxLeadsPerMonth: 10,
+      maxTeamMembers: 1,
       canAccessZapier: false,
       canAccessMeasureTool: false,
       canAccessStats: false,
@@ -188,6 +199,7 @@ function getPlanLimits(plan: string): PlanLimits {
     },
     trial: {
       maxLeadsPerMonth: Infinity,
+      maxTeamMembers: 3,
       canAccessZapier: true,
       canAccessMeasureTool: true,
       canAccessStats: true,
@@ -198,6 +210,7 @@ function getPlanLimits(plan: string): PlanLimits {
     },
     standard: {
       maxLeadsPerMonth: 500,
+      maxTeamMembers: 5,
       canAccessZapier: true,
       canAccessMeasureTool: true,
       canAccessStats: true,
@@ -208,6 +221,7 @@ function getPlanLimits(plan: string): PlanLimits {
     },
     plus: {
       maxLeadsPerMonth: 2500,
+      maxTeamMembers: 10,
       canAccessZapier: true,
       canAccessMeasureTool: true,
       canAccessStats: true,
@@ -218,6 +232,7 @@ function getPlanLimits(plan: string): PlanLimits {
     },
     plus_seo: {
       maxLeadsPerMonth: Infinity,
+      maxTeamMembers: 10,
       canAccessZapier: true,
       canAccessMeasureTool: true,
       canAccessStats: true,
@@ -930,7 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload image for a lead
-  app.post("/api/leads/:leadId/upload-image", requireAuth, uploadIcon.single('image'), async (req, res) => {
+  app.post("/api/leads/:leadId/upload-image", requireAuth, requirePermission("canManageLeads"), uploadIcon.single('image'), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -1001,7 +1016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete image from a lead
-  app.delete("/api/leads/:leadId/images/:imageIndex", requireAuth, async (req, res) => {
+  app.delete("/api/leads/:leadId/images/:imageIndex", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -1466,7 +1481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Formula routes
-  app.get("/api/formulas", requireAuth, async (req, res) => {
+  app.get("/api/formulas", requireAuth, requirePermission("canEditFormulas"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -1479,7 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Single formula endpoint - requires authentication for dashboard access
   // Public embed access uses /api/embed/:embedId instead
-  app.get("/api/formulas/:id", requireAuth, async (req, res) => {
+  app.get("/api/formulas/:id", requireAuth, requirePermission("canEditFormulas"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const currentUser = (req as any).currentUser;
@@ -1496,15 +1511,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/formulas", requireAuth, async (req, res) => {
+  app.post("/api/formulas", requireAuth, requirePermission("canEditFormulas"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      
-      // Check permission for employees
-      if (!hasPermission(currentUser, 'manage_calculators')) {
-        return res.status(403).json({ message: "You don't have permission to create calculators" });
-      }
       
       console.log('Received formula data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormulaSchema.parse(req.body);
@@ -1522,16 +1532,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/formulas/:id", requireAuth, async (req, res) => {
+  app.patch("/api/formulas/:id", requireAuth, requirePermission("canEditFormulas"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      
-      // Check permission for employees
-      if (!hasPermission(currentUser, 'manage_calculators')) {
-        return res.status(403).json({ message: "You don't have permission to edit calculators" });
-      }
       
       // Verify formula belongs to the owner
       const existingFormula = await storage.getFormula(id);
@@ -1576,16 +1581,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/formulas/:id", requireAuth, async (req, res) => {
+  app.delete("/api/formulas/:id", requireAuth, requirePermission("canEditFormulas"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      
-      // Check permission for employees
-      if (!hasPermission(currentUser, 'manage_calculators')) {
-        return res.status(403).json({ message: "You don't have permission to delete calculators" });
-      }
       
       // Verify formula belongs to the owner
       const existingFormula = await storage.getFormula(id);
@@ -1609,7 +1609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reorder formulas
-  app.post("/api/formulas/reorder", requireAuth, async (req, res) => {
+  app.post("/api/formulas/reorder", requireAuth, requirePermission("canEditFormulas"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -2491,7 +2491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Design Settings API routes - completely separate from business settings
-  app.get("/api/design-settings", requireAuth, async (req, res) => {
+  app.get("/api/design-settings", requireAuth, requirePermission("canAccessDesign"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -2503,7 +2503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/design-settings", requireAuth, async (req, res) => {
+  app.post("/api/design-settings", requireAuth, requirePermission("canAccessDesign"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -2528,7 +2528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/design-settings", requireAuth, async (req, res) => {
+  app.put("/api/design-settings", requireAuth, requirePermission("canAccessDesign"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -2582,7 +2582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI CSS Generation
-  app.post("/api/design-settings/generate-css", requireAuth, async (req, res) => {
+  app.post("/api/design-settings/generate-css", requireAuth, requirePermission("canAccessDesign"), async (req, res) => {
     try {
       const { description } = req.body;
       
@@ -2602,7 +2602,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // AI CSS Editing
-  app.post("/api/design-settings/edit-css", requireAuth, async (req, res) => {
+  app.post("/api/design-settings/edit-css", requireAuth, requirePermission("canAccessDesign"), async (req, res) => {
     try {
       const { currentCSS, editDescription } = req.body;
       
@@ -2737,7 +2737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get page view stats for authenticated user
-  app.get("/api/page-views/stats", requireAuth, async (req, res) => {
+  app.get("/api/page-views/stats", requireAuth, requirePermission("canViewStats"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -2756,7 +2756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lead routes
-  app.get("/api/leads", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/leads", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -3157,7 +3157,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Errors are logged but don't affect lead creation
         });
       }
-      
+
+      // Log activity for lead creation
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        storage.createLeadActivity({
+          leadId: lead.id,
+          userId: businessOwnerId,
+          eventType: 'lead_created',
+          description: `Lead created from ${lead.source || 'calculator'}`,
+          eventData: { source: lead.source || 'calculator' }
+        }).catch(err => console.error('Failed to log lead activity:', err));
+      }
+
       res.status(201).json(lead);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -3168,7 +3179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/leads/:id", requireAuth, async (req, res) => {
+  app.delete("/api/leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteLead(id);
@@ -3181,7 +3192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/leads/:id", requireAuth, async (req, res) => {
+  app.patch("/api/leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { email, phone, address, howDidYouHear, source } = req.body;
@@ -3204,7 +3215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/leads/:id/stage", requireAuth, async (req, res) => {
+  app.patch("/api/leads/:id/stage", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
@@ -3242,6 +3253,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Send Zapier webhook notification for lead stage changed
+      // Get formula name for comprehensive data
+      let formulaName = '';
+      if (updatedLead.formulaId) {
+        const formula = await storage.getFormula(updatedLead.formulaId);
+        formulaName = formula?.name || '';
+      }
+
       ZapierIntegrationService.sendWebhookNotification(
         userId,
         'lead_stage_changed',
@@ -3250,15 +3268,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: updatedLead.name,
           email: updatedLead.email,
           phone: updatedLead.phone,
+          address: updatedLead.address,
+          company: updatedLead.company,
           stage: updatedLead.stage,
           previousStage: stage, // The stage before update
           calculatedPrice: updatedLead.calculatedPrice,
-          changedAt: new Date().toISOString()
+          notes: updatedLead.notes,
+          source: updatedLead.source,
+          formulaId: updatedLead.formulaId,
+          formulaName: formulaName,
+          variables: updatedLead.variables,
+          appliedDiscounts: updatedLead.appliedDiscounts,
+          selectedUpsells: updatedLead.selectedUpsells,
+          changedAt: new Date().toISOString(),
+          createdAt: updatedLead.createdAt
         }
       ).catch(error => {
         console.error('Failed to send Zapier webhook for lead stage changed:', error);
       });
-      
+
+      // Log activity for stage change
+      storage.createLeadActivity({
+        leadId,
+        userId,
+        eventType: 'stage_changed',
+        description: `Stage changed to ${stage}`,
+        eventData: { newStage: stage, changedBy: userId, notes }
+      }).catch(err => console.error('Failed to log stage change activity:', err));
+
       res.json(updatedLead);
     } catch (error) {
       res.status(500).json({ message: "Failed to update lead stage" });
@@ -3266,7 +3303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stats endpoint - comprehensive analytics
-  app.get("/api/stats", requireAuth, async (req, res) => {
+  app.get("/api/stats", requireAuth, requirePermission("canViewStats"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       console.log('[Stats] Starting for user:', currentUser?.id, currentUser?.email);
@@ -3728,14 +3765,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const currentUser = (req as any).currentUser;
       
-      // Only owners can view team members
-      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin') {
-        return res.status(403).json({ message: "Only account owners can view team members" });
+      // Only owners or team managers can view team members
+      if (!hasPermission(currentUser, 'canManageTeam')) {
+        return res.status(403).json({ message: "You don't have permission to view team members" });
       }
       
       // Get the owner themselves and their employees
-      const owner = await storage.getUserById(currentUser.id);
-      const employees = await storage.getUsersByOwner(currentUser.id);
+      const ownerId = currentUser.userType === 'owner' ? currentUser.id : currentUser.ownerId;
+      const owner = ownerId ? await storage.getUserById(ownerId) : null;
+      const employees = ownerId ? await storage.getUsersByOwner(ownerId) : [];
       
       // Combine owner and employees
       const teamMembers = owner ? [owner, ...employees] : employees;
@@ -3751,9 +3789,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const currentUser = (req as any).currentUser;
       
-      // Only owners can invite team members
-      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin') {
-        return res.status(403).json({ message: "Only account owners can invite team members" });
+      // Owners and team managers can invite team members
+      if (!hasPermission(currentUser, 'canManageTeam')) {
+        return res.status(403).json({ message: "You don't have permission to invite team members" });
       }
       
       const { email, firstName, lastName, permissions } = req.body;
@@ -3768,15 +3806,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingUser) {
         return res.status(400).json({ message: "A user with this email already exists" });
       }
+
+      // Enforce team member limits
+      const planLimits = getPlanLimits(currentUser.plan || "free");
+      const maxTeamMembers =
+        typeof currentUser.permissions?.maxTeamMembers === "number"
+          ? currentUser.permissions.maxTeamMembers
+          : planLimits.maxTeamMembers;
+      const ownerId = currentUser.userType === "owner" ? currentUser.id : currentUser.ownerId;
+      if (!ownerId) {
+        return res.status(403).json({ message: "Unable to determine account owner for this invite." });
+      }
+      const employees = await storage.getUsersByOwner(ownerId);
+      if (Number.isFinite(maxTeamMembers) && employees.length >= maxTeamMembers) {
+        return res.status(403).json({
+          message: `Your plan allows up to ${maxTeamMembers} team member${maxTeamMembers === 1 ? "" : "s"}. Please upgrade to add more.`,
+        });
+      }
       
       // Generate invite token (expires in 7 days)
       const { generateSecureToken } = await import('./emailAuth');
       const inviteToken = generateSecureToken();
+      const inviteTokenHash = hashInviteToken(inviteToken);
       const inviteTokenExpires = new Date();
       inviteTokenExpires.setDate(inviteTokenExpires.getDate() + 7);
       
       // Get owner's business info for organization name
-      const businessSettings = await storage.getBusinessSettingsByUserId(currentUser.id);
+      const businessSettings = await storage.getBusinessSettingsByUserId(ownerId);
       const organizationName = businessSettings?.businessName || currentUser.businessInfo?.businessName || 'Team';
       
       // Create the employee (inactive until they set password)
@@ -3785,19 +3841,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         firstName,
         lastName,
-        ownerId: currentUser.id,
+        ownerId,
         organizationName,
         userType: 'employee',
         isActive: false, // Inactive until they accept invite
         authProvider: 'email',
-        inviteToken,
+        inviteToken: inviteTokenHash,
         inviteTokenExpires,
         permissions: permissions || {
           canEditFormulas: true,
           canViewLeads: true,
+          canManageLeads: false,
           canManageCalendar: false,
           canAccessDesign: false,
           canViewStats: false,
+          canManageSettings: false,
+          canCreateWebsites: false,
+          canManageWebsites: false,
+          canAccessAI: false,
+          canUseMeasureMap: false,
+          canCreateUpsells: false,
+          canAccessZapier: false,
+          canManageEmailTemplates: false,
+          canViewReports: false,
+          canExportData: false,
+          canManageTeam: false,
+          canManageBilling: false,
+          canAccessAPI: false,
+          canManageIntegrations: false,
+          canCustomizeBranding: false,
         }
       });
       
@@ -3930,12 +4002,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Only owners can update their employees, and can't update other owners
+      // Only owners/team managers can update their employees, and can't update other owners
       if (currentUser.userType !== 'super_admin') {
+        if (!hasPermission(currentUser, 'canManageTeam')) {
+          return res.status(403).json({ message: "You don't have permission to manage team members" });
+        }
         if (targetUser.userType === 'owner') {
           return res.status(403).json({ message: "Cannot modify owner accounts" });
         }
-        if (targetUser.ownerId !== currentUser.id) {
+        const ownerId = currentUser.userType === 'owner' ? currentUser.id : currentUser.ownerId;
+        if (!ownerId || targetUser.ownerId !== ownerId) {
           return res.status(403).json({ message: "You can only update your own team members" });
         }
       }
@@ -3974,12 +4050,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Only owners can delete their employees
+      // Only owners/team managers can delete their employees
       if (currentUser.userType !== 'super_admin') {
+        if (!hasPermission(currentUser, 'canManageTeam')) {
+          return res.status(403).json({ message: "You don't have permission to manage team members" });
+        }
         if (targetUser.userType === 'owner') {
           return res.status(403).json({ message: "Cannot delete owner accounts" });
         }
-        if (targetUser.ownerId !== currentUser.id) {
+        const ownerId = currentUser.userType === 'owner' ? currentUser.id : currentUser.ownerId;
+        if (!ownerId || targetUser.ownerId !== ownerId) {
           return res.status(403).json({ message: "You can only delete your own team members" });
         }
       }
@@ -3998,9 +4078,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentUser = (req as any).currentUser;
       const targetUserId = req.params.id;
       
-      // Only owners can resend invites
-      if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin') {
-        return res.status(403).json({ message: "Only account owners can resend invites" });
+      // Only owners/team managers can resend invites
+      if (!hasPermission(currentUser, 'canManageTeam')) {
+        return res.status(403).json({ message: "You don't have permission to resend invites" });
       }
       
       const targetUser = await storage.getUserById(targetUserId);
@@ -4009,7 +4089,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      if (targetUser.ownerId !== currentUser.id) {
+      const ownerId = currentUser.userType === 'owner' ? currentUser.id : currentUser.ownerId;
+      if (!ownerId || targetUser.ownerId !== ownerId) {
         return res.status(403).json({ message: "You can only resend invites to your own team members" });
       }
       
@@ -4020,11 +4101,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate new invite token
       const { generateSecureToken } = await import('./emailAuth');
       const inviteToken = generateSecureToken();
+      const inviteTokenHash = hashInviteToken(inviteToken);
       const inviteTokenExpires = new Date();
       inviteTokenExpires.setDate(inviteTokenExpires.getDate() + 7);
       
       await storage.updateUser(targetUserId, {
-        inviteToken,
+        inviteToken: inviteTokenHash,
         inviteTokenExpires,
       });
       
@@ -4173,7 +4255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Multi-service lead routes
-  app.get("/api/multi-service-leads", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/multi-service-leads", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -4771,7 +4853,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Errors are logged but don't affect lead creation
         });
       }
-      
+
+      // Log activity for multi-service lead creation
+      if (businessOwnerId && businessOwnerId !== "default_owner") {
+        storage.createLeadActivity({
+          multiServiceLeadId: lead.id,
+          userId: businessOwnerId,
+          eventType: 'lead_created',
+          description: `Lead created from ${lead.source || 'calculator'}`,
+          eventData: { source: lead.source || 'calculator' }
+        }).catch(err => console.error('Failed to log lead activity:', err));
+      }
+
       // Convert BigInt fields to numbers for JSON serialization
       const serializedLead = {
         ...lead,
@@ -4796,7 +4889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/multi-service-leads/:id", requireAuth, async (req, res) => {
+  app.patch("/api/multi-service-leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { email, phone, address, howDidYouHear, source } = req.body;
@@ -4860,12 +4953,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/multi-service-leads/:id/stage", requireAuth, async (req, res) => {
+  app.patch("/api/multi-service-leads/:id/stage", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
       const { stage, notes } = req.body;
-      
+
       const VALID_STAGES = ["new", "open", "pre_estimate", "estimate_approved", "booked", "completed", "lost", "paid"];
       if (!stage || !VALID_STAGES.includes(stage)) {
         return res.status(400).json({ message: "Invalid stage value. Must be one of: " + VALID_STAGES.join(", ") });
@@ -4876,18 +4969,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         changedBy: userId,
         notes,
       });
-      
+
       if (!updatedLead) {
         return res.status(404).json({ message: "Lead not found" });
       }
-      
+
+      // Log activity for stage change
+      storage.createLeadActivity({
+        multiServiceLeadId: leadId,
+        userId,
+        eventType: 'stage_changed',
+        description: `Stage changed to ${stage}`,
+        eventData: { newStage: stage, changedBy: userId, notes }
+      }).catch(err => console.error('Failed to log stage change activity:', err));
+
       res.json(updatedLead);
     } catch (error) {
       res.status(500).json({ message: "Failed to update multi-service lead stage" });
     }
   });
 
-  app.delete("/api/multi-service-leads/:id", requireAuth, async (req, res) => {
+  app.delete("/api/multi-service-leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteMultiServiceLead(id);
@@ -4901,7 +5003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Business settings routes
-  app.get("/api/business-settings", requireAuth, async (req, res) => {
+  app.get("/api/business-settings", requireAuth, requirePermission("canManageSettings"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -4985,15 +5087,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/business-settings", requireAuth, async (req, res) => {
+  app.post("/api/business-settings", requireAuth, requirePermission("canManageSettings"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      
-      // Check permission for employees
-      if (!hasPermission(currentUser, 'manage_settings')) {
-        return res.status(403).json({ message: "You don't have permission to manage settings" });
-      }
       
       const validatedData = insertBusinessSettingsSchema.parse(req.body);
       
@@ -5014,15 +5111,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/business-settings", requireAuth, async (req, res) => {
+  app.patch("/api/business-settings", requireAuth, requirePermission("canManageSettings"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      
-      // Check permission for employees
-      if (!hasPermission(currentUser, 'manage_settings')) {
-        return res.status(403).json({ message: "You don't have permission to manage settings" });
-      }
       
       console.log('Business settings update request body (no ID):', JSON.stringify(req.body, null, 2));
       
@@ -5140,7 +5232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/business-settings/:id", requireAuth, async (req, res) => {
+  app.patch("/api/business-settings/:id", requireAuth, requirePermission("canManageSettings"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       console.log('Business settings update request body:', JSON.stringify(req.body, null, 2));
@@ -5192,8 +5284,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const attachBookingStatusToSlots = async (
+    userId: string,
+    slots: any[],
+    startDate: string,
+    endDate: string
+  ) => {
+    if (!slots || slots.length === 0) return slots;
+    const rangeStart = new Date(startDate);
+    const rangeEnd = new Date(endDate);
+    rangeEnd.setHours(23, 59, 59, 999);
+    const calendarEvents = await storage.getUserCalendarEventsByDateRange(
+      userId,
+      rangeStart,
+      rangeEnd
+    );
+    const bookingEvents = calendarEvents.filter(event => event.type === "booking");
+    const byLeadKey = new Map<string, any>();
+    const byTimeKey = new Map<string, any>();
+
+    bookingEvents.forEach(event => {
+      const date = event.startsAt.toISOString().split("T")[0];
+      const startTime = event.startsAt.toTimeString().slice(0, 5);
+      const endTime = event.endsAt.toTimeString().slice(0, 5);
+      const timeKey = `${date}_${startTime}_${endTime}`;
+      const leadKey = `${timeKey}_${event.leadId ?? "none"}`;
+      byLeadKey.set(leadKey, event);
+      if (!byTimeKey.has(timeKey)) {
+        byTimeKey.set(timeKey, event);
+      }
+    });
+
+    return slots.map((slot: any) => {
+      if (!slot?.isBooked) return slot;
+      const timeKey = `${slot.date}_${slot.startTime}_${slot.endTime}`;
+      const leadKey = `${timeKey}_${slot.bookedBy ?? "none"}`;
+      const matchedEvent = byLeadKey.get(leadKey) || byTimeKey.get(timeKey);
+      if (!matchedEvent) {
+        return {
+          ...slot,
+          bookingStatus: "confirmed",
+        };
+      }
+      return {
+        ...slot,
+        bookingStatus: matchedEvent.status,
+        calendarEventId: matchedEvent.id,
+      };
+    });
+  };
+
   // Calendar/Availability routes
-  app.get("/api/availability-slots", requireAuth, async (req, res) => {
+  app.get("/api/availability-slots", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const { startDate, endDate, date, includeLeads } = req.query;
       const userId = (req as any).currentUser?.id;
@@ -5206,14 +5348,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (date) {
         if (shouldIncludeLeads) {
           const slots = await storage.getUserSlotsWithLeadsByDate(userId, date as string);
-          res.json(slots);
+          const enrichedSlots = await attachBookingStatusToSlots(userId, slots, date as string, date as string);
+          res.json(enrichedSlots);
         } else {
           const slots = await storage.getUserAvailabilitySlotsByDate(userId, date as string);
-          res.json(slots);
+          const enrichedSlots = await attachBookingStatusToSlots(userId, slots, date as string, date as string);
+          res.json(enrichedSlots);
         }
       } else if (startDate && endDate) {
         const slots = await storage.getUserAvailableSlotsByDateRange(userId, startDate as string, endDate as string);
-        res.json(slots);
+        const enrichedSlots = await attachBookingStatusToSlots(userId, slots, startDate as string, endDate as string);
+        res.json(enrichedSlots);
       } else {
         res.status(400).json({ message: "Please provide either 'date' or both 'startDate' and 'endDate' parameters" });
       }
@@ -5222,7 +5367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/availability-slots", requireAuth, async (req, res) => {
+  app.post("/api/availability-slots", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -5305,7 +5450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/availability-slots/:id", requireAuth, async (req, res) => {
+  app.patch("/api/availability-slots/:id", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const userId = (req as any).currentUser?.id;
@@ -5327,7 +5472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/availability-slots/:id", requireAuth, async (req, res) => {
+  app.delete("/api/availability-slots/:id", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const userId = (req as any).currentUser?.id;
@@ -5345,7 +5490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/availability-slots/:id/book", requireAuth, async (req, res) => {
+  app.post("/api/availability-slots/:id/book", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const slotId = parseInt(req.params.id);
       const { leadId, slotData } = req.body;
@@ -5374,7 +5519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Remove duplicate route - handled above
 
-  app.get("/api/availability-slots/:startDate/:endDate", requireAuth, async (req, res) => {
+  app.get("/api/availability-slots/:startDate/:endDate", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const { startDate, endDate } = req.params;
       const userId = (req as any).currentUser?.id;
@@ -5386,14 +5531,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (includeLeads) {
         const slots = await storage.getUserSlotsWithLeadsByDateRange(userId, startDate, endDate);
-        res.json(slots || []);
+        const enrichedSlots = await attachBookingStatusToSlots(userId, slots || [], startDate, endDate);
+        res.json(enrichedSlots || []);
       } else {
         const slots = await storage.getUserSlotsByDateRange(userId, startDate, endDate);
-        res.json(slots || []);
+        const enrichedSlots = await attachBookingStatusToSlots(userId, slots || [], startDate, endDate);
+        res.json(enrichedSlots || []);
       }
     } catch (error) {
       console.error("Error fetching availability slots for date range:", error);
       res.status(500).json({ message: "Failed to fetch availability slots for date range" });
+    }
+  });
+
+  app.get("/api/leads/:id/bookings", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const userId = (req as any).currentUser?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const multiLead = await storage.getMultiServiceLead(leadId);
+      if (multiLead) {
+        if (multiLead.businessOwnerId !== userId) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+      } else {
+        const singleLead = await storage.getLead(leadId);
+        if (!singleLead || singleLead.userId !== userId) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+      }
+
+      const bookings = await storage.getUserCalendarEventsByLeadId(userId, leadId);
+      res.json(bookings || []);
+    } catch (error) {
+      console.error("Error fetching lead bookings:", error);
+      res.status(500).json({ message: "Failed to fetch lead bookings" });
+    }
+  });
+
+  app.post("/api/calendar-events/:id/confirm", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      const userId = (req as any).currentUser?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const event = await storage.getCalendarEvent(eventId);
+      if (!event || event.userId !== userId) {
+        return res.status(404).json({ message: "Calendar event not found" });
+      }
+
+      if (event.type !== "booking") {
+        return res.status(400).json({ message: "Only booking events can be confirmed" });
+      }
+
+      const updated = await storage.updateCalendarEvent(eventId, { status: "confirmed" });
+
+      if (event.leadId) {
+        try {
+          await storage.updateMultiServiceLeadStage(event.leadId, {
+            stage: "booked",
+            changedBy: userId,
+            notes: "Soft booking confirmed",
+            changedAt: new Date().toISOString(),
+          });
+        } catch (leadError) {
+          console.warn("Failed to update lead stage for booking confirmation:", leadError);
+        }
+
+        // Log activity for booking confirmed
+        storage.createLeadActivity({
+          multiServiceLeadId: event.leadId,
+          userId,
+          eventType: 'booking_confirmed',
+          description: `Booking confirmed for ${event.startsAt ? new Date(event.startsAt).toLocaleDateString() : 'scheduled date'}`,
+          eventData: { bookingId: eventId, bookingDate: event.startsAt?.toISOString() }
+        }).catch(err => console.error('Failed to log booking confirmed activity:', err));
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error confirming booking:", error);
+      res.status(500).json({ message: "Failed to confirm booking" });
     }
   });
 
@@ -6087,8 +6312,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `${title || 'Customer Appointment'} - ${customerName}`
         : title || 'Customer Appointment';
       
+      const bookingStatus = "tentative";
       const appointmentNotes = [
         notes || 'Booked via customer form',
+        bookingStatus === "tentative" ? 'Soft booking (pending confirmation)' : '',
         customerName ? `Customer: ${customerName}` : '',
         customerEmail ? `Email: ${customerEmail}` : '',
         customerPhone ? `Phone: ${customerPhone}` : ''
@@ -6133,7 +6360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         source: "internal",
         startsAt,
         endsAt,
-        status: "confirmed",
+        status: bookingStatus,
         title: appointmentTitle,
         description: appointmentNotes,
         payload: {
@@ -6248,7 +6475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recurring availability routes (authenticated)
-  app.get("/api/recurring-availability", requireAuth, async (req, res) => {
+  app.get("/api/recurring-availability", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -6264,7 +6491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/recurring-availability", requireAuth, async (req, res) => {
+  app.post("/api/recurring-availability", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -6287,7 +6514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/recurring-availability/:id", requireAuth, async (req, res) => {
+  app.patch("/api/recurring-availability/:id", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const userId = (req as any).user?.id;
@@ -6305,7 +6532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/recurring-availability/:id", requireAuth, async (req, res) => {
+  app.delete("/api/recurring-availability/:id", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const userId = (req as any).user?.id;
@@ -6319,7 +6546,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/recurring-availability/all", requireAuth, async (req, res) => {
+  app.delete("/api/recurring-availability/all", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const userId = (req as any).user?.id;
       const success = await storage.clearUserRecurringAvailability(userId);
@@ -6329,7 +6556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/recurring-availability/save-schedule", requireAuth, async (req, res) => {
+  app.post("/api/recurring-availability/save-schedule", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const { schedule } = req.body;
       const userId = (req as any).currentUser?.id;
@@ -6351,7 +6578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google Calendar OAuth routes
-  app.get("/api/google-calendar/status", requireAuth, async (req, res) => {
+  app.get("/api/google-calendar/status", requireAuth, requirePermission("canManageIntegrations"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -6367,7 +6594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/google-calendar/connect", requireAuth, async (req, res) => {
+  app.get("/api/google-calendar/connect", requireAuth, requirePermission("canManageIntegrations"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -6387,7 +6614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/google-calendar/callback", requireAuth, async (req, res) => {
+  app.get("/api/google-calendar/callback", requireAuth, requirePermission("canManageIntegrations"), async (req, res) => {
     try {
       const { code, state } = req.query;
       
@@ -6423,7 +6650,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/google-calendar/disconnect", requireAuth, async (req, res) => {
+  app.post("/api/google-calendar/disconnect", requireAuth, requirePermission("canManageIntegrations"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -6446,7 +6673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/google-calendar/events", requireAuth, async (req, res) => {
+  app.get("/api/google-calendar/events", requireAuth, requirePermission("canManageIntegrations"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       const { startDate, endDate } = req.query;
@@ -6467,7 +6694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/google-calendar/calendars", requireAuth, async (req, res) => {
+  app.get("/api/google-calendar/calendars", requireAuth, requirePermission("canManageIntegrations"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -6483,7 +6710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/google-calendar/selected-calendars", requireAuth, async (req, res) => {
+  app.post("/api/google-calendar/selected-calendars", requireAuth, requirePermission("canManageIntegrations"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       const { calendarIds } = req.body;
@@ -6512,7 +6739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/blocked-dates", requireAuth, async (req, res) => {
+  app.get("/api/blocked-dates", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       const { startDate, endDate } = req.query;
@@ -6557,7 +6784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/blocked-dates", requireAuth, async (req, res) => {
+  app.post("/api/blocked-dates", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       
@@ -6613,7 +6840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/blocked-dates/:id", requireAuth, async (req, res) => {
+  app.delete("/api/blocked-dates/:id", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
     try {
       const userId = (req as any).currentUser?.id;
       const id = parseInt(req.params.id);
@@ -6801,7 +7028,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Website routes
-  app.get("/api/websites", requireAuth, async (req, res) => {
+  app.get("/api/websites", requireAuth, requirePermission("canManageWebsites"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const userId = currentUser.id;
@@ -7094,7 +7321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/websites", requireAuth, async (req, res) => {
+  app.post("/api/websites", requireAuth, requirePermission("canCreateWebsites"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const userId = currentUser.id;
@@ -7319,7 +7546,7 @@ The Autobidder Team`;
   });
 
   // Generate SSO editor link for existing website
-  app.get('/api/websites/:siteName/editor-link', requireAuth, async (req, res) => {
+  app.get('/api/websites/:siteName/editor-link', requireAuth, requirePermission("canManageWebsites"), async (req, res) => {
     try {
       const { siteName } = req.params;
       const userId = (req.session as any).user.id;
@@ -7349,7 +7576,7 @@ The Autobidder Team`;
   });
 
   // Reset website password
-  app.post('/api/websites/:siteName/reset-password', requireAuth, async (req, res) => {
+  app.post('/api/websites/:siteName/reset-password', requireAuth, requirePermission("canManageWebsites"), async (req, res) => {
     try {
       const { siteName } = req.params;
       const userId = (req.session as any).user.id;
@@ -7392,7 +7619,7 @@ The Autobidder Team`;
   });
 
   // Improved Duda Welcome Link + Email via Resend
-  app.post('/api/duda/welcome-link-email', requireAuth, async (req, res) => {
+  app.post('/api/duda/welcome-link-email', requireAuth, requirePermission("canManageWebsites"), async (req, res) => {
     try {
       const { accountEmail, toEmail, toName } = req.body || {};
       if (!accountEmail || !toEmail) {
@@ -7943,7 +8170,7 @@ The Autobidder Team`;
     }
   });
 
-  app.delete("/api/websites/:siteName", requireAuth, async (req, res) => {
+  app.delete("/api/websites/:siteName", requireAuth, requirePermission("canManageWebsites"), async (req, res) => {
     try {
       const { siteName } = req.params;
       const userId = (req as any).currentUser.id;
@@ -7981,7 +8208,7 @@ The Autobidder Team`;
   });
 
   // Publish website route with plan restrictions
-  app.post("/api/websites/:siteName/publish", requireAuth, async (req: any, res) => {
+  app.post("/api/websites/:siteName/publish", requireAuth, requirePermission("canManageWebsites"), async (req: any, res) => {
     try {
       const { siteName } = req.params;
       const userId = (req as any).currentUser.id;
@@ -8046,7 +8273,7 @@ The Autobidder Team`;
   });
 
   // Sync Duda form submissions to leads
-  app.post("/api/websites/:siteName/sync-leads", requireAuth, async (req: any, res) => {
+  app.post("/api/websites/:siteName/sync-leads", requireAuth, requirePermission("canManageWebsites"), async (req: any, res) => {
     try {
       const { siteName } = req.params;
       const userId = (req as any).currentUser.id;
@@ -8302,9 +8529,25 @@ The Autobidder Team`;
           canManageUsers: true,
           canEditFormulas: true,
           canViewLeads: true,
+          canManageLeads: true,
           canManageCalendar: true,
           canAccessDesign: true,
           canViewStats: true,
+          canManageSettings: true,
+          canCreateWebsites: true,
+          canManageWebsites: true,
+          canAccessAI: true,
+          canUseMeasureMap: true,
+          canCreateUpsells: true,
+          canAccessZapier: true,
+          canManageEmailTemplates: true,
+          canViewReports: true,
+          canExportData: true,
+          canManageTeam: true,
+          canManageBilling: true,
+          canAccessAPI: true,
+          canManageIntegrations: true,
+          canCustomizeBranding: true,
         }
       });
       
@@ -8336,7 +8579,7 @@ The Autobidder Team`;
 
   // REMOVED DUPLICATE: Stripe checkout endpoint moved to line 4607
 
-  app.post('/api/create-portal-session', requireAuth, async (req: any, res) => {
+  app.post('/api/create-portal-session', requireAuth, requirePermission("canManageBilling"), async (req: any, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
@@ -8379,7 +8622,7 @@ The Autobidder Team`;
   });
 
   // Cancel subscription
-  app.post('/api/cancel-subscription', requireAuth, async (req: any, res) => {
+  app.post('/api/cancel-subscription', requireAuth, requirePermission("canManageBilling"), async (req: any, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
@@ -8472,7 +8715,7 @@ The Autobidder Team`;
   });
 
   // Reactivate subscription
-  app.post('/api/reactivate-subscription', requireAuth, async (req: any, res) => {
+  app.post('/api/reactivate-subscription', requireAuth, requirePermission("canManageBilling"), async (req: any, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
@@ -8792,7 +9035,7 @@ The Autobidder Team`;
   });
 
   // Get billing invoice history
-  app.get('/api/billing/invoices', requireAuth, async (req: any, res) => {
+  app.get('/api/billing/invoices', requireAuth, requirePermission("canManageBilling"), async (req: any, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
@@ -8942,7 +9185,7 @@ The Autobidder Team`;
   // Removed duplicate webhook handler - using the correct one at line 6693
 
   // Custom Forms API endpoints - UPDATED FOR NEW SCHEMA
-  app.get("/api/custom-forms", requireAuth, async (req, res) => {
+  app.get("/api/custom-forms", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
 
@@ -8965,7 +9208,7 @@ The Autobidder Team`;
     }
   });
 
-  app.get("/api/custom-forms/:id", requireAuth, async (req, res) => {
+  app.get("/api/custom-forms/:id", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const currentUser = (req as any).currentUser;
@@ -8982,7 +9225,7 @@ The Autobidder Team`;
   });
 
   // Validate slug uniqueness endpoint
-  app.post("/api/custom-forms/validate-slug", requireAuth, async (req, res) => {
+  app.post("/api/custom-forms/validate-slug", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const { slug, excludeId } = req.body;
       const currentUser = (req as any).currentUser;
@@ -9000,7 +9243,7 @@ The Autobidder Team`;
     }
   });
 
-  app.post("/api/custom-forms", requireAuth, async (req, res) => {
+  app.post("/api/custom-forms", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
 
@@ -9051,7 +9294,7 @@ The Autobidder Team`;
     }
   });
 
-  app.patch("/api/custom-forms/:id", requireAuth, async (req, res) => {
+  app.patch("/api/custom-forms/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const currentUser = (req as any).currentUser;
@@ -9101,7 +9344,7 @@ The Autobidder Team`;
     }
   });
 
-  app.delete("/api/custom-forms/:id", requireAuth, async (req, res) => {
+  app.delete("/api/custom-forms/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const currentUser = (req as any).currentUser;
@@ -9150,7 +9393,7 @@ The Autobidder Team`;
   });
 
   // Custom Form Leads API endpoints - UPDATED FOR NEW SCHEMA
-  app.get("/api/custom-forms/:formId/leads", requireAuth, async (req, res) => {
+  app.get("/api/custom-forms/:formId/leads", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const formId = parseInt(req.params.formId);
       const currentUser = (req as any).currentUser;
@@ -9814,7 +10057,7 @@ The Autobidder Team`;
   });
 
   // Estimate management routes
-  app.get("/api/estimates", requireAuth, async (req, res) => {
+  app.get("/api/estimates", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       
@@ -9826,7 +10069,7 @@ The Autobidder Team`;
     }
   });
 
-  app.get("/api/estimates/:id", requireAuth, async (req, res) => {
+  app.get("/api/estimates/:id", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const estimate = await storage.getEstimate(id);
@@ -9840,7 +10083,7 @@ The Autobidder Team`;
     }
   });
 
-  app.get("/api/leads/:leadId/estimates", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/leads/:leadId/estimates", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       
@@ -9856,6 +10099,20 @@ The Autobidder Team`;
     } catch (error) {
       console.error('Error fetching estimates for lead:', error);
       res.status(500).json({ message: "Failed to fetch estimates for lead" });
+    }
+  });
+
+  // Get activity feed for a lead
+  app.get("/api/leads/:leadId/activities", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
+    try {
+      const leadId = parseInt(req.params.leadId);
+      const isMultiService = req.query.isMultiService === 'true';
+
+      const activities = await storage.getLeadActivities(leadId, isMultiService);
+      res.json(activities);
+    } catch (error) {
+      console.error('Error fetching activities for lead:', error);
+      res.status(500).json({ message: "Failed to fetch activities for lead" });
     }
   });
 
@@ -9917,6 +10174,16 @@ The Autobidder Team`;
           ).catch(error => {
             console.error('Failed to send Zapier webhook for estimate viewed:', error);
           });
+
+          // Log activity for estimate viewed
+          storage.createLeadActivity({
+            leadId: estimate.leadId || undefined,
+            multiServiceLeadId: estimate.multiServiceLeadId || undefined,
+            userId: estimate.userId,
+            eventType: 'estimate_viewed',
+            description: `Estimate ${estimate.estimateNumber} was viewed by customer`,
+            eventData: { estimateId: estimate.id, estimateNumber: estimate.estimateNumber }
+          }).catch(err => console.error('Failed to log estimate viewed activity:', err));
         }
       }
 
@@ -9927,7 +10194,7 @@ The Autobidder Team`;
     }
   });
 
-  app.post("/api/estimates", requireAuth, async (req, res) => {
+  app.post("/api/estimates", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       console.log('[POST /api/estimates] Creating estimate for user:', userId);
@@ -9974,7 +10241,7 @@ The Autobidder Team`;
     }
   });
 
-  app.patch("/api/estimates/:id", requireAuth, async (req, res) => {
+  app.patch("/api/estimates/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const existingEstimate = await storage.getEstimate(id);
@@ -10005,7 +10272,7 @@ The Autobidder Team`;
     }
   });
 
-  app.delete("/api/estimates/:id", requireAuth, async (req, res) => {
+  app.delete("/api/estimates/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteEstimate(id);
@@ -10020,7 +10287,7 @@ The Autobidder Team`;
   });
 
   // Estimate workflow routes
-  app.post("/api/estimates/:id/approve", requireAuth, async (req, res) => {
+  app.post("/api/estimates/:id/approve", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const estimateId = parseInt(req.params.id);
@@ -10066,6 +10333,16 @@ The Autobidder Team`;
         console.error('Failed to trigger estimate approved automations:', error);
       }
 
+      // Log activity for estimate approved
+      storage.createLeadActivity({
+        leadId: estimate.leadId || undefined,
+        multiServiceLeadId: estimate.multiServiceLeadId || undefined,
+        userId,
+        eventType: 'estimate_confirmed',
+        description: `Estimate ${estimate.estimateNumber} was confirmed`,
+        eventData: { estimateId: estimate.id, estimateNumber: estimate.estimateNumber }
+      }).catch(err => console.error('Failed to log estimate confirmed activity:', err));
+
       res.json({ ...estimate, pendingAutomationRunIds: pendingRunIds });
     } catch (error) {
       console.error('Error approving estimate:', error);
@@ -10073,7 +10350,7 @@ The Autobidder Team`;
     }
   });
 
-  app.post("/api/estimates/:id/request-revision", requireAuth, async (req, res) => {
+  app.post("/api/estimates/:id/request-revision", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const estimateId = parseInt(req.params.id);
@@ -10102,7 +10379,7 @@ The Autobidder Team`;
   });
 
   // Business owner manually records customer approval (for phone/email approvals)
-  app.post("/api/estimates/:id/mark-customer-approved", requireAuth, async (req, res) => {
+  app.post("/api/estimates/:id/mark-customer-approved", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const estimateId = parseInt(req.params.id);
@@ -10171,6 +10448,16 @@ The Autobidder Team`;
         console.error('Failed to send Zapier webhook for estimate accepted:', error);
       });
 
+      // Log activity for estimate approved by customer
+      storage.createLeadActivity({
+        leadId: updatedEstimate.leadId || undefined,
+        multiServiceLeadId: updatedEstimate.multiServiceLeadId || undefined,
+        userId,
+        eventType: 'estimate_approved',
+        description: `Customer approved estimate ${updatedEstimate.estimateNumber}`,
+        eventData: { estimateId: updatedEstimate.id, estimateNumber: updatedEstimate.estimateNumber }
+      }).catch(err => console.error('Failed to log estimate approved activity:', err));
+
       res.json(updatedEstimate);
     } catch (error) {
       console.error('Error marking estimate as customer approved:', error);
@@ -10178,7 +10465,7 @@ The Autobidder Team`;
     }
   });
 
-  app.post("/api/estimates/:id/convert-to-work-order", requireAuth, async (req, res) => {
+  app.post("/api/estimates/:id/convert-to-work-order", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const estimateId = parseInt(req.params.id);
@@ -10282,6 +10569,16 @@ The Autobidder Team`;
         ).catch(error => {
           console.error('Failed to send Zapier webhook for estimate accepted:', error);
         });
+
+        // Log activity for estimate approved by customer
+        storage.createLeadActivity({
+          leadId: updatedEstimate.leadId || undefined,
+          multiServiceLeadId: updatedEstimate.multiServiceLeadId || undefined,
+          userId: estimate.userId,
+          eventType: 'estimate_approved',
+          description: `Customer approved estimate ${updatedEstimate.estimateNumber}`,
+          eventData: { estimateId: updatedEstimate.id, estimateNumber: updatedEstimate.estimateNumber }
+        }).catch(err => console.error('Failed to log estimate approved activity:', err));
       }
 
       res.json(updatedEstimate);
@@ -10332,7 +10629,7 @@ The Autobidder Team`;
   });
 
   // Create estimate from lead
-  app.post("/api/leads/:id/estimate", requireAuth, async (req, res) => {
+  app.post("/api/leads/:id/estimate", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
@@ -10394,7 +10691,7 @@ The Autobidder Team`;
   });
 
   // Create estimate from multi-service lead
-  app.post("/api/multi-service-leads/:id/estimate", requireAuth, async (req, res) => {
+  app.post("/api/multi-service-leads/:id/estimate", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const multiServiceLeadId = parseInt(req.params.id);
@@ -10470,7 +10767,7 @@ The Autobidder Team`;
   });
 
   // Confirm bid - convert calculator data to approved estimate
-  app.post("/api/leads/:id/confirm-bid", requireAuth, async (req, res) => {
+  app.post("/api/leads/:id/confirm-bid", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
@@ -10669,7 +10966,17 @@ The Autobidder Team`;
       } catch (error) {
         console.error('Failed to trigger estimate approved automations:', error);
       }
-      
+
+      // Log activity for estimate confirmed
+      storage.createLeadActivity({
+        leadId: isMultiService ? undefined : leadId,
+        multiServiceLeadId: isMultiService ? leadId : undefined,
+        userId,
+        eventType: 'estimate_confirmed',
+        description: `Estimate ${estimate.estimateNumber} was confirmed`,
+        eventData: { estimateId: estimate.id, estimateNumber: estimate.estimateNumber }
+      }).catch(err => console.error('Failed to log estimate confirmed activity:', err));
+
       res.status(201).json({ estimate, pendingAutomationRunIds: pendingRunIds });
     } catch (error: any) {
       console.error('Error confirming bid:', error);
@@ -10679,7 +10986,7 @@ The Autobidder Team`;
   });
 
   // Send confirmed bid to customer
-  app.post("/api/estimates/:id/send-to-customer", requireAuth, async (req, res) => {
+  app.post("/api/estimates/:id/send-to-customer", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const estimateId = parseInt(req.params.id);
@@ -10837,6 +11144,16 @@ The Autobidder Team`;
         ).catch(error => {
           console.error('Failed to send Zapier webhook for estimate sent:', error);
         });
+
+        // Log activity for estimate sent
+        storage.createLeadActivity({
+          leadId: estimate.leadId || undefined,
+          multiServiceLeadId: estimate.multiServiceLeadId || undefined,
+          userId,
+          eventType: 'estimate_sent',
+          description: `Estimate ${estimate.estimateNumber} was sent to customer`,
+          eventData: { estimateId: estimate.id, estimateNumber: estimate.estimateNumber, emailSent: results.emailSent, smsSent: results.smsSent }
+        }).catch(err => console.error('Failed to log estimate sent activity:', err));
       }
 
       // Return appropriate status
@@ -10854,7 +11171,7 @@ The Autobidder Team`;
   });
 
   // Email Settings API routes
-  app.get("/api/email-settings", requireAuth, async (req: any, res) => {
+  app.get("/api/email-settings", requireAuth, requirePermission("canManageEmailTemplates"), async (req: any, res) => {
     try {
       const userId = req.currentUser?.id;
       if (!userId) {
@@ -10884,7 +11201,7 @@ The Autobidder Team`;
     }
   });
 
-  app.put("/api/email-settings", requireAuth, async (req: any, res) => {
+  app.put("/api/email-settings", requireAuth, requirePermission("canManageEmailTemplates"), async (req: any, res) => {
     try {
       const userId = req.currentUser?.id;
       if (!userId) {
@@ -10900,7 +11217,7 @@ The Autobidder Team`;
   });
 
   // Email Templates API routes
-  app.get("/api/email-templates", requireAuth, async (req: any, res) => {
+  app.get("/api/email-templates", requireAuth, requirePermission("canManageEmailTemplates"), async (req: any, res) => {
     try {
       const userId = req.currentUser?.id;
       if (!userId) {
@@ -10915,7 +11232,7 @@ The Autobidder Team`;
     }
   });
 
-  app.post("/api/email-templates", requireAuth, async (req: any, res) => {
+  app.post("/api/email-templates", requireAuth, requirePermission("canManageEmailTemplates"), async (req: any, res) => {
     try {
       const userId = req.currentUser?.id;
       if (!userId) {
@@ -10933,7 +11250,7 @@ The Autobidder Team`;
     }
   });
 
-  app.put("/api/email-templates/:id", requireAuth, async (req: any, res) => {
+  app.put("/api/email-templates/:id", requireAuth, requirePermission("canManageEmailTemplates"), async (req: any, res) => {
     try {
       const { id } = req.params;
       const template = await storage.updateEmailTemplate(parseInt(id), req.body);
@@ -10944,7 +11261,7 @@ The Autobidder Team`;
     }
   });
 
-  app.delete("/api/email-templates/:id", requireAuth, async (req: any, res) => {
+  app.delete("/api/email-templates/:id", requireAuth, requirePermission("canManageEmailTemplates"), async (req: any, res) => {
     try {
       const { id } = req.params;
       const success = await storage.deleteEmailTemplate(parseInt(id));
@@ -10956,7 +11273,7 @@ The Autobidder Team`;
   });
 
   // Email statistics endpoint
-  app.get("/api/email-stats", requireAuth, async (req: any, res) => {
+  app.get("/api/email-stats", requireAuth, requirePermission("canManageEmailTemplates"), async (req: any, res) => {
     try {
       const userId = req.currentUser?.id;
       if (!userId) {
@@ -11944,7 +12261,7 @@ The Autobidder Team`;
   });
 
   // Upgrade/downgrade subscription
-  app.post("/api/change-subscription", requireAuth, async (req, res) => {
+  app.post("/api/change-subscription", requireAuth, requirePermission("canManageBilling"), async (req, res) => {
     try {
       const { newPlanId, newBillingPeriod } = req.body;
       const sessionUser = (req as any).currentUser;
@@ -12227,7 +12544,7 @@ The Autobidder Team`;
   });
 
   // Confirm subscription change (execute the actual upgrade after preview)
-  app.post("/api/confirm-subscription-change", requireAuth, async (req, res) => {
+  app.post("/api/confirm-subscription-change", requireAuth, requirePermission("canManageBilling"), async (req, res) => {
     try {
       const { newPlanId, newBillingPeriod } = req.body;
       const sessionUser = (req as any).currentUser;
@@ -12456,7 +12773,7 @@ The Autobidder Team`;
   });
 
   // Cancel subscription
-  app.post("/api/cancel-subscription", requireAuth, async (req, res) => {
+  app.post("/api/cancel-subscription", requireAuth, requirePermission("canManageBilling"), async (req, res) => {
     try {
       const user = (req as any).currentUser;
 
@@ -14466,7 +14783,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/leads/:leadId/work-orders", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/leads/:leadId/work-orders", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const lead = await storage.getLead(leadId);
@@ -14483,7 +14800,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/multi-service-leads/:leadId/work-orders", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/multi-service-leads/:leadId/work-orders", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const lead = await storage.getMultiServiceLead(leadId);
@@ -15287,7 +15604,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/leads/:leadId/communications", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/leads/:leadId/communications", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const communications = await storage.getCrmCommunicationsByLeadId(leadId);
@@ -15298,7 +15615,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/multi-service-leads/:leadId/communications", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/multi-service-leads/:leadId/communications", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const communications = await storage.getCrmCommunicationsByMultiServiceLeadId(leadId);
@@ -15378,7 +15695,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // ==================== Lead Tags Routes ====================
   
   // Get all tags for the authenticated user
-  app.get("/api/lead-tags", requireAuth, async (req, res) => {
+  app.get("/api/lead-tags", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -15391,7 +15708,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Create a new tag
-  app.post("/api/lead-tags", requireAuth, async (req, res) => {
+  app.post("/api/lead-tags", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       if (!currentUser || !currentUser.id) {
@@ -15454,7 +15771,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Update a tag
-  app.patch("/api/lead-tags/:id", requireAuth, async (req, res) => {
+  app.patch("/api/lead-tags/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const tagId = parseInt(req.params.id);
@@ -15482,7 +15799,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Delete a tag
-  app.delete("/api/lead-tags/:id", requireAuth, async (req, res) => {
+  app.delete("/api/lead-tags/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const tagId = parseInt(req.params.id);
@@ -15510,7 +15827,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Get tags for a lead (returns full tag data, not just assignments)
-  app.get("/api/leads/:id/tags", requireWebOrMobileAuth, async (req, res) => {
+  app.get("/api/leads/:id/tags", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
       const isMultiService = req.query.isMultiService === 'true';
@@ -15533,7 +15850,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Assign a tag to a lead
-  app.post("/api/leads/:id/tags", requireAuth, async (req, res) => {
+  app.post("/api/leads/:id/tags", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const leadId = parseInt(req.params.id);
@@ -15571,6 +15888,13 @@ This booking was created on ${new Date().toLocaleString()}.
         // Send Zapier webhook notification for lead tagged
         const tag = await storage.getLeadTag(tagId);
         if (tag) {
+          // Get formula name for comprehensive data
+          let formulaName = '';
+          if ((lead as any).formulaId) {
+            const formula = await storage.getFormula((lead as any).formulaId);
+            formulaName = formula?.name || '';
+          }
+
           ZapierIntegrationService.sendWebhookNotification(
             userId,
             'lead_tagged',
@@ -15578,10 +15902,25 @@ This booking was created on ${new Date().toLocaleString()}.
               id: lead.id,
               name: lead.name,
               email: lead.email,
+              phone: lead.phone,
+              address: (lead as any).address,
+              company: (lead as any).company,
+              stage: lead.stage,
+              calculatedPrice: (lead as any).calculatedPrice,
+              notes: (lead as any).notes,
+              source: lead.source,
+              formulaId: (lead as any).formulaId,
+              formulaName: formulaName,
+              variables: (lead as any).variables,
+              appliedDiscounts: (lead as any).appliedDiscounts,
+              selectedUpsells: (lead as any).selectedUpsells,
               tagId: tag.id,
-              tagName: tag.name,
+              tagName: tag.displayName || tag.name,
               tagColor: tag.color,
-              taggedAt: new Date().toISOString()
+              tagDescription: tag.description,
+              taggedAt: new Date().toISOString(),
+              taggedBy: userId,
+              createdAt: lead.createdAt
             }
           ).catch(error => {
             console.error('Failed to send Zapier webhook for lead tagged:', error);
@@ -15597,7 +15936,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Remove a tag from a lead
-  app.delete("/api/leads/:id/tags/:tagId", requireAuth, async (req, res) => {
+  app.delete("/api/leads/:id/tags/:tagId", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.id);
       const tagId = parseInt(req.params.tagId);
@@ -15617,7 +15956,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
   
   // Get leads by tag
-  app.get("/api/lead-tags/:tagId/leads", requireAuth, async (req, res) => {
+  app.get("/api/lead-tags/:tagId/leads", requireAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
       const tagId = parseInt(req.params.tagId);
@@ -16577,7 +16916,7 @@ This booking was created on ${new Date().toLocaleString()}.
   });
 
   // Image Upload
-  app.post("/api/leads/:id/upload", requireWebOrMobileAuth, (req: any, res: any) => {
+  app.post("/api/leads/:id/upload", requireWebOrMobileAuth, requirePermission("canManageLeads"), (req: any, res: any) => {
     upload.single("image")(req, res, async (err: any) => {
       if (err) {
         console.error("[Upload] Multer error:", err);
@@ -16618,7 +16957,7 @@ This booking was created on ${new Date().toLocaleString()}.
     });
   });
 
-  app.post("/api/multi-service-leads/:id/upload", requireWebOrMobileAuth, (req: any, res: any) => {
+  app.post("/api/multi-service-leads/:id/upload", requireWebOrMobileAuth, requirePermission("canManageLeads"), (req: any, res: any) => {
     upload.single("image")(req, res, async (err: any) => {
       if (err) {
         console.error("[Upload] Multer error:", err);

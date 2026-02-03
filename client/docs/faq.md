@@ -1,26 +1,25 @@
-# FAQ
+# Frequently Asked Questions
 
 ## How do I create my first calculator?
 
-Go to **Formulas**, create a formula, add variables, build the formula expression, preview, and save. Then publish using **Embed Code** or **Custom Forms**.
+Start by going to the **Formulas** section, where you can create a new formula, add variables (questions), and build the formula expression. Once you're done, you can publish your calculator using the **Embed Code** or by adding it to a **Custom Form**.
 
 ## What variable types are supported?
 
-Number, text, checkbox, select, dropdown, slider, and multiple-choice.
+We support a variety of variable types, including **Number**, **Text**, **Checkbox**, **Select**, **Dropdown**, **Slider**, and **Multiple-Choice**.
 
-## Can I hide questions based on answers?
+## Can I hide questions based on a user's answers?
 
-Yes. Use conditional logic to show or hide questions based on earlier answers.
+Yes. You can use **Conditional Logic** to show or hide questions based on the answers to previous questions.
 
-## Does styling change pricing logic?
+## Does styling change the pricing logic?
 
-No. Styling affects appearance only. Pricing logic lives in the formula and Logic settings.
+No. Styling only affects the appearance of your calculator. The pricing logic is handled separately in the **Formula Builder** and the **Logic** settings.
 
 ## How do I share a calculator?
 
-Use **Embed Code** for a single formula or **Custom Forms** for a multi-service public page.
+You can use the **Embed Code** to embed a single formula on your website, or you can use **Custom Forms** to create a multi-service page with a shareable URL.
 
 ## How do Zapier API keys work?
 
-Generate keys in **Integrations**. Keys are shown once and used in Zapier with a Bearer Authorization header.
-
+You can generate API keys in the **Integrations** section. These keys are shown only once and are used to authenticate with Zapier using a Bearer Authorization header.

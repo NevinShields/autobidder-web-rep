@@ -56,6 +56,7 @@ interface SortableOptionItemProps {
 
 const typeConfig: Record<string, { icon: any; label: string; color: string }> = {
   number: { icon: Hash, label: "Number", color: "bg-blue-100 text-blue-700 border-blue-200" },
+  stepper: { icon: Plus, label: "Stepper", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
   text: { icon: Type, label: "Text", color: "bg-gray-100 text-gray-700 border-gray-200" },
   checkbox: { icon: CheckSquare, label: "Checkbox", color: "bg-green-100 text-green-700 border-green-200" },
   slider: { icon: SlidersHorizontal, label: "Slider", color: "bg-purple-100 text-purple-700 border-purple-200" },
@@ -197,6 +198,7 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
 function getDefaultValuePlaceholder(variableType: string): string {
   switch (variableType) {
     case 'number':
+    case 'stepper':
     case 'slider':
       return 'e.g., 1 (for multiplication) or 0 (for addition)';
     case 'checkbox':
@@ -214,6 +216,7 @@ function getDefaultValuePlaceholder(variableType: string): string {
 function getDefaultValueDescription(variableType: string): string {
   switch (variableType) {
     case 'number':
+    case 'stepper':
     case 'slider':
       return 'Use 1 for multiplication formulas, 0 for addition formulas';
     case 'checkbox':
@@ -245,6 +248,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editTooltipVideoUrl, setEditTooltipVideoUrl] = useState(variable.tooltipVideoUrl || '');
   const [editTooltipImageUrl, setEditTooltipImageUrl] = useState(variable.tooltipImageUrl || '');
   const [isEditingSlider, setIsEditingSlider] = useState(false);
+  const [isEditingStepper, setIsEditingStepper] = useState(false);
   const [editMin, setEditMin] = useState(variable.min || 0);
   const [editMax, setEditMax] = useState(variable.max || 100);
   const [editStep, setEditStep] = useState(variable.step || 1);
@@ -324,6 +328,11 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
         updates.max = variable.max || 100;
         updates.step = variable.step || 1;
       }
+      if (editType === 'stepper') {
+        updates.min = variable.min ?? 0;
+        updates.max = variable.max ?? 100;
+        updates.step = undefined;
+      }
 
       onUpdate(variable.id, updates);
     }
@@ -350,6 +359,17 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       });
     }
     setIsEditingCheckbox(false);
+  };
+
+  const handleSaveStepper = () => {
+    if (onUpdate) {
+      onUpdate(variable.id, {
+        min: editMin,
+        max: editMax,
+        unit: editUnit.trim().substring(0, 15) || undefined
+      });
+    }
+    setIsEditingStepper(false);
   };
 
   const handleOptionUpdate = (index: number, updates: any) => {
@@ -542,7 +562,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             condition: 'equals',
             expectedValue: ''
           }],
-          defaultValue: variable.type === 'number' ? 0 : ''
+          defaultValue: ['number', 'stepper', 'slider'].includes(variable.type) ? 0 : ''
         }
       });
     }
@@ -740,6 +760,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="number">Number</SelectItem>
+                      <SelectItem value="stepper">Stepper</SelectItem>
                       <SelectItem value="text">Text</SelectItem>
                       <SelectItem value="checkbox">Checkbox</SelectItem>
                       <SelectItem value="slider">Slider</SelectItem>
@@ -763,7 +784,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             </div>
 
             {/* Unit (for number/text) */}
-            {!hasOptions && variable.type !== 'slider' && variable.type !== 'checkbox' && (
+            {!hasOptions && variable.type !== 'slider' && variable.type !== 'stepper' && variable.type !== 'checkbox' && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-gray-500 font-medium">Unit</Label>
                 {isEditingUnit ? (
@@ -831,6 +852,77 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
                     <div className="text-sm text-gray-900 dark:text-gray-200">{variable.min || 0} - {variable.max || 100}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">Step: {variable.step || 1}{variable.unit && ` • Unit: ${variable.unit}`}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Stepper Configuration */}
+            {variable.type === 'stepper' && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-gray-500 font-medium">Stepper Range</Label>
+                  {!isEditingStepper && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingStepper(true);
+                        setEditMin(variable.min ?? 0);
+                        setEditMax(variable.max ?? 100);
+                        setEditUnit(variable.unit || '');
+                      }}
+                      className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+                {isEditingStepper ? (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs text-gray-500">Min</Label>
+                        <Input
+                          type="number"
+                          value={editMin}
+                          onChange={(e) => setEditMin(Number(e.target.value))}
+                          className="h-9 text-sm mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Max</Label>
+                        <Input
+                          type="number"
+                          value={editMax}
+                          onChange={(e) => setEditMax(Number(e.target.value))}
+                          className="h-9 text-sm mt-1"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-500">Unit (optional)</Label>
+                      <Input
+                        value={editUnit}
+                        onChange={(e) => setEditUnit(e.target.value.substring(0, 15))}
+                        placeholder="e.g., items"
+                        className="h-9 text-sm mt-1"
+                        maxLength={15}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={handleSaveStepper} className="h-7 text-xs">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingStepper(false)} className="h-7 text-xs">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                    <div className="text-sm text-gray-900 dark:text-gray-200">
+                      {variable.min ?? 0} - {variable.max ?? 100}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {variable.unit && `Unit: ${variable.unit}`}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1106,6 +1198,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                       {cond.condition && !['is_empty', 'is_not_empty'].includes(cond.condition) && (
                         (() => {
                           const depVar = allVariables.find(v => v.id === cond.dependsOnVariable);
+                          const isNumericDep = ['number', 'slider', 'stepper'].includes(depVar?.type || '');
                           if (depVar && ['select', 'dropdown', 'multiple-choice'].includes(depVar.type) && depVar.options) {
                             return (
                               <Select value={String(cond.expectedValue || '')} onValueChange={(value) => updateCondition(cond.id, { expectedValue: value })}>
@@ -1135,9 +1228,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           }
                           return (
                             <Input
-                              type={depVar?.type === 'number' ? 'number' : 'text'}
+                              type={isNumericDep ? 'number' : 'text'}
                               value={String(cond.expectedValue || '')}
-                              onChange={(e) => updateCondition(cond.id, { expectedValue: depVar?.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value })}
+                              onChange={(e) => updateCondition(cond.id, { expectedValue: isNumericDep ? parseFloat(e.target.value) || 0 : e.target.value })}
                               className="h-9 text-sm"
                               placeholder="Enter value..."
                             />
@@ -1156,7 +1249,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 {(variable.conditionalLogic.conditions?.length || 0) > 0 && (
                   <div className="pt-2 border-t border-amber-200 dark:border-amber-700 space-y-2">
                     <Label className="text-sm text-gray-700 dark:text-gray-200 font-medium">Default value when hidden:</Label>
-                    {variable.type === 'number' || variable.type === 'slider' ? (
+                    {['number', 'slider', 'stepper'].includes(variable.type) ? (
                       <div className="flex gap-2">
                         <Select
                           value={variable.conditionalLogic.defaultValue?.toString() || ''}

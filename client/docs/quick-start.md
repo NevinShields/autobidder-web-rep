@@ -1,38 +1,49 @@
-# Quick Start
+# Quick Start Guide
 
-Follow this sequence to get a calculator live quickly.
+This guide will walk you through the fastest way to get your first calculator up and running.
 
-## 1) Create a formula
+## 1. Create a Formula
 
-1. Go to **Formulas**.
-2. Click **Create New Formula**.
-3. Add a name, title, and description.
+First, you need to create a new formula.
 
-## 2) Add variables and pricing
+1.  Go to the **Formulas** section.
+2.  Click **Create New Formula**.
+3.  Give your formula a name, title, and description.
 
-1. Add at least one variable (question).
-2. For options, add numeric values.
-3. Build the formula expression using the variable IDs.
+## 2. Add Variables and Pricing
 
-## 3) Preview and save
+Next, you'll add the questions (variables) that your customers will answer.
 
-1. Preview the calculator.
-2. Save the formula.
+1.  Add at least one variable to your formula.
+2.  If your variable has options, be sure to add numeric values for each option.
+3.  Build the **Formula Expression** using the variable IDs to calculate the price.
 
-## 4) Style it
+## 3. Preview and Save
 
-1. Go to **Design**.
-2. Pick a theme and adjust colors/typography.
-3. Save changes.
+Now it's time to see your calculator in action.
 
-## 5) Configure logic
+1.  Use the **Preview** button to see what your calculator will look like.
+2.  If you're happy with it, click **Save**.
 
-1. Go to **Logic**.
-2. Set bundle discount, sales tax, distance pricing, and lead capture.
-3. Save settings.
+## 4. Style Your Calculator
 
-## 6) Publish
+Next, you can customize the look and feel of your calculator.
 
-- **Embed Code**: single formula embed
-- **Custom Forms**: multi-service shareable page
+1.  Go to the **Design** section.
+2.  Choose a theme and adjust the colors and typography to match your brand.
+3.  Save your changes.
 
+## 5. Configure Logic
+
+Now you can set up the rules and behavior of your calculator.
+
+1.  Go to the **Logic** section.
+2.  Set up bundle discounts, sales tax, distance pricing, and lead capture requirements.
+3.  Save your settings.
+
+## 6. Publish Your Calculator
+
+Finally, you can share your calculator with the world.
+
+*   **Embed Code:** Use this to embed a single formula on your website.
+*   **Custom Forms:** Use this to create a multi-service page with a shareable URL.

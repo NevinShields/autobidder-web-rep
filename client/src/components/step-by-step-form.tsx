@@ -100,7 +100,7 @@ export default function StepByStepForm({
 
   const canAutoAdvance = () => {
     // Only auto-advance for simple input types
-    const simpleTypes = ['text', 'number', 'checkbox', 'dropdown', 'select'];
+    const simpleTypes = ['text', 'number', 'stepper', 'checkbox', 'dropdown', 'select'];
     return currentVariables.every(variable => simpleTypes.includes(variable.type));
   };
 

@@ -925,22 +925,22 @@ export default function EstimatePageSettings() {
 
               <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
+                    <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-500" />
                     Business Branding
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="dark:text-gray-400">
                     Configure which business details are visible on your estimates.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg border border-gray-100 dark:border-slate-800">
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
                     <div className="flex items-center justify-between gap-6 mb-4">
                       <div>
-                        <Label htmlFor="estimate-show-logo" className="text-base font-medium">
+                        <Label htmlFor="estimate-show-logo" className="text-base font-medium dark:text-gray-200">
                           Show Business Logo
                         </Label>
-                        <p className="text-sm text-gray-500 dark:text-slate-400">Display your company logo at the top of the estimate.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Display your company logo at the top of the estimate.</p>
                       </div>
                       <Switch
                         id="estimate-show-logo"
@@ -952,11 +952,11 @@ export default function EstimatePageSettings() {
                     </div>
                     
                     <div className="space-y-3 pl-1">
-                      <Label className="text-xs uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold">Logo Image</Label>
+                      <Label className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold">Logo Image</Label>
                       <div className="flex flex-wrap items-center gap-4">
                         {estimatePageSettings.defaultLogoUrl ? (
                           <div className="relative group">
-                            <div className="h-20 w-auto p-2 bg-white dark:bg-slate-900 rounded-md border border-gray-200 dark:border-slate-700 flex items-center justify-center">
+                            <div className="h-20 w-auto p-2 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 flex items-center justify-center">
                               <img
                                 src={estimatePageSettings.defaultLogoUrl}
                                 alt="Business logo"
@@ -979,7 +979,7 @@ export default function EstimatePageSettings() {
                             </Button>
                           </div>
                         ) : (
-                          <div className="h-20 w-20 bg-gray-100 dark:bg-slate-800 rounded-md border border-dashed border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
+                          <div className="h-20 w-20 bg-gray-100 dark:bg-gray-800 rounded-md border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
                             <ImageIcon className="h-8 w-8 opacity-50" />
                           </div>
                         )}
@@ -991,7 +991,7 @@ export default function EstimatePageSettings() {
                           onComplete={handleLogoUploadComplete}
                           buttonClassName="whitespace-nowrap"
                         >
-                          <Button variant="outline" size="sm" className="gap-2">
+                          <Button variant="outline" size="sm" className="gap-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700">
                             <Upload className="h-4 w-4" />
                             {estimatePageSettings.defaultLogoUrl ? "Change Logo" : "Upload Logo"}
                           </Button>
@@ -1000,7 +1000,7 @@ export default function EstimatePageSettings() {
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="dark:bg-gray-700" />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
                     {[
@@ -1010,7 +1010,7 @@ export default function EstimatePageSettings() {
                       { id: "phone", label: "Phone", key: "defaultShowBusinessPhone" }
                     ].map((item) => (
                       <div key={item.id} className="flex items-center justify-between py-1">
-                        <Label htmlFor={`estimate-show-${item.id}`} className="text-sm font-medium cursor-pointer">
+                        <Label htmlFor={`estimate-show-${item.id}`} className="text-sm font-medium cursor-pointer dark:text-gray-200">
                           Show {item.label}
                         </Label>
                         <Switch
@@ -1026,23 +1026,23 @@ export default function EstimatePageSettings() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
+              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Layout className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
+                    <Layout className="h-5 w-5 text-blue-600 dark:text-blue-500" />
                     Customer Actions
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="dark:text-gray-400">
                     Control which actions customers can take on the estimate page.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between gap-6">
                     <div>
-                      <Label htmlFor="estimate-show-accept-decline" className="text-base font-medium">
+                      <Label htmlFor="estimate-show-accept-decline" className="text-base font-medium dark:text-gray-200">
                         Show Accept/Decline Buttons
                       </Label>
-                      <p className="text-sm text-gray-500 dark:text-slate-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
                         When enabled, customers can accept or decline estimates directly.
                       </p>
                     </div>
@@ -1059,13 +1059,13 @@ export default function EstimatePageSettings() {
             </div>
 
             <div className="space-y-8">
-              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
+              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Paperclip className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
+                    <Paperclip className="h-5 w-5 text-blue-600 dark:text-blue-500" />
                     Standard Attachments
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="dark:text-gray-400">
                     Files automatically included with every new estimate (e.g. Terms, Insurance).
                   </CardDescription>
                 </CardHeader>
@@ -1090,8 +1090,8 @@ export default function EstimatePageSettings() {
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{attachmentSections.terms.label}</p>
-                          <p className="text-sm text-gray-500 dark:text-slate-400">{attachmentSections.terms.description}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{attachmentSections.terms.label}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{attachmentSections.terms.description}</p>
                         </div>
                         <ObjectUploader
                           maxNumberOfFiles={1}
@@ -1100,7 +1100,7 @@ export default function EstimatePageSettings() {
                           onComplete={handleUploadComplete("terms")}
                           buttonClassName="whitespace-nowrap"
                         >
-                          <Button variant="secondary" size="sm" className="gap-2">
+                          <Button variant="secondary" size="sm" className="gap-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                             <Upload className="h-3.5 w-3.5" />
                             Upload
                           </Button>
@@ -1109,13 +1109,13 @@ export default function EstimatePageSettings() {
                       {renderAttachmentList("terms")}
                     </div>
 
-                    <Separator />
+                    <Separator className="dark:bg-gray-700" />
 
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{attachmentSections.insurance.label}</p>
-                          <p className="text-sm text-gray-500 dark:text-slate-400">{attachmentSections.insurance.description}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{attachmentSections.insurance.label}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{attachmentSections.insurance.description}</p>
                         </div>
                         <ObjectUploader
                           maxNumberOfFiles={1}
@@ -1124,7 +1124,7 @@ export default function EstimatePageSettings() {
                           onComplete={handleUploadComplete("insurance")}
                           buttonClassName="whitespace-nowrap"
                         >
-                          <Button variant="secondary" size="sm" className="gap-2">
+                          <Button variant="secondary" size="sm" className="gap-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
                             <Upload className="h-3.5 w-3.5" />
                             Upload
                           </Button>
@@ -1133,13 +1133,13 @@ export default function EstimatePageSettings() {
                       {renderAttachmentList("insurance")}
                     </div>
 
-                    <Separator />
+                    <Separator className="dark:bg-gray-700" />
 
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{attachmentSections.custom.label}</p>
-                          <p className="text-sm text-gray-500 dark:text-slate-400">{attachmentSections.custom.description}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{attachmentSections.custom.label}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{attachmentSections.custom.description}</p>
                         </div>
                       </div>
                       
@@ -1149,7 +1149,7 @@ export default function EstimatePageSettings() {
                           placeholder="File display name (e.g. 'Welcome Packet')"
                           value={customAttachmentName}
                           onChange={(e) => setCustomAttachmentName(e.target.value)}
-                          className="flex-1"
+                          className="flex-1 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                         />
                         <ObjectUploader
                           maxNumberOfFiles={1}
@@ -1159,7 +1159,7 @@ export default function EstimatePageSettings() {
                           buttonClassName="whitespace-nowrap"
                           disabled={!customAttachmentName.trim()}
                         >
-                          <Button variant="secondary" size="default" className="gap-2" disabled={!customAttachmentName.trim()}>
+                          <Button variant="secondary" size="default" className="gap-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600" disabled={!customAttachmentName.trim()}>
                             <Upload className="h-4 w-4" />
                             Upload File
                           </Button>
@@ -1171,19 +1171,19 @@ export default function EstimatePageSettings() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
+              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Play className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
+                    <Play className="h-5 w-5 text-blue-600 dark:text-blue-500" />
                     Video Integration
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="dark:text-gray-400">
                     Embed a video (YouTube, Loom, Vimeo) to personally greet your customers.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="estimate-video-toggle" className="text-sm font-medium">
+                    <Label htmlFor="estimate-video-toggle" className="text-sm font-medium dark:text-gray-200">
                       Enable Video Section
                     </Label>
                     <Switch
@@ -1195,7 +1195,7 @@ export default function EstimatePageSettings() {
                     />
                   </div>
                   <div className={`transition-opacity ${estimatePageSettings.defaultShowVideo === false ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <Label htmlFor="estimate-video-default" className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Default Video URL</Label>
+                    <Label htmlFor="estimate-video-default" className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Default Video URL</Label>
                     <Input
                       id="estimate-video-default"
                       value={estimatePageSettings.defaultVideoUrl || ""}
@@ -1204,8 +1204,9 @@ export default function EstimatePageSettings() {
                       }
                       placeholder="https://youtube.com/watch?v=..."
                       disabled={estimatePageSettings.defaultShowVideo === false}
+                      className="dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                     />
-                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
                       Supports YouTube, Vimeo, and Loom links.
                     </p>
                   </div>

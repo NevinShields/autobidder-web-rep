@@ -306,8 +306,8 @@ export default function EstimatePageSettings() {
     : previewIsDetailed
       ? { backgroundColor: previewTheme.backgroundColor, color: previewTheme.textColor, borderTop: `4px solid ${previewTheme.primaryColor}` }
       : { background: `linear-gradient(to right, ${previewTheme.primaryColor}, ${previewTheme.accentColor})` };
-  const previewHeaderMutedClass = previewIsMinimal || previewIsDetailed ? "text-gray-500 dark:text-slate-300" : "text-white/80";
-  const previewHeaderTitleClass = previewIsMinimal || previewIsDetailed ? "text-gray-900 dark:text-slate-100" : "text-white";
+  const previewHeaderMutedClass = previewIsMinimal || previewIsDetailed ? "text-gray-500 dark:text-gray-400" : "text-white/80";
+  const previewHeaderTitleClass = previewIsMinimal || previewIsDetailed ? "text-gray-900 dark:text-gray-100" : "text-white";
   const previewBusinessName = businessSettings?.businessName || "Your Business";
   const previewBusinessAddress = businessSettings?.businessAddress || "123 Business St, Springfield";
   const previewBusinessEmail = businessSettings?.businessEmail || "hello@yourbusiness.com";
@@ -333,7 +333,7 @@ export default function EstimatePageSettings() {
       .filter(({ attachment }) => (attachment.category || "custom") === category);
 
     if (attachments.length === 0) {
-      return <p className="text-sm text-gray-500 dark:text-slate-400 italic px-2">No files added yet.</p>;
+      return <p className="text-sm text-gray-500 dark:text-gray-400 italic px-2">No files added yet.</p>;
     }
 
     return (
@@ -341,10 +341,10 @@ export default function EstimatePageSettings() {
         {attachments.map(({ attachment, index }) => (
           <div
             key={`${attachment.url}-${index}`}
-            className="flex items-center justify-between border rounded-lg p-3 bg-white dark:bg-slate-900 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors group"
+            className="flex items-center justify-between border rounded-lg p-3 bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-blue-600">
+              <div className="w-10 h-10 rounded bg-gray-100 dark:bg-gray-900 flex items-center justify-center flex-shrink-0 text-blue-600">
                 {attachment.type === "image" ? (
                   <ImageIcon className="h-5 w-5" />
                 ) : (
@@ -352,16 +352,16 @@ export default function EstimatePageSettings() {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                   {attachment.name || attachment.url.split('/').pop()}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 uppercase">{attachment.type}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{attachment.type}</p>
               </div>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
+              className="text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/40"
               onClick={() =>
                 setEstimatePageSettings((prev) => ({
                   ...prev,
@@ -417,10 +417,10 @@ export default function EstimatePageSettings() {
       <DashboardLayout>
         <div className="p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            <div className="h-12 bg-gray-200 dark:bg-slate-800 rounded w-1/3 animate-pulse" />
+            <div className="h-12 bg-gray-200 dark:bg-gray-800 rounded w-1/3 animate-pulse" />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="h-96 bg-gray-100 dark:bg-slate-800 rounded-lg animate-pulse" />
-              <div className="h-96 bg-gray-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+              <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+              <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
             </div>
           </div>
         </div>
@@ -430,12 +430,12 @@ export default function EstimatePageSettings() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 min-h-screen bg-gray-50/50 dark:bg-slate-950">
+      <div className="p-6 min-h-screen bg-slate-50/50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">Estimate Page Editor</h1>
-              <p className="text-gray-500 dark:text-slate-400 mt-2 text-lg">Customize how your estimates appear to customers.</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Estimate Page Editor</h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Customize how your estimates appear to customers.</p>
             </div>
             <div className="flex items-center gap-3">
               <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
@@ -445,35 +445,35 @@ export default function EstimatePageSettings() {
                     Preview
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0 overflow-hidden">
-                  <DialogHeader className="p-6 border-b bg-white dark:bg-slate-950 flex-shrink-0">
-                    <DialogTitle>Estimate Page Preview</DialogTitle>
-                    <DialogDescription>
+                <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0 overflow-hidden dark:bg-gray-900 dark:border-gray-800">
+                  <DialogHeader className="p-6 border-b bg-white dark:bg-gray-900 flex-shrink-0">
+                    <DialogTitle className="dark:text-gray-100">Estimate Page Preview</DialogTitle>
+                    <DialogDescription className="dark:text-gray-400">
                       This preview uses your current defaults and sample data.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-slate-950">
+                  <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900/50">
                     <div className={previewIsDetailed ? "grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] max-w-6xl mx-auto" : "space-y-6 max-w-4xl mx-auto"}>
-                      <Card className={previewCardClassName} style={{ backgroundColor: previewTheme.backgroundColor }}>
+                      <Card className={`${previewCardClassName} dark:bg-gray-800 dark:border-gray-700`} style={{ backgroundColor: previewTheme.backgroundColor }}>
                         <CardHeader
-                          className={previewHeaderClassName}
+                          className={`${previewHeaderClassName} dark:border-gray-700`}
                           style={previewHeaderStyle}
                         >
                           {previewIsDetailed ? (
                             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                               <div>
-                                <p className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-slate-300">Detailed Estimate</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-400">Detailed Estimate</p>
                                 <CardTitle className={`text-2xl font-bold mt-2 ${previewHeaderTitleClass}`}>
                                   Estimate #{previewEstimate.estimateNumber}
                                 </CardTitle>
-                                <p className="text-gray-600 dark:text-slate-300">Prepared for {previewEstimate.customerName}</p>
-                                <p className="text-gray-500 dark:text-slate-400 text-sm mt-2">Layout: {previewLayoutId}</p>
+                                <p className="text-gray-600 dark:text-gray-300">Prepared for {previewEstimate.customerName}</p>
+                                <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Layout: {previewLayoutId}</p>
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">Draft</span>
+                                <span className="rounded-full bg-slate-100 dark:bg-gray-700 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-gray-200">Draft</span>
                                 <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">Confirmed Estimate</span>
-                                <span className="ml-2 text-sm text-gray-500 dark:text-slate-400">Total</span>
-                                <span className="text-lg font-semibold text-gray-900 dark:text-slate-100">{formatCurrency(previewTotal)}</span>
+                                <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Total</span>
+                                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(previewTotal)}</span>
                               </div>
                             </div>
                           ) : (
@@ -791,49 +791,49 @@ export default function EstimatePageSettings() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             <div className="space-y-8">
-              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
+              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Layout className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
+                    <Layout className="h-5 w-5 text-blue-600 dark:text-blue-500" />
                     Layout & Theme
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="dark:text-gray-400">
                     Choose the structural layout and color scheme for your estimates.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <Label htmlFor="estimate-layout-default" className="text-sm font-medium mb-2 block">Layout Preset</Label>
+                    <Label htmlFor="estimate-layout-default" className="text-sm font-medium mb-2 block dark:text-gray-200">Layout Preset</Label>
                     <Select
                       value={estimatePageSettings.defaultLayoutId || "classic"}
                       onValueChange={(value) =>
                         setEstimatePageSettings((prev) => ({ ...prev, defaultLayoutId: value }))
                       }
                     >
-                      <SelectTrigger id="estimate-layout-default" className="h-11">
+                      <SelectTrigger id="estimate-layout-default" className="h-11 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="classic">Classic (Standard clean look)</SelectItem>
-                        <SelectItem value="minimal">Minimal (Simplified, no borders)</SelectItem>
-                        <SelectItem value="detailed">Detailed (Split view with sidebar)</SelectItem>
+                      <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
+                        <SelectItem value="classic" className="dark:text-gray-100 dark:focus:bg-gray-800">Classic (Standard clean look)</SelectItem>
+                        <SelectItem value="minimal" className="dark:text-gray-100 dark:focus:bg-gray-800">Minimal (Simplified, no borders)</SelectItem>
+                        <SelectItem value="detailed" className="dark:text-gray-100 dark:focus:bg-gray-800">Detailed (Split view with sidebar)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-sm font-medium">Theme Colors</Label>
+                    <Label className="text-sm font-medium dark:text-gray-200">Theme Colors</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Primary Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Primary Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.primaryColor || "#2563eb" }}
                           />
                           <Input
                             type="color"
-                            className="w-full h-10 p-1 cursor-pointer"
+                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
                             value={estimatePageSettings.defaultTheme?.primaryColor || "#2563eb"}
                             onChange={(e) =>
                               setEstimatePageSettings((prev) => ({
@@ -845,15 +845,15 @@ export default function EstimatePageSettings() {
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Accent Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Accent Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.accentColor || "#16a34a" }}
                           />
                           <Input
                             type="color"
-                            className="w-full h-10 p-1 cursor-pointer"
+                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
                             value={estimatePageSettings.defaultTheme?.accentColor || "#16a34a"}
                             onChange={(e) =>
                               setEstimatePageSettings((prev) => ({
@@ -865,15 +865,15 @@ export default function EstimatePageSettings() {
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Background Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Background Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.backgroundColor || "#ffffff" }}
                           />
                           <Input
                             type="color"
-                            className="w-full h-10 p-1 cursor-pointer"
+                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
                             value={estimatePageSettings.defaultTheme?.backgroundColor || "#ffffff"}
                             onChange={(e) =>
                               setEstimatePageSettings((prev) => ({
@@ -885,15 +885,15 @@ export default function EstimatePageSettings() {
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Text Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Text Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.textColor || "#111827" }}
                           />
                           <Input
                             type="color"
-                            className="w-full h-10 p-1 cursor-pointer"
+                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
                             value={estimatePageSettings.defaultTheme?.textColor || "#111827"}
                             onChange={(e) =>
                               setEstimatePageSettings((prev) => ({
@@ -908,7 +908,7 @@ export default function EstimatePageSettings() {
                   </div>
 
                   <div>
-                    <Label htmlFor="estimate-default-message" className="text-sm font-medium mb-2 block">Default Message</Label>
+                    <Label htmlFor="estimate-default-message" className="text-sm font-medium mb-2 block dark:text-gray-200">Default Message</Label>
                     <Textarea
                       id="estimate-default-message"
                       value={estimatePageSettings.defaultMessage || ""}
@@ -917,13 +917,13 @@ export default function EstimatePageSettings() {
                       }
                       placeholder="Add a friendly message that appears on every estimate (e.g. 'Thank you for your business!')..."
                       rows={4}
-                      className="resize-none"
+                      className="resize-none dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
+              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-blue-600" />

@@ -553,6 +553,7 @@ export default function LandingExteriorCleaning() {
               <ul className="space-y-2">
                 <li><a href="#features" className="text-white/60 hover:text-white transition-colors">Features</a></li>
                 <li><a href="#pricing" className="text-white/60 hover:text-white transition-colors">Pricing</a></li>
+                <li><Link href="/docs"><span className="text-white/60 hover:text-white transition-colors cursor-pointer">Docs</span></Link></li>
                 <li><Link href="/faq"><span className="text-white/60 hover:text-white transition-colors cursor-pointer">FAQ</span></Link></li>
               </ul>
             </div>

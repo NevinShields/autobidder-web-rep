@@ -398,6 +398,11 @@ export default function Pricing() {
               />
               <span className="text-xl font-bold">Autobidder</span>
             </div>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300 mb-4 md:mb-0">
+              <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            </div>
             <div className="text-gray-400 text-sm">
               © 2025 Autobidder. All rights reserved.
             </div>

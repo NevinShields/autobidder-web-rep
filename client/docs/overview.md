@@ -33,6 +33,20 @@ Here's a quick rundown of where to find everything you need:
 *   **Integrations (`/integrations`):** Connect Autobidder to other apps and services, including Zapier.
 *   **Automations (`/automations/create`):** Create powerful workflows to automate tasks like sending emails, updating lead statuses, and more.
 
+## Dashboard & Customers Videos
+
+### Autobidder Dashboard Helper
+
+Lead notifications, call screen button, dark mode toggle, and quick actions for calculators and calendar.
+
+<iframe width="100%" height="420" src="https://www.youtube.com/embed/hussxWTRnOU" title="Autobidder Dashboard Helper" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+### Customers Page Overview
+
+Overview of the customers page functionality and management features.
+
+<iframe width="100%" height="420" src="https://www.youtube.com/embed/cYp6kpYJna8" title="Customers Page Overview" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 ## Need Help?
 
 If you run into any issues, be sure to check out our [Troubleshooting Guide](/docs/troubleshooting) for solutions to common problems.

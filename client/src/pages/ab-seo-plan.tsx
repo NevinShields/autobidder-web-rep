@@ -505,6 +505,7 @@ export default function AbSeoPlan() {
               <span className="font-bold">Autobidder</span>
             </div>
             <div className="flex gap-6 text-gray-400 text-sm">
+              <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>

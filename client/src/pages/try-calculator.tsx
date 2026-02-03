@@ -269,6 +269,9 @@ export default function TryCalculator() {
         <div className="max-w-7xl mx-auto px-4 py-8 text-center text-white/50 text-sm">
           <p>&copy; {new Date().getFullYear()} Autobidder. All rights reserved.</p>
           <div className="flex justify-center gap-4 mt-2">
+            <Link href="/docs" className="hover:text-white/80">
+              Docs
+            </Link>
             <Link href="/terms" className="hover:text-white/80">
               Terms
             </Link>

@@ -558,6 +558,7 @@ export default function LandingBrutalist() {
               <ul className="space-y-2 text-[#FFFBEB]/70">
                 <li><a href="#features" className="hover:text-[#D97706] transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-[#D97706] transition-colors">Pricing</a></li>
+                <li><Link href="/docs" className="hover:text-[#D97706] transition-colors">Docs</Link></li>
                 <li><a href="#testimonials" className="hover:text-[#D97706] transition-colors">Testimonials</a></li>
               </ul>
             </div>

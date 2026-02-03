@@ -559,6 +559,7 @@ export default function LandingSplitTest() {
               <ul className="space-y-2 text-white/60 text-sm">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><Link href="/docs" className="hover:text-white transition-colors">Docs</Link></li>
                 <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
               </ul>
             </div>

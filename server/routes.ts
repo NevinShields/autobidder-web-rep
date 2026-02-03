@@ -157,6 +157,89 @@ function hasPermission(currentUser: any, permission: string): boolean {
   return currentUser.permissions?.[permission] === true;
 }
 
+function normalizeUploadedImages(images: string[] | null | undefined): string[] {
+  if (!images || images.length === 0) return [];
+  try {
+    const objectStorageService = new ObjectStorageService();
+    return images.map((image) => objectStorageService.normalizeObjectEntityPath(image));
+  } catch (error) {
+    return images;
+  }
+}
+
+function getMimeTypeFromFilename(filename: string): string | null {
+  const extension = path.extname(filename).toLowerCase();
+  switch (extension) {
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".png":
+      return "image/png";
+    case ".webp":
+      return "image/webp";
+    default:
+      return null;
+  }
+}
+
+async function migrateLegacyUploadPaths({
+  leadId,
+  isMultiService,
+  ownerId,
+  uploadedImages,
+}: {
+  leadId: number;
+  isMultiService: boolean;
+  ownerId: string;
+  uploadedImages: string[] | null | undefined;
+}): Promise<string[]> {
+  if (!uploadedImages || uploadedImages.length === 0) return [];
+  const normalized = normalizeUploadedImages(uploadedImages);
+  let didUpdate = false;
+  const migratedImages: string[] = [];
+
+  for (const image of normalized) {
+    if (!image.startsWith("/uploads/")) {
+      migratedImages.push(image);
+      continue;
+    }
+
+    const filename = image.replace("/uploads/", "");
+    const localPath = path.resolve(process.cwd(), "uploads", filename);
+    if (!fs.existsSync(localPath)) {
+      continue;
+    }
+
+    const mimeType = getMimeTypeFromFilename(filename);
+    if (!mimeType) {
+      continue;
+    }
+
+    const buffer = fs.readFileSync(localPath);
+    const objectPath = await uploadImageBufferToObjectStorage({
+      file: {
+        buffer,
+        originalname: filename,
+        mimetype: mimeType,
+        size: buffer.length,
+      } as Express.Multer.File,
+      ownerId,
+    });
+    migratedImages.push(objectPath);
+    didUpdate = true;
+  }
+
+  if (didUpdate) {
+    if (isMultiService) {
+      await storage.updateMultiServiceLead(leadId, { uploadedImages: migratedImages });
+    } else {
+      await storage.updateLead(leadId, { uploadedImages: migratedImages });
+    }
+  }
+
+  return migratedImages;
+}
+
 function requirePermission(permission: string) {
   return (req: any, res: any, next: any) => {
     const currentUser = req.currentUser;
@@ -303,6 +386,21 @@ const uploadIcon = multer({
   }
 });
 
+const uploadLeadImage = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are supported!') as any, false);
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit for lead uploads
+  }
+});
+
 // Configure multer for form image uploads
 const formImageStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -349,6 +447,42 @@ const upload = multer({
     },
   }),
 });
+
+async function uploadImageBufferToObjectStorage({
+  file,
+  ownerId,
+}: {
+  file: Express.Multer.File;
+  ownerId: string;
+}): Promise<string> {
+  const fileExtension = path.extname(file.originalname);
+  const objectStorageService = new ObjectStorageService();
+  const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file.buffer,
+    headers: {
+      'Content-Type': file.mimetype,
+      'Content-Length': file.size.toString(),
+    },
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
+  }
+
+  const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+    objectPath,
+    {
+      owner: ownerId,
+      visibility: "public",
+    }
+  );
+
+  return normalizedPath;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Email authentication only
@@ -945,7 +1079,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload image for a lead
-  app.post("/api/leads/:leadId/upload-image", requireAuth, requirePermission("canManageLeads"), uploadIcon.single('image'), async (req, res) => {
+  app.post("/api/leads/:leadId/upload-image", requireAuth, requirePermission("canManageLeads"), uploadLeadImage.single('image'), async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
@@ -955,35 +1089,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const fileExtension = path.extname(req.file.originalname);
-      const objectStorageService = new ObjectStorageService();
-      
-      // Get presigned URL for upload (reusing icon upload method)
-      const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
-      
-      // Upload file buffer to object storage
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: req.file.buffer,
-        headers: {
-          'Content-Type': req.file.mimetype,
-          'Content-Length': req.file.size.toString(),
-        },
+      const objectPath = await uploadImageBufferToObjectStorage({
+        file: req.file,
+        ownerId: effectiveUserId,
       });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
-      }
-
-      // Set ACL policy to make the image public
-      await objectStorageService.trySetObjectEntityAclPolicy(
-        objectPath,
-        {
-          owner: effectiveUserId,
-          visibility: "public",
-        }
-      );
 
       // Update lead to add the image URL to uploadedImages array
       // Try regular lead first, then multi-service lead
@@ -2768,12 +2877,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leads = formulaId 
         ? await storage.getLeadsByFormulaId(formulaId)
         : await storage.getLeadsByUserId(effectiveUserId);
-      
+      const normalizedLeads = await Promise.all(
+        leads.map(async (lead) => ({
+          ...lead,
+          uploadedImages: await migrateLegacyUploadPaths({
+            leadId: lead.id,
+            isMultiService: false,
+            ownerId: effectiveUserId,
+            uploadedImages: lead.uploadedImages,
+          }),
+        }))
+      );
+
       if (includeTags && leads.length > 0) {
         const leadIds = leads.map(lead => lead.id);
         const tagsMap = await storage.getTagsForLeads(leadIds, false, effectiveUserId);
         
-        const leadsWithTags = leads.map(lead => ({
+        const leadsWithTags = normalizedLeads.map(lead => ({
           ...lead,
           tags: tagsMap.get(lead.id) || []
         }));
@@ -2781,7 +2901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(leadsWithTags);
       }
       
-      res.json(leads);
+      res.json(normalizedLeads);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch leads" });
     }
@@ -4264,12 +4384,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const includeTags = req.query.includeTags === 'true';
       
       const leads = await storage.getMultiServiceLeadsByUserId(effectiveUserId);
+      const normalizedLeads = await Promise.all(
+        leads.map(async (lead) => ({
+          ...lead,
+          uploadedImages: await migrateLegacyUploadPaths({
+            leadId: lead.id,
+            isMultiService: true,
+            ownerId: effectiveUserId,
+            uploadedImages: lead.uploadedImages,
+          }),
+        }))
+      );
       
       if (includeTags && leads.length > 0) {
         const leadIds = leads.map(lead => lead.id);
         const tagsMap = await storage.getTagsForLeads(leadIds, true, effectiveUserId);
         
-        const leadsWithTags = leads.map(lead => ({
+        const leadsWithTags = normalizedLeads.map(lead => ({
           ...lead,
           tags: tagsMap.get(lead.id) || []
         }));
@@ -4277,7 +4408,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(leadsWithTags);
       }
       
-      res.json(leads);
+      res.json(normalizedLeads);
     } catch (error) {
       console.error("Error fetching multi-service leads:", error);
       res.status(500).json({ message: "Failed to fetch multi-service leads" });
@@ -16634,9 +16765,45 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  const defaultSupportPages = [
+    { pageKey: 'dashboard', pageName: 'Dashboard' },
+    { pageKey: 'formulas', pageName: 'Formulas' },
+    { pageKey: 'formula-builder', pageName: 'Formula Builder' },
+    { pageKey: 'leads', pageName: 'Customers' },
+    { pageKey: 'calendar', pageName: 'Calendar' },
+    { pageKey: 'design', pageName: 'Design' },
+    { pageKey: 'logic', pageName: 'Logic' },
+    { pageKey: 'embed-code', pageName: 'Embed Code' },
+    { pageKey: 'stats', pageName: 'Stats' },
+    { pageKey: 'email-settings', pageName: 'Email Settings' },
+    { pageKey: 'integrations', pageName: 'Integrations' },
+    { pageKey: 'website', pageName: 'Website' },
+    { pageKey: 'custom-forms', pageName: 'Custom Forms' },
+    { pageKey: 'automations', pageName: 'Automations' },
+    { pageKey: 'photos', pageName: 'Photos' },
+    { pageKey: 'profile', pageName: 'Profile' },
+    { pageKey: 'call-screen', pageName: 'Call Screen' },
+  ];
+
+  async function ensureDefaultSupportPages() {
+    for (const page of defaultSupportPages) {
+      const existing = await db.select().from(pageSupportConfigs)
+        .where(eq(pageSupportConfigs.pageKey, page.pageKey));
+
+      if (existing.length === 0) {
+        await db.insert(pageSupportConfigs).values({
+          pageKey: page.pageKey,
+          pageName: page.pageName,
+          isEnabled: true,
+        });
+      }
+    }
+  }
+
   // Get all page support configs (admin)
   app.get("/api/admin/page-support-configs", requireSuperAdmin, async (req, res) => {
     try {
+      await ensureDefaultSupportPages();
       const configs = await db.select().from(pageSupportConfigs);
 
       // Get video counts for each page
@@ -16662,38 +16829,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Initialize/seed page support configs (admin) - creates entries for all pages
   app.post("/api/admin/page-support-configs/seed", requireSuperAdmin, async (req, res) => {
     try {
-      const defaultPages = [
-        { pageKey: 'dashboard', pageName: 'Dashboard' },
-        { pageKey: 'formulas', pageName: 'Formulas' },
-        { pageKey: 'leads', pageName: 'Customers' },
-        { pageKey: 'calendar', pageName: 'Calendar' },
-        { pageKey: 'design', pageName: 'Design' },
-        { pageKey: 'logic', pageName: 'Logic' },
-        { pageKey: 'embed-code', pageName: 'Embed Code' },
-        { pageKey: 'stats', pageName: 'Stats' },
-        { pageKey: 'email-settings', pageName: 'Email Settings' },
-        { pageKey: 'integrations', pageName: 'Integrations' },
-        { pageKey: 'website', pageName: 'Website' },
-        { pageKey: 'custom-forms', pageName: 'Custom Forms' },
-        { pageKey: 'automations', pageName: 'Automations' },
-        { pageKey: 'photos', pageName: 'Photos' },
-        { pageKey: 'profile', pageName: 'Profile' },
-        { pageKey: 'call-screen', pageName: 'Call Screen' },
-      ];
-
-      for (const page of defaultPages) {
-        // Check if already exists
-        const existing = await db.select().from(pageSupportConfigs)
-          .where(eq(pageSupportConfigs.pageKey, page.pageKey));
-
-        if (existing.length === 0) {
-          await db.insert(pageSupportConfigs).values({
-            pageKey: page.pageKey,
-            pageName: page.pageName,
-            isEnabled: true,
-          });
-        }
-      }
+      await ensureDefaultSupportPages();
 
       const allConfigs = await db.select().from(pageSupportConfigs);
       res.json(allConfigs);
@@ -16917,10 +17053,10 @@ This booking was created on ${new Date().toLocaleString()}.
 
   // Image Upload
   app.post("/api/leads/:id/upload", requireWebOrMobileAuth, requirePermission("canManageLeads"), (req: any, res: any) => {
-    upload.single("image")(req, res, async (err: any) => {
+    uploadLeadImage.single("image")(req, res, async (err: any) => {
       if (err) {
         console.error("[Upload] Multer error:", err);
-        return res.status(500).json({ message: "File upload error", error: String(err) });
+        return res.status(400).json({ message: err.message || "File upload error", error: String(err) });
       }
 
       console.log(`[Upload] Starting logic for lead ${req.params.id}`);
@@ -16933,17 +17069,18 @@ This booking was created on ${new Date().toLocaleString()}.
 
         const lead = await storage.getLead(id);
         if (!lead) {
-          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
           return res.status(404).json({ message: "Lead not found" });
         }
         
         const userId = (req as any).currentUser?.id;
         if (lead.userId !== userId) {
-          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
           return res.status(403).json({ message: "Unauthorized" });
         }
 
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const imageUrl = await uploadImageBufferToObjectStorage({
+          file: req.file,
+          ownerId: userId,
+        });
         const currentImages = lead.uploadedImages || [];
         const updatedImages = [...currentImages, imageUrl];
 
@@ -16951,17 +17088,16 @@ This booking was created on ${new Date().toLocaleString()}.
         res.json(updated);
       } catch (error) {
         console.error("[Upload] Logic error:", error);
-        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ message: "Failed to upload image" });
       }
     });
   });
 
   app.post("/api/multi-service-leads/:id/upload", requireWebOrMobileAuth, requirePermission("canManageLeads"), (req: any, res: any) => {
-    upload.single("image")(req, res, async (err: any) => {
+    uploadLeadImage.single("image")(req, res, async (err: any) => {
       if (err) {
         console.error("[Upload] Multer error:", err);
-        return res.status(500).json({ message: "File upload error", error: String(err) });
+        return res.status(400).json({ message: err.message || "File upload error", error: String(err) });
       }
 
       try {
@@ -16972,17 +17108,18 @@ This booking was created on ${new Date().toLocaleString()}.
 
         const lead = await storage.getMultiServiceLead(id);
         if (!lead) {
-          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
           return res.status(404).json({ message: "Lead not found" });
         }
         
         const userId = (req as any).currentUser?.id;
         if (lead.businessOwnerId !== userId) {
-          if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
           return res.status(403).json({ message: "Unauthorized" });
         }
 
-        const imageUrl = `/uploads/${req.file.filename}`;
+        const imageUrl = await uploadImageBufferToObjectStorage({
+          file: req.file,
+          ownerId: userId,
+        });
         const currentImages = lead.uploadedImages || [];
         const updatedImages = [...currentImages, imageUrl];
 
@@ -16990,7 +17127,6 @@ This booking was created on ${new Date().toLocaleString()}.
         res.json(updated);
       } catch (error) {
         console.error("[Upload] Error:", error);
-        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ message: "Failed to upload image" });
       }
     });

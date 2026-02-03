@@ -260,6 +260,18 @@
   font-size: 14px;
 }
 
+.docs-content iframe {
+  display: block;
+  width: 100%;
+  border-radius: 18px;
+  box-shadow:
+    0 0 24px rgba(59, 130, 246, 0.35),
+    0 0 60px rgba(168, 85, 247, 0.22);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #0f172a;
+  margin: 16px 0 24px;
+}
+
 .docs-content th,
 .docs-content td {
   border: 1px solid var(--docs-border);

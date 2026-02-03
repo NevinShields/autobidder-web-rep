@@ -306,8 +306,8 @@ export default function EstimatePageSettings() {
     : previewIsDetailed
       ? { backgroundColor: previewTheme.backgroundColor, color: previewTheme.textColor, borderTop: `4px solid ${previewTheme.primaryColor}` }
       : { background: `linear-gradient(to right, ${previewTheme.primaryColor}, ${previewTheme.accentColor})` };
-  const previewHeaderMutedClass = previewIsMinimal || previewIsDetailed ? "text-gray-500" : "text-white/80";
-  const previewHeaderTitleClass = previewIsMinimal || previewIsDetailed ? "text-gray-900" : "text-white";
+  const previewHeaderMutedClass = previewIsMinimal || previewIsDetailed ? "text-gray-500 dark:text-slate-300" : "text-white/80";
+  const previewHeaderTitleClass = previewIsMinimal || previewIsDetailed ? "text-gray-900 dark:text-slate-100" : "text-white";
   const previewBusinessName = businessSettings?.businessName || "Your Business";
   const previewBusinessAddress = businessSettings?.businessAddress || "123 Business St, Springfield";
   const previewBusinessEmail = businessSettings?.businessEmail || "hello@yourbusiness.com";
@@ -333,7 +333,7 @@ export default function EstimatePageSettings() {
       .filter(({ attachment }) => (attachment.category || "custom") === category);
 
     if (attachments.length === 0) {
-      return <p className="text-sm text-gray-500 italic px-2">No files added yet.</p>;
+      return <p className="text-sm text-gray-500 dark:text-slate-400 italic px-2">No files added yet.</p>;
     }
 
     return (
@@ -341,10 +341,10 @@ export default function EstimatePageSettings() {
         {attachments.map(({ attachment, index }) => (
           <div
             key={`${attachment.url}-${index}`}
-            className="flex items-center justify-between border rounded-lg p-3 bg-white hover:bg-gray-50 transition-colors group"
+            className="flex items-center justify-between border rounded-lg p-3 bg-white dark:bg-slate-900 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors group"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0 text-blue-600">
+              <div className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 text-blue-600">
                 {attachment.type === "image" ? (
                   <ImageIcon className="h-5 w-5" />
                 ) : (
@@ -352,16 +352,16 @@ export default function EstimatePageSettings() {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
                   {attachment.name || attachment.url.split('/').pop()}
                 </p>
-                <p className="text-xs text-gray-500 uppercase">{attachment.type}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 uppercase">{attachment.type}</p>
               </div>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="text-gray-400 hover:text-red-600 hover:bg-red-50"
+              className="text-gray-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
               onClick={() =>
                 setEstimatePageSettings((prev) => ({
                   ...prev,
@@ -417,10 +417,10 @@ export default function EstimatePageSettings() {
       <DashboardLayout>
         <div className="p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            <div className="h-12 bg-gray-200 rounded w-1/3 animate-pulse" />
+            <div className="h-12 bg-gray-200 dark:bg-slate-800 rounded w-1/3 animate-pulse" />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="h-96 bg-gray-100 rounded-lg animate-pulse" />
-              <div className="h-96 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="h-96 bg-gray-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+              <div className="h-96 bg-gray-100 dark:bg-slate-800 rounded-lg animate-pulse" />
             </div>
           </div>
         </div>
@@ -430,12 +430,12 @@ export default function EstimatePageSettings() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 min-h-screen bg-gray-50/50">
+      <div className="p-6 min-h-screen bg-gray-50/50 dark:bg-slate-950">
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Estimate Page Editor</h1>
-              <p className="text-gray-500 mt-2 text-lg">Customize how your estimates appear to customers.</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 tracking-tight">Estimate Page Editor</h1>
+              <p className="text-gray-500 dark:text-slate-400 mt-2 text-lg">Customize how your estimates appear to customers.</p>
             </div>
             <div className="flex items-center gap-3">
               <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
@@ -446,13 +446,13 @@ export default function EstimatePageSettings() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0 overflow-hidden">
-                  <DialogHeader className="p-6 border-b bg-white flex-shrink-0">
+                  <DialogHeader className="p-6 border-b bg-white dark:bg-slate-950 flex-shrink-0">
                     <DialogTitle>Estimate Page Preview</DialogTitle>
                     <DialogDescription>
                       This preview uses your current defaults and sample data.
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                  <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-slate-950">
                     <div className={previewIsDetailed ? "grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] max-w-6xl mx-auto" : "space-y-6 max-w-4xl mx-auto"}>
                       <Card className={previewCardClassName} style={{ backgroundColor: previewTheme.backgroundColor }}>
                         <CardHeader
@@ -462,18 +462,18 @@ export default function EstimatePageSettings() {
                           {previewIsDetailed ? (
                             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                               <div>
-                                <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Detailed Estimate</p>
+                                <p className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-slate-300">Detailed Estimate</p>
                                 <CardTitle className={`text-2xl font-bold mt-2 ${previewHeaderTitleClass}`}>
                                   Estimate #{previewEstimate.estimateNumber}
                                 </CardTitle>
-                                <p className="text-gray-600">Prepared for {previewEstimate.customerName}</p>
-                                <p className="text-gray-500 text-sm mt-2">Layout: {previewLayoutId}</p>
+                                <p className="text-gray-600 dark:text-slate-300">Prepared for {previewEstimate.customerName}</p>
+                                <p className="text-gray-500 dark:text-slate-400 text-sm mt-2">Layout: {previewLayoutId}</p>
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Draft</span>
-                                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Confirmed Estimate</span>
-                                <span className="ml-2 text-sm text-gray-500">Total</span>
-                                <span className="text-lg font-semibold text-gray-900">{formatCurrency(previewTotal)}</span>
+                                <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-200">Draft</span>
+                                <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">Confirmed Estimate</span>
+                                <span className="ml-2 text-sm text-gray-500 dark:text-slate-400">Total</span>
+                                <span className="text-lg font-semibold text-gray-900 dark:text-slate-100">{formatCurrency(previewTotal)}</span>
                               </div>
                             </div>
                           ) : (
@@ -505,11 +505,11 @@ export default function EstimatePageSettings() {
 
                         <CardContent className={previewIsMinimal ? "p-6" : "p-8"}>
                           {previewShowBusinessDetails && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : ""}`}>
+                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
                               <h3 className="text-lg font-semibold mb-4" style={{ color: previewTheme.textColor }}>
                                 Business Details
                               </h3>
-                              <div className={previewIsDetailed ? "bg-transparent p-0" : "bg-gray-50 rounded-lg p-4"}>
+                              <div className={previewIsDetailed ? "bg-transparent p-0" : "bg-gray-50 dark:bg-slate-900 rounded-lg p-4"}>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                                   {previewShowBusinessLogo && estimatePageSettings.defaultLogoUrl && (
                                     <img
@@ -518,9 +518,9 @@ export default function EstimatePageSettings() {
                                       className="h-12 w-auto object-contain"
                                     />
                                   )}
-                                  <div className="space-y-1 text-sm text-gray-700">
+                                  <div className="space-y-1 text-sm text-gray-700 dark:text-slate-200">
                                     {previewShowBusinessName && (
-                                      <div className="font-semibold text-gray-900">{previewBusinessName}</div>
+                                      <div className="font-semibold text-gray-900 dark:text-slate-100">{previewBusinessName}</div>
                                     )}
                                     {previewShowBusinessAddress && <div>{previewBusinessAddress}</div>}
                                     {previewShowBusinessEmail && <div>{previewBusinessEmail}</div>}
@@ -530,42 +530,42 @@ export default function EstimatePageSettings() {
                               </div>
                             </div>
                           )}
-                          <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : ""}`}>
+                          <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
                             <h3 className="text-lg font-semibold mb-4" style={{ color: previewTheme.textColor }}>
                               Customer Information
                             </h3>
-                            <div className={previewIsDetailed ? "bg-transparent p-0" : "bg-gray-50 rounded-lg p-4"}>
+                            <div className={previewIsDetailed ? "bg-transparent p-0" : "bg-gray-50 dark:bg-slate-900 rounded-lg p-4"}>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                  <p className="text-sm text-gray-500">Name</p>
-                                  <p className="font-medium text-gray-900">{previewEstimate.customerName}</p>
+                                  <p className="text-sm text-gray-500 dark:text-slate-400">Name</p>
+                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerName}</p>
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-500">Email</p>
-                                  <p className="font-medium text-gray-900">{previewEstimate.customerEmail}</p>
+                                  <p className="text-sm text-gray-500 dark:text-slate-400">Email</p>
+                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerEmail}</p>
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-500">Phone</p>
-                                  <p className="font-medium text-gray-900">{previewEstimate.customerPhone}</p>
+                                  <p className="text-sm text-gray-500 dark:text-slate-400">Phone</p>
+                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerPhone}</p>
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-500">Address</p>
-                                  <p className="font-medium text-gray-900">{previewEstimate.customerAddress}</p>
+                                  <p className="text-sm text-gray-500 dark:text-slate-400">Address</p>
+                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerAddress}</p>
                                 </div>
                               </div>
                             </div>
                           </div>
 
                           {previewMessage && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : ""}`}>
-                              <h3 className="text-lg font-semibold text-gray-900 mb-4">Message</h3>
+                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Message</h3>
                               <div
                                 className={
                                   previewIsMinimal
-                                    ? "border border-gray-200 p-4 rounded-lg"
+                                    ? "border border-gray-200 dark:border-slate-700 p-4 rounded-lg"
                                     : previewIsDetailed
-                                      ? "rounded-lg border border-slate-200 bg-slate-50 p-4"
-                                      : "bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg"
+                                      ? "rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4"
+                                      : "bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded-lg"
                                 }
                               >
                                 <p className="leading-relaxed whitespace-pre-wrap" style={{ color: previewTheme.textColor }}>
@@ -578,12 +578,12 @@ export default function EstimatePageSettings() {
                           {estimatePageSettings.defaultShowVideo !== false &&
                             estimatePageSettings.defaultVideoUrl &&
                             getVideoEmbedUrl(estimatePageSettings.defaultVideoUrl) && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : ""}`}>
-                              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                 <Play className="w-5 h-5" style={{ color: previewTheme.primaryColor }} />
                                 Video
                               </h3>
-                              <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 border border-slate-200">
+                              <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                                 <iframe
                                   src={getVideoEmbedUrl(estimatePageSettings.defaultVideoUrl)!}
                                   className="w-full h-full"
@@ -596,8 +596,8 @@ export default function EstimatePageSettings() {
                           )}
 
                           {previewAttachments.length > 0 && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : ""}`}>
-                              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                                 <Paperclip className="w-5 h-5" style={{ color: previewTheme.primaryColor }} />
                                 Attachments
                               </h3>
@@ -607,27 +607,27 @@ export default function EstimatePageSettings() {
                                   if (categoryAttachments.length === 0) return null;
                                   return (
                                     <div key={category} className="space-y-2">
-                                      <p className="text-sm font-semibold text-gray-700">
+                                      <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">
                                         {attachmentSections[category].label}
                                       </p>
                                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         {categoryAttachments.map((attachment, index) => (
                                           <div
                                             key={`${attachment.url}-${index}`}
-                                            className="flex items-center gap-3 p-3 border rounded-lg bg-white"
+                                            className="flex items-center gap-3 p-3 border rounded-lg bg-white dark:bg-slate-900 dark:border-slate-700"
                                           >
-                                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                            <div className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
                                               {attachment.type === "image" ? (
-                                                <ImageIcon className="w-5 h-5 text-gray-500" />
+                                                <ImageIcon className="w-5 h-5 text-gray-500 dark:text-slate-400" />
                                               ) : (
-                                                <FileIcon className="w-5 h-5 text-gray-500" />
+                                                <FileIcon className="w-5 h-5 text-gray-500 dark:text-slate-400" />
                                               )}
                                             </div>
                                             <div className="min-w-0">
-                                              <p className="text-sm font-medium text-gray-900 truncate">
+                                              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
                                                 {attachment.name || "Attachment"}
                                               </p>
-                                              <p className="text-xs text-gray-500 uppercase">{attachment.type}</p>
+                                              <p className="text-xs text-gray-500 dark:text-slate-400 uppercase">{attachment.type}</p>
                                             </div>
                                           </div>
                                         ))}
@@ -639,35 +639,35 @@ export default function EstimatePageSettings() {
                             </div>
                           )}
 
-                          <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : ""}`}>
+                          <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
                             <h3 className="text-lg font-semibold mb-4" style={{ color: previewTheme.textColor }}>
                               Services & Pricing
                             </h3>
                             <div className="overflow-x-auto">
-                              <table className="w-full border-collapse border border-gray-200 rounded-lg overflow-hidden">
-                                <thead className="bg-gray-50">
+                              <table className="w-full border-collapse border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                                <thead className="bg-gray-50 dark:bg-slate-900">
                                   <tr>
-                                    <th className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-900">
+                                    <th className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-100">
                                       Service
                                     </th>
-                                    <th className="border border-gray-200 px-4 py-3 text-left font-semibold text-gray-900">
+                                    <th className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-100">
                                       Description
                                     </th>
-                                    <th className="border border-gray-200 px-4 py-3 text-right font-semibold text-gray-900">
+                                    <th className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-right font-semibold text-gray-900 dark:text-slate-100">
                                       Price
                                     </th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {previewEstimate.services.map((service, index) => (
-                                    <tr key={index} className="hover:bg-gray-50">
-                                      <td className="border border-gray-200 px-4 py-3">
-                                        <div className="font-medium text-gray-900">{service.name}</div>
+                                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-slate-800">
+                                      <td className="border border-gray-200 dark:border-slate-700 px-4 py-3">
+                                        <div className="font-medium text-gray-900 dark:text-slate-100">{service.name}</div>
                                       </td>
-                                      <td className="border border-gray-200 px-4 py-3 text-gray-700">
+                                      <td className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-gray-700 dark:text-slate-200">
                                         {service.description}
                                       </td>
-                                      <td className="border border-gray-200 px-4 py-3 text-right font-medium text-gray-900">
+                                      <td className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-right font-medium text-gray-900 dark:text-slate-100">
                                         {formatCurrency(service.price)}
                                       </td>
                                     </tr>
@@ -683,15 +683,15 @@ export default function EstimatePageSettings() {
                                 <div className="max-w-md ml-auto">
                                   <div className="space-y-3">
                                     <div className="flex justify-between items-center">
-                                      <span className="text-gray-600">Subtotal:</span>
+                                      <span className="text-gray-600 dark:text-slate-300">Subtotal:</span>
                                       <span className="font-medium">{formatCurrency(previewSubtotal)}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                      <span className="text-gray-600">Tax:</span>
+                                      <span className="text-gray-600 dark:text-slate-300">Tax:</span>
                                       <span className="font-medium">{formatCurrency(previewTax)}</span>
                                     </div>
                                     <Separator />
-                                    <div className="flex justify-between items-center text-xl font-bold text-gray-900">
+                                    <div className="flex justify-between items-center text-xl font-bold text-gray-900 dark:text-slate-100">
                                       <span>Total:</span>
                                       <span>{formatCurrency(previewTotal)}</span>
                                     </div>
@@ -699,7 +699,7 @@ export default function EstimatePageSettings() {
                                 </div>
                               </div>
 
-                              <div className="mt-8 pt-6 border-t text-center text-gray-600">
+                              <div className="mt-8 pt-6 border-t text-center text-gray-600 dark:text-slate-300">
                                 <p className="text-sm">
                                   This estimate is valid until {formatPreviewDate(previewEstimate.validUntil)}.
                                 </p>
@@ -716,20 +716,20 @@ export default function EstimatePageSettings() {
                           <Card className="shadow-sm border" style={{ backgroundColor: previewTheme.backgroundColor }}>
                             <CardContent className="p-6 space-y-4">
                               <div>
-                                <p className="text-sm text-gray-500">Status</p>
-                                <p className="font-semibold text-gray-900">Draft</p>
+                                <p className="text-sm text-gray-500 dark:text-slate-400">Status</p>
+                                <p className="font-semibold text-gray-900 dark:text-slate-100">Draft</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-500">Estimate Number</p>
-                                <p className="font-semibold text-gray-900">{previewEstimate.estimateNumber}</p>
+                                <p className="text-sm text-gray-500 dark:text-slate-400">Estimate Number</p>
+                                <p className="font-semibold text-gray-900 dark:text-slate-100">{previewEstimate.estimateNumber}</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-500">Issued</p>
-                                <p className="font-semibold text-gray-900">{formatPreviewDate(previewEstimate.createdAt)}</p>
+                                <p className="text-sm text-gray-500 dark:text-slate-400">Issued</p>
+                                <p className="font-semibold text-gray-900 dark:text-slate-100">{formatPreviewDate(previewEstimate.createdAt)}</p>
                               </div>
                               <div>
-                                <p className="text-sm text-gray-500">Valid Until</p>
-                                <p className="font-semibold text-gray-900">{formatPreviewDate(previewEstimate.validUntil)}</p>
+                                <p className="text-sm text-gray-500 dark:text-slate-400">Valid Until</p>
+                                <p className="font-semibold text-gray-900 dark:text-slate-100">{formatPreviewDate(previewEstimate.validUntil)}</p>
                               </div>
                             </CardContent>
                           </Card>
@@ -741,8 +741,8 @@ export default function EstimatePageSettings() {
                             <CardContent className="space-y-3">
                               {previewEstimate.services.map((service, index) => (
                                 <div key={index} className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-700">{service.name}</span>
-                                  <span className="font-semibold text-gray-900">{formatCurrency(service.price)}</span>
+                                  <span className="text-gray-700 dark:text-slate-200">{service.name}</span>
+                                  <span className="font-semibold text-gray-900 dark:text-slate-100">{formatCurrency(service.price)}</span>
                                 </div>
                               ))}
                             </CardContent>
@@ -756,15 +756,15 @@ export default function EstimatePageSettings() {
                               <div className="border-t pt-6">
                                 <div className="space-y-3">
                                   <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Subtotal:</span>
+                                    <span className="text-gray-600 dark:text-slate-300">Subtotal:</span>
                                     <span className="font-medium">{formatCurrency(previewSubtotal)}</span>
                                   </div>
                                   <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Tax:</span>
+                                    <span className="text-gray-600 dark:text-slate-300">Tax:</span>
                                     <span className="font-medium">{formatCurrency(previewTax)}</span>
                                   </div>
                                   <Separator />
-                                  <div className="flex justify-between items-center text-xl font-bold text-gray-900">
+                                  <div className="flex justify-between items-center text-xl font-bold text-gray-900 dark:text-slate-100">
                                     <span>Total:</span>
                                     <span>{formatCurrency(previewTotal)}</span>
                                   </div>
@@ -791,7 +791,7 @@ export default function EstimatePageSettings() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             <div className="space-y-8">
-              <Card className="shadow-sm border-gray-200">
+              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Layout className="h-5 w-5 text-blue-600" />
@@ -825,10 +825,10 @@ export default function EstimatePageSettings() {
                     <Label className="text-sm font-medium">Theme Colors</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-xs text-gray-500 mb-1.5 block">Primary Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Primary Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.primaryColor || "#2563eb" }}
                           />
                           <Input
@@ -845,10 +845,10 @@ export default function EstimatePageSettings() {
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-gray-500 mb-1.5 block">Accent Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Accent Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.accentColor || "#16a34a" }}
                           />
                           <Input
@@ -865,10 +865,10 @@ export default function EstimatePageSettings() {
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-gray-500 mb-1.5 block">Background Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Background Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.backgroundColor || "#ffffff" }}
                           />
                           <Input
@@ -885,10 +885,10 @@ export default function EstimatePageSettings() {
                         </div>
                       </div>
                       <div>
-                        <Label className="text-xs text-gray-500 mb-1.5 block">Text Color</Label>
+                        <Label className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Text Color</Label>
                         <div className="flex items-center gap-2">
                           <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 shadow-sm flex-shrink-0" 
+                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm flex-shrink-0" 
                             style={{ backgroundColor: estimatePageSettings.defaultTheme?.textColor || "#111827" }}
                           />
                           <Input
@@ -923,7 +923,7 @@ export default function EstimatePageSettings() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200">
+              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5 text-blue-600" />
@@ -934,13 +934,13 @@ export default function EstimatePageSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                  <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-lg border border-gray-100 dark:border-slate-800">
                     <div className="flex items-center justify-between gap-6 mb-4">
                       <div>
                         <Label htmlFor="estimate-show-logo" className="text-base font-medium">
                           Show Business Logo
                         </Label>
-                        <p className="text-sm text-gray-500">Display your company logo at the top of the estimate.</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400">Display your company logo at the top of the estimate.</p>
                       </div>
                       <Switch
                         id="estimate-show-logo"
@@ -952,11 +952,11 @@ export default function EstimatePageSettings() {
                     </div>
                     
                     <div className="space-y-3 pl-1">
-                      <Label className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Logo Image</Label>
+                      <Label className="text-xs uppercase tracking-wider text-gray-500 dark:text-slate-400 font-semibold">Logo Image</Label>
                       <div className="flex flex-wrap items-center gap-4">
                         {estimatePageSettings.defaultLogoUrl ? (
                           <div className="relative group">
-                            <div className="h-20 w-auto p-2 bg-white rounded-md border border-gray-200 flex items-center justify-center">
+                            <div className="h-20 w-auto p-2 bg-white dark:bg-slate-900 rounded-md border border-gray-200 dark:border-slate-700 flex items-center justify-center">
                               <img
                                 src={estimatePageSettings.defaultLogoUrl}
                                 alt="Business logo"
@@ -979,7 +979,7 @@ export default function EstimatePageSettings() {
                             </Button>
                           </div>
                         ) : (
-                          <div className="h-20 w-20 bg-gray-100 rounded-md border border-dashed border-gray-300 flex items-center justify-center text-gray-400">
+                          <div className="h-20 w-20 bg-gray-100 dark:bg-slate-800 rounded-md border border-dashed border-gray-300 dark:border-slate-700 flex items-center justify-center text-gray-400 dark:text-slate-500">
                             <ImageIcon className="h-8 w-8 opacity-50" />
                           </div>
                         )}
@@ -1026,7 +1026,7 @@ export default function EstimatePageSettings() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200">
+              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Layout className="h-5 w-5 text-blue-600" />
@@ -1042,7 +1042,7 @@ export default function EstimatePageSettings() {
                       <Label htmlFor="estimate-show-accept-decline" className="text-base font-medium">
                         Show Accept/Decline Buttons
                       </Label>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
                         When enabled, customers can accept or decline estimates directly.
                       </p>
                     </div>
@@ -1059,7 +1059,7 @@ export default function EstimatePageSettings() {
             </div>
 
             <div className="space-y-8">
-              <Card className="shadow-sm border-gray-200">
+              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Paperclip className="h-5 w-5 text-blue-600" />
@@ -1070,10 +1070,10 @@ export default function EstimatePageSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-center justify-between gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-lg border border-blue-100 dark:border-blue-900/60 flex items-center justify-between gap-4">
                     <div className="flex-1">
-                      <Label htmlFor="estimate-attachments-default" className="text-blue-900 font-medium">Enable Default Attachments</Label>
-                      <p className="text-sm text-blue-700 mt-0.5">
+                      <Label htmlFor="estimate-attachments-default" className="text-blue-900 dark:text-blue-100 font-medium">Enable Default Attachments</Label>
+                      <p className="text-sm text-blue-700 dark:text-blue-200 mt-0.5">
                         When enabled, the files below will be attached to all new estimates.
                       </p>
                     </div>
@@ -1090,8 +1090,8 @@ export default function EstimatePageSettings() {
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">{attachmentSections.terms.label}</p>
-                          <p className="text-sm text-gray-500">{attachmentSections.terms.description}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{attachmentSections.terms.label}</p>
+                          <p className="text-sm text-gray-500 dark:text-slate-400">{attachmentSections.terms.description}</p>
                         </div>
                         <ObjectUploader
                           maxNumberOfFiles={1}
@@ -1114,8 +1114,8 @@ export default function EstimatePageSettings() {
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">{attachmentSections.insurance.label}</p>
-                          <p className="text-sm text-gray-500">{attachmentSections.insurance.description}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{attachmentSections.insurance.label}</p>
+                          <p className="text-sm text-gray-500 dark:text-slate-400">{attachmentSections.insurance.description}</p>
                         </div>
                         <ObjectUploader
                           maxNumberOfFiles={1}
@@ -1138,8 +1138,8 @@ export default function EstimatePageSettings() {
                     <div className="space-y-3">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900">{attachmentSections.custom.label}</p>
-                          <p className="text-sm text-gray-500">{attachmentSections.custom.description}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{attachmentSections.custom.label}</p>
+                          <p className="text-sm text-gray-500 dark:text-slate-400">{attachmentSections.custom.description}</p>
                         </div>
                       </div>
                       
@@ -1171,7 +1171,7 @@ export default function EstimatePageSettings() {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200">
+              <Card className="shadow-sm border-gray-200 dark:border-slate-800">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Play className="h-5 w-5 text-blue-600" />
@@ -1195,7 +1195,7 @@ export default function EstimatePageSettings() {
                     />
                   </div>
                   <div className={`transition-opacity ${estimatePageSettings.defaultShowVideo === false ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <Label htmlFor="estimate-video-default" className="text-xs text-gray-500 mb-1.5 block">Default Video URL</Label>
+                    <Label htmlFor="estimate-video-default" className="text-xs text-gray-500 dark:text-slate-400 mb-1.5 block">Default Video URL</Label>
                     <Input
                       id="estimate-video-default"
                       value={estimatePageSettings.defaultVideoUrl || ""}
@@ -1205,7 +1205,7 @@ export default function EstimatePageSettings() {
                       placeholder="https://youtube.com/watch?v=..."
                       disabled={estimatePageSettings.defaultShowVideo === false}
                     />
-                    <p className="text-xs text-gray-400 mt-1.5">
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5">
                       Supports YouTube, Vimeo, and Loom links.
                     </p>
                   </div>

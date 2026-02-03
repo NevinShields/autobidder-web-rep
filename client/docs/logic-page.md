@@ -3,6 +3,20 @@
 ## What It Is
 The **Logic** page (also known as Form Settings) is where you control the global behavior of your calculators. This includes pricing rules, lead capture requirements, and user flow settings.
 
+## Quick Video Guides
+
+### Logic Editor Part 1
+
+Customer Flow settings: progress guides, booking features, service carts, route optimization, and form customization.
+
+<iframe width="100%" height="420" src="https://www.youtube.com/embed/oO3fJEC5KQs" title="Logic Editor Part 1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+### Logic Editor Part 2
+
+Bundle pricing, discounts, guide video integration, sales tax, disclaimers, and location-based pricing configuration.
+
+<iframe width="100%" height="420" src="https://www.youtube.com/embed/BkD-6CnSZ_w" title="Logic Editor Part 2" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 ## Typical Use Cases
 
 - Require customers to enter their contact information before seeing a price.

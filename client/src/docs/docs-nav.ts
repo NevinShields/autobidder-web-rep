@@ -17,6 +17,7 @@ export const docsNav: DocNavSection[] = [
       { title: "Welcome / Overview", slug: "overview" },
       { title: "Quick Start", slug: "quick-start" },
       { title: "Core Concepts", slug: "core-concepts" },
+      { title: "Video Guides", slug: "video-guides" },
     ],
   },
   {

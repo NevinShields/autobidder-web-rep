@@ -9,6 +9,7 @@ import automations from "../../docs/automations.md?raw";
 import zapierIntegration from "../../docs/zapier-integration.md?raw";
 import troubleshooting from "../../docs/troubleshooting.md?raw";
 import faq from "../../docs/faq.md?raw";
+import videoGuides from "../../docs/video-guides.md?raw";
 import { defaultDocSlug } from "@/docs/docs-nav";
 
 export type DocContent = {
@@ -26,6 +27,7 @@ export const docsContent: Record<string, DocContent> = {
   "logic-page": { title: "Logic Page", body: logicPage },
   "automations": { title: "Automations", body: automations },
   "zapier-integration": { title: "Zapier Integration", body: zapierIntegration },
+  "video-guides": { title: "Video Guides", body: videoGuides },
   "troubleshooting": { title: "Troubleshooting", body: troubleshooting },
   "faq": { title: "FAQ", body: faq },
 };

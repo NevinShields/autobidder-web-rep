@@ -841,6 +841,7 @@ export default function Features() {
 
             <div className="flex flex-wrap justify-center gap-6 text-white/60 text-sm mb-6 md:mb-0">
               <Link href="/pricing"><span className="hover:text-white cursor-pointer">Pricing</span></Link>
+              <Link href="/docs"><span className="hover:text-white cursor-pointer">Docs</span></Link>
               <Link href="/terms"><span className="hover:text-white cursor-pointer">Terms</span></Link>
               <Link href="/privacy"><span className="hover:text-white cursor-pointer">Privacy</span></Link>
               <Link href="/faq"><span className="hover:text-white cursor-pointer">FAQ</span></Link>

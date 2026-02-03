@@ -3,6 +3,20 @@
 ## What It Is
 The **Design Dashboard** is where you control the global look and feel of your calculators. It includes themes, typography, component styling, and custom CSS overrides.
 
+## Quick Video Guides
+
+### Design Editor Demo (Simple)
+
+Maps form components to editor sections for fast visual customization.
+
+<iframe width="100%" height="420" src="https://www.youtube.com/embed/g0oPQlGVZD8" title="Design Editor Demo (Simple)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+### AI - CSS Autobidder Design Editor
+
+Generate custom CSS designs by describing your desired aesthetic.
+
+<iframe width="100%" height="420" src="https://www.youtube.com/embed/fldH30OfRPk" title="AI - CSS Autobidder Design Editor" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 ## Typical Use Cases
 
 - Match your brand's colors and fonts.

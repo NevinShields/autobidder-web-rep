@@ -49,6 +49,7 @@ import {
   Clock,
   User,
   Send,
+  Video,
   RefreshCw,
   Filter,
   EyeOff,
@@ -56,7 +57,8 @@ import {
   ChevronRight,
   ExternalLink,
   Layout,
-  Repeat
+  Repeat,
+  Loader2
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -260,6 +262,15 @@ export default function AdminDashboard() {
   const [createTemplateDialogOpen, setCreateTemplateDialogOpen] = useState(false);
   const [selectedCategoryForTemplate, setSelectedCategoryForTemplate] = useState<string>("");
   const [selectedFormulaId, setSelectedFormulaId] = useState<number | null>(null);
+  const [directoryCategoryDialogOpen, setDirectoryCategoryDialogOpen] = useState(false);
+  const [editingDirectoryCategory, setEditingDirectoryCategory] = useState<any | null>(null);
+  const [directoryCategoryName, setDirectoryCategoryName] = useState("");
+  const [directoryCategoryDescription, setDirectoryCategoryDescription] = useState("");
+  const [directoryCategoryIconUrl, setDirectoryCategoryIconUrl] = useState("");
+  const [directoryCategoryDisplayOrder, setDirectoryCategoryDisplayOrder] = useState(0);
+  const [directoryCategoryStatus, setDirectoryCategoryStatus] = useState("approved");
+  const [directoryCategorySeoTitle, setDirectoryCategorySeoTitle] = useState("");
+  const [directoryCategorySeoDescription, setDirectoryCategorySeoDescription] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -326,6 +337,47 @@ export default function AdminDashboard() {
     queryKey: ['/api/admin/template-categories'],
   });
 
+  const { data: directoryCategories, isLoading: directoryCategoriesLoading } = useQuery<any[]>({
+    queryKey: ['/api/admin/directory/categories'],
+  });
+
+  const createDirectoryCategoryMutation = useMutation({
+    mutationFn: (payload: any) => apiRequest('POST', '/api/admin/directory/categories', payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/directory/categories'] });
+      toast({ title: "Directory category created" });
+      setDirectoryCategoryDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateDirectoryCategoryMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: any }) =>
+      apiRequest('PATCH', `/api/admin/directory/categories/${id}`, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/directory/categories'] });
+      toast({ title: "Directory category updated" });
+      setDirectoryCategoryDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const approveDirectoryCategoryMutation = useMutation({
+    mutationFn: ({ id, seoTitle, seoDescription }: { id: number; seoTitle?: string; seoDescription?: string }) =>
+      apiRequest('POST', `/api/admin/directory/categories/${id}/approve`, { seoTitle, seoDescription }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/directory/categories'] });
+      toast({ title: "Directory category approved" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
   const filteredUsers = users?.filter(user => 
     user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -359,6 +411,47 @@ export default function AdminDashboard() {
     
     const config = statusMap[status as keyof typeof statusMap] || statusMap.inactive;
     return <Badge variant={config.variant as any} className={`${config.color} text-xs`}>{status}</Badge>;
+  };
+
+  const resetDirectoryCategoryForm = () => {
+    setDirectoryCategoryName("");
+    setDirectoryCategoryDescription("");
+    setDirectoryCategoryIconUrl("");
+    setDirectoryCategoryDisplayOrder(0);
+    setDirectoryCategoryStatus("approved");
+    setDirectoryCategorySeoTitle("");
+    setDirectoryCategorySeoDescription("");
+    setEditingDirectoryCategory(null);
+  };
+
+  const handleEditDirectoryCategory = (category: any) => {
+    setEditingDirectoryCategory(category);
+    setDirectoryCategoryName(category.name || "");
+    setDirectoryCategoryDescription(category.description || "");
+    setDirectoryCategoryIconUrl(category.iconUrl || "");
+    setDirectoryCategoryDisplayOrder(category.displayOrder || 0);
+    setDirectoryCategoryStatus(category.status || "approved");
+    setDirectoryCategorySeoTitle(category.seoTitle || "");
+    setDirectoryCategorySeoDescription(category.seoDescription || "");
+    setDirectoryCategoryDialogOpen(true);
+  };
+
+  const handleSaveDirectoryCategory = () => {
+    const payload = {
+      name: directoryCategoryName,
+      description: directoryCategoryDescription || null,
+      iconUrl: directoryCategoryIconUrl || null,
+      displayOrder: directoryCategoryDisplayOrder || 0,
+      status: directoryCategoryStatus,
+      seoTitle: directoryCategorySeoTitle || null,
+      seoDescription: directoryCategorySeoDescription || null,
+    };
+
+    if (editingDirectoryCategory?.id) {
+      updateDirectoryCategoryMutation.mutate({ id: editingDirectoryCategory.id, payload });
+    } else {
+      createDirectoryCategoryMutation.mutate(payload);
+    }
   };
 
   const getPlanBadge = (plan: string) => {
@@ -1177,7 +1270,7 @@ export default function AdminDashboard() {
           <Tabs defaultValue="users" className="space-y-4 lg:space-y-6">
             {/* Mobile horizontal scroll tabs */}
             <div className="overflow-x-auto">
-              <TabsList className="grid w-max min-w-full grid-cols-7 gap-1 p-1 bg-gray-100 rounded-lg">
+              <TabsList className="grid w-max min-w-full grid-cols-10 gap-1 p-1 bg-gray-100 rounded-lg">
                 <TabsTrigger 
                   value="users" 
                   className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
@@ -1226,6 +1319,27 @@ export default function AdminDashboard() {
                 >
                   <Settings className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   <span>System</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="directory" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Layout className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Directory</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="manage" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Layout className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Manage</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="admin-tools" 
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-3 min-w-0 whitespace-nowrap text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:text-blue-600 transition-all"
+                >
+                  <Shield className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span>Admin</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -2096,6 +2210,108 @@ export default function AdminDashboard() {
               </div>
             </TabsContent>
 
+            {/* Directory Tab */}
+            <TabsContent value="directory">
+              <Card>
+                <CardHeader>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Layout className="h-5 w-5 text-blue-600" />
+                        Directory Management
+                      </CardTitle>
+                      <CardDescription>
+                        Review, approve, and organize directory categories.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        resetDirectoryCategoryForm();
+                        setDirectoryCategoryDialogOpen(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Category
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {directoryCategoriesLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : !directoryCategories || directoryCategories.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Layout className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No directory categories found.</p>
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Order</TableHead>
+                          <TableHead>Slug</TableHead>
+                          <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {directoryCategories.map((category) => (
+                          <TableRow key={category.id}>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <p className="font-medium">{category.name}</p>
+                                {category.description && (
+                                  <p className="text-xs text-gray-500 line-clamp-1">
+                                    {category.description}
+                                  </p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={category.status === "approved" ? "default" : "secondary"}>
+                                {category.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{category.displayOrder}</TableCell>
+                            <TableCell className="text-xs text-gray-500">{category.slug}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {category.status !== "approved" && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() =>
+                                      approveDirectoryCategoryMutation.mutate({
+                                        id: category.id,
+                                        seoTitle: category.seoTitle || category.name,
+                                        seoDescription: category.seoDescription || category.description || "",
+                                      })
+                                    }
+                                    disabled={approveDirectoryCategoryMutation.isPending}
+                                  >
+                                    Approve
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditDirectoryCategory(category)}
+                                >
+                                  Edit
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Icons Management Tab */}
             <TabsContent value="icons">
               <Card>
@@ -2119,8 +2335,8 @@ export default function AdminDashboard() {
               <CallBookingsManagement />
             </TabsContent>
 
-            {/* App Pages Tab */}
-            <TabsContent value="app-pages">
+            {/* Manage Tab */}
+            <TabsContent value="manage">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -2233,25 +2449,6 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* Admin Pages */}
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-gray-900 border-b pb-1">Admin Pages</h4>
-                      <div className="space-y-2">
-                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/admin/website-templates', '_blank')} data-testid="link-admin-website-templates">
-                          <Globe className="h-4 w-4 mr-2" />
-                          Website Templates
-                        </Button>
-                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/admin/template-tags', '_blank')} data-testid="link-admin-template-tags">
-                          <Tags className="h-4 w-4 mr-2" />
-                          Template Tags
-                        </Button>
-                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.open('/admin/dfy-services', '_blank')} data-testid="link-admin-dfy-services">
-                          <Settings className="h-4 w-4 mr-2" />
-                          Admin DFY Services
-                        </Button>
-                      </div>
-                    </div>
-
                     {/* Account & Support */}
                     <div className="space-y-3">
                       <h4 className="font-medium text-gray-900 border-b pb-1">Account & Support</h4>
@@ -2293,6 +2490,65 @@ export default function AdminDashboard() {
                         Payment Confirmation
                       </Button>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Admin Tools Tab */}
+            <TabsContent value="admin-tools">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-blue-600" />
+                    Admin Tools
+                  </CardTitle>
+                  <CardDescription>
+                    Super admin access to backend management pages and configurations.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => window.open('/admin/support-videos', '_blank')}
+                      data-testid="link-admin-support-videos"
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      Support Videos
+                      <ExternalLink className="h-4 w-4 ml-auto text-gray-400" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => window.open('/admin/website-templates', '_blank')}
+                      data-testid="link-admin-website-templates"
+                    >
+                      <Globe className="h-4 w-4 mr-2" />
+                      Website Templates
+                      <ExternalLink className="h-4 w-4 ml-auto text-gray-400" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => window.open('/admin/template-tags', '_blank')}
+                      data-testid="link-admin-template-tags"
+                    >
+                      <Tags className="h-4 w-4 mr-2" />
+                      Template Tags
+                      <ExternalLink className="h-4 w-4 ml-auto text-gray-400" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => window.open('/admin/dfy-services', '_blank')}
+                      data-testid="link-admin-dfy-services"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin DFY Services
+                      <ExternalLink className="h-4 w-4 ml-auto text-gray-400" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -2926,6 +3182,124 @@ export default function AdminDashboard() {
                     <>
                       <Save className="h-4 w-4 mr-2" />
                       {editingCategory ? 'Update Category' : 'Create Category'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Directory Category Dialog */}
+          <Dialog open={directoryCategoryDialogOpen} onOpenChange={(open) => {
+            setDirectoryCategoryDialogOpen(open);
+            if (!open) resetDirectoryCategoryForm();
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Layout className="h-5 w-5" />
+                  {editingDirectoryCategory ? "Edit Directory Category" : "Add Directory Category"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div>
+                  <Label htmlFor="directory-category-name">Category Name</Label>
+                  <Input
+                    id="directory-category-name"
+                    value={directoryCategoryName}
+                    onChange={(e) => setDirectoryCategoryName(e.target.value)}
+                    placeholder="e.g., Pressure Washing"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="directory-category-description">Description</Label>
+                  <Textarea
+                    id="directory-category-description"
+                    value={directoryCategoryDescription}
+                    onChange={(e) => setDirectoryCategoryDescription(e.target.value)}
+                    placeholder="Short description for directory visitors"
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="directory-category-icon">Icon URL</Label>
+                  <Input
+                    id="directory-category-icon"
+                    value={directoryCategoryIconUrl}
+                    onChange={(e) => setDirectoryCategoryIconUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="mt-1"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="directory-category-order">Display Order</Label>
+                    <Input
+                      id="directory-category-order"
+                      type="number"
+                      value={directoryCategoryDisplayOrder}
+                      onChange={(e) => setDirectoryCategoryDisplayOrder(parseInt(e.target.value) || 0)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="directory-category-status">Status</Label>
+                    <Select
+                      value={directoryCategoryStatus}
+                      onValueChange={setDirectoryCategoryStatus}
+                    >
+                      <SelectTrigger id="directory-category-status" className="mt-1">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="approved">Approved</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="directory-category-seo-title">SEO Title</Label>
+                  <Input
+                    id="directory-category-seo-title"
+                    value={directoryCategorySeoTitle}
+                    onChange={(e) => setDirectoryCategorySeoTitle(e.target.value)}
+                    placeholder="SEO title"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="directory-category-seo-description">SEO Description</Label>
+                  <Textarea
+                    id="directory-category-seo-description"
+                    value={directoryCategorySeoDescription}
+                    onChange={(e) => setDirectoryCategorySeoDescription(e.target.value)}
+                    placeholder="SEO description"
+                    className="mt-1"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 pt-2">
+                <Button variant="outline" onClick={() => setDirectoryCategoryDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveDirectoryCategory}
+                  disabled={createDirectoryCategoryMutation.isPending || updateDirectoryCategoryMutation.isPending}
+                >
+                  {(createDirectoryCategoryMutation.isPending || updateDirectoryCategoryMutation.isPending) ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      {editingDirectoryCategory ? "Update Category" : "Create Category"}
                     </>
                   )}
                 </Button>

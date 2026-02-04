@@ -111,7 +111,7 @@ export default function FormulaExpressionInput({
         onBlur={() => setIsFocused(false)}
         placeholder=""
         className={`
-          relative w-full min-h-[80px] p-3
+          relative w-full min-h-[160px] p-3
           border rounded-md text-sm font-mono resize-y
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           ${isFocused ? 'border-blue-500' : 'border-gray-300 dark:border-gray-600'}

@@ -520,6 +520,19 @@ export default function StyledCalculator(props: any = {}) {
   
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [cartServiceIds, setCartServiceIds] = useState<number[]>([]); // Services added to cart for checkout
+
+  // Toggle a service in/out of the cart
+  const toggleServiceInCart = (serviceId: number) => {
+    setCartServiceIds(prev => {
+      if (prev.includes(serviceId)) {
+        // Don't allow removing last service from cart
+        if (prev.length === 1) return prev;
+        return prev.filter(id => id !== serviceId);
+      }
+      return [...prev, serviceId];
+    });
+  };
+
   const [serviceVariables, setServiceVariables] = useState<Record<number, Record<string, any>>>({});
   const [serviceCalculations, setServiceCalculations] = useState<Record<number, number>>({});
   const [expandedServices, setExpandedServices] = useState<Set<number>>(new Set());
@@ -1034,7 +1047,7 @@ export default function StyledCalculator(props: any = {}) {
     },
   });
 
-  // Sync cart with selections when cart mode is disabled or only one service
+  // Sync cart with selections - all selected services start in the cart by default
   useEffect(() => {
     const isCartEnabled = businessSettings?.enableServiceCart === true;
     const hasMultipleServices = selectedServices.length > 1;
@@ -1043,11 +1056,20 @@ export default function StyledCalculator(props: any = {}) {
     if (!isCartEnabled || !hasMultipleServices) {
       setCartServiceIds(selectedServices);
     }
-    // When cart is enabled and multiple services, only sync if cart is empty (initial load)
-    else if (cartServiceIds.length === 0 && selectedServices.length > 0) {
-      setCartServiceIds(selectedServices);
+    // When cart is enabled with multiple services:
+    // - Add any newly selected services to the cart
+    // - Remove any deselected services from the cart
+    else {
+      setCartServiceIds(prev => {
+        // Find services that were deselected (in cart but not in selectedServices)
+        const stillSelected = prev.filter(id => selectedServices.includes(id));
+        // Find newly selected services (in selectedServices but not in cart)
+        const newlySelected = selectedServices.filter(id => !prev.includes(id));
+        // Combine: keep services that are still selected + add newly selected ones
+        return [...stillSelected, ...newlySelected];
+      });
     }
-  }, [selectedServices, businessSettings?.enableServiceCart, cartServiceIds.length]);
+  }, [selectedServices, businessSettings?.enableServiceCart]);
 
   // Single service mode: auto-select the service and skip to configuration
   const [singleServiceInitialized, setSingleServiceInitialized] = useState(false);
@@ -1061,6 +1083,61 @@ export default function StyledCalculator(props: any = {}) {
       setSingleServiceInitialized(true);
     }
   }, [isSingleServiceMode, formulas, singleServiceInitialized]);
+
+  // Pre-fill connected variables when services are selected
+  // This ensures that when a user selects a new service, any variables with matching
+  // connectionKey values get pre-populated from already-answered variables in other services
+  useEffect(() => {
+    if (selectedServices.length < 2 || !formulas) return;
+
+    // Build connection map for selected services
+    const connectionMap: Record<string, Array<{ serviceId: number; variableId: string }>> = {};
+    selectedServices.forEach(serviceId => {
+      const service = formulas?.find((f: Formula) => f.id === serviceId);
+      service?.variables?.forEach((variable: any) => {
+        if (variable.connectionKey) {
+          if (!connectionMap[variable.connectionKey]) {
+            connectionMap[variable.connectionKey] = [];
+          }
+          connectionMap[variable.connectionKey].push({
+            serviceId,
+            variableId: variable.id
+          });
+        }
+      });
+    });
+
+    setServiceVariables(prev => {
+      const updated = { ...prev };
+      let hasChanges = false;
+
+      Object.entries(connectionMap).forEach(([connectionKey, variables]) => {
+        // Only process if there are multiple services with this connection key
+        if (variables.length < 2) return;
+
+        // Find first answered value for this connectionKey
+        const existingAnswer = variables.find(({ serviceId, variableId }) =>
+          prev[serviceId]?.[variableId] !== undefined && prev[serviceId]?.[variableId] !== ''
+        );
+
+        if (existingAnswer) {
+          const value = prev[existingAnswer.serviceId][existingAnswer.variableId];
+          // Apply to all unanswered variables with same connectionKey
+          variables.forEach(({ serviceId, variableId }) => {
+            if (updated[serviceId]?.[variableId] === undefined || updated[serviceId]?.[variableId] === '') {
+              updated[serviceId] = {
+                ...updated[serviceId],
+                [variableId]: value
+              };
+              hasChanges = true;
+            }
+          });
+        }
+      });
+
+      return hasChanges ? updated : prev;
+    });
+  }, [selectedServices, formulas]);
 
   // Auto-expand/collapse logic for multi-service flow
   useEffect(() => {
@@ -1614,13 +1691,54 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   const handleServiceVariableChange = (serviceId: number, variableId: string, value: any) => {
-    setServiceVariables(prev => ({
-      ...prev,
-      [serviceId]: {
-        ...prev[serviceId],
-        [variableId]: value
+    // Find the connectionKey for this variable
+    const service = formulas?.find((f: Formula) => f.id === serviceId);
+    const variable = service?.variables?.find((v: any) => v.id === variableId);
+    const connectionKey = variable?.connectionKey;
+
+    setServiceVariables(prev => {
+      const updated = {
+        ...prev,
+        [serviceId]: {
+          ...prev[serviceId],
+          [variableId]: value
+        }
+      };
+
+      // If variable has a connectionKey, sync to all other services with matching key
+      if (connectionKey) {
+        // Build connection map inline to avoid hook issues
+        const connectionMap: Record<string, Array<{ serviceId: number; variableId: string }>> = {};
+        selectedServices.forEach(svcId => {
+          const svc = formulas?.find((f: Formula) => f.id === svcId);
+          svc?.variables?.forEach((v: any) => {
+            if (v.connectionKey) {
+              if (!connectionMap[v.connectionKey]) {
+                connectionMap[v.connectionKey] = [];
+              }
+              connectionMap[v.connectionKey].push({
+                serviceId: svcId,
+                variableId: v.id
+              });
+            }
+          });
+        });
+
+        const connectedVars = connectionMap[connectionKey] || [];
+
+        connectedVars.forEach(({ serviceId: connectedServiceId, variableId: connectedVarId }) => {
+          // Skip the current variable (already updated above)
+          if (connectedServiceId === serviceId && connectedVarId === variableId) return;
+
+          updated[connectedServiceId] = {
+            ...updated[connectedServiceId],
+            [connectedVarId]: value
+          };
+        });
       }
-    }));
+
+      return updated;
+    });
   };
 
   // Check if a service has all required variables filled
@@ -3259,18 +3377,30 @@ export default function StyledCalculator(props: any = {}) {
                 <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8" style={{ color: styling.textColor || '#1F2937' }}>
                   Your Service Packages
                 </h3>
-                
+
+                {/* Cart status indicator when cart mode is enabled with multiple services */}
+                {businessSettings?.enableServiceCart && selectedServices.length > 1 && (
+                  <p className="text-center text-sm mb-4" style={{ color: styling.textColor ? `${styling.textColor}99` : '#6B7280' }}>
+                    {cartServiceIds.length} of {selectedServices.length} services selected for checkout
+                  </p>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {selectedServices.map((serviceId) => {
                     const service = formulas?.find(f => f.id === serviceId);
                     const servicePrice = serviceCalculations[serviceId] || 0;
                     const serviceVars = serviceVariables[serviceId] || {};
-                    
+
                     if (!service) return null;
-                    
+
                     // Handle negative or zero prices gracefully
                     const displayPrice = Math.max(0, servicePrice);
                     const hasPricingIssue = servicePrice <= 0;
+
+                    // Cart mode variables
+                    const isCartEnabled = businessSettings?.enableServiceCart && selectedServices.length > 1;
+                    const isInCart = cartServiceIds.includes(serviceId);
+                    const isLastInCart = cartServiceIds.length === 1 && isInCart;
 
                     // Get service variables for features list
                     const serviceFeatures = Object.entries(serviceVars)
@@ -3282,7 +3412,7 @@ export default function StyledCalculator(props: any = {}) {
                       .map(([key, value]) => {
                         const variable = service.variables?.find(v => v.id === key);
                         if (!variable) return null;
-                        
+
                         let displayValue = value;
                         if (typeof value === 'boolean') {
                           displayValue = value ? 'Yes' : 'No';
@@ -3290,7 +3420,7 @@ export default function StyledCalculator(props: any = {}) {
                           const option = variable.options?.find(opt => opt.value === value);
                           if (option) displayValue = option.label;
                         }
-                        
+
                         return {
                           name: variable.name,
                           value: displayValue
@@ -3301,7 +3431,7 @@ export default function StyledCalculator(props: any = {}) {
                     const cardLayout = (styling.pricingCardLayout || 'classic') as 'classic' | 'modern' | 'minimal' | 'compact';
 
                     return (
-                      <div 
+                      <div
                         key={serviceId}
                         className="ab-pricing-card pricing-card relative overflow-hidden transition-all duration-300 hover:scale-105"
                         style={hasCustomCSS ? {} : {
@@ -3317,7 +3447,9 @@ export default function StyledCalculator(props: any = {}) {
                           ),
                           borderStyle: 'solid',
                           boxShadow: getShadowValue(componentStyles.pricingCard?.shadow || 'xl'),
-                          padding: cardLayout === 'classic' ? '10px' : '0'
+                          padding: cardLayout === 'classic' ? '10px' : '0',
+                          // Reduce opacity for non-carted services when cart mode is enabled
+                          opacity: isCartEnabled && !isInCart ? 0.6 : 1,
                         }}
                       >
                         {renderPricingCardLayout(cardLayout, {
@@ -3330,6 +3462,38 @@ export default function StyledCalculator(props: any = {}) {
                           hasCustomCSS,
                           renderBulletIconFn: renderBulletIcon
                         })}
+
+                        {/* Cart toggle button - only show when cart mode is enabled with multiple services */}
+                        {isCartEnabled && (
+                          <div className="px-4 pb-4 pt-2">
+                            <button
+                              onClick={() => toggleServiceInCart(serviceId)}
+                              disabled={isLastInCart}
+                              className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                isInCart
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-300'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300'
+                              } ${isLastInCart ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                              title={isLastInCart ? 'At least one service must remain in cart' : ''}
+                            >
+                              {isInCart ? (
+                                <span className="flex items-center justify-center gap-2">
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  In Cart {isLastInCart ? '' : '- Remove'}
+                                </span>
+                              ) : (
+                                <span className="flex items-center justify-center gap-2">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  Add to Cart
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

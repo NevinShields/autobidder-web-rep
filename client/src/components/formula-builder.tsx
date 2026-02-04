@@ -166,14 +166,16 @@ interface FormulaBuilderProps {
   onSave: () => void;
   onPreview: () => void;
   isSaving?: boolean;
+  allFormulas?: Formula[];
 }
 
-export default function FormulaBuilderComponent({ 
-  formula, 
-  onUpdate, 
-  onSave, 
-  onPreview, 
-  isSaving 
+export default function FormulaBuilderComponent({
+  formula,
+  onUpdate,
+  onSave,
+  onPreview,
+  isSaving,
+  allFormulas = []
 }: FormulaBuilderProps) {
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [formulaExpression, setFormulaExpression] = useState(formula.formula);
@@ -846,33 +848,34 @@ export default function FormulaBuilderComponent({
                 </div>
 
                 {formula.showImage && (
-                  <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const formData = new FormData();
-                          formData.append('image', file);
-                          try {
-                            const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
-                            const data = await response.json();
-                            if (response.ok) onUpdate({ imageUrl: data.url });
-                          } catch (error) {
-                            console.error('Error uploading image:', error);
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                    <div className="flex-1 min-w-0">
+                      <Label className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 block">Upload Image</Label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const formData = new FormData();
+                            formData.append('image', file);
+                            try {
+                              const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
+                              const data = await response.json();
+                              if (response.ok) onUpdate({ imageUrl: data.url });
+                            } catch (error) {
+                              console.error('Error uploading image:', error);
+                            }
                           }
-                        }
-                      }}
-                      className="text-xs flex-1 dark:text-gray-200"
-                    />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">or</span>
-                    <Input
-                      value={formula.imageUrl || ''}
-                      onChange={(e) => onUpdate({ imageUrl: e.target.value || null })}
-                      placeholder="Image URL"
-                      className="h-8 text-xs flex-1"
-                    />
+                        }}
+                        className="text-xs w-full dark:text-gray-200 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
+                      />
+                    </div>
+                    {formula.imageUrl && (
+                      <div className="h-10 w-10 rounded border border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800 flex-shrink-0">
+                        <img src={formula.imageUrl} alt="Preview" className="h-full w-full object-cover" />
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1262,6 +1265,7 @@ export default function FormulaBuilderComponent({
         isOpen={showVariableModal}
         onClose={() => setShowVariableModal(false)}
         onAddVariable={handleAddVariable}
+        otherFormulas={allFormulas.filter(f => f.id !== formula.id)}
       />
 
       {/* Save as Template Modal */}

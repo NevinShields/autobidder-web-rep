@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import {
   X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload,
   Zap, HelpCircle, ChevronDown, ChevronUp, Hash, Type, CheckSquare,
-  SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2
+  SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2, Link2
 } from "lucide-react";
 import AIIconGeneratorModal from "./ai-icon-generator-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -255,6 +255,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [isEditingCheckbox, setIsEditingCheckbox] = useState(false);
   const [editCheckedValue, setEditCheckedValue] = useState(variable.checkedValue?.toString() || "1");
   const [editUncheckedValue, setEditUncheckedValue] = useState(variable.uncheckedValue?.toString() || "0");
+  const [isEditingConnectionKey, setIsEditingConnectionKey] = useState(false);
+  const [editConnectionKey, setEditConnectionKey] = useState(variable.connectionKey || '');
 
   // AI Icon Generation state
   const [showSingleIconGenerator, setShowSingleIconGenerator] = useState(false);
@@ -429,6 +431,15 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       });
     }
     setIsEditingCheckbox(false);
+  };
+
+  const handleSaveConnectionKey = () => {
+    if (onUpdate) {
+      onUpdate(variable.id, {
+        connectionKey: editConnectionKey.trim() || undefined
+      });
+    }
+    setIsEditingConnectionKey(false);
   };
 
   const handleSaveStepper = () => {
@@ -1183,6 +1194,63 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                       </span>
                     )}
                   </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Connection Key (Link Variable) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                <Link2 className="w-3 h-3" />
+                Link Variable
+              </Label>
+              {!isEditingConnectionKey && (
+                <Button variant="ghost" size="sm" onClick={() => {
+                  setIsEditingConnectionKey(true);
+                  setEditConnectionKey(variable.connectionKey || '');
+                }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                  <Edit3 className="w-3 h-3" />
+                </Button>
+              )}
+            </div>
+            {isEditingConnectionKey ? (
+              <div className="space-y-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Variables with the same connection key sync their values across services.
+                </p>
+                <div>
+                  <Label className="text-xs text-blue-600 dark:text-blue-400 mb-1 block">Connection Key</Label>
+                  <Input
+                    value={editConnectionKey}
+                    onChange={(e) => setEditConnectionKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                    placeholder="e.g., house_sqft, stories"
+                    className="h-8 text-xs font-mono"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex justify-end gap-1">
+                  <Button variant="outline" size="sm" onClick={handleSaveConnectionKey} className="h-7 text-xs">Save</Button>
+                  <Button variant="ghost" size="sm" onClick={() => {
+                    setIsEditingConnectionKey(false);
+                    setEditConnectionKey(variable.connectionKey || '');
+                  }} className="h-7 text-xs">Cancel</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+                {variable.connectionKey ? (
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs font-mono text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded">
+                      {variable.connectionKey}
+                    </code>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      (syncs across services)
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-sm text-gray-400 dark:text-gray-500 italic">Not linked</span>
                 )}
               </div>
             )}

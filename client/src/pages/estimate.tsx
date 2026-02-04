@@ -72,9 +72,12 @@ export default function EstimatePage() {
   const { estimateNumber } = useParams<{ estimateNumber: string }>();
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const token = new URLSearchParams(window.location.search).get("token");
 
   const { data: estimate, isLoading } = useQuery<Estimate>({
-    queryKey: ["/api/estimates/by-number", estimateNumber],
+    queryKey: [
+      `/api/estimates/by-number/${estimateNumber}${token ? `?token=${encodeURIComponent(token)}` : ""}`
+    ],
     enabled: !!estimateNumber,
   });
 
@@ -86,10 +89,18 @@ export default function EstimatePage() {
 
   const acceptMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", `/api/estimates/by-number/${estimateNumber}/accept`, {});
+      return await apiRequest(
+        "POST",
+        `/api/estimates/by-number/${estimateNumber}/accept${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+        {}
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/estimates/by-number", estimateNumber] });
+      queryClient.invalidateQueries({
+        queryKey: [
+          `/api/estimates/by-number/${estimateNumber}${token ? `?token=${encodeURIComponent(token)}` : ""}`
+        ]
+      });
       toast({
         title: "Estimate Accepted",
         description: "You've successfully accepted this estimate. We'll be in touch soon!",
@@ -106,10 +117,18 @@ export default function EstimatePage() {
 
   const declineMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", `/api/estimates/by-number/${estimateNumber}/decline`, {});
+      return await apiRequest(
+        "POST",
+        `/api/estimates/by-number/${estimateNumber}/decline${token ? `?token=${encodeURIComponent(token)}` : ""}`,
+        {}
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/estimates/by-number", estimateNumber] });
+      queryClient.invalidateQueries({
+        queryKey: [
+          `/api/estimates/by-number/${estimateNumber}${token ? `?token=${encodeURIComponent(token)}` : ""}`
+        ]
+      });
       toast({
         title: "Estimate Declined",
         description: "You've declined this estimate. Thank you for your time.",

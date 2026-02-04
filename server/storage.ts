@@ -311,6 +311,7 @@ export interface IStorage {
   // Estimate operations
   getEstimate(id: number): Promise<Estimate | undefined>;
   getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined>;
+  getEstimateByPublicToken(publicToken: string): Promise<Estimate | undefined>;
   getAllEstimates(): Promise<Estimate[]>;
   getEstimatesByUserId(userId: string): Promise<Estimate[]>;
   getEstimatesByLeadId(leadId: number): Promise<Estimate[]>;
@@ -1262,6 +1263,11 @@ export class DatabaseStorage implements IStorage {
     return estimate || undefined;
   }
 
+  async getEstimateByPublicToken(publicToken: string): Promise<Estimate | undefined> {
+    const [estimate] = await db.select().from(estimates).where(eq(estimates.publicToken, publicToken));
+    return estimate || undefined;
+  }
+
   async getAllEstimates(): Promise<Estimate[]> {
     return await db.select().from(estimates).orderBy(desc(estimates.createdAt));
   }
@@ -1308,9 +1314,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEstimate(insertEstimate: InsertEstimate): Promise<Estimate> {
+    const estimateData = {
+      ...insertEstimate,
+      publicToken: insertEstimate.publicToken || nanoid(32),
+    };
     const [estimate] = await db
       .insert(estimates)
-      .values(insertEstimate)
+      .values(estimateData)
       .returning();
     return estimate;
   }

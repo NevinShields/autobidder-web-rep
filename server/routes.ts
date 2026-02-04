@@ -142,6 +142,38 @@ function getEffectiveOwnerId(currentUser: any): string {
   return currentUser.id;
 }
 
+function sanitizeUser(user: any) {
+  if (!user) return user;
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profileImageUrl: user.profileImageUrl,
+    userType: user.userType,
+    ownerId: user.ownerId,
+    organizationName: user.organizationName,
+    isActive: user.isActive,
+    plan: user.plan,
+    subscriptionStatus: user.subscriptionStatus,
+    billingPeriod: user.billingPeriod,
+    trialStartDate: user.trialStartDate,
+    trialEndDate: user.trialEndDate,
+    trialUsed: user.trialUsed,
+    permissions: user.permissions,
+    onboardingCompleted: user.onboardingCompleted,
+    onboardingStep: user.onboardingStep,
+    businessInfo: user.businessInfo,
+    isBetaTester: user.isBetaTester,
+    googleCalendarConnected: user.googleCalendarConnected,
+    googleCalendarId: user.googleCalendarId,
+    selectedCalendarIds: user.selectedCalendarIds,
+    welcomeModalShown: user.welcomeModalShown,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
+
 // Helper function to check if user has permission for an action
 function hasPermission(currentUser: any, permission: string): boolean {
   // Admin impersonating a user has all permissions (only super admins can impersonate)
@@ -1194,6 +1226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         styling: settings.styling,
         enableLeadCapture: settings.enableLeadCapture,
         enableBooking: settings.enableBooking,
+        enableServiceCart: settings.enableServiceCart,
         discounts: settings.discounts,
         allowDiscountStacking: settings.allowDiscountStacking,
         enableDistancePricing: settings.enableDistancePricing,
@@ -1254,6 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           styling: settings.styling,
           enableLeadCapture: settings.enableLeadCapture,
           enableBooking: settings.enableBooking,
+          enableServiceCart: settings.enableServiceCart,
           discounts: settings.discounts,
           allowDiscountStacking: settings.allowDiscountStacking,
           enableDistancePricing: settings.enableDistancePricing,
@@ -1420,6 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         styling: businessSettings.styling,
         enableLeadCapture: businessSettings.enableLeadCapture,
         enableBooking: businessSettings.enableBooking,
+        enableServiceCart: businessSettings.enableServiceCart,
         discounts: businessSettings.discounts,
         allowDiscountStacking: businessSettings.allowDiscountStacking,
         enableDistancePricing: businessSettings.enableDistancePricing,
@@ -3258,12 +3293,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             stage: lead.stage,
             source: lead.source || undefined,
             estimateNumber: latestEstimate?.estimateNumber,
+            estimatePublicToken: latestEstimate?.publicToken,
           },
           ...(latestEstimate ? {
             estimateId: latestEstimate.id,
             estimateData: {
               id: latestEstimate.id,
               estimateNumber: latestEstimate.estimateNumber,
+              publicToken: latestEstimate.publicToken,
               total: latestEstimate.totalAmount,
               status: latestEstimate.status,
               estimateType: latestEstimate.estimateType,
@@ -3302,6 +3339,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const deleted = await storage.deleteLead(id);
       if (!deleted) {
         return res.status(404).json({ message: "Lead not found" });
@@ -3315,6 +3361,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const { email, phone, address, howDidYouHear, source } = req.body;
       
       const updatedLead = await storage.updateLead(id, {
@@ -3338,7 +3393,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/leads/:id/stage", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const leadId = parseInt(req.params.id);
+      const lead = await storage.getLead(leadId);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const { stage, notes } = req.body;
       
       const VALID_STAGES = ["new", "open", "pre_estimate", "estimate_approved", "booked", "completed", "lost", "paid"];
@@ -5023,6 +5087,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/multi-service-leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const lead = await storage.getMultiServiceLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const { email, phone, address, howDidYouHear, source } = req.body;
       
       const updatedLead = await storage.updateMultiServiceLead(id, {
@@ -5044,9 +5117,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update lead pricing selections (discounts, upsells) - called from pricing page after lead creation
-  app.patch("/api/multi-service-leads/:id/pricing-selections", optionalAuth, async (req, res) => {
+  app.patch("/api/multi-service-leads/:id/pricing-selections", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const lead = await storage.getMultiServiceLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const { appliedDiscounts, selectedUpsells, bundleDiscountAmount, taxAmount, subtotal, totalPrice } = req.body;
 
       const updateData: any = {};
@@ -5087,7 +5169,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/multi-service-leads/:id/stage", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
       const leadId = parseInt(req.params.id);
+      const lead = await storage.getMultiServiceLead(leadId);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const { stage, notes } = req.body;
 
       const VALID_STAGES = ["new", "open", "pre_estimate", "estimate_approved", "booked", "completed", "lost", "paid"];
@@ -5123,6 +5214,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/multi-service-leads/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const lead = await storage.getMultiServiceLead(id);
+      if (!lead) {
+        return res.status(404).json({ message: "Multi-service lead not found" });
+      }
+      if (lead.businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const deleted = await storage.deleteMultiServiceLead(id);
       if (!deleted) {
         return res.status(404).json({ message: "Multi-service lead not found" });
@@ -5247,7 +5347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
       
-      console.log('Business settings update request body (no ID):', JSON.stringify(req.body, null, 2));
+      console.log('Business settings update request keys (no ID):', Object.keys(req.body || {}));
       
       // Ensure ENCRYPTION_KEY is set if Twilio credentials are being saved
       ensureEncryptionKeyPresentForTwilio(req.body);
@@ -5333,7 +5433,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allowedFields = [
         'businessName', 'businessEmail', 'businessPhone', 'businessAddress', 'businessDescription',
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
-        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
+        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'enableServiceCart', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
@@ -5354,7 +5454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(settings);
     } catch (error) {
       console.error('Business settings update error (no ID):', error);
-      console.error('Business settings update payload:', JSON.stringify(req.body, null, 2));
+      console.error('Business settings update payload keys:', Object.keys(req.body || {}));
       console.error('Business settings update user:', (req as any).currentUser?.id);
       if (error instanceof Error && error.message.includes('ENCRYPTION_KEY')) {
         return res.status(500).json({ message: error.message });
@@ -5366,7 +5466,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/business-settings/:id", requireAuth, requirePermission("canManageSettings"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      console.log('Business settings update request body:', JSON.stringify(req.body, null, 2));
+      console.log('Business settings update request keys:', Object.keys(req.body || {}));
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const [existing] = await db.select().from(businessSettings).where(eq(businessSettings.id, id)).limit(1);
+      if (!existing) {
+        return res.status(404).json({ message: "Business settings not found" });
+      }
+      if (existing.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       
       // Ensure ENCRYPTION_KEY is set if Twilio credentials are being saved
       ensureEncryptionKeyPresentForTwilio(req.body);
@@ -5375,7 +5484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allowedFields = [
         'businessName', 'businessEmail', 'businessPhone', 'businessAddress', 'businessDescription',
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
-        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'maxDaysOut', 'stripeConfig',
+        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'enableServiceCart', 'maxDaysOut', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
@@ -5390,7 +5499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      console.log('Clean data to update:', JSON.stringify(cleanData, null, 2));
+      console.log('Clean data keys to update:', Object.keys(cleanData));
       
       const settings = await storage.updateBusinessSettings(id, cleanData);
       if (!settings) {
@@ -7090,13 +7199,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Public API routes for proposal viewing (no authentication required)
-  app.get("/api/multi-service-leads/:leadId", async (req, res) => {
+  app.get("/api/multi-service-leads/:leadId", requireWebOrMobileAuth, async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
       const lead = await storage.getMultiServiceLeadById(leadId);
       
       if (!lead) {
         return res.status(404).json({ message: "Lead not found" });
+      }
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      if (lead.businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
       }
       
       res.json(lead);
@@ -8548,7 +8662,7 @@ The Autobidder Team`;
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(user);
+      res.json(sanitizeUser(user));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch profile" });
     }
@@ -8573,7 +8687,7 @@ The Autobidder Team`;
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(updatedUser);
+      res.json(sanitizeUser(updatedUser));
     } catch (error) {
       res.status(500).json({ message: "Failed to update profile" });
     }
@@ -10207,6 +10321,11 @@ The Autobidder Team`;
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      if (estimate.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       res.json(estimate);
     } catch (error) {
       console.error('Error fetching estimate:', error);
@@ -10217,6 +10336,19 @@ The Autobidder Team`;
   app.get("/api/leads/:leadId/estimates", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const singleLead = await storage.getLead(leadId);
+      const multiLead = singleLead ? null : await storage.getMultiServiceLead(leadId);
+      if (singleLead && singleLead.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      if (multiLead && multiLead.businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      if (!singleLead && !multiLead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
       
       // Try both single-service and multi-service leads
       const [singleLeadEstimates, multiLeadEstimates] = await Promise.all([
@@ -10238,6 +10370,25 @@ The Autobidder Team`;
     try {
       const leadId = parseInt(req.params.leadId);
       const isMultiService = req.query.isMultiService === 'true';
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      if (isMultiService) {
+        const lead = await storage.getMultiServiceLead(leadId);
+        if (!lead) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        if (lead.businessOwnerId !== effectiveUserId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      } else {
+        const lead = await storage.getLead(leadId);
+        if (!lead) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        if (lead.userId !== effectiveUserId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
 
       const activities = await storage.getLeadActivities(leadId, isMultiService);
       res.json(activities);
@@ -10250,9 +10401,26 @@ The Autobidder Team`;
   app.get("/api/estimates/by-number/:estimateNumber", async (req, res) => {
     try {
       const { estimateNumber } = req.params;
+      const token = typeof req.query.token === 'string' ? req.query.token : null;
       const estimate = await storage.getEstimateByNumber(estimateNumber);
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
+      }
+      if (estimate.publicToken) {
+        if (!token) {
+          // Allow owners to access without token if authenticated
+          const sessionUser = req.session?.user;
+          if (!sessionUser || estimate.userId !== sessionUser.id) {
+            return res.status(403).json({ message: "Access denied" });
+          }
+        } else if (estimate.publicToken !== token) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      } else {
+        const sessionUser = req.session?.user;
+        if (!sessionUser || estimate.userId !== sessionUser.id) {
+          return res.status(403).json({ message: "Public access disabled for this estimate" });
+        }
       }
 
       let updatedEstimate = estimate;
@@ -10273,6 +10441,7 @@ The Autobidder Team`;
             estimateData: {
               id: estimate.id,
               estimateNumber: estimate.estimateNumber,
+              publicToken: estimate.publicToken,
               total: estimate.totalAmount,
               status: 'viewed',
               estimateType: estimate.estimateType,
@@ -10283,6 +10452,8 @@ The Autobidder Team`;
             leadData: {
               name: estimate.customerName,
               email: estimate.customerEmail,
+              estimateNumber: estimate.estimateNumber,
+              estimatePublicToken: estimate.publicToken,
             }
           })).catch(error => {
             console.error('Failed to trigger estimate viewed automations:', error);
@@ -10379,6 +10550,11 @@ The Autobidder Team`;
       if (!existingEstimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      if (existingEstimate.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
 
       if (existingEstimate.isSentLocked) {
         const lockedFields = ["layoutId", "theme", "attachments", "videoUrl", "customMessage", "estimateType"];
@@ -10406,6 +10582,15 @@ The Autobidder Team`;
   app.delete("/api/estimates/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const estimate = await storage.getEstimate(id);
+      if (!estimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
+      if (estimate.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const success = await storage.deleteEstimate(id);
       if (!success) {
         return res.status(404).json({ message: "Estimate not found" });
@@ -10448,6 +10633,7 @@ The Autobidder Team`;
           estimateData: {
             id: estimate.id,
             estimateNumber: estimate.estimateNumber,
+            publicToken: estimate.publicToken,
             total: estimate.totalAmount,
             status: estimate.status,
             estimateType: estimate.estimateType,
@@ -10458,6 +10644,8 @@ The Autobidder Team`;
           leadData: {
             name: estimate.customerName,
             email: estimate.customerEmail,
+            estimateNumber: estimate.estimateNumber,
+            estimatePublicToken: estimate.publicToken,
           }
         }, true); // isManualTrigger = true
       } catch (error) {
@@ -10546,6 +10734,7 @@ The Autobidder Team`;
         estimateData: {
           id: updatedEstimate.id,
           estimateNumber: updatedEstimate.estimateNumber,
+          publicToken: updatedEstimate.publicToken,
           total: updatedEstimate.totalAmount,
           status: updatedEstimate.status,
           estimateType: updatedEstimate.estimateType,
@@ -10556,6 +10745,8 @@ The Autobidder Team`;
         leadData: {
           name: updatedEstimate.customerName,
           email: updatedEstimate.customerEmail,
+          estimateNumber: updatedEstimate.estimateNumber,
+          estimatePublicToken: updatedEstimate.publicToken,
         }
       }).catch(error => {
         console.error('Failed to trigger customer accepted automations:', error);
@@ -10653,10 +10844,14 @@ The Autobidder Team`;
   app.post("/api/estimates/by-number/:estimateNumber/accept", async (req, res) => {
     try {
       const { estimateNumber } = req.params;
+      const token = typeof req.query.token === 'string' ? req.query.token : null;
       
       const estimate = await storage.getEstimateByNumber(estimateNumber);
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
+      }
+      if (!token || !estimate.publicToken || estimate.publicToken !== token) {
+        return res.status(403).json({ message: "Access denied" });
       }
 
       if (estimate.estimateType === 'pre_estimate') {
@@ -10723,10 +10918,14 @@ The Autobidder Team`;
   app.post("/api/estimates/by-number/:estimateNumber/decline", async (req, res) => {
     try {
       const { estimateNumber } = req.params;
+      const token = typeof req.query.token === 'string' ? req.query.token : null;
       
       const estimate = await storage.getEstimateByNumber(estimateNumber);
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
+      }
+      if (!token || !estimate.publicToken || estimate.publicToken !== token) {
+        return res.status(403).json({ message: "Access denied" });
       }
 
       if (estimate.estimateType === 'pre_estimate') {
@@ -11082,6 +11281,7 @@ The Autobidder Team`;
           estimateData: {
             id: estimate.id,
             estimateNumber: estimate.estimateNumber,
+            publicToken: estimate.publicToken,
             total: estimate.totalAmount,
             status: estimate.status,
             estimateType: estimate.estimateType,
@@ -11092,6 +11292,8 @@ The Autobidder Team`;
           leadData: {
             name: estimate.customerName,
             email: estimate.customerEmail,
+            estimateNumber: estimate.estimateNumber,
+            estimatePublicToken: estimate.publicToken,
           }
         }, true); // isManualTrigger = true
       } catch (error) {
@@ -11151,6 +11353,9 @@ The Autobidder Team`;
       // Get business settings for branding and Twilio config
       const businessSettings = await storage.getBusinessSettingsByUserId(userId);
       const businessName = businessSettings?.businessName || 'Your Business';
+      const secureEstimateLink = estimate.publicToken
+        ? `${getBaseUrl()}/estimate/${estimate.estimateNumber}?token=${estimate.publicToken}`
+        : `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
       
       const results = {
         emailSent: false,
@@ -11188,7 +11393,7 @@ The Autobidder Team`;
       if (notifyEmail && estimate.customerEmail) {
         try {
           const subject = customSubject || `${businessName} - Your Estimate is Ready`;
-          const emailMessage = `${message}\n\nView your estimate here:\n${estimateLink}`;
+          const emailMessage = `${message}\n\nView your estimate here:\n${secureEstimateLink}`;
           
           const emailSent = await sendEmailWithFallback({
             to: estimate.customerEmail,
@@ -11201,13 +11406,13 @@ The Autobidder Team`;
                 <h2 style="color: #1f2937;">${businessName}</h2>
                 <p style="color: #4b5563; white-space: pre-line;">${message}</p>
                 <div style="margin: 30px 0;">
-                  <a href="${estimateLink}" 
+                  <a href="${secureEstimateLink}" 
                      style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                     View Your Estimate
                   </a>
                 </div>
                 <p style="color: #6b7280; font-size: 12px;">
-                  If the button doesn't work, copy this link: ${estimateLink}
+                  If the button doesn't work, copy this link: ${secureEstimateLink}
                 </p>
               </div>
             `,
@@ -11236,7 +11441,7 @@ The Autobidder Team`;
             const twilio = await import('twilio');
             const twilioClient = twilio.default(twilioAccountSid, twilioAuthToken);
             
-            const smsMessage = `${message}\n\nView your estimate: ${estimateLink}`;
+          const smsMessage = `${message}\n\nView your estimate: ${secureEstimateLink}`;
             
             await twilioClient.messages.create({
               body: smsMessage,
@@ -14144,6 +14349,15 @@ The Autobidder Team`;
       }
 
       const { leadId } = req.params;
+      const lead = await storage.getLead(parseInt(leadId));
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      const currentUser = (req as any).currentUser || req.session?.user;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      if (lead.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const measurements = await storage.getPhotoMeasurementsByLeadId(parseInt(leadId));
       
       // Convert stored integer values back to decimals
@@ -14922,6 +15136,11 @@ This booking was created on ${new Date().toLocaleString()}.
       if (!lead) {
         return res.status(404).json({ message: "Lead not found" });
       }
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      if (lead.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       
       const workOrders = await storage.getWorkOrdersByLeadId(leadId);
       res.json(workOrders);
@@ -14936,7 +15155,9 @@ This booking was created on ${new Date().toLocaleString()}.
       const leadId = parseInt(req.params.leadId);
       const lead = await storage.getMultiServiceLead(leadId);
       
-      if (!lead || lead.businessOwnerId !== (req as any).currentUser.id) {
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      if (!lead || lead.businessOwnerId !== effectiveUserId) {
         return res.status(404).json({ message: "Lead not found" });
       }
       
@@ -15128,7 +15349,9 @@ This booking was created on ${new Date().toLocaleString()}.
       // Get business settings for branding and Twilio config
       const businessSettings = await storage.getBusinessSettings();
       const businessName = businessSettings?.businessName || 'Your Business';
-      const estimateLink = `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
+      const estimateLink = estimate.publicToken
+        ? `${getBaseUrl()}/estimate/${estimate.estimateNumber}?token=${estimate.publicToken}`
+        : `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
       
       const results = {
         emailSent: false,
@@ -15738,6 +15961,15 @@ This booking was created on ${new Date().toLocaleString()}.
   app.get("/api/leads/:leadId/communications", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const lead = await storage.getLead(leadId);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.userId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const communications = await storage.getCrmCommunicationsByLeadId(leadId);
       res.json(communications);
     } catch (error) {
@@ -15749,6 +15981,15 @@ This booking was created on ${new Date().toLocaleString()}.
   app.get("/api/multi-service-leads/:leadId/communications", requireWebOrMobileAuth, requirePermission("canViewLeads"), async (req, res) => {
     try {
       const leadId = parseInt(req.params.leadId);
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const lead = await storage.getMultiServiceLead(leadId);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      if (lead.businessOwnerId !== effectiveUserId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const communications = await storage.getCrmCommunicationsByMultiServiceLeadId(leadId);
       res.json(communications);
     } catch (error) {

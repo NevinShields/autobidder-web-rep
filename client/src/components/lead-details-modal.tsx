@@ -161,8 +161,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
-  const copyEstimateLink = async (estimateNumber: string, estimateId: number) => {
-    const url = `${window.location.origin}/estimate/${estimateNumber}`;
+  const copyEstimateLink = async (estimateNumber: string, estimateId: number, publicToken?: string | null) => {
+    const tokenSuffix = publicToken ? `?token=${encodeURIComponent(publicToken)}` : "";
+    const url = `${window.location.origin}/estimate/${estimateNumber}${tokenSuffix}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopiedEstimateLink(estimateId);
@@ -2335,7 +2336,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => copyEstimateLink(estimate.estimateNumber, estimate.id)}
+                            onClick={() => copyEstimateLink(estimate.estimateNumber, estimate.id, estimate.publicToken)}
                             data-testid={`button-copy-estimate-link-${estimate.id}`}
                           >
                             {copiedEstimateLink === estimate.id ? (

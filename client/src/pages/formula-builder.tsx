@@ -25,6 +25,11 @@ export default function FormulaBuilder() {
     enabled: id !== "new",
   });
 
+  // Fetch all formulas to allow linking variables across services
+  const { data: allFormulas = [] } = useQuery<Formula[]>({
+    queryKey: ["/api/formulas"],
+  });
+
   const [currentFormula, setCurrentFormula] = useState<Formula | null>(null);
 
   // Update currentFormula when formula data is loaded or when creating new
@@ -257,6 +262,7 @@ export default function FormulaBuilder() {
               onSave={handleSave}
               onPreview={() => setShowSingleServicePreview(true)}
               isSaving={saveFormulaMutation.isPending}
+              allFormulas={allFormulas}
             />
 
             {/* Single Service Preview Modal */}

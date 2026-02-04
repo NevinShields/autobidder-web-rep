@@ -270,6 +270,38 @@ export function getTrialStatus(user: any) {
   };
 }
 
+function sanitizeUser(user: any) {
+  if (!user) return user;
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    profileImageUrl: user.profileImageUrl,
+    userType: user.userType,
+    ownerId: user.ownerId,
+    organizationName: user.organizationName,
+    isActive: user.isActive,
+    plan: user.plan,
+    subscriptionStatus: user.subscriptionStatus,
+    billingPeriod: user.billingPeriod,
+    trialStartDate: user.trialStartDate,
+    trialEndDate: user.trialEndDate,
+    trialUsed: user.trialUsed,
+    permissions: user.permissions,
+    onboardingCompleted: user.onboardingCompleted,
+    onboardingStep: user.onboardingStep,
+    businessInfo: user.businessInfo,
+    isBetaTester: user.isBetaTester,
+    googleCalendarConnected: user.googleCalendarConnected,
+    googleCalendarId: user.googleCalendarId,
+    selectedCalendarIds: user.selectedCalendarIds,
+    welcomeModalShown: user.welcomeModalShown,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+}
+
 // Email auth routes
 export function setupEmailAuth(app: Express) {
   // Setup session middleware
@@ -420,10 +452,7 @@ export function setupEmailAuth(app: Express) {
         
         res.json({
           success: true,
-          user: {
-            ...user,
-            passwordHash: undefined, // Don't send password hash
-          },
+          user: sanitizeUser(user),
           trialStatus,
           message: "Account created successfully! Your 14-day free trial has started."
         });
@@ -510,10 +539,7 @@ export function setupEmailAuth(app: Express) {
 
         res.json({
           success: true,
-          user: {
-            ...user,
-            passwordHash: undefined, // Don't send password hash
-          },
+          user: sanitizeUser(user),
           accessToken,
           refreshToken,
           trialStatus,
@@ -552,8 +578,7 @@ export function setupEmailAuth(app: Express) {
       const isImpersonating = (req.session as any).isImpersonating || false;
       
       res.json({
-        ...user,
-        passwordHash: undefined, // Don't send password hash
+        ...sanitizeUser(user),
         trialStatus,
         isImpersonating,
       });

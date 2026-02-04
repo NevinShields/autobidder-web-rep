@@ -1,12 +1,13 @@
-import { useState } from "react";
-import { Variable } from "@shared/schema";
+import { useState, useMemo } from "react";
+import { Variable, Formula } from "@shared/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Upload, Hash, Type, CheckSquare, SlidersHorizontal, ChevronDown, List, Image, X, Video, ImageIcon, HelpCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2, Upload, Hash, Type, CheckSquare, SlidersHorizontal, ChevronDown, List, Image, X, Video, ImageIcon, HelpCircle, Link2, Search, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { nanoid } from "nanoid";
 
@@ -14,6 +15,14 @@ interface AddVariableModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddVariable: (variable: Variable) => void;
+  otherFormulas?: Formula[];
+}
+
+interface LinkableVariable {
+  variable: Variable;
+  formulaId: number;
+  formulaName: string;
+  connectionKey: string;
 }
 
 const variableTypeConfig = {
@@ -26,7 +35,7 @@ const variableTypeConfig = {
   "multiple-choice": { icon: Image, label: "Multiple Choice", description: "Options with images" },
 };
 
-export default function AddVariableModal({ isOpen, onClose, onAddVariable }: AddVariableModalProps) {
+export default function AddVariableModal({ isOpen, onClose, onAddVariable, otherFormulas = [] }: AddVariableModalProps) {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
   const [idManuallyEdited, setIdManuallyEdited] = useState(false);
@@ -43,6 +52,125 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
   const [tooltipVideoUrl, setTooltipVideoUrl] = useState("");
   const [tooltipImageUrl, setTooltipImageUrl] = useState("");
   const [showHelpSection, setShowHelpSection] = useState(false);
+  const [connectionKey, setConnectionKey] = useState("");
+  const [showConnectionKeySection, setShowConnectionKeySection] = useState(false);
+  const [linkSearchTerm, setLinkSearchTerm] = useState("");
+  const [isLinkingVariable, setIsLinkingVariable] = useState(false);
+
+  // Build list of linkable variables from other services
+  const linkableVariables = useMemo(() => {
+    const variables: LinkableVariable[] = [];
+    otherFormulas.forEach(formula => {
+      formula.variables?.forEach(variable => {
+        // Include variables that either have a connectionKey OR could be linked
+        // (we'll create a connectionKey based on the variable name if they select it)
+        const autoConnectionKey = variable.connectionKey ||
+          variable.name.toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30);
+        variables.push({
+          variable,
+          formulaId: formula.id,
+          formulaName: formula.name,
+          connectionKey: autoConnectionKey
+        });
+      });
+    });
+    return variables;
+  }, [otherFormulas]);
+
+  // Filter linkable variables based on search term
+  const filteredLinkableVariables = useMemo(() => {
+    if (!linkSearchTerm.trim()) return linkableVariables;
+    const term = linkSearchTerm.toLowerCase();
+    return linkableVariables.filter(lv =>
+      lv.variable.name.toLowerCase().includes(term) ||
+      lv.formulaName.toLowerCase().includes(term) ||
+      lv.connectionKey.toLowerCase().includes(term)
+    );
+  }, [linkableVariables, linkSearchTerm]);
+
+  // Handler for selecting a variable to link with
+  const handleSelectLinkableVariable = async (linkable: LinkableVariable) => {
+    // Pre-fill the form with the selected variable's properties
+    setName(linkable.variable.name);
+    if (!idManuallyEdited) {
+      setId(linkable.variable.id);
+    }
+    setType(linkable.variable.type);
+    setUnit(linkable.variable.unit || "");
+    setConnectionKey(linkable.connectionKey);
+
+    // Copy type-specific settings
+    if (linkable.variable.type === 'slider' || linkable.variable.type === 'stepper') {
+      setMin(linkable.variable.min || 0);
+      setMax(linkable.variable.max || 100);
+      if (linkable.variable.type === 'slider') {
+        setStep(linkable.variable.step || 1);
+      }
+    }
+    if (linkable.variable.type === 'checkbox') {
+      setCheckedValue(linkable.variable.checkedValue?.toString() || "1");
+      setUncheckedValue(linkable.variable.uncheckedValue?.toString() || "0");
+    }
+    if (linkable.variable.type === 'multiple-choice') {
+      setAllowMultipleSelection(linkable.variable.allowMultipleSelection || false);
+    }
+    if (linkable.variable.options) {
+      setOptions(linkable.variable.options.map(opt => ({
+        label: opt.label || "",
+        value: opt.value?.toString() || "",
+        numericValue: opt.numericValue || 0,
+        image: opt.image || ""
+      })));
+    }
+    if (linkable.variable.tooltip) {
+      setTooltip(linkable.variable.tooltip);
+      setShowHelpSection(true);
+    }
+    if (linkable.variable.tooltipVideoUrl) {
+      setTooltipVideoUrl(linkable.variable.tooltipVideoUrl);
+      setShowHelpSection(true);
+    }
+    if (linkable.variable.tooltipImageUrl) {
+      setTooltipImageUrl(linkable.variable.tooltipImageUrl);
+      setShowHelpSection(true);
+    }
+
+    // If the source variable doesn't have a connectionKey, update it
+    if (!linkable.variable.connectionKey) {
+      setIsLinkingVariable(true);
+      try {
+        // Find the source formula
+        const sourceFormula = otherFormulas.find(f => f.id === linkable.formulaId);
+        if (sourceFormula) {
+          // Update the variable in the source formula with the connectionKey
+          const updatedVariables = sourceFormula.variables?.map(v =>
+            v.id === linkable.variable.id
+              ? { ...v, connectionKey: linkable.connectionKey }
+              : v
+          );
+
+          // Save the updated formula using fetch directly
+          const response = await fetch(`/api/formulas/${linkable.formulaId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ variables: updatedVariables })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to update source formula');
+          }
+
+          console.log(`Variable "${linkable.variable.name}" in ${linkable.formulaName} linked with key "${linkable.connectionKey}"`);
+        }
+      } catch (error) {
+        console.error('Failed to update source variable:', error);
+        // Variable was copied but source wasn't updated - user may need to manually set connection key
+      } finally {
+        setIsLinkingVariable(false);
+      }
+    }
+  };
 
   const handleSubmit = () => {
     if (!name) return;
@@ -78,6 +206,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
       tooltip: tooltip.trim() || undefined,
       tooltipVideoUrl: tooltipVideoUrl.trim() || undefined,
       tooltipImageUrl: tooltipImageUrl.trim() || undefined,
+      connectionKey: connectionKey.trim() || undefined,
     };
 
     onAddVariable(variable);
@@ -101,6 +230,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
     setTooltipVideoUrl("");
     setTooltipImageUrl("");
     setShowHelpSection(false);
+    setConnectionKey("");
+    setShowConnectionKeySection(false);
+    setLinkSearchTerm("");
+    setIsLinkingVariable(false);
     onClose();
   };
 
@@ -558,6 +691,118 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable }: Add
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Video and image will be shown to users when they click the help icon.
                 </p>
+              </div>
+            )}
+          </div>
+
+          {/* Connection Key Section - Collapsible */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowConnectionKeySection(!showConnectionKeySection)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Link Variable</Label>
+                <span className="text-xs text-gray-400">(optional)</span>
+                {connectionKey && (
+                  <Badge variant="secondary" className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                    {connectionKey}
+                  </Badge>
+                )}
+              </div>
+              <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showConnectionKeySection ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showConnectionKeySection && (
+              <div className="mt-3 space-y-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Link this variable to sync values across services. When customers enter a value in one service, it auto-fills in linked services.
+                </p>
+
+                {/* Show linkable variables from other services */}
+                {linkableVariables.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      Copy from another service
+                    </Label>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <Input
+                        value={linkSearchTerm}
+                        onChange={(e) => setLinkSearchTerm(e.target.value)}
+                        placeholder="Search variables..."
+                        className="h-8 text-xs pl-8"
+                      />
+                    </div>
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 border border-blue-200 dark:border-blue-700 rounded-md bg-white dark:bg-gray-800 p-1.5 relative">
+                      {isLinkingVariable && (
+                        <div className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 flex items-center justify-center z-10 rounded-md">
+                          <div className="flex items-center gap-2 text-blue-600">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-xs">Linking variable...</span>
+                          </div>
+                        </div>
+                      )}
+                      {filteredLinkableVariables.length === 0 ? (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">No matching variables found</p>
+                      ) : (
+                        filteredLinkableVariables.map((linkable, index) => {
+                          const TypeIconEl = variableTypeConfig[linkable.variable.type as keyof typeof variableTypeConfig]?.icon || Hash;
+                          const hasConnectionKey = !!linkable.variable.connectionKey;
+                          return (
+                            <button
+                              key={`${linkable.formulaId}-${linkable.variable.id}-${index}`}
+                              type="button"
+                              onClick={() => handleSelectLinkableVariable(linkable)}
+                              disabled={isLinkingVariable}
+                              className="w-full text-left px-2.5 py-2 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors group disabled:opacity-50"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <TypeIconEl className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {linkable.variable.name}
+                                  </span>
+                                  {hasConnectionKey && (
+                                    <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                                      linked
+                                    </Badge>
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">
+                                  {linkable.formulaName}
+                                </span>
+                              </div>
+                              <div className="mt-0.5 ml-5.5">
+                                <code className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-1 rounded">
+                                  {linkable.connectionKey}
+                                </code>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual connection key input */}
+                <div className="pt-2 border-t border-blue-200 dark:border-blue-700">
+                  <Label className="text-xs text-blue-600 dark:text-blue-400 mb-1.5 block">
+                    {linkableVariables.length > 0 ? 'Or enter a custom connection key' : 'Connection Key'}
+                  </Label>
+                  <Input
+                    value={connectionKey}
+                    onChange={(e) => setConnectionKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                    placeholder="e.g., house_sqft, stories, property_height"
+                    className="h-9 text-sm font-mono"
+                  />
+                  <p className="text-[10px] text-blue-500 dark:text-blue-400 mt-1">
+                    Variables with the same key will sync across services
+                  </p>
+                </div>
               </div>
             )}
           </div>

@@ -392,6 +392,8 @@ export const estimates = pgTable("estimates", {
   multiServiceLeadId: integer("multi_service_lead_id"),
   estimateType: text("estimate_type").notNull().default("confirmed"), // "pre_estimate" | "confirmed"
   estimateNumber: text("estimate_number").notNull().unique(),
+  publicToken: text("public_token").unique(),
+  publicTokenExpiresAt: timestamp("public_token_expires_at"),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   customerPhone: text("customer_phone"),

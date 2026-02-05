@@ -107,6 +107,18 @@ function getBaseUrl(): string {
   return "http://localhost:5000";
 }
 
+const recentMultiServiceSubmissions = new Map<string, { leadId: number; createdAt: number }>();
+const MULTI_SERVICE_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
+
+const cleanupRecentMultiServiceSubmissions = () => {
+  const now = Date.now();
+  for (const [key, entry] of recentMultiServiceSubmissions.entries()) {
+    if (now - entry.createdAt > MULTI_SERVICE_DEDUPE_WINDOW_MS) {
+      recentMultiServiceSubmissions.delete(key);
+    }
+  }
+};
+
 // Configure web-push with VAPID keys
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   webpush.setVapidDetails(
@@ -3316,14 +3328,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             stage: lead.stage,
             source: lead.source || undefined,
             estimateNumber: latestEstimate?.estimateNumber,
-            estimatePublicToken: latestEstimate?.publicToken,
+            estimatePublicToken: undefined,
           },
           ...(latestEstimate ? {
             estimateId: latestEstimate.id,
             estimateData: {
               id: latestEstimate.id,
               estimateNumber: latestEstimate.estimateNumber,
-              publicToken: latestEstimate.publicToken,
+              publicToken: undefined,
               total: latestEstimate.totalAmount,
               status: latestEstimate.status,
               estimateType: latestEstimate.estimateType,
@@ -4504,7 +4516,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/multi-service-leads", optionalAuth, async (req, res) => {
     try {
-      const validatedData = insertMultiServiceLeadSchema.parse(req.body);
+      const submissionId = typeof req.body?.submissionId === 'string' ? req.body.submissionId : undefined;
+      const payloadForValidation = { ...req.body };
+      delete (payloadForValidation as any).submissionId;
+      const validatedData = insertMultiServiceLeadSchema.parse(payloadForValidation);
+      if (submissionId) {
+        cleanupRecentMultiServiceSubmissions();
+        const ownerKey =
+          validatedData.businessOwnerId ||
+          validatedData.userId ||
+          (req as any).currentUser?.id ||
+          "unknown";
+        const dedupeKey = `${ownerKey}:${submissionId}`;
+        const existing = recentMultiServiceSubmissions.get(dedupeKey);
+        if (existing) {
+          return res.json({ id: existing.leadId, deduped: true });
+        }
+      }
       const hasContactInfo = Boolean(
         validatedData.name?.trim() ||
         validatedData.email?.trim() ||
@@ -4667,6 +4695,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const lead = await storage.createMultiServiceLead(leadData);
+      if (submissionId) {
+        const ownerKey =
+          validatedData.businessOwnerId ||
+          validatedData.userId ||
+          (req as any).currentUser?.id ||
+          "unknown";
+        const dedupeKey = `${ownerKey}:${submissionId}`;
+        recentMultiServiceSubmissions.set(dedupeKey, { leadId: lead.id, createdAt: Date.now() });
+      }
       
       // Determine owner email and ID - prefer businessOwnerId from payload, then current user, then business settings
       let ownerEmail = (req as any).currentUser?.email;
@@ -10546,21 +10583,8 @@ ${brandingWebsite}
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
-      if (estimate.publicToken) {
-        if (!token) {
-          // Allow owners to access without token if authenticated
-          const sessionUser = req.session?.user;
-          if (!sessionUser || estimate.userId !== sessionUser.id) {
-            return res.status(403).json({ message: "Access denied" });
-          }
-        } else if (estimate.publicToken !== token) {
-          return res.status(403).json({ message: "Access denied" });
-        }
-      } else {
-        const sessionUser = req.session?.user;
-        if (!sessionUser || estimate.userId !== sessionUser.id) {
-          return res.status(403).json({ message: "Public access disabled for this estimate" });
-        }
+      if (token) {
+        console.log('Estimate token provided but token access is disabled. Ignoring token.');
       }
 
       let updatedEstimate = estimate;
@@ -10581,7 +10605,7 @@ ${brandingWebsite}
             estimateData: {
               id: estimate.id,
               estimateNumber: estimate.estimateNumber,
-              publicToken: estimate.publicToken,
+              publicToken: undefined,
               total: estimate.totalAmount,
               status: 'viewed',
               estimateType: estimate.estimateType,
@@ -10593,7 +10617,7 @@ ${brandingWebsite}
               name: estimate.customerName,
               email: estimate.customerEmail,
               estimateNumber: estimate.estimateNumber,
-              estimatePublicToken: estimate.publicToken,
+              estimatePublicToken: undefined,
             }
           })).catch(error => {
             console.error('Failed to trigger estimate viewed automations:', error);
@@ -10773,7 +10797,7 @@ ${brandingWebsite}
           estimateData: {
             id: estimate.id,
             estimateNumber: estimate.estimateNumber,
-            publicToken: estimate.publicToken,
+            publicToken: undefined,
             total: estimate.totalAmount,
             status: estimate.status,
             estimateType: estimate.estimateType,
@@ -10785,7 +10809,7 @@ ${brandingWebsite}
             name: estimate.customerName,
             email: estimate.customerEmail,
             estimateNumber: estimate.estimateNumber,
-            estimatePublicToken: estimate.publicToken,
+            estimatePublicToken: undefined,
           }
         }, true); // isManualTrigger = true
       } catch (error) {
@@ -10874,7 +10898,7 @@ ${brandingWebsite}
         estimateData: {
           id: updatedEstimate.id,
           estimateNumber: updatedEstimate.estimateNumber,
-          publicToken: updatedEstimate.publicToken,
+          publicToken: undefined,
           total: updatedEstimate.totalAmount,
           status: updatedEstimate.status,
           estimateType: updatedEstimate.estimateType,
@@ -10886,7 +10910,7 @@ ${brandingWebsite}
           name: updatedEstimate.customerName,
           email: updatedEstimate.customerEmail,
           estimateNumber: updatedEstimate.estimateNumber,
-          estimatePublicToken: updatedEstimate.publicToken,
+          estimatePublicToken: undefined,
         }
       }).catch(error => {
         console.error('Failed to trigger customer accepted automations:', error);
@@ -10990,8 +11014,8 @@ ${brandingWebsite}
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
-      if (!token || !estimate.publicToken || estimate.publicToken !== token) {
-        return res.status(403).json({ message: "Access denied" });
+      if (token) {
+        console.log('Estimate token provided but token access is disabled. Ignoring token.');
       }
 
       if (estimate.estimateType === 'pre_estimate') {
@@ -11064,8 +11088,8 @@ ${brandingWebsite}
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
-      if (!token || !estimate.publicToken || estimate.publicToken !== token) {
-        return res.status(403).json({ message: "Access denied" });
+      if (token) {
+        console.log('Estimate token provided but token access is disabled. Ignoring token.');
       }
 
       if (estimate.estimateType === 'pre_estimate') {
@@ -11421,7 +11445,7 @@ ${brandingWebsite}
           estimateData: {
             id: estimate.id,
             estimateNumber: estimate.estimateNumber,
-            publicToken: estimate.publicToken,
+              publicToken: undefined,
             total: estimate.totalAmount,
             status: estimate.status,
             estimateType: estimate.estimateType,
@@ -11433,7 +11457,7 @@ ${brandingWebsite}
             name: estimate.customerName,
             email: estimate.customerEmail,
             estimateNumber: estimate.estimateNumber,
-            estimatePublicToken: estimate.publicToken,
+              estimatePublicToken: undefined,
           }
         }, true); // isManualTrigger = true
       } catch (error) {
@@ -11493,9 +11517,7 @@ ${brandingWebsite}
       // Get business settings for branding and Twilio config
       const businessSettings = await storage.getBusinessSettingsByUserId(userId);
       const businessName = businessSettings?.businessName || 'Your Business';
-      const secureEstimateLink = estimate.publicToken
-        ? `${getBaseUrl()}/estimate/${estimate.estimateNumber}?token=${estimate.publicToken}`
-        : `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
+      const secureEstimateLink = `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
       
       const results = {
         emailSent: false,
@@ -14489,15 +14511,25 @@ ${brandingWebsite}
       }
 
       const { leadId } = req.params;
-      const lead = await storage.getLead(parseInt(leadId));
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
-      }
       const currentUser = (req as any).currentUser || req.session?.user;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
-      if (lead.userId !== effectiveUserId) {
-        return res.status(403).json({ message: "Access denied" });
+      const lead = await storage.getLead(parseInt(leadId));
+      if (lead) {
+        if (lead.userId !== effectiveUserId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      } else {
+        const multiLead = await storage.getMultiServiceLead(parseInt(leadId));
+        if (!multiLead) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        if (multiLead.businessOwnerId !== effectiveUserId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        // Multi-service leads don't currently store photo measurements; return empty list.
+        return res.json([]);
       }
+
       const measurements = await storage.getPhotoMeasurementsByLeadId(parseInt(leadId));
       
       // Convert stored integer values back to decimals
@@ -15489,9 +15521,7 @@ This booking was created on ${new Date().toLocaleString()}.
       // Get business settings for branding and Twilio config
       const businessSettings = await storage.getBusinessSettings();
       const businessName = businessSettings?.businessName || 'Your Business';
-      const estimateLink = estimate.publicToken
-        ? `${getBaseUrl()}/estimate/${estimate.estimateNumber}?token=${estimate.publicToken}`
-        : `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
+      const estimateLink = `${getBaseUrl()}/estimate/${estimate.estimateNumber}`;
       
       const results = {
         emailSent: false,

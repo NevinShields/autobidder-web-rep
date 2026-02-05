@@ -1185,7 +1185,6 @@ export async function sendCustomerEstimateEmail(
     service: string;
     price: number;
     estimateId: string;
-    publicToken?: string;
     validUntil?: Date;
     businessName?: string;
     businessPhone?: string;
@@ -1193,7 +1192,7 @@ export async function sendCustomerEstimateEmail(
   }
 ): Promise<boolean> {
   const subject = `Your ${estimateDetails.service} Estimate is Ready - $${estimateDetails.price.toLocaleString()}`;
-  const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}${estimateDetails.publicToken ? `?token=${estimateDetails.publicToken}` : ''}`;
+  const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}`;
   
   const html = createUnifiedEmailTemplate({
     title: "Your Estimate is Ready!",
@@ -1393,14 +1392,13 @@ export async function sendCustomerRevisedEstimateEmail(
     originalPrice: number;
     revisedPrice: number;
     estimateId: string;
-    publicToken?: string;
     revisionReason?: string;
     businessName?: string;
     validUntil?: Date;
   }
 ): Promise<boolean> {
   const subject = `Revised Estimate: ${estimateDetails.service} - $${estimateDetails.revisedPrice.toLocaleString()}`;
-  const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}${estimateDetails.publicToken ? `?token=${estimateDetails.publicToken}` : ''}`;
+  const estimateUrl = `${getBaseUrl()}/estimate/${estimateDetails.estimateId}`;
   const priceChange = estimateDetails.revisedPrice - estimateDetails.originalPrice;
   const isIncrease = priceChange > 0;
   

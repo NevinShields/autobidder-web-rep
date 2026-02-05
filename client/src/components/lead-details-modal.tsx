@@ -43,7 +43,7 @@ import {
   CalendarCheck
 } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -161,9 +161,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   
-  const copyEstimateLink = async (estimateNumber: string, estimateId: number, publicToken?: string | null) => {
-    const tokenSuffix = publicToken ? `?token=${encodeURIComponent(publicToken)}` : "";
-    const url = `${window.location.origin}/estimate/${estimateNumber}${tokenSuffix}`;
+  const copyEstimateLink = async (estimateNumber: string, estimateId: number) => {
+    const url = `${window.location.origin}/estimate/${estimateNumber}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopiedEstimateLink(estimateId);
@@ -182,9 +181,15 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   };
 
   // Fetch photo measurements for this lead
-  const { data: photoMeasurements = [], isLoading: isLoadingMeasurements, isError: isMeasurementsError } = useQuery<any[]>({
+  const {
+    data: photoMeasurements = [],
+    isLoading: isLoadingMeasurements,
+    isError: isMeasurementsError,
+    error: measurementsError
+  } = useQuery<any[]>({
     queryKey: [`/api/photo-measurements/lead/${lead?.id}`],
     enabled: !!lead?.id && isOpen,
+    retry: false,
   });
 
   // Fetch estimates for this lead
@@ -393,6 +398,16 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     setEditedSource("");
   };
 
+  const [localUploadedImages, setLocalUploadedImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!lead) {
+      setLocalUploadedImages([]);
+      return;
+    }
+    setLocalUploadedImages(lead.uploadedImages || []);
+  }, [lead]);
+
   // Image upload mutation
   const uploadImageMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -413,11 +428,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      if (data?.imageUrl) {
+        setLocalUploadedImages((prev) => [...prev, data.imageUrl]);
+      }
       toast({
         title: "Image Uploaded",
         description: "Image has been added to this lead.",
@@ -448,11 +466,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, imageIndex) => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      setLocalUploadedImages((prev) => prev.filter((_image, index) => index !== imageIndex));
       toast({
         title: "Image Deleted",
         description: "Image has been removed from this lead.",
@@ -2336,7 +2355,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => copyEstimateLink(estimate.estimateNumber, estimate.id, estimate.publicToken)}
+                            onClick={() => copyEstimateLink(estimate.estimateNumber, estimate.id)}
                             data-testid={`button-copy-estimate-link-${estimate.id}`}
                           >
                             {copiedEstimateLink === estimate.id ? (
@@ -2419,7 +2438,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     <ImageIcon className="h-4 w-4 text-pink-600 dark:text-pink-400" />
                   </div>
                   <h3 className="font-semibold text-slate-800 dark:text-white">
-                    Images {!isLoadingMeasurements && `(${photoMeasurements.length + (processedLead.uploadedImages?.length || 0)})`}
+                    Images {!isLoadingMeasurements && `(${photoMeasurements.length + localUploadedImages.length})`}
                   </h3>
                 </div>
                 <div className="flex items-center gap-2">
@@ -2471,19 +2490,16 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </div>
                 ) : isMeasurementsError ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="text-center text-red-600">
-                      <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-sm">Failed to load images</p>
-                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No images available for this lead. Upload images using the button above.</p>
                   </div>
-                ) : photoMeasurements.length === 0 && (!processedLead.uploadedImages || processedLead.uploadedImages.length === 0) ? (
+                ) : photoMeasurements.length === 0 && localUploadedImages.length === 0 ? (
                   <div className="flex items-center justify-center py-8">
                     <p className="text-sm text-gray-500 dark:text-gray-400">No images available for this lead. Upload images using the button above.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Uploaded Images */}
-                    {processedLead.uploadedImages?.map((imageUrl: string, index: number) => (
+                    {localUploadedImages.map((imageUrl: string, index: number) => (
                       <div key={`uploaded-${index}`} className="border dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm relative group">
                         <div className="aspect-video bg-gray-100 dark:bg-gray-900 relative">
                           <img

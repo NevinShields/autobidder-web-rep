@@ -195,6 +195,7 @@ export default function FormulaBuilderComponent({
   const [templateName, setTemplateName] = useState("");
   const [templateIconId, setTemplateIconId] = useState<number | null>(formula.iconId || null);
   const [templateIconUrl, setTemplateIconUrl] = useState<string | null>(formula.iconUrl || null);
+  const [bulletInput, setBulletInput] = useState("");
   const { toast } = useToast();
 
   // Sync local formulaExpression state when formula.formula changes (e.g., after AI generation)
@@ -805,17 +806,49 @@ export default function FormulaBuilderComponent({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="formula-bullet-points" className="text-xs text-gray-500 mb-1 block">Highlights (one per line)</Label>
-                    <Textarea
-                      id="formula-bullet-points"
-                      value={(formula.bulletPoints || []).join('\n')}
-                      onChange={(e) => onUpdate({ bulletPoints: e.target.value.split('\n') })}
-                      onBlur={(e) => onUpdate({ bulletPoints: e.target.value.split('\n').filter(p => p.trim()) })}
-                      placeholder="Professional installation&#10;Premium materials&#10;5-year warranty"
-                      rows={3}
-                      className="text-sm resize-none"
-                      data-testid="textarea-bullet-points"
+                    <Label htmlFor="formula-bullet-input" className="text-xs text-gray-500 mb-1 block">Highlights</Label>
+                    <Input
+                      id="formula-bullet-input"
+                      value={bulletInput}
+                      onChange={(e) => setBulletInput(e.target.value)}
+                      placeholder="Type a highlight and press Enter"
+                      className="h-9"
+                      data-testid="input-bullet-point"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const value = bulletInput.trim();
+                          if (!value) return;
+                          const next = [...(formula.bulletPoints || []), value];
+                          onUpdate({ bulletPoints: next });
+                          setBulletInput("");
+                        }
+                      }}
                     />
+                    {(formula.bulletPoints || []).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2" data-testid="bullet-point-list">
+                        {(formula.bulletPoints || []).map((point, index) => (
+                          <div
+                            key={`${point}-${index}`}
+                            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm"
+                          >
+                            <span>{point}</span>
+                            <button
+                              type="button"
+                              className="text-gray-400 hover:text-gray-600"
+                              onClick={() => {
+                                const next = (formula.bulletPoints || []).filter((_, i) => i !== index);
+                                onUpdate({ bulletPoints: next });
+                              }}
+                              aria-label="Remove bullet point"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-400 mt-2">Press Enter to add a highlight.</p>
                   </div>
                 </div>
 
@@ -1266,6 +1299,7 @@ export default function FormulaBuilderComponent({
         onClose={() => setShowVariableModal(false)}
         onAddVariable={handleAddVariable}
         otherFormulas={allFormulas.filter(f => f.id !== formula.id)}
+        existingVariableIds={formula.variables?.map(v => v.id) || []}
       />
 
       {/* Save as Template Modal */}

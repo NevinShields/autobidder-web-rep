@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense, memo, useMemo, useCallback } from "react";
+import { useState, useEffect, lazy, Suspense, memo, useMemo, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -574,6 +574,8 @@ export default function StyledCalculator(props: any = {}) {
   const [selectedCallScreenLeadId, setSelectedCallScreenLeadId] = useState<number | null>(null);
   const [selectedCallScreenLeadType, setSelectedCallScreenLeadType] = useState<"single" | "multi">("single");
   const [leadSearchTerm, setLeadSearchTerm] = useState("");
+  const isSubmittingLeadRef = useRef(false);
+  const submissionIdRef = useRef<string | null>(null);
 
   // Scroll to top whenever the step changes
   useEffect(() => {
@@ -820,6 +822,7 @@ export default function StyledCalculator(props: any = {}) {
 
   // Submit lead mutation
   const submitMultiServiceLeadMutation = useMutation({
+    retry: false,
     mutationFn: async (data: {
       services: ServiceCalculation[];
       totalPrice: number;
@@ -844,6 +847,7 @@ export default function StyledCalculator(props: any = {}) {
       }>;
       taxAmount?: number;
       subtotal?: number;
+      submissionId?: string;
     }) => {
       const payload = {
         name: data.leadInfo.name,
@@ -863,6 +867,7 @@ export default function StyledCalculator(props: any = {}) {
         taxAmount: data.taxAmount,
         subtotal: data.subtotal,
         businessOwnerId: isPublicAccess ? userId : undefined,
+        submissionId: data.submissionId,
       };
       
       // Use the same endpoint for both public and authenticated access
@@ -955,6 +960,12 @@ export default function StyledCalculator(props: any = {}) {
         // Show blocked message
         setIsBlocked(true);
       }
+      isSubmittingLeadRef.current = false;
+      submissionIdRef.current = null;
+    },
+    onError: () => {
+      isSubmittingLeadRef.current = false;
+      submissionIdRef.current = null;
     },
   });
 
@@ -2133,6 +2144,10 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   const handleSubmitLead = () => {
+    if (submitMultiServiceLeadMutation.isPending || isSubmittingLeadRef.current) {
+      return;
+    }
+    isSubmittingLeadRef.current = true;
     const missingFields: string[] = [];
     const formSettings = businessSettings?.styling;
     
@@ -2156,6 +2171,7 @@ export default function StyledCalculator(props: any = {}) {
     if (missingFields.length > 0) {
       // Silently prevent submission - no toast for iframe embedding
       console.log("Missing required fields:", missingFields);
+      isSubmittingLeadRef.current = false;
       return;
     }
 
@@ -2238,6 +2254,13 @@ export default function StyledCalculator(props: any = {}) {
       taxAmount: Math.round(taxAmount * 100),
       subtotal: Math.round(subtotal * 100) // Convert to cents
     };
+    if (!submissionIdRef.current) {
+      submissionIdRef.current = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    }
+    const submissionDataWithId = {
+      ...submissionData,
+      submissionId: submissionIdRef.current
+    };
 
     console.log('Submitting lead data:', submissionData);
     console.log('Selected discounts state:', selectedDiscounts);
@@ -2256,7 +2279,7 @@ export default function StyledCalculator(props: any = {}) {
       });
     } else {
       // Submit as new lead
-      submitMultiServiceLeadMutation.mutate(submissionData);
+      submitMultiServiceLeadMutation.mutate(submissionDataWithId);
     }
   };
 

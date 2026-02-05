@@ -16,6 +16,7 @@ interface AddVariableModalProps {
   onClose: () => void;
   onAddVariable: (variable: Variable) => void;
   otherFormulas?: Formula[];
+  existingVariableIds?: string[];
 }
 
 interface LinkableVariable {
@@ -35,10 +36,11 @@ const variableTypeConfig = {
   "multiple-choice": { icon: Image, label: "Multiple Choice", description: "Options with images" },
 };
 
-export default function AddVariableModal({ isOpen, onClose, onAddVariable, otherFormulas = [] }: AddVariableModalProps) {
+export default function AddVariableModal({ isOpen, onClose, onAddVariable, otherFormulas = [], existingVariableIds = [] }: AddVariableModalProps) {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
   const [idManuallyEdited, setIdManuallyEdited] = useState(false);
+  const [idConflictNote, setIdConflictNote] = useState("");
   const [type, setType] = useState<Variable["type"]>("number");
   const [unit, setUnit] = useState("");
   const [allowMultipleSelection, setAllowMultipleSelection] = useState(false);
@@ -56,6 +58,17 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
   const [showConnectionKeySection, setShowConnectionKeySection] = useState(false);
   const [linkSearchTerm, setLinkSearchTerm] = useState("");
   const [isLinkingVariable, setIsLinkingVariable] = useState(false);
+
+  const getUniqueVariableId = (baseId: string) => {
+    if (!baseId) return baseId;
+    let candidate = baseId;
+    let counter = 1;
+    while (existingVariableIds.includes(candidate)) {
+      candidate = `${baseId}_${counter}`;
+      counter += 1;
+    }
+    return candidate;
+  };
 
   // Build list of linkable variables from other services
   const linkableVariables = useMemo(() => {
@@ -93,7 +106,15 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
     // Pre-fill the form with the selected variable's properties
     setName(linkable.variable.name);
     if (!idManuallyEdited) {
-      setId(linkable.variable.id);
+      const desiredId = linkable.variable.id;
+      const uniqueId = getUniqueVariableId(desiredId);
+      setId(uniqueId);
+      if (uniqueId !== desiredId) {
+        setIdManuallyEdited(true);
+        setIdConflictNote(`Variable ID "${desiredId}" already exists. Using "${uniqueId}".`);
+      } else {
+        setIdConflictNote("");
+      }
     }
     setType(linkable.variable.type);
     setUnit(linkable.variable.unit || "");
@@ -175,7 +196,13 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
   const handleSubmit = () => {
     if (!name) return;
 
-    const variableId = id.trim() || nanoid();
+    const desiredId = id.trim() || nanoid();
+    const variableId = getUniqueVariableId(desiredId);
+    if (variableId !== desiredId) {
+      setId(variableId);
+      setIdManuallyEdited(true);
+      setIdConflictNote(`Variable ID "${desiredId}" already exists. Using "${variableId}".`);
+    }
 
     const variable: Variable = {
       id: variableId,
@@ -217,6 +244,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
     setName("");
     setId("");
     setIdManuallyEdited(false);
+    setIdConflictNote("");
     setType("number");
     setUnit("");
     setAllowMultipleSelection(false);
@@ -245,7 +273,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '')
         .slice(0, 20);
-      setId(autoId);
+      const uniqueId = getUniqueVariableId(autoId);
+      setId(uniqueId);
+      setIdConflictNote(uniqueId !== autoId ? `Variable ID "${autoId}" already exists. Using "${uniqueId}".` : "");
     }
   };
 
@@ -319,8 +349,14 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
                 id="variable-id"
                 value={id}
                 onChange={(e) => {
-                  setId(e.target.value);
+                  const nextId = e.target.value;
+                  setId(nextId);
                   setIdManuallyEdited(true);
+                  if (nextId && existingVariableIds.includes(nextId)) {
+                    setIdConflictNote(`Variable ID "${nextId}" already exists. Please choose a different ID.`);
+                  } else {
+                    setIdConflictNote("");
+                  }
                 }}
                 placeholder="Auto-generated from name"
                 className="mt-1.5 h-11 font-mono text-sm"
@@ -328,6 +364,9 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
                 Used in formulas like: <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs">{id || 'variableid'} * 10</code>
               </p>
+              {idConflictNote && (
+                <p className="text-xs text-amber-600 mt-1">{idConflictNote}</p>
+              )}
             </div>
           </div>
 

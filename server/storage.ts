@@ -311,7 +311,6 @@ export interface IStorage {
   // Estimate operations
   getEstimate(id: number): Promise<Estimate | undefined>;
   getEstimateByNumber(estimateNumber: string): Promise<Estimate | undefined>;
-  getEstimateByPublicToken(publicToken: string): Promise<Estimate | undefined>;
   getAllEstimates(): Promise<Estimate[]>;
   getEstimatesByUserId(userId: string): Promise<Estimate[]>;
   getEstimatesByLeadId(leadId: number): Promise<Estimate[]>;
@@ -905,6 +904,7 @@ export class DatabaseStorage implements IStorage {
       address: leads.address,
       calculatedPrice: leads.calculatedPrice,
       variables: leads.variables,
+      uploadedImages: leads.uploadedImages,
       stage: leads.stage,
       notes: leads.notes,
       source: leads.source,
@@ -1263,10 +1263,6 @@ export class DatabaseStorage implements IStorage {
     return estimate || undefined;
   }
 
-  async getEstimateByPublicToken(publicToken: string): Promise<Estimate | undefined> {
-    const [estimate] = await db.select().from(estimates).where(eq(estimates.publicToken, publicToken));
-    return estimate || undefined;
-  }
 
   async getAllEstimates(): Promise<Estimate[]> {
     return await db.select().from(estimates).orderBy(desc(estimates.createdAt));
@@ -1306,21 +1302,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEstimatesByLeadId(leadId: number): Promise<Estimate[]> {
-    return await db.select().from(estimates).where(eq(estimates.leadId, leadId));
+    try {
+      return await db.select().from(estimates).where(eq(estimates.leadId, leadId));
+    } catch (error) {
+      const message = (error as Error)?.message || '';
+      if (message.includes('public_token')) {
+        const result = await db.execute(
+          sql`SELECT * FROM estimates WHERE lead_id = ${leadId}`
+        );
+        return (result.rows || []).map((row: any) => ({
+          ...row,
+          publicToken: row.public_token ?? null,
+          publicTokenExpiresAt: row.public_token_expires_at ?? null,
+        })) as Estimate[];
+      }
+      throw error;
+    }
   }
 
   async getEstimatesByMultiServiceLeadId(multiServiceLeadId: number): Promise<Estimate[]> {
-    return await db.select().from(estimates).where(eq(estimates.multiServiceLeadId, multiServiceLeadId));
+    try {
+      return await db.select().from(estimates).where(eq(estimates.multiServiceLeadId, multiServiceLeadId));
+    } catch (error) {
+      const message = (error as Error)?.message || '';
+      if (message.includes('public_token')) {
+        const result = await db.execute(
+          sql`SELECT * FROM estimates WHERE multi_service_lead_id = ${multiServiceLeadId}`
+        );
+        return (result.rows || []).map((row: any) => ({
+          ...row,
+          publicToken: row.public_token ?? null,
+          publicTokenExpiresAt: row.public_token_expires_at ?? null,
+        })) as Estimate[];
+      }
+      throw error;
+    }
   }
 
   async createEstimate(insertEstimate: InsertEstimate): Promise<Estimate> {
-    const estimateData = {
-      ...insertEstimate,
-      publicToken: insertEstimate.publicToken || nanoid(32),
-    };
     const [estimate] = await db
       .insert(estimates)
-      .values(estimateData)
+      .values(insertEstimate)
       .returning();
     return estimate;
   }

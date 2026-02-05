@@ -121,6 +121,30 @@ SERVICE & PRICING CARDS:
 - .ab-pricing-card-bullet-icon - Bullet point icons (circular backgrounds, supports different icon types: checkmark, star, circle, arrow, plus, diamond, heart)
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
 
+DISCOUNTS & MESSAGES:
+- .ab-discount-section - Discount selection wrapper
+- .ab-discount-title - Discount section title
+- .ab-discount-subtitle - Discount helper text
+- .ab-discount-grid - Discount grid
+- .ab-discount-card - Discount card
+- .ab-discount-name - Discount name
+- .ab-discount-description - Discount description
+- .ab-discount-percent - Discount percent text
+- .ab-discount-applied - Applied badge
+- .ab-discount-savings - Discount savings panel
+- .ab-discount-savings-title - Savings title
+- .ab-discount-savings-row - Savings row
+- .ab-discount-savings-total - Savings total
+- .ab-discount-line - Discount line item (pricing summary)
+- .ab-discount-line-label - Discount line label
+- .ab-discount-line-value - Discount line value
+- .ab-pricing-disclaimer - Pricing disclaimer wrapper
+- .ab-pricing-disclaimer-text - Pricing disclaimer text
+- .ab-pricing-disclaimer-label - Pricing disclaimer label
+- .ab-customer-summary - Customer summary wrapper
+- .ab-customer-summary-title - Customer summary title
+- .ab-customer-summary-line - Customer summary line
+
 INPUT CLASSES:
 - .ab-input - All input fields (base class for all inputs)
 - .ab-number-input - Number input fields specifically
@@ -178,7 +202,7 @@ IMPORTANT RULES:
 7. Return ONLY the CSS code - no explanations or markdown formatting
 8. Maintain accessible contrast (WCAG AA). If you set a background color, also set a readable text color for that element.
 9. Never use text colors that are too close to their backgrounds, especially on inputs and pricing cards.
-10. Keep comprehensive coverage: ensure the final CSS contains explicit blocks for most core selectors (buttons, inputs, dropdowns, checkboxes, service cards, multiple choice, pricing cards, labels, calendar, form container, question cards). If a selector is missing, add a minimal block consistent with the current style.
+10. Keep comprehensive coverage: ensure the final CSS contains explicit blocks for most core selectors (buttons, inputs, dropdowns, checkboxes, service cards, multiple choice, pricing cards, labels, calendar, form container, question cards, discounts, disclaimers, customer summary). If a selector is missing, add a minimal block consistent with the current style.
 
 EXAMPLE:
 User asks: "Make buttons bigger and change cards to red"
@@ -255,6 +279,30 @@ SERVICE & PRICING CARDS:
 - .ab-pricing-card-description - Service description on pricing card
 - .ab-pricing-card-bullet-icon - Bullet point icons (circular backgrounds, supports different icon types: checkmark, star, circle, arrow, plus, diamond, heart)
 - .ab-pricing-card-bullet-text - Bullet point text on pricing card
+
+DISCOUNTS & MESSAGES:
+- .ab-discount-section - Discount selection wrapper
+- .ab-discount-title - Discount section title
+- .ab-discount-subtitle - Discount helper text
+- .ab-discount-grid - Discount grid
+- .ab-discount-card - Discount card
+- .ab-discount-name - Discount name
+- .ab-discount-description - Discount description
+- .ab-discount-percent - Discount percent text
+- .ab-discount-applied - Applied badge
+- .ab-discount-savings - Discount savings panel
+- .ab-discount-savings-title - Savings title
+- .ab-discount-savings-row - Savings row
+- .ab-discount-savings-total - Savings total
+- .ab-discount-line - Discount line item (pricing summary)
+- .ab-discount-line-label - Discount line label
+- .ab-discount-line-value - Discount line value
+- .ab-pricing-disclaimer - Pricing disclaimer wrapper
+- .ab-pricing-disclaimer-text - Pricing disclaimer text
+- .ab-pricing-disclaimer-label - Pricing disclaimer label
+- .ab-customer-summary - Customer summary wrapper
+- .ab-customer-summary-title - Customer summary title
+- .ab-customer-summary-line - Customer summary line
 
 INPUT CLASSES:
 - .ab-input - All input fields (base class for all inputs)
@@ -343,7 +391,9 @@ Generate CSS blocks for most core selectors so the output feels complete. At min
 .ab-multiple-choice, .ab-multichoice-card,
 .ab-pricing-card, .ab-pricing-card-price, .ab-pricing-card-title, .ab-pricing-card-description, .ab-pricing-card-bullet-icon, .ab-pricing-card-bullet-text,
 .ab-question-label, .ab-label,
-.ab-calendar-nav, .ab-calendar-date, .ab-time-slot.
+.ab-calendar-nav, .ab-calendar-date, .ab-time-slot,
+.ab-discount-section, .ab-discount-card, .ab-discount-savings, .ab-discount-line,
+.ab-pricing-disclaimer, .ab-customer-summary.
 
 RULES:
 1. Make the CSS clean, readable, and grouped by section (container, inputs, buttons, service cards, multiple choice, pricing, calendar, labels).

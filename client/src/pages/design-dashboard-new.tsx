@@ -1066,6 +1066,34 @@ export default function DesignDashboard() {
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-bullet-text</span> - Bullet text</div>
                               </div>
                             </div>
+                            {/* Discounts & Messages */}
+                            <div>
+                              <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Discounts & Messages:</p>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-section</span> - Discount section wrapper</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-title</span> - Discount section title</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-subtitle</span> - Discount helper text</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-grid</span> - Discount grid</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-card</span> - Discount card</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-name</span> - Discount name</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-description</span> - Discount description</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-percent</span> - Discount percent</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-applied</span> - Applied badge</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-savings</span> - Savings panel</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-savings-title</span> - Savings title</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-savings-row</span> - Savings row</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-savings-total</span> - Savings total</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-line</span> - Discount line item</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-line-label</span> - Line label</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-discount-line-value</span> - Line value</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-disclaimer</span> - Pricing disclaimer</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-disclaimer-text</span> - Disclaimer text</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-disclaimer-label</span> - Disclaimer label</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-customer-summary</span> - Customer summary</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-customer-summary-title</span> - Customer summary title</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-customer-summary-line</span> - Customer summary line</div>
+                              </div>
+                            </div>
                             {/* Calendar */}
                             <div>
                               <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Booking Calendar:</p>

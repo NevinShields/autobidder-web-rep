@@ -1515,6 +1515,14 @@ export default function StyledCalculator(props: any = {}) {
         // Skip :root
         if (selector.trim() === ':root') return selector;
         
+        // If selector already includes the root, don't double-prefix
+        if (selector.includes('#autobidder-form')) return selector;
+
+        // Ensure .ab-form-container targets the root element (it IS the root)
+        if (selector.includes('.ab-form-container')) {
+          return selector.replace(/\.ab-form-container/g, '#autobidder-form.ab-form-container');
+        }
+
         return selector
           .split(',')
           .map(s => {
@@ -3543,11 +3551,11 @@ export default function StyledCalculator(props: any = {}) {
 
                 {/* Bundle Discount */}
                 {bundleDiscount > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg text-green-600">
+                  <div className="ab-discount-line flex justify-between items-center">
+                    <span className="ab-discount-line-label text-lg text-green-600">
                       Bundle Discount ({businessSettings?.styling?.bundleDiscountPercent || 0}%):
                     </span>
-                    <span className="text-lg font-medium text-green-600">
+                    <span className="ab-discount-line-value text-lg font-medium text-green-600">
                       -${bundleDiscount.toLocaleString()}
                     </span>
                   </div>
@@ -3555,13 +3563,13 @@ export default function StyledCalculator(props: any = {}) {
 
                 {/* Customer Discounts */}
                 {customerDiscountAmount > 0 && (
-                  <div className="space-y-2">
+                  <div className="ab-discount-lines space-y-2">
                     {businessSettings?.discounts?.filter(d => d.isActive && selectedDiscounts.includes(d.id)).map((discount) => (
-                      <div key={discount.id} className="flex justify-between items-center">
-                        <span className="text-lg text-green-600">
+                      <div key={discount.id} className="ab-discount-line flex justify-between items-center">
+                        <span className="ab-discount-line-label text-lg text-green-600">
                           {discount.name} ({discount.percentage}%):
                         </span>
-                        <span className="text-lg font-medium text-green-600">
+                        <span className="ab-discount-line-value text-lg font-medium text-green-600">
                           -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
                         </span>
                       </div>
@@ -3647,7 +3655,7 @@ export default function StyledCalculator(props: any = {}) {
                     </span>
                   </div>
                   {bundleDiscount > 0 && (
-                    <p className="text-sm text-green-600 font-medium text-right mt-1">
+                    <p className="ab-discount-savings-note text-sm text-green-600 font-medium text-right mt-1">
                       You save ${bundleDiscount.toLocaleString()} with our bundle discount!
                     </p>
                   )}
@@ -3656,44 +3664,44 @@ export default function StyledCalculator(props: any = {}) {
 
               {/* Discount Selection */}
               {businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0 && (
-                <div className="mt-6 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                <div className="ab-discount-section mt-6 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="ab-discount-title text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
                     💰 Available Discounts
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="ab-discount-subtitle text-sm text-gray-600 mb-4">
                     {businessSettings.allowDiscountStacking 
                       ? "Select all discounts you qualify for (they can be combined)" 
                       : "Select one discount you qualify for"
                     }
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="ab-discount-grid grid grid-cols-1 md:grid-cols-2 gap-3">
                     {businessSettings.discounts.filter(d => d.isActive).map((discount) => (
                       <div
                         key={discount.id}
                         onClick={() => handleDiscountToggle(discount.id)}
-                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                        className={`ab-discount-card p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
                           selectedDiscounts.includes(discount.id)
-                            ? 'border-green-500 bg-green-50'
+                            ? 'border-green-500 bg-green-50 selected'
                             : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900">
+                            <div className="ab-discount-name font-medium text-gray-900">
                               {discount.name}
                             </div>
                             {discount.description && (
-                              <div className="text-sm text-gray-600 mt-1">
+                              <div className="ab-discount-description text-sm text-gray-600 mt-1">
                                 {discount.description}
                               </div>
                             )}
                           </div>
                           <div className="ml-3 text-right">
-                            <div className="text-lg font-bold text-green-600">
+                            <div className="ab-discount-percent text-lg font-bold text-green-600">
                               {discount.percentage}% OFF
                             </div>
                             {selectedDiscounts.includes(discount.id) && (
-                              <div className="text-sm text-green-600 font-medium">
+                              <div className="ab-discount-applied text-sm text-green-600 font-medium">
                                 ✓ Applied
                               </div>
                             )}
@@ -3705,18 +3713,18 @@ export default function StyledCalculator(props: any = {}) {
                   
                   {/* Show discount savings */}
                   {selectedDiscounts.length > 0 && (
-                    <div className="mt-4 p-3 bg-green-100 rounded-lg border border-green-300">
-                      <div className="text-sm font-medium text-green-800 mb-2">Discount Savings Applied:</div>
+                    <div className="ab-discount-savings mt-4 p-3 bg-green-100 rounded-lg border border-green-300">
+                      <div className="ab-discount-savings-title text-sm font-medium text-green-800 mb-2">Discount Savings Applied:</div>
                       {businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id)).map((discount) => (
-                        <div key={discount.id} className="flex justify-between items-center text-sm">
-                          <span className="text-green-700">{discount.name} ({discount.percentage}%):</span>
-                          <span className="font-medium text-green-600">
+                        <div key={discount.id} className="ab-discount-savings-row flex justify-between items-center text-sm">
+                          <span className="ab-discount-savings-label text-green-700">{discount.name} ({discount.percentage}%):</span>
+                          <span className="ab-discount-savings-value font-medium text-green-600">
                             -${Math.round(subtotal * (discount.percentage / 100)).toLocaleString()}
                           </span>
                         </div>
                       ))}
                       {customerDiscountAmount > 0 && (
-                        <div className="text-sm font-semibold text-green-800 mt-2 pt-2 border-t border-green-200">
+                        <div className="ab-discount-savings-total text-sm font-semibold text-green-800 mt-2 pt-2 border-t border-green-200">
                           Total Discount Savings: -${customerDiscountAmount.toLocaleString()}
                         </div>
                       )}
@@ -3864,22 +3872,22 @@ export default function StyledCalculator(props: any = {}) {
 
               {/* Pricing Disclaimer */}
               {businessSettings?.styling?.enableDisclaimer && businessSettings.styling.disclaimerText && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4" style={{ borderLeftColor: styling.primaryColor || '#3B82F6' }}>
-                  <p className="text-sm text-gray-600">
-                    <strong className="font-medium" style={{ color: styling.textColor || '#1F2937' }}>Important: </strong>
+                <div className="ab-pricing-disclaimer mt-6 p-4 bg-gray-50 rounded-lg border-l-4" style={{ borderLeftColor: styling.primaryColor || '#3B82F6' }}>
+                  <p className="ab-pricing-disclaimer-text text-sm text-gray-600">
+                    <strong className="ab-pricing-disclaimer-label font-medium" style={{ color: styling.textColor || '#1F2937' }}>Important: </strong>
                     {businessSettings.styling.disclaimerText}
                   </p>
                 </div>
               )}
 
               {/* Customer Info Summary */}
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
+              <div className="ab-customer-summary mt-6 p-4 bg-gray-50 rounded-lg">
+                <h4 className="ab-customer-summary-title font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
                   Quote for: {leadForm.name}
                 </h4>
-                <p className="text-sm text-gray-600">{leadForm.email}</p>
-                <p className="text-sm text-gray-600">{leadForm.phone}</p>
-                {leadForm.address && <p className="text-sm text-gray-600">{leadForm.address}</p>}
+                <p className="ab-customer-summary-line text-sm text-gray-600">{leadForm.email}</p>
+                <p className="ab-customer-summary-line text-sm text-gray-600">{leadForm.phone}</p>
+                {leadForm.address && <p className="ab-customer-summary-line text-sm text-gray-600">{leadForm.address}</p>}
               </div>
             </div>
             {/* Action Buttons */}

@@ -379,6 +379,30 @@ export default function EnhancedServiceSelector({
     return `Advanced calculator with ${varCount}+ configuration options`;
   };
 
+  const getIconSizeStyle = () => {
+    const sizeUnit = styling.serviceSelectorIconSizeUnit || 'preset';
+    if (sizeUnit === 'pixels') {
+      const size = styling.serviceSelectorIconPixelSize || 48;
+      return { width: `${size}px`, height: `${size}px` };
+    }
+    if (sizeUnit === 'percent') {
+      const percent = Math.max(10, Math.min(80, styling.serviceSelectorIconPercentSize || 30));
+      return {
+        width: `clamp(24px, ${percent}%, 96px)`,
+        height: `clamp(24px, ${percent}%, 96px)`,
+      };
+    }
+
+    const presetSize = styling.serviceSelectorIconSize || 'md';
+    switch (presetSize) {
+      case 'sm': return { width: '2rem', height: '2rem' };
+      case 'md': return { width: '2.5rem', height: '2.5rem' };
+      case 'lg': return { width: '3rem', height: '3rem' };
+      case 'xl': return { width: '3.5rem', height: '3.5rem' };
+      default: return { width: '2.5rem', height: '2.5rem' };
+    }
+  };
+
 
 
   return (
@@ -457,101 +481,86 @@ export default function EnhancedServiceSelector({
                 onClick={() => onServiceToggle(formula.id)}
               >
                   {/* Enhanced Layout with proper spacing */}
-                  <div className="flex flex-col items-center text-center h-full pt-1 pb-2 px-2">
-                    
-                    {/* Service Name with smart dynamic sizing - always shows full text */}
-                    <h3 
-                      className="ab-service-title font-black leading-tight flex-shrink-0"
-                      style={hasCustomCSS ? {} : { 
-                        color: isSelected 
-                          ? hexToRgba(
-                              componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor || '#1f2937',
-                              styling.serviceSelectorSelectedTextColorAlpha ?? 100
-                            )
-                          : hexToRgba(
-                              componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor || '#374151',
-                              styling.serviceSelectorTextColorAlpha ?? 100
-                            ),
-                        marginBottom: '8px',
-                        fontSize: (() => {
-                          // Smart font sizing with word wrapping allowed
-                          const textLength = formula.name.length;
-                          if (textLength <= 15) return '0.875rem'; // 14px - short text
-                          if (textLength <= 25) return '0.8125rem'; // 13px - medium text  
-                          if (textLength <= 35) return '0.75rem'; // 12px - long text
-                          return '0.6875rem'; // 11px - very long text
-                        })(),
-                        lineHeight: '1.3',
-                        wordBreak: 'normal',
-                        overflowWrap: 'break-word',
-                        hyphens: 'none',
-                        fontFamily: styling.titleFontFamily === 'inter' ? 'Inter, sans-serif' :
-                                   styling.titleFontFamily === 'arial' ? 'Arial, sans-serif' :
-                                   styling.titleFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
-                                   styling.titleFontFamily === 'georgia' ? 'Georgia, serif' :
-                                   styling.titleFontFamily === 'times' ? 'Times New Roman, serif' :
-                                   styling.titleFontFamily === 'roboto' ? 'Roboto, sans-serif' :
-                                   styling.titleFontFamily === 'opensans' ? 'Open Sans, sans-serif' :
-                                   styling.titleFontFamily === 'lato' ? 'Lato, sans-serif' :
-                                   styling.titleFontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
-                                   styling.titleFontFamily === 'system' ? 'system-ui, sans-serif' :
-                                   styling.titleFontFamily || (styling.fontFamily === 'times' ? 'Times New Roman, serif' : 'Inter, sans-serif'),
-                        fontWeight: styling.titleFontWeight === 'light' ? '300' :
-                                   styling.titleFontWeight === 'normal' ? '400' :
-                                   styling.titleFontWeight === 'medium' ? '500' :
-                                   styling.titleFontWeight === 'semibold' ? '600' :
-                                   styling.titleFontWeight === 'bold' ? '700' :
-                                   styling.titleFontWeight === 'extrabold' ? '800' : '900'
-                      }}
-                    >
-                      {formula.name}
-                    </h3>
-                    
-                    {/* Icon with fixed sizing - no container scaling */}
-                    <div 
-                      className="flex items-center justify-center flex-shrink-0"
-                      style={{ 
-                        color: isSelected 
-                          ? styling.primaryColor || '#3b82f6'
-                          : styling.primaryColor || '#3b82f6',
-                        fontSize: (() => {
-                          // Fixed icon sizing based on existing preset controls
-                          const presetSize = styling.serviceSelectorIconSize || 'md';
-                          switch (presetSize) {
-                            case 'sm': return '2rem';
-                            case 'md': return '2.5rem';
-                            case 'lg': return '3rem';
-                            case 'xl': return '3.5rem';
-                            default: return '2.5rem';
-                          }
-                        })(),
-                        width: (() => {
-                          // Fixed width to prevent scaling
-                          const presetSize = styling.serviceSelectorIconSize || 'md';
-                          switch (presetSize) {
-                            case 'sm': return '2rem';
-                            case 'md': return '2.5rem';
-                            case 'lg': return '3rem';
-                            case 'xl': return '3.5rem';
-                            default: return '2.5rem';
-                          }
-                        })(),
-                        height: (() => {
-                          // Fixed height to prevent scaling
-                          const presetSize = styling.serviceSelectorIconSize || 'md';
-                          switch (presetSize) {
-                            case 'sm': return '2rem';
-                            case 'md': return '2.5rem';
-                            case 'lg': return '3rem';
-                            case 'xl': return '3.5rem';
-                            default: return '2.5rem';
-                          }
-                        })()
-                      }}
-                    >
-                      {getServiceIcon(formula)}
-                    </div>
-                  </div>
+                  {(() => {
+                    const iconPosition = styling.serviceSelectorIconPosition || 'top';
+                    const isVertical = iconPosition === 'top' || iconPosition === 'bottom';
+                    const layoutDirection = iconPosition === 'right'
+                      ? 'flex-row-reverse'
+                      : iconPosition === 'left'
+                        ? 'flex-row'
+                        : iconPosition === 'bottom'
+                          ? 'flex-col-reverse'
+                          : 'flex-col';
+                    const iconSpacingClass = isVertical ? 'mb-2' : 'mr-3';
+                    const iconSizeStyle = getIconSizeStyle();
+                    const alignClass = styling.serviceSelectorContentAlignment === 'left'
+                      ? 'items-start text-left'
+                      : styling.serviceSelectorContentAlignment === 'right'
+                        ? 'items-end text-right'
+                        : 'items-center text-center';
+
+                    return (
+                      <div className={`flex ${layoutDirection} ${isVertical ? alignClass : 'items-center'} h-full pt-1 pb-2 px-2`}>
+                        <div
+                          className={`flex items-center justify-center flex-shrink-0 ${iconSpacingClass}`}
+                          style={{
+                            color: styling.primaryColor || '#3b82f6',
+                            ...iconSizeStyle,
+                          }}
+                        >
+                          {getServiceIcon(formula)}
+                        </div>
+                        <div className={`flex flex-col ${isVertical ? alignClass : ''}`}>
+                          <h3 
+                            className="ab-service-title font-black leading-tight flex-shrink-0"
+                            style={hasCustomCSS ? {} : { 
+                              color: isSelected 
+                                ? hexToRgba(
+                                    componentStyles?.serviceSelector?.selectedTextColor || styling.serviceSelectorSelectedTextColor || styling.textColor || '#1f2937',
+                                    styling.serviceSelectorSelectedTextColorAlpha ?? 100
+                                  )
+                                : hexToRgba(
+                                    componentStyles?.serviceSelector?.textColor || styling.serviceSelectorTextColor || styling.textColor || '#374151',
+                                    styling.serviceSelectorTextColorAlpha ?? 100
+                                  ),
+                              marginBottom: '8px',
+                              fontSize: (() => {
+                                // Smart font sizing with word wrapping allowed
+                                const textLength = formula.name.length;
+                                if (textLength <= 15) return '0.875rem'; // 14px - short text
+                                if (textLength <= 25) return '0.8125rem'; // 13px - medium text  
+                                if (textLength <= 35) return '0.75rem'; // 12px - long text
+                                return '0.6875rem'; // 11px - very long text
+                              })(),
+                              lineHeight: '1.3',
+                              wordBreak: 'normal',
+                              overflowWrap: 'break-word',
+                              hyphens: 'none',
+                              fontFamily: styling.titleFontFamily === 'inter' ? 'Inter, sans-serif' :
+                                         styling.titleFontFamily === 'arial' ? 'Arial, sans-serif' :
+                                         styling.titleFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
+                                         styling.titleFontFamily === 'georgia' ? 'Georgia, serif' :
+                                         styling.titleFontFamily === 'times' ? 'Times New Roman, serif' :
+                                         styling.titleFontFamily === 'roboto' ? 'Roboto, sans-serif' :
+                                         styling.titleFontFamily === 'opensans' ? 'Open Sans, sans-serif' :
+                                         styling.titleFontFamily === 'lato' ? 'Lato, sans-serif' :
+                                         styling.titleFontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
+                                         styling.titleFontFamily === 'system' ? 'system-ui, sans-serif' :
+                                         styling.titleFontFamily || (styling.fontFamily === 'times' ? 'Times New Roman, serif' : 'Inter, sans-serif'),
+                              fontWeight: styling.titleFontWeight === 'light' ? '300' :
+                                         styling.titleFontWeight === 'normal' ? '400' :
+                                         styling.titleFontWeight === 'medium' ? '500' :
+                                         styling.titleFontWeight === 'semibold' ? '600' :
+                                         styling.titleFontWeight === 'bold' ? '700' :
+                                         styling.titleFontWeight === 'extrabold' ? '800' : '900'
+                            }}
+                          >
+                            {formula.name}
+                          </h3>
+                        </div>
+                      </div>
+                    );
+                  })()}
               </div>
             );
           })}

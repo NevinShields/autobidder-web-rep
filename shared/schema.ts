@@ -3051,3 +3051,224 @@ export const directoryIndexCacheRelations = relations(directoryIndexCache, ({ on
     references: [directoryCategories.id],
   }),
 }));
+
+// ==================== Blog Content System ====================
+
+// TypeScript interfaces for JSONB columns
+export interface BlogContentSection {
+  id: string;
+  type: "hero" | "text" | "job_summary" | "before_after" | "process_timeline" | "pricing_factors" | "faq" | "cta";
+  content: any;
+  isLocked: boolean;
+}
+
+export interface SeoChecklistItem {
+  id: string;
+  label: string;
+  isPassed: boolean;
+}
+
+export interface BlogComplianceFlags {
+  hasAbsoluteClaims: boolean;
+  hasSafetyDisclaimers: boolean;
+  hasResultsDisclaimer: boolean;
+  hasCredibilityBlock: boolean;
+}
+
+export interface BlogLayoutSection {
+  id: string;
+  type: string;
+  label: string;
+  required: boolean;
+}
+
+// Blog Posts - Core blog entity
+export const blogPosts = pgTable("blog_posts", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+
+  // Type & Targeting
+  blogType: text("blog_type").notNull(), // "job_showcase", "expert_opinion", "seasonal_tip", "faq_educational"
+  primaryServiceId: integer("primary_service_id").references(() => formulas.id),
+  targetCity: text("target_city"),
+  targetNeighborhood: text("target_neighborhood"),
+  goal: text("goal"), // "rank_seo", "educate", "convert"
+
+  // Content Source
+  workOrderId: integer("work_order_id").references(() => workOrders.id),
+  leadId: integer("lead_id").references(() => leads.id),
+
+  // Input
+  jobNotes: text("job_notes"),
+  talkingPoints: jsonb("talking_points").$type<string[]>(),
+  tonePreference: text("tone_preference"), // "professional", "friendly", "technical"
+
+  // Generated Content
+  title: text("title").notNull(),
+  slug: text("slug").notNull(),
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  excerpt: text("excerpt"),
+  content: jsonb("content").notNull().$type<BlogContentSection[]>(),
+  layoutTemplateId: integer("layout_template_id"),
+
+  // SEO
+  seoScore: integer("seo_score"),
+  seoChecklist: jsonb("seo_checklist").$type<SeoChecklistItem[]>(),
+
+  // Publishing
+  featuredImageUrl: text("featured_image_url"),
+  category: text("category"),
+  tags: jsonb("tags").$type<string[]>(),
+  status: text("status").notNull().default("draft"), // "draft", "published", "scheduled"
+  scheduledPublishAt: timestamp("scheduled_publish_at"),
+  publishedAt: timestamp("published_at"),
+
+  // Duda Sync
+  dudaSiteId: text("duda_site_id"),
+  dudaBlogPostId: text("duda_blog_post_id"),
+  dudaStatus: text("duda_status"), // "not_synced", "synced", "published", "error"
+  dudaLastSyncAt: timestamp("duda_last_sync_at"),
+  dudaLiveUrl: text("duda_live_url"),
+
+  // Version Control
+  version: integer("version").notNull().default(1),
+  parentVersionId: integer("parent_version_id"),
+
+  // Compliance
+  complianceFlags: jsonb("compliance_flags").$type<BlogComplianceFlags>(),
+  wordCount: integer("word_count"),
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  userIdx: index("blog_posts_user_idx").on(table.userId),
+  statusIdx: index("blog_posts_status_idx").on(table.status),
+  dudaSiteIdx: index("blog_posts_duda_site_idx").on(table.dudaSiteId),
+}));
+
+// Blog Images - Image management with tagging
+export const blogImages = pgTable("blog_images", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  blogPostId: integer("blog_post_id").references(() => blogPosts.id, { onDelete: "cascade" }),
+
+  originalUrl: text("original_url").notNull(),
+  processedUrl: text("processed_url"),
+  thumbnailUrl: text("thumbnail_url"),
+
+  imageType: text("image_type").notNull(), // "hero", "before", "after", "process", "equipment", "team"
+  altText: text("alt_text"),
+  caption: text("caption"),
+
+  exifStripped: boolean("exif_stripped").default(false),
+  blurApplied: boolean("blur_applied").default(false),
+  rightsConfirmed: boolean("rights_confirmed").default(false),
+
+  sourceType: text("source_type"), // "upload", "lead", "work_order"
+  sourceId: integer("source_id"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Blog Layout Templates - JSON-based deterministic templates
+export const blogLayoutTemplates = pgTable("blog_layout_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  blogType: text("blog_type"), // Which blog types this suits
+  sections: jsonb("sections").notNull().$type<BlogLayoutSection[]>(),
+  previewImageUrl: text("preview_image_url"),
+  isActive: boolean("is_active").default(true),
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Blog Section Locks - Protect manually edited sections
+export const blogSectionLocks = pgTable("blog_section_locks", {
+  id: serial("id").primaryKey(),
+  blogPostId: integer("blog_post_id").notNull().references(() => blogPosts.id, { onDelete: "cascade" }),
+  sectionId: text("section_id").notNull(),
+  lockedAt: timestamp("locked_at").defaultNow(),
+});
+
+// Blog schema exports
+export const insertBlogPostSchema = createInsertSchema(blogPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  version: true,
+});
+
+export const insertBlogImageSchema = createInsertSchema(blogImages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBlogLayoutTemplateSchema = createInsertSchema(blogLayoutTemplates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertBlogSectionLockSchema = createInsertSchema(blogSectionLocks).omit({
+  id: true,
+  lockedAt: true,
+});
+
+// Blog types
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
+export type BlogImage = typeof blogImages.$inferSelect;
+export type InsertBlogImage = z.infer<typeof insertBlogImageSchema>;
+export type BlogLayoutTemplate = typeof blogLayoutTemplates.$inferSelect;
+export type InsertBlogLayoutTemplate = z.infer<typeof insertBlogLayoutTemplateSchema>;
+export type BlogSectionLock = typeof blogSectionLocks.$inferSelect;
+export type InsertBlogSectionLock = z.infer<typeof insertBlogSectionLockSchema>;
+
+// Blog relations
+export const blogPostRelations = relations(blogPosts, ({ one, many }) => ({
+  user: one(users, {
+    fields: [blogPosts.userId],
+    references: [users.id],
+  }),
+  primaryService: one(formulas, {
+    fields: [blogPosts.primaryServiceId],
+    references: [formulas.id],
+  }),
+  workOrder: one(workOrders, {
+    fields: [blogPosts.workOrderId],
+    references: [workOrders.id],
+  }),
+  lead: one(leads, {
+    fields: [blogPosts.leadId],
+    references: [leads.id],
+  }),
+  layoutTemplate: one(blogLayoutTemplates, {
+    fields: [blogPosts.layoutTemplateId],
+    references: [blogLayoutTemplates.id],
+  }),
+  images: many(blogImages),
+  sectionLocks: many(blogSectionLocks),
+}));
+
+export const blogImageRelations = relations(blogImages, ({ one }) => ({
+  user: one(users, {
+    fields: [blogImages.userId],
+    references: [users.id],
+  }),
+  blogPost: one(blogPosts, {
+    fields: [blogImages.blogPostId],
+    references: [blogPosts.id],
+  }),
+}));
+
+export const blogLayoutTemplateRelations = relations(blogLayoutTemplates, ({ many }) => ({
+  blogPosts: many(blogPosts),
+}));
+
+export const blogSectionLockRelations = relations(blogSectionLocks, ({ one }) => ({
+  blogPost: one(blogPosts, {
+    fields: [blogSectionLocks.blogPostId],
+    references: [blogPosts.id],
+  }),
+}));

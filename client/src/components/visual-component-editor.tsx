@@ -266,23 +266,63 @@ export default function VisualComponentEditor({
 
     switch (componentType) {
       case 'service-selector':
+        const iconPosition = styling.serviceSelectorIconPosition || 'left';
+        const isVertical = iconPosition === 'top' || iconPosition === 'bottom';
+        const layoutDirection = iconPosition === 'right'
+          ? 'flex-row-reverse'
+          : iconPosition === 'left'
+            ? 'flex-row'
+            : iconPosition === 'bottom'
+              ? 'flex-col-reverse'
+              : 'flex-col';
+        const iconPreset = styling.serviceSelectorIconSize || 'md';
+        const iconPresetMap: Record<string, number> = {
+          sm: 24,
+          md: 32,
+          lg: 40,
+          xl: 52
+        };
+        const iconSizeUnit = styling.serviceSelectorIconSizeUnit || 'preset';
+        const iconSizePx =
+          iconSizeUnit === 'pixels'
+            ? styling.serviceSelectorIconPixelSize || 48
+            : iconSizeUnit === 'percent'
+              ? Math.max(18, Math.min(80, Math.round((styling.serviceSelectorIconPercentSize || 30) * 1.2)))
+              : iconPresetMap[iconPreset] || 32;
+        const iconClass = isVertical ? 'mb-2' : 'mr-3';
+        const maxPreviewWidth = 360;
         return (
           <div 
             ref={componentRef}
-            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} p-4 text-center`}
+            className={`${commonClasses} ${shadowClass} ${!isPixelWidth ? widthClass : ''} p-4`}
             style={{
               borderColor: currentStyle.borderColor,
               borderWidth: `${currentStyle.borderWidth}px`,
               backgroundColor: currentStyle.backgroundColor,
               borderRadius: `${currentStyle.borderRadius}px`,
-              height: `${currentStyle.height}px`,
+              minHeight: `${currentStyle.height}px`,
+              height: 'auto',
               padding: `${currentStyle.padding}px`,
               margin: `${currentStyle.margin}px`,
               ...(widthStyle && { width: widthStyle }),
+              maxWidth: `${maxPreviewWidth}px`,
+              overflow: 'hidden',
             }}
           >
-            <div className="text-lg font-semibold mb-2">Example Service</div>
-            <div className="text-sm text-gray-600">Service description here</div>
+            <div
+              className={`flex ${layoutDirection} ${isVertical ? 'items-center text-center' : 'items-start'} gap-2`}
+            >
+              <div
+                className={`flex items-center justify-center rounded-full bg-gray-100 text-gray-500 ${iconClass}`}
+                style={{ width: iconSizePx, height: iconSizePx }}
+              >
+                <Image className="w-1/2 h-1/2" />
+              </div>
+              <div className={isVertical ? 'text-center' : 'text-left'}>
+                <div className="text-lg font-semibold">Example Service</div>
+                <div className="text-sm text-gray-600">Service description here</div>
+              </div>
+            </div>
             
             {/* Resize handles */}
             <div 

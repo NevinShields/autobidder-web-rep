@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema } from "@shared/schema";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, type BlogContentSection } from "@shared/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
@@ -86,6 +86,16 @@ import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
 import { trackCompleteRegistration, trackStartTrial, sendUserLeadEvent } from './facebook-capi';
 import webpush from 'web-push';
+import {
+  generateBlogContent,
+  regenerateSection,
+  generateAltText,
+  checkCompliance,
+  calculateSeoScore,
+  blogContentToHtml,
+  DEFAULT_LAYOUT_TEMPLATES,
+  type BlogGenerationInput
+} from './blog-content-generator';
 
 function getBaseUrl(): string {
   if (process.env.DOMAIN) {
@@ -2716,7 +2726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (componentStyles) updateData.componentStyles = componentStyles;
       if (deviceView) updateData.deviceView = deviceView;
       updateData.customCSS = customCSS || null;
-      
+
       const updatedSettings = await storage.updateDesignSettings(currentSettings.id, updateData);
       res.json(updatedSettings);
     } catch (error) {
@@ -2945,6 +2955,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertLeadSchema.parse(req.body);
+      const hasContactInfo = Boolean(
+        validatedData.name?.trim() ||
+        validatedData.email?.trim() ||
+        validatedData.phone?.trim() ||
+        validatedData.address?.trim()
+      );
+
+      if (!hasContactInfo) {
+        return res.status(200).json({
+          skipped: true,
+          message: "Lead capture skipped because no contact info was provided."
+        });
+      }
 
       // Get the actual client IP from the request (not from client-submitted data)
       const clientIp = getClientIpAddress(req);
@@ -4482,6 +4505,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/multi-service-leads", optionalAuth, async (req, res) => {
     try {
       const validatedData = insertMultiServiceLeadSchema.parse(req.body);
+      const hasContactInfo = Boolean(
+        validatedData.name?.trim() ||
+        validatedData.email?.trim() ||
+        validatedData.phone?.trim() ||
+        validatedData.address?.trim()
+      );
+
+      if (!hasContactInfo) {
+        return res.status(200).json({
+          skipped: true,
+          message: "Lead capture skipped because no contact info was provided."
+        });
+      }
 
       // Get the actual client IP from the request (not from client-submitted data)
       const clientIp = getClientIpAddress(req);
@@ -10211,6 +10247,110 @@ The Autobidder Team`;
   });
 
 
+
+  // Done-for-you setup request
+  app.post("/api/dfy-setup-request", requireAuth, async (req, res) => {
+    const dfySetupRequestSchema = z.object({
+      services: z.array(z.string().trim().min(1)).min(1),
+      pricingDetails: z.string().optional().nullable(),
+      brandingWebsite: z.string().optional().nullable(),
+    });
+
+    const escapeHtml = (value: string) =>
+      value.replace(/[&<>"']/g, (char) => {
+        switch (char) {
+          case "&":
+            return "&amp;";
+          case "<":
+            return "&lt;";
+          case ">":
+            return "&gt;";
+          case "\"":
+            return "&quot;";
+          case "'":
+            return "&#39;";
+          default:
+            return char;
+        }
+      });
+
+    try {
+      const payload = dfySetupRequestSchema.parse(req.body);
+      const currentUser = (req as any).currentUser;
+      const fullName = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(" ");
+      const safeServices = payload.services.map((service) => escapeHtml(service));
+      const pricingDetails = payload.pricingDetails?.trim() || "Not provided";
+      const brandingWebsite = payload.brandingWebsite?.trim() || "Not provided";
+
+      const emailSubject = `DFY Setup Request${fullName ? ` from ${fullName}` : ""}`;
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+          <h2 style="color: #2563eb; margin-bottom: 8px;">New Done-for-You Setup Request</h2>
+          <p style="color: #4b5563; margin-top: 0;">Submitted on ${new Date().toLocaleString()}</p>
+          <div style="background: #f3f4f6; padding: 16px; border-radius: 10px; margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Requester</h3>
+            <p style="margin: 4px 0;"><strong>Name:</strong> ${fullName || "Not provided"}</p>
+            <p style="margin: 4px 0;"><strong>Email:</strong> ${escapeHtml(currentUser?.email || "Not provided")}</p>
+            <p style="margin: 4px 0;"><strong>User ID:</strong> ${escapeHtml(currentUser?.id || "Not provided")}</p>
+            ${currentUser?.organizationName ? `<p style="margin: 4px 0;"><strong>Organization:</strong> ${escapeHtml(currentUser.organizationName)}</p>` : ""}
+          </div>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Services</h3>
+            <ul style="margin: 0; padding-left: 18px; color: #111827;">
+              ${safeServices.map((service) => `<li>${service}</li>`).join("")}
+            </ul>
+          </div>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Pricing Structure</h3>
+            <p style="margin: 0; color: #1f2937;">${escapeHtml(pricingDetails)}</p>
+          </div>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Branding Website</h3>
+            <p style="margin: 0; color: #1f2937;">${escapeHtml(brandingWebsite)}</p>
+          </div>
+        </div>
+      `;
+
+      const emailText = `New Done-for-You Setup Request
+
+Submitted on: ${new Date().toLocaleString()}
+
+Requester:
+Name: ${fullName || "Not provided"}
+Email: ${currentUser?.email || "Not provided"}
+User ID: ${currentUser?.id || "Not provided"}
+${currentUser?.organizationName ? `Organization: ${currentUser.organizationName}` : ""}
+
+Services:
+${payload.services.map((service) => `- ${service}`).join("\n")}
+
+Pricing Structure:
+${pricingDetails}
+
+Branding Website:
+${brandingWebsite}
+      `;
+
+      const emailSent = await sendEmailWithFallback({
+        to: "admin@autobidder.org",
+        subject: emailSubject,
+        html: emailHtml,
+        text: emailText,
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Email service is not configured. Please contact support." });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid setup request", errors: error.errors });
+      }
+      console.error("Error submitting DFY setup request:", error);
+      res.status(500).json({ message: "Failed to submit setup request" });
+    }
+  });
 
   // Support Ticket API endpoints
   app.get("/api/support-tickets", requireAuth, async (req: any, res) => {
@@ -18165,6 +18305,1024 @@ This booking was created on ${new Date().toLocaleString()}.
       console.error("[Directory] Error updating index cache:", error);
     }
   }
+
+  // ==================== Blog Posts API ====================
+
+  // Helper to check if user has blog access (paid plans only)
+  function canAccessBlogFeature(user: any): boolean {
+    const allowedPlans = ['trial', 'standard', 'plus', 'plus_seo'];
+    return allowedPlans.includes(user.plan) || user.isBetaTester || user.userType === 'super_admin';
+  }
+
+  // List all blog posts for a user
+  app.get("/api/blog-posts", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const { status, blogType, serviceId } = req.query;
+
+      let query = db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.userId, effectiveOwnerId))
+        .orderBy(desc(blogPosts.createdAt));
+
+      const posts = await query;
+
+      // Filter in memory for additional params
+      let filteredPosts = posts;
+      if (status) {
+        filteredPosts = filteredPosts.filter(p => p.status === status);
+      }
+      if (blogType) {
+        filteredPosts = filteredPosts.filter(p => p.blogType === blogType);
+      }
+      if (serviceId) {
+        filteredPosts = filteredPosts.filter(p => p.primaryServiceId === parseInt(serviceId as string));
+      }
+
+      res.json(filteredPosts);
+    } catch (error) {
+      console.error("[Blog] Error listing posts:", error);
+      res.status(500).json({ message: "Failed to list blog posts" });
+    }
+  });
+
+  // Get single blog post
+  app.get("/api/blog-posts/:id", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      // Get associated images
+      const images = await db
+        .select()
+        .from(blogImages)
+        .where(eq(blogImages.blogPostId, postId))
+        .orderBy(blogImages.sortOrder);
+
+      // Get section locks
+      const locks = await db
+        .select()
+        .from(blogSectionLocks)
+        .where(eq(blogSectionLocks.blogPostId, postId));
+
+      res.json({ ...post, images, sectionLocks: locks });
+    } catch (error) {
+      console.error("[Blog] Error getting post:", error);
+      res.status(500).json({ message: "Failed to get blog post" });
+    }
+  });
+
+  // Create blog post
+  app.post("/api/blog-posts", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const validation = insertBlogPostSchema.safeParse({
+        ...req.body,
+        userId: effectiveOwnerId
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid blog post data", errors: validation.error.errors });
+      }
+
+      // Calculate word count
+      const contentText = JSON.stringify(validation.data.content || []);
+      const wordCount = contentText.split(/\s+/).length;
+
+      const insertData = {
+        ...validation.data,
+        content: validation.data.content as BlogContentSection[],
+        wordCount,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as typeof blogPosts.$inferInsert;
+
+      const [post] = await db
+        .insert(blogPosts)
+        .values(insertData)
+        .returning();
+
+      res.status(201).json(post);
+    } catch (error) {
+      console.error("[Blog] Error creating post:", error);
+      res.status(500).json({ message: "Failed to create blog post" });
+    }
+  });
+
+  // Update blog post
+  app.patch("/api/blog-posts/:id", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Verify ownership
+      const [existing] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      const updates = { ...req.body };
+      delete updates.id;
+      delete updates.userId;
+      delete updates.createdAt;
+
+      // Recalculate word count if content changed
+      if (updates.content) {
+        const contentText = JSON.stringify(updates.content);
+        updates.wordCount = contentText.split(/\s+/).length;
+      }
+
+      updates.updatedAt = new Date();
+
+      const [updated] = await db
+        .update(blogPosts)
+        .set(updates)
+        .where(eq(blogPosts.id, postId))
+        .returning();
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[Blog] Error updating post:", error);
+      res.status(500).json({ message: "Failed to update blog post" });
+    }
+  });
+
+  // Delete blog post
+  app.delete("/api/blog-posts/:id", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Verify ownership
+      const [existing] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      await db.delete(blogPosts).where(eq(blogPosts.id, postId));
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("[Blog] Error deleting post:", error);
+      res.status(500).json({ message: "Failed to delete blog post" });
+    }
+  });
+
+  // Generate blog content with AI
+  app.post("/api/blog-posts/generate-content", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const input: BlogGenerationInput = req.body;
+
+      // Validate required fields
+      if (!input.blogType || !input.serviceName || !input.targetCity || !input.goal || !input.tonePreference) {
+        return res.status(400).json({ message: "Missing required fields for content generation" });
+      }
+
+      // Use default template if not provided
+      if (!input.layoutTemplate || input.layoutTemplate.length === 0) {
+        const defaultTemplate = DEFAULT_LAYOUT_TEMPLATES.find(t => t.blogType === input.blogType);
+        if (defaultTemplate) {
+          input.layoutTemplate = defaultTemplate.sections;
+        } else {
+          input.layoutTemplate = DEFAULT_LAYOUT_TEMPLATES[0].sections;
+        }
+      }
+
+      const result = await generateBlogContent(input);
+
+      res.json(result);
+    } catch (error) {
+      console.error("[Blog] Error generating content:", error);
+      res.status(500).json({ message: "Failed to generate blog content" });
+    }
+  });
+
+  // Regenerate specific section
+  app.post("/api/blog-posts/:id/regenerate-section", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Verify ownership
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      const { sectionType, context } = req.body;
+
+      if (!sectionType) {
+        return res.status(400).json({ message: "sectionType is required" });
+      }
+
+      // Get service name from formula if available
+      let serviceName = "service";
+      if (post.primaryServiceId) {
+        const [formula] = await db
+          .select()
+          .from(formulas)
+          .where(eq(formulas.id, post.primaryServiceId))
+          .limit(1);
+        if (formula) {
+          serviceName = formula.name;
+        }
+      }
+
+      const result = await regenerateSection({
+        sectionType,
+        existingContent: post.content as any[],
+        blogType: post.blogType,
+        serviceName,
+        targetCity: post.targetCity || "your area",
+        tonePreference: post.tonePreference || "professional",
+        context
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error("[Blog] Error regenerating section:", error);
+      res.status(500).json({ message: "Failed to regenerate section" });
+    }
+  });
+
+  // Lock section
+  app.post("/api/blog-posts/:id/lock-section", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const { sectionId } = req.body;
+      if (!sectionId) {
+        return res.status(400).json({ message: "sectionId is required" });
+      }
+
+      // Verify ownership
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      // Check if already locked
+      const [existing] = await db
+        .select()
+        .from(blogSectionLocks)
+        .where(and(
+          eq(blogSectionLocks.blogPostId, postId),
+          eq(blogSectionLocks.sectionId, sectionId)
+        ))
+        .limit(1);
+
+      if (existing) {
+        return res.json({ message: "Section already locked", lock: existing });
+      }
+
+      const [lock] = await db
+        .insert(blogSectionLocks)
+        .values({ blogPostId: postId, sectionId })
+        .returning();
+
+      res.json(lock);
+    } catch (error) {
+      console.error("[Blog] Error locking section:", error);
+      res.status(500).json({ message: "Failed to lock section" });
+    }
+  });
+
+  // Unlock section
+  app.post("/api/blog-posts/:id/unlock-section", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const { sectionId } = req.body;
+      if (!sectionId) {
+        return res.status(400).json({ message: "sectionId is required" });
+      }
+
+      // Verify ownership
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      await db
+        .delete(blogSectionLocks)
+        .where(and(
+          eq(blogSectionLocks.blogPostId, postId),
+          eq(blogSectionLocks.sectionId, sectionId)
+        ));
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("[Blog] Error unlocking section:", error);
+      res.status(500).json({ message: "Failed to unlock section" });
+    }
+  });
+
+  // List blog images
+  app.get("/api/blog-posts/:id/images", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Verify ownership
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      const images = await db
+        .select()
+        .from(blogImages)
+        .where(eq(blogImages.blogPostId, postId))
+        .orderBy(blogImages.sortOrder);
+
+      res.json(images);
+    } catch (error) {
+      console.error("[Blog] Error listing images:", error);
+      res.status(500).json({ message: "Failed to list images" });
+    }
+  });
+
+  // Add image to blog post
+  app.post("/api/blog-posts/:id/images", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Verify ownership
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      const validation = insertBlogImageSchema.safeParse({
+        ...req.body,
+        userId: effectiveOwnerId,
+        blogPostId: postId
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid image data", errors: validation.error.errors });
+      }
+
+      const [image] = await db
+        .insert(blogImages)
+        .values(validation.data)
+        .returning();
+
+      res.status(201).json(image);
+    } catch (error) {
+      console.error("[Blog] Error adding image:", error);
+      res.status(500).json({ message: "Failed to add image" });
+    }
+  });
+
+  // Update blog image
+  app.patch("/api/blog-images/:id", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const imageId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Verify ownership
+      const [image] = await db
+        .select()
+        .from(blogImages)
+        .where(and(
+          eq(blogImages.id, imageId),
+          eq(blogImages.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!image) {
+        return res.status(404).json({ message: "Image not found" });
+      }
+
+      const updates = { ...req.body };
+      delete updates.id;
+      delete updates.userId;
+      delete updates.createdAt;
+
+      const [updated] = await db
+        .update(blogImages)
+        .set(updates)
+        .where(eq(blogImages.id, imageId))
+        .returning();
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[Blog] Error updating image:", error);
+      res.status(500).json({ message: "Failed to update image" });
+    }
+  });
+
+  // Delete blog image
+  app.delete("/api/blog-images/:id", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const imageId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Verify ownership
+      const [image] = await db
+        .select()
+        .from(blogImages)
+        .where(and(
+          eq(blogImages.id, imageId),
+          eq(blogImages.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!image) {
+        return res.status(404).json({ message: "Image not found" });
+      }
+
+      await db.delete(blogImages).where(eq(blogImages.id, imageId));
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("[Blog] Error deleting image:", error);
+      res.status(500).json({ message: "Failed to delete image" });
+    }
+  });
+
+  // Generate alt text for image
+  app.post("/api/blog-images/generate-alt-text", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const { imageUrl, context } = req.body;
+
+      if (!imageUrl) {
+        return res.status(400).json({ message: "imageUrl is required" });
+      }
+
+      const altText = await generateAltText(imageUrl, context);
+
+      res.json({ altText });
+    } catch (error) {
+      console.error("[Blog] Error generating alt text:", error);
+      res.status(500).json({ message: "Failed to generate alt text" });
+    }
+  });
+
+  // Get SEO score for blog post
+  app.get("/api/blog-posts/:id/seo-score", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      // Get service name
+      let serviceName = "service";
+      if (post.primaryServiceId) {
+        const [formula] = await db
+          .select()
+          .from(formulas)
+          .where(eq(formulas.id, post.primaryServiceId))
+          .limit(1);
+        if (formula) {
+          serviceName = formula.name;
+        }
+      }
+
+      const { score, checklist } = calculateSeoScore(
+        {
+          title: post.title,
+          metaTitle: post.metaTitle || "",
+          metaDescription: post.metaDescription || "",
+          excerpt: post.excerpt || "",
+          content: post.content as any[],
+          suggestedSlug: post.slug
+        },
+        {
+          blogType: post.blogType,
+          serviceName,
+          targetCity: post.targetCity || "",
+          goal: post.goal || "rank_seo",
+          talkingPoints: post.talkingPoints as string[] || [],
+          tonePreference: post.tonePreference || "professional",
+          layoutTemplate: []
+        }
+      );
+
+      res.json({ score, checklist });
+    } catch (error) {
+      console.error("[Blog] Error calculating SEO score:", error);
+      res.status(500).json({ message: "Failed to calculate SEO score" });
+    }
+  });
+
+  // Check for duplicate/similar blogs
+  app.post("/api/blog-posts/:id/check-duplicates", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      // Find similar posts (same service + city combination)
+      const similarPosts = await db
+        .select({
+          id: blogPosts.id,
+          title: blogPosts.title,
+          targetCity: blogPosts.targetCity,
+          primaryServiceId: blogPosts.primaryServiceId,
+          status: blogPosts.status
+        })
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.userId, effectiveOwnerId),
+          eq(blogPosts.primaryServiceId, post.primaryServiceId!),
+          eq(blogPosts.targetCity, post.targetCity!),
+          sql`${blogPosts.id} != ${postId}`
+        ));
+
+      res.json({
+        hasDuplicates: similarPosts.length > 0,
+        similarPosts
+      });
+    } catch (error) {
+      console.error("[Blog] Error checking duplicates:", error);
+      res.status(500).json({ message: "Failed to check for duplicates" });
+    }
+  });
+
+  // Sync blog post to Duda
+  app.post("/api/blog-posts/:id/sync-to-duda", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      // Get user's website
+      const [website] = await db
+        .select()
+        .from(websites)
+        .where(eq(websites.userId, effectiveOwnerId))
+        .limit(1);
+
+      if (!website) {
+        return res.status(400).json({ message: "No website found. Please create a website first." });
+      }
+
+      if (!dudaApi.isConfigured()) {
+        return res.status(500).json({ message: "Duda API is not configured" });
+      }
+
+      // Convert content to HTML
+      const htmlContent = blogContentToHtml(post.content as any[]);
+
+      const dudaPost = {
+        title: post.title,
+        content: htmlContent,
+        slug: post.slug,
+        excerpt: post.excerpt || undefined,
+        featured_image: post.featuredImageUrl || undefined,
+        categories: post.category ? [post.category] : undefined,
+        tags: post.tags as string[] || undefined,
+        status: 'draft' as const,
+        seo: {
+          title: post.metaTitle || undefined,
+          description: post.metaDescription || undefined
+        }
+      };
+
+      let dudaResponse;
+      if (post.dudaBlogPostId) {
+        // Update existing
+        dudaResponse = await dudaApi.updateBlogPost(website.siteName, post.dudaBlogPostId, dudaPost);
+      } else {
+        // Create new
+        dudaResponse = await dudaApi.createBlogPost(website.siteName, dudaPost);
+      }
+
+      // Update local record
+      await db
+        .update(blogPosts)
+        .set({
+          dudaSiteId: website.siteName,
+          dudaBlogPostId: dudaResponse.id,
+          dudaStatus: 'synced',
+          dudaLastSyncAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(blogPosts.id, postId));
+
+      res.json({
+        message: "Blog synced to Duda",
+        dudaPostId: dudaResponse.id
+      });
+    } catch (error) {
+      console.error("[Blog] Error syncing to Duda:", error);
+
+      // Update status to error
+      await db
+        .update(blogPosts)
+        .set({
+          dudaStatus: 'error',
+          updatedAt: new Date()
+        })
+        .where(eq(blogPosts.id, parseInt(req.params.id)));
+
+      res.status(500).json({ message: "Failed to sync blog to Duda" });
+    }
+  });
+
+  // Publish blog to Duda
+  app.post("/api/blog-posts/:id/publish-to-duda", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      if (!post.dudaSiteId || !post.dudaBlogPostId) {
+        return res.status(400).json({ message: "Blog must be synced to Duda first" });
+      }
+
+      await dudaApi.publishBlogPost(post.dudaSiteId, post.dudaBlogPostId);
+
+      // Get the published URL
+      const dudaPost = await dudaApi.getBlogPost(post.dudaSiteId, post.dudaBlogPostId);
+
+      await db
+        .update(blogPosts)
+        .set({
+          status: 'published',
+          dudaStatus: 'published',
+          dudaLiveUrl: dudaPost.url || null,
+          publishedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(blogPosts.id, postId));
+
+      res.json({
+        message: "Blog published to Duda",
+        liveUrl: dudaPost.url
+      });
+    } catch (error) {
+      console.error("[Blog] Error publishing to Duda:", error);
+      res.status(500).json({ message: "Failed to publish blog to Duda" });
+    }
+  });
+
+  // Unpublish blog from Duda
+  app.post("/api/blog-posts/:id/unpublish-from-duda", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      if (!post.dudaSiteId || !post.dudaBlogPostId) {
+        return res.status(400).json({ message: "Blog is not published to Duda" });
+      }
+
+      await dudaApi.unpublishBlogPost(post.dudaSiteId, post.dudaBlogPostId);
+
+      await db
+        .update(blogPosts)
+        .set({
+          status: 'draft',
+          dudaStatus: 'synced',
+          dudaLiveUrl: null,
+          updatedAt: new Date()
+        })
+        .where(eq(blogPosts.id, postId));
+
+      res.json({ message: "Blog unpublished from Duda" });
+    } catch (error) {
+      console.error("[Blog] Error unpublishing from Duda:", error);
+      res.status(500).json({ message: "Failed to unpublish blog from Duda" });
+    }
+  });
+
+  // Get work orders as content sources
+  app.get("/api/blog-posts/sources/work-orders", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const orders = await db
+        .select({
+          id: workOrders.id,
+          title: workOrders.title,
+          customerName: workOrders.customerName,
+          customerAddress: workOrders.customerAddress,
+          completedDate: workOrders.completedDate,
+          status: workOrders.status,
+          instructions: workOrders.instructions
+        })
+        .from(workOrders)
+        .where(and(
+          eq(workOrders.userId, effectiveOwnerId),
+          eq(workOrders.status, 'completed')
+        ))
+        .orderBy(desc(workOrders.completedDate))
+        .limit(50);
+
+      res.json(orders);
+    } catch (error) {
+      console.error("[Blog] Error fetching work orders:", error);
+      res.status(500).json({ message: "Failed to fetch work orders" });
+    }
+  });
+
+  // Get leads with images as content sources
+  app.get("/api/blog-posts/sources/leads", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const leadsWithImages = await db
+        .select({
+          id: leads.id,
+          name: leads.name,
+          address: leads.address,
+          uploadedImages: leads.uploadedImages,
+          createdAt: leads.createdAt
+        })
+        .from(leads)
+        .where(and(
+          eq(leads.userId, effectiveOwnerId),
+          sql`jsonb_array_length(${leads.uploadedImages}) > 0`
+        ))
+        .orderBy(desc(leads.createdAt))
+        .limit(50);
+
+      res.json(leadsWithImages);
+    } catch (error) {
+      console.error("[Blog] Error fetching leads:", error);
+      res.status(500).json({ message: "Failed to fetch leads" });
+    }
+  });
+
+  // Get layout templates
+  app.get("/api/blog-layout-templates", requireAuth, async (req, res) => {
+    try {
+      const currentUser = req.user as any;
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      // Get custom templates from DB
+      const customTemplates = await db
+        .select()
+        .from(blogLayoutTemplates)
+        .where(eq(blogLayoutTemplates.isActive, true))
+        .orderBy(blogLayoutTemplates.name);
+
+      // Combine with defaults
+      const allTemplates = [
+        ...DEFAULT_LAYOUT_TEMPLATES.map((t, i) => ({
+          id: -1 - i, // Negative IDs for defaults
+          ...t,
+          isActive: true,
+          isDefault: true,
+          createdAt: new Date()
+        })),
+        ...customTemplates
+      ];
+
+      res.json(allTemplates);
+    } catch (error) {
+      console.error("[Blog] Error fetching layout templates:", error);
+      res.status(500).json({ message: "Failed to fetch layout templates" });
+    }
+  });
 
   // Sitemap endpoint for directory pages
   app.get("/sitemap-directory.xml", async (req, res) => {

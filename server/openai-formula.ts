@@ -176,6 +176,9 @@ IMPORTANT RULES:
 5. Return the complete, updated CSS - not just the changes
 6. Do not include #autobidder-form prefix (it's added automatically)
 7. Return ONLY the CSS code - no explanations or markdown formatting
+8. Maintain accessible contrast (WCAG AA). If you set a background color, also set a readable text color for that element.
+9. Never use text colors that are too close to their backgrounds, especially on inputs and pricing cards.
+10. Keep comprehensive coverage: ensure the final CSS contains explicit blocks for most core selectors (buttons, inputs, dropdowns, checkboxes, service cards, multiple choice, pricing cards, labels, calendar, form container, question cards). If a selector is missing, add a minimal block consistent with the current style.
 
 EXAMPLE:
 User asks: "Make buttons bigger and change cards to red"
@@ -213,7 +216,16 @@ Please update the CSS to reflect this change while preserving all other existing
       cleanCSS = cleanCSS.replace(/```\n?/g, '');
     }
 
-    return cleanCSS.trim();
+    const enforcedCSS = enforceReadableContrast(cleanCSS.trim());
+    const normalizedEnforced = normalizeCSS(enforcedCSS);
+    const normalizedCurrent = normalizeCSS(currentCSS);
+
+    if (normalizedEnforced === normalizedCurrent) {
+      return enforceReadableContrast(applyEditHeuristics(currentCSS, editDescription));
+    }
+
+    const heuristicPatched = applyEditHeuristics(enforcedCSS, editDescription);
+    return enforceReadableContrast(heuristicPatched);
   } catch (error) {
     console.error('OpenAI CSS editing error:', error);
     throw new Error('Failed to edit CSS with OpenAI: ' + (error as Error).message);
@@ -323,6 +335,37 @@ AVAILABLE CSS VARIABLES (can use or override):
 --ab-pricing-card-shadow
 --ab-pricing-card-padding
 
+REQUIRED COVERAGE:
+Generate CSS blocks for most core selectors so the output feels complete. At minimum include blocks for:
+.ab-form-container, .ab-question-card, .ab-button, .ab-button-primary,
+.ab-input, .ab-text-input, .ab-number-input, .ab-textarea, .ab-select, .ab-select-content, .ab-checkbox,
+.ab-service-card, .ab-service-title, .ab-service-accordion,
+.ab-multiple-choice, .ab-multichoice-card,
+.ab-pricing-card, .ab-pricing-card-price, .ab-pricing-card-title, .ab-pricing-card-description, .ab-pricing-card-bullet-icon, .ab-pricing-card-bullet-text,
+.ab-question-label, .ab-label,
+.ab-calendar-nav, .ab-calendar-date, .ab-time-slot.
+
+RULES:
+1. Make the CSS clean, readable, and grouped by section (container, inputs, buttons, service cards, multiple choice, pricing, calendar, labels).
+2. Favor consistent spacing, borders, and shadows across components.
+3. Return ONLY CSS code, no markdown or explanations.
+4. Ensure good contrast between text and backgrounds.
+--ab-multiple-choice-hover-bg
+--ab-label-color
+--ab-label-font-family
+--ab-label-font-weight
+--ab-label-font-size
+--ab-service-title-color
+--ab-service-title-font-family
+--ab-service-title-font-weight
+--ab-service-title-font-size
+--ab-pricing-card-bg
+--ab-pricing-card-border-radius
+--ab-pricing-card-border-color
+--ab-pricing-card-border-width
+--ab-pricing-card-shadow
+--ab-pricing-card-padding
+
 CSS SCOPING:
 - All CSS will be automatically scoped to #autobidder-form, so you don't need to include that prefix
 - Just write .ab-button { ... } and it will become #autobidder-form .ab-button { ... }
@@ -338,9 +381,10 @@ IMPORTANT RULES:
 3. Use modern CSS features (flexbox, grid, custom properties, etc.)
 4. Make it responsive with media queries when appropriate
 5. Add smooth transitions for interactive elements
-6. Consider accessibility (focus indicators, contrast)
+6. Consider accessibility (focus indicators, contrast). If you set a background color, set a contrasting text color.
 7. Return ONLY the CSS code - no explanations or markdown formatting
 8. Do not include #autobidder-form prefix (it's added automatically)
+9. Avoid text colors that are close to the background. Inputs and pricing cards must always be highly readable.
 
 EXAMPLE OUTPUT (for "glassmorphism"):
 .ab-service-card {
@@ -388,11 +432,296 @@ EXAMPLE OUTPUT (for "glassmorphism"):
       cleanCSS = cleanCSS.replace(/```\n?/g, '');
     }
 
-    return cleanCSS.trim();
+    return enforceReadableContrast(cleanCSS.trim());
   } catch (error) {
     console.error('OpenAI CSS generation error:', error);
     throw new Error('Failed to generate CSS with OpenAI: ' + (error as Error).message);
   }
+}
+
+function enforceReadableContrast(css: string): string {
+  const contrastTargets = [
+    '.ab-input',
+    '.ab-number-input',
+    '.ab-text-input',
+    '.ab-textarea',
+    '.ab-select',
+    '.ab-select-content',
+    '.ab-button',
+    '.ab-button-primary',
+    '.ab-question-card',
+    '.ab-service-card',
+    '.ab-multiple-choice',
+    '.ab-pricing-card',
+    '.ab-pricing-card-title',
+    '.ab-pricing-card-description',
+    '.ab-pricing-card-price',
+    '.ab-pricing-card-bullet-text',
+    '.ab-label',
+    '.ab-question-label',
+  ];
+
+  const scopedAtRules = ['@media', '@supports', '@container', '@layer'];
+  const backgroundBySelector = new Map<string, string>();
+
+  const parseColor = (value: string): { r: number; g: number; b: number } | null => {
+    const cleaned = value.trim().toLowerCase();
+    const hexMatch = cleaned.match(/#([0-9a-f]{3}|[0-9a-f]{6})\b/);
+    if (hexMatch) {
+      const hex = hexMatch[1];
+      if (hex.length === 3) {
+        const r = parseInt(hex[0] + hex[0], 16);
+        const g = parseInt(hex[1] + hex[1], 16);
+        const b = parseInt(hex[2] + hex[2], 16);
+        return { r, g, b };
+      }
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      return { r, g, b };
+    }
+    const rgbMatch = cleaned.match(/rgba?\(([^)]+)\)/);
+    if (rgbMatch) {
+      const parts = rgbMatch[1].split(',').map(part => parseFloat(part.trim()));
+      if (parts.length >= 3 && parts.every(part => Number.isFinite(part))) {
+        return { r: Math.min(255, Math.max(0, parts[0])), g: Math.min(255, Math.max(0, parts[1])), b: Math.min(255, Math.max(0, parts[2])) };
+      }
+    }
+    return null;
+  };
+
+  const luminance = (color: { r: number; g: number; b: number }): number => {
+    const channel = (value: number) => {
+      const normalized = value / 255;
+      return normalized <= 0.03928 ? normalized / 12.92 : Math.pow((normalized + 0.055) / 1.055, 2.4);
+    };
+    return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+  };
+
+  const contrastRatio = (foreground: { r: number; g: number; b: number }, background: { r: number; g: number; b: number }) => {
+    const foregroundLum = luminance(foreground);
+    const backgroundLum = luminance(background);
+    const lighter = Math.max(foregroundLum, backgroundLum);
+    const darker = Math.min(foregroundLum, backgroundLum);
+    return (lighter + 0.05) / (darker + 0.05);
+  };
+
+  const pickTextColor = (background: { r: number; g: number; b: number }) => {
+    const lightText = { r: 255, g: 255, b: 255 };
+    const darkText = { r: 17, g: 24, b: 39 }; // #111827
+    return contrastRatio(lightText, background) >= contrastRatio(darkText, background) ? '#FFFFFF' : '#111827';
+  };
+
+  const shouldAdjust = (selector: string) => contrastTargets.some(target => selector.includes(target));
+
+  const updateRule = (selector: string, body: string): string => {
+    if (!shouldAdjust(selector)) {
+      return `${selector}{${body}}`;
+    }
+
+    const declarations = body.split(';').map(part => part.trim()).filter(Boolean);
+    let backgroundValue: string | null = null;
+    let colorValue: string | null = null;
+    const newDeclarations: string[] = [];
+
+    for (const declaration of declarations) {
+      const [propertyRaw, ...valueParts] = declaration.split(':');
+      if (!propertyRaw || valueParts.length === 0) {
+        newDeclarations.push(declaration);
+        continue;
+      }
+      const property = propertyRaw.trim().toLowerCase();
+      const value = valueParts.join(':').trim();
+
+      if (property === 'background-color' || property === 'background') {
+        const parsedBackground = parseColor(value);
+        if (parsedBackground) {
+          backgroundValue = value;
+        }
+      }
+
+      if (property === 'color') {
+        colorValue = value;
+      }
+
+      newDeclarations.push(`${propertyRaw.trim()}: ${value}`);
+    }
+
+    if (!backgroundValue) {
+      for (const baseSelector of ['.ab-pricing-card', '.ab-question-card', '.ab-service-card', '.ab-multiple-choice', '.ab-input']) {
+        if (selector.includes(baseSelector)) {
+          const stored = backgroundBySelector.get(baseSelector);
+          if (stored) {
+            backgroundValue = stored;
+          }
+          break;
+        }
+      }
+    }
+
+    const parsedBackground = backgroundValue ? parseColor(backgroundValue) : null;
+    const parsedColor = colorValue ? parseColor(colorValue) : null;
+
+    if (parsedBackground) {
+      if (selector.includes('.ab-pricing-card')) {
+        backgroundBySelector.set('.ab-pricing-card', backgroundValue!);
+      } else if (selector.includes('.ab-question-card')) {
+        backgroundBySelector.set('.ab-question-card', backgroundValue!);
+      } else if (selector.includes('.ab-service-card')) {
+        backgroundBySelector.set('.ab-service-card', backgroundValue!);
+      } else if (selector.includes('.ab-multiple-choice')) {
+        backgroundBySelector.set('.ab-multiple-choice', backgroundValue!);
+      } else if (selector.includes('.ab-input')) {
+        backgroundBySelector.set('.ab-input', backgroundValue!);
+      }
+    }
+
+    if (parsedBackground) {
+      const preferredColor = pickTextColor(parsedBackground);
+      const shouldReplace = !parsedColor || contrastRatio(parsedColor, parsedBackground) < 4.5;
+      if (shouldReplace) {
+        const filtered = newDeclarations.filter(decl => !decl.toLowerCase().startsWith('color:'));
+        filtered.push(`color: ${preferredColor}`);
+        return `${selector}{${filtered.join('; ')}}`;
+      }
+    }
+
+    return `${selector}{${newDeclarations.join('; ')}}`;
+  };
+
+  const process = (input: string): string => {
+    const output: string[] = [];
+    let buffer = '';
+    let selectorBuffer = '';
+    let braceDepth = 0;
+    let insideRule = false;
+
+    for (let i = 0; i < input.length; i++) {
+      const char = input[i];
+      if (char === '{') {
+        if (braceDepth === 0) {
+          selectorBuffer = buffer.trim();
+          buffer = '';
+          insideRule = true;
+        } else {
+          buffer += char;
+        }
+        braceDepth++;
+      } else if (char === '}') {
+        braceDepth--;
+        if (braceDepth === 0 && insideRule) {
+          const selector = selectorBuffer.trim();
+          if (selector.startsWith('@') && scopedAtRules.some(rule => selector.toLowerCase().startsWith(rule))) {
+            output.push(`${selector}{${process(buffer)}}`);
+          } else {
+            output.push(updateRule(selector, buffer));
+          }
+          buffer = '';
+          selectorBuffer = '';
+          insideRule = false;
+        } else {
+          buffer += char;
+        }
+      } else {
+        buffer += char;
+      }
+    }
+
+    if (buffer.trim()) {
+      output.push(buffer);
+    }
+
+    return output.join('');
+  };
+
+  return process(css);
+}
+
+function normalizeCSS(css: string): string {
+  return css.replace(/\s+/g, ' ').trim();
+}
+
+function applyEditHeuristics(css: string, description: string): string {
+  const lowered = description.toLowerCase();
+  const color = extractColorFromDescription(description);
+  if (!color) return css;
+
+  let updated = css.trim();
+
+  const ensureRule = (rule: string) => {
+    if (!updated) {
+      updated = rule.trim();
+      return;
+    }
+    updated = `${updated}\n\n${rule.trim()}`;
+  };
+
+  if (lowered.includes('button') && lowered.includes('hover')) {
+    const textColor = color.toLowerCase() === '#000000' ? '#FFFFFF' : '#111827';
+    if (!updated.includes('.ab-button:hover')) {
+      ensureRule(`
+.ab-button:hover {
+  background-color: ${color};
+  border-color: ${color};
+  color: ${textColor};
+}
+      `);
+    }
+  }
+
+  const isPricingCheckbox = lowered.includes('pricing') && lowered.includes('card') && lowered.includes('checkbox');
+  const isPricingBullet = lowered.includes('pricing') && lowered.includes('card') && lowered.includes('bullet');
+  if (isPricingCheckbox || isPricingBullet) {
+    if (!updated.includes('.ab-pricing-card-bullet-icon')) {
+      ensureRule(`
+.ab-pricing-card-bullet-icon {
+  background-color: ${color};
+}
+      `);
+    }
+  }
+
+  if (lowered.includes('checkbox') && !isPricingCheckbox) {
+    if (!updated.includes('.ab-checkbox')) {
+      ensureRule(`
+.ab-checkbox {
+  accent-color: ${color};
+  border-color: ${color};
+}
+      `);
+    }
+  }
+
+  return updated;
+}
+
+function extractColorFromDescription(description: string): string | null {
+  const hexMatch = description.match(/#([0-9a-fA-F]{3,8})\b/);
+  if (hexMatch) {
+    return `#${hexMatch[1].toUpperCase()}`;
+  }
+
+  const colorMap: Record<string, string> = {
+    black: '#000000',
+    white: '#FFFFFF',
+    blue: '#2563EB',
+    red: '#DC2626',
+    green: '#16A34A',
+    purple: '#7C3AED',
+    orange: '#F97316',
+    yellow: '#F59E0B',
+    gray: '#6B7280',
+    grey: '#6B7280',
+  };
+
+  const lowered = description.toLowerCase();
+  for (const [name, value] of Object.entries(colorMap)) {
+    if (lowered.includes(name)) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 export async function generateFormula(description: string): Promise<AIFormulaResponse> {

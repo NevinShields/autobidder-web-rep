@@ -96,6 +96,10 @@ const TryCalculator = lazy(() => import("@/pages/try-calculator"));
 const IconGeneratorPage = lazy(() => import("@/pages/icon-generator"));
 const SetupStepByStepPage = lazy(() => import("@/pages/setup-step-by-step"));
 
+// Blog pages
+const BlogPostsPage = lazy(() => import("@/pages/blog-posts"));
+const BlogPostEditorPage = lazy(() => import("@/pages/blog-post-editor"));
+
 // Directory pages
 const DirectoryHome = lazy(() => import("@/pages/directory/directory-home"));
 const DirectoryCategoryPage = lazy(() => import("@/pages/directory/category-page"));
@@ -274,6 +278,10 @@ function Router() {
         <Route path="/crm/blocked-ips" component={BlockedIpsPage} />
         <Route path="/automations/create" component={AutomationBuilder} />
         <Route path="/automations/:id" component={AutomationBuilder} />
+
+        <Route path="/blog-posts" component={BlogPostsPage} />
+        <Route path="/blog-posts/new" component={BlogPostEditorPage} />
+        <Route path="/blog-posts/:id/edit" component={BlogPostEditorPage} />
 
         <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 

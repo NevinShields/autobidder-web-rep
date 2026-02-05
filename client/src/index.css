@@ -600,3 +600,84 @@
   border: 2px solid rgba(74, 222, 128, 0.3) !important;
   animation: border-glow 3s ease-in-out infinite;
 }
+
+/* CSS Editor Syntax Highlighting */
+.css-editor-wrapper {
+  position: relative;
+}
+
+.css-editor-highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 0.5rem 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+  font-weight: 400 !important;
+  color: #111827;
+  background: transparent;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  margin: 0;
+  letter-spacing: 0;
+  tab-size: 2;
+  font-variant-ligatures: none;
+}
+
+.css-editor-input {
+  position: relative;
+  background: transparent;
+  color: transparent;
+  caret-color: #111827;
+  padding: 0.5rem 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  font-size: 0.75rem !important;
+  line-height: 1rem !important;
+  font-weight: 400 !important;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-sizing: border-box;
+  letter-spacing: 0;
+  tab-size: 2;
+  font-variant-ligatures: none;
+}
+
+.css-editor-input::selection {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.css-editor-input::placeholder {
+  color: #9ca3af;
+}
+
+.css-token-comment { color: #6b7280; }
+.css-token-string { color: #059669; }
+.css-token-color { color: #7c3aed; }
+.css-token-atrule { color: #2563eb; }
+.css-token-number { color: #d97706; }
+.css-token-property { color: #0f766e; }
+.css-token-selector { color: #1d4ed8; }
+
+.dark .css-editor-highlight {
+  color: #e5e7eb;
+}
+
+.dark .css-editor-input {
+  caret-color: #e5e7eb;
+}
+
+.dark .css-editor-input::placeholder {
+  color: #6b7280;
+}
+
+.dark .css-token-comment { color: #94a3b8; }
+.dark .css-token-string { color: #34d399; }
+.dark .css-token-color { color: #c084fc; }
+.dark .css-token-atrule { color: #60a5fa; }
+.dark .css-token-number { color: #fbbf24; }
+.dark .css-token-property { color: #5eead4; }
+.dark .css-token-selector { color: #93c5fd; }

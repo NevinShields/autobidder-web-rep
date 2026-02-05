@@ -419,8 +419,8 @@ export default function EnhancedVariableInput({
             boxShadow: (inputStyle as React.CSSProperties).boxShadow,
           };
 
-      const displayLength = Math.max(2, String(normalizedValue).length);
-      const inputChWidth = `calc(${displayLength}ch + 20px)`;
+      const displayLength = Math.max(2, Math.min(5, String(normalizedValue).length));
+      const inputChWidth = `calc(${displayLength}ch + 28px)`;
       const stepperHeight = typeof (inputStyle as React.CSSProperties).height === 'number'
         ? (inputStyle as React.CSSProperties).height
         : Number.parseFloat(String((inputStyle as React.CSSProperties).height || 40)) || 40;

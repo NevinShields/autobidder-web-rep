@@ -135,7 +135,7 @@ export async function sendEmailWithResend(params: EmailParams): Promise<boolean>
       return true;
     } else {
       const errorText = await response.text();
-      console.error('Resend email error:', errorText);
+      console.error('Resend email error:', { status: response.status, body: errorText });
       
       // Check for rate limit and wait longer if needed
       if (errorText.includes('rate_limit_exceeded')) {
@@ -181,7 +181,7 @@ export async function sendEmailWithFallback(params: EmailParams): Promise<boolea
   
   if (lastSent && (now - lastSent) < DUPLICATE_PREVENTION_MS) {
     console.log('🚫 Preventing duplicate email to:', params.to, 'with subject:', params.subject);
-    return true; // Return true to avoid errors, but don't send
+    return false; // Let callers know it was not sent
   }
   
   recentEmails.set(contentHash, now);
@@ -199,12 +199,14 @@ export async function sendEmailWithFallback(params: EmailParams): Promise<boolea
 
   // Try Resend first (modern, reliable)
   if (process.env.RESEND_API_KEY) {
+    console.log('📧 Sending email via Resend:', { to: params.to, subject: params.subject });
     const resendSuccess = await sendEmailWithResend(params);
     if (resendSuccess) return true;
   }
 
   // Fall back to Gmail
   if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    console.log('📧 Sending email via Gmail:', { to: params.to, subject: params.subject });
     const gmailSuccess = await sendEmailWithGmail(params);
     if (gmailSuccess) return true;
   }

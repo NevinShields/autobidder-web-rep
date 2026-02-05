@@ -96,6 +96,55 @@ interface DudaFormSubmission {
   event_timestamp: number;
 }
 
+// Blog API Types
+interface DudaBlogPostRequest {
+  title: string;
+  content: string; // HTML content
+  slug?: string;
+  excerpt?: string;
+  featured_image?: string;
+  author?: {
+    name: string;
+    email?: string;
+  };
+  categories?: string[];
+  tags?: string[];
+  status?: 'draft' | 'published';
+  seo?: {
+    title?: string;
+    description?: string;
+  };
+}
+
+interface DudaBlogPostResponse {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  url?: string;
+  content?: string;
+  excerpt?: string;
+  featured_image?: string;
+  author?: {
+    name: string;
+    email?: string;
+  };
+  categories?: string[];
+  tags?: string[];
+  seo?: {
+    title?: string;
+    description?: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+  published_at?: string;
+}
+
+interface DudaBlogPostListResponse {
+  results: DudaBlogPostResponse[];
+  total_responses: number;
+}
+
 export class DudaApiService {
   private config: DudaConfig;
 
@@ -481,7 +530,7 @@ export class DudaApiService {
   async getFormSubmissions(siteName: string): Promise<DudaFormSubmission[]> {
     try {
       console.log(`📋 Fetching form submissions for site: ${siteName}`);
-      
+
       const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/get-forms/${encodeURIComponent(siteName)}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
@@ -497,7 +546,7 @@ export class DudaApiService {
 
       const responseText = await response.text();
       console.log(`📋 Duda form submissions raw response length: ${responseText.length} characters`);
-      
+
       if (!responseText.trim()) {
         console.log('📋 Empty response, returning empty array');
         return [];
@@ -513,6 +562,232 @@ export class DudaApiService {
       }
     } catch (error) {
       console.error('❌ Full error in getFormSubmissions:', error);
+      throw error;
+    }
+  }
+
+  // ==================== Blog API Methods ====================
+
+  async createBlogPost(siteName: string, post: DudaBlogPostRequest): Promise<DudaBlogPostResponse> {
+    try {
+      console.log(`📝 Creating blog post for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(post)
+      });
+
+      console.log(`📝 Duda create blog post response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda create blog post error (${response.status}):`, error);
+        throw new Error(`Duda API error creating blog post: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        throw new Error('Duda API returned empty response for blog post creation');
+      }
+
+      try {
+        const parsed = JSON.parse(responseText);
+        console.log('✅ Successfully created blog post:', parsed.id);
+        return parsed;
+      } catch (parseError) {
+        console.error('❌ JSON parse failed for blog post creation response');
+        throw new Error(`Failed to parse Duda blog post response: ${responseText}`);
+      }
+    } catch (error) {
+      console.error('❌ Full error in createBlogPost:', error);
+      throw error;
+    }
+  }
+
+  async updateBlogPost(siteName: string, postId: string, updates: Partial<DudaBlogPostRequest>): Promise<DudaBlogPostResponse> {
+    try {
+      console.log(`📝 Updating blog post ${postId} for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts/${encodeURIComponent(postId)}`, {
+        method: 'PATCH',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify(updates)
+      });
+
+      console.log(`📝 Duda update blog post response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda update blog post error (${response.status}):`, error);
+        throw new Error(`Duda API error updating blog post: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        // Some update endpoints return empty on success
+        return { id: postId, title: '', slug: '', status: 'draft' };
+      }
+
+      try {
+        const parsed = JSON.parse(responseText);
+        console.log('✅ Successfully updated blog post:', postId);
+        return parsed;
+      } catch (parseError) {
+        return { id: postId, title: '', slug: '', status: 'draft' };
+      }
+    } catch (error) {
+      console.error('❌ Full error in updateBlogPost:', error);
+      throw error;
+    }
+  }
+
+  async getBlogPost(siteName: string, postId: string): Promise<DudaBlogPostResponse> {
+    try {
+      console.log(`📝 Getting blog post ${postId} for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts/${encodeURIComponent(postId)}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`📝 Duda get blog post response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda get blog post error (${response.status}):`, error);
+        throw new Error(`Duda API error getting blog post: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        throw new Error('Duda API returned empty response for blog post');
+      }
+
+      try {
+        const parsed = JSON.parse(responseText);
+        console.log('✅ Successfully fetched blog post:', postId);
+        return parsed;
+      } catch (parseError) {
+        console.error('❌ JSON parse failed for blog post response');
+        throw new Error(`Failed to parse Duda blog post response: ${responseText}`);
+      }
+    } catch (error) {
+      console.error('❌ Full error in getBlogPost:', error);
+      throw error;
+    }
+  }
+
+  async listBlogPosts(siteName: string, options?: { offset?: number; limit?: number }): Promise<DudaBlogPostListResponse> {
+    try {
+      console.log(`📝 Listing blog posts for site: ${siteName}`);
+
+      let url = `${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts`;
+      const params = new URLSearchParams();
+      if (options?.offset !== undefined) params.append('offset', options.offset.toString());
+      if (options?.limit !== undefined) params.append('limit', options.limit.toString());
+      if (params.toString()) url += `?${params.toString()}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`📝 Duda list blog posts response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda list blog posts error (${response.status}):`, error);
+        throw new Error(`Duda API error listing blog posts: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        return { results: [], total_responses: 0 };
+      }
+
+      try {
+        const parsed = JSON.parse(responseText);
+        console.log(`✅ Successfully listed ${parsed.results?.length || 0} blog posts`);
+        return parsed;
+      } catch (parseError) {
+        console.error('❌ JSON parse failed for blog posts list response');
+        throw new Error(`Failed to parse Duda blog posts list response: ${responseText}`);
+      }
+    } catch (error) {
+      console.error('❌ Full error in listBlogPosts:', error);
+      throw error;
+    }
+  }
+
+  async publishBlogPost(siteName: string, postId: string): Promise<void> {
+    try {
+      console.log(`📝 Publishing blog post ${postId} for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts/${encodeURIComponent(postId)}/publish`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`📝 Duda publish blog post response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda publish blog post error (${response.status}):`, error);
+        throw new Error(`Duda API error publishing blog post: ${response.status} - ${error}`);
+      }
+
+      console.log('✅ Successfully published blog post:', postId);
+    } catch (error) {
+      console.error('❌ Full error in publishBlogPost:', error);
+      throw error;
+    }
+  }
+
+  async unpublishBlogPost(siteName: string, postId: string): Promise<void> {
+    try {
+      console.log(`📝 Unpublishing blog post ${postId} for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts/${encodeURIComponent(postId)}/unpublish`, {
+        method: 'POST',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`📝 Duda unpublish blog post response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda unpublish blog post error (${response.status}):`, error);
+        throw new Error(`Duda API error unpublishing blog post: ${response.status} - ${error}`);
+      }
+
+      console.log('✅ Successfully unpublished blog post:', postId);
+    } catch (error) {
+      console.error('❌ Full error in unpublishBlogPost:', error);
+      throw error;
+    }
+  }
+
+  async deleteBlogPost(siteName: string, postId: string): Promise<void> {
+    try {
+      console.log(`📝 Deleting blog post ${postId} for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts/${encodeURIComponent(postId)}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`📝 Duda delete blog post response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda delete blog post error (${response.status}):`, error);
+        throw new Error(`Duda API error deleting blog post: ${response.status} - ${error}`);
+      }
+
+      console.log('✅ Successfully deleted blog post:', postId);
+    } catch (error) {
+      console.error('❌ Full error in deleteBlogPost:', error);
       throw error;
     }
   }

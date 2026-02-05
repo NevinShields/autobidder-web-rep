@@ -2389,6 +2389,28 @@ export default function StyledCalculator(props: any = {}) {
     }
   };
 
+  const applyButtonHoverStyles = (variant: 'primary' | 'outline') => (e: React.MouseEvent<HTMLElement>) => {
+    if (designSettings?.customCSS) return;
+    const hoverStyles = variant === 'outline'
+      ? {
+          backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+          color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+          borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
+        }
+      : {
+          backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
+          color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
+          borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
+        };
+    Object.assign(e.currentTarget.style, hoverStyles);
+  };
+
+  const applyButtonNormalStyles = (variant: 'primary' | 'outline') => (e: React.MouseEvent<HTMLElement>) => {
+    if (designSettings?.customCSS) return;
+    const normalStyles = getButtonStyles(variant);
+    Object.assign(e.currentTarget.style, normalStyles);
+  };
+
   // Helper function to get font size
   const getFontSizeValue = (fontSize: string): string => {
     switch (fontSize) {
@@ -2485,18 +2507,8 @@ export default function StyledCalculator(props: any = {}) {
               className="ab-button ab-button-primary button w-full mt-6"
               data-testid="button-proceed-to-configuration"
               style={getButtonStyles('primary')}
-              onMouseEnter={(e) => {
-                const hoverStyles = {
-                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                };
-                Object.assign(e.target.style, hoverStyles);
-              }}
-              onMouseLeave={(e) => {
-                const normalStyles = getButtonStyles('primary');
-                Object.assign(e.target.style, normalStyles);
-              }}
+              onMouseEnter={applyButtonHoverStyles('primary')}
+              onMouseLeave={applyButtonNormalStyles('primary')}
             >
               Continue
             </Button>
@@ -2767,18 +2779,8 @@ export default function StyledCalculator(props: any = {}) {
               className="ab-button ab-button-primary button w-full"
               data-testid="button-get-quote"
               style={getButtonStyles('primary')}
-              onMouseEnter={(e) => {
-                const hoverStyles = {
-                  backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                  color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                  borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                };
-                Object.assign(e.target.style, hoverStyles);
-              }}
-              onMouseLeave={(e) => {
-                const normalStyles = getButtonStyles('primary');
-                Object.assign(e.target.style, normalStyles);
-              }}
+              onMouseEnter={applyButtonHoverStyles('primary')}
+              onMouseLeave={applyButtonNormalStyles('primary')}
             >
               Get Quote
             </Button>
@@ -3271,17 +3273,11 @@ export default function StyledCalculator(props: any = {}) {
               style={getButtonStyles('primary')}
               onMouseEnter={(e) => {
                 if (!submitMultiServiceLeadMutation.isPending) {
-                  const hoverStyles = {
-                    backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                    color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                    borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                  };
-                  Object.assign(e.target.style, hoverStyles);
+                  applyButtonHoverStyles('primary')(e);
                 }
               }}
               onMouseLeave={(e) => {
-                const normalStyles = getButtonStyles('primary');
-                Object.assign(e.target.style, normalStyles);
+                applyButtonNormalStyles('primary')(e);
               }}
             >
               {submitMultiServiceLeadMutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
@@ -3894,18 +3890,8 @@ export default function StyledCalculator(props: any = {}) {
                   className="ab-button ab-button-primary button flex-1"
                   data-testid="button-schedule-service"
                   style={getButtonStyles('primary')}
-                  onMouseEnter={(e) => {
-                    const hoverStyles = {
-                      backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                    };
-                    Object.assign(e.target.style, hoverStyles);
-                  }}
-                  onMouseLeave={(e) => {
-                    const normalStyles = getButtonStyles('primary');
-                    Object.assign(e.target.style, normalStyles);
-                  }}
+                  onMouseEnter={applyButtonHoverStyles('primary')}
+                  onMouseLeave={applyButtonNormalStyles('primary')}
                 >
                   Schedule Service
                 </Button>
@@ -3927,18 +3913,8 @@ export default function StyledCalculator(props: any = {}) {
                   variant="outline"
                   className="button flex-1"
                   style={getButtonStyles('outline')}
-                  onMouseEnter={(e) => {
-                    const hoverStyles = {
-                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                    };
-                    Object.assign(e.target.style, hoverStyles);
-                  }}
-                  onMouseLeave={(e) => {
-                    const normalStyles = getButtonStyles('outline');
-                    Object.assign(e.target.style, normalStyles);
-                  }}
+                  onMouseEnter={applyButtonHoverStyles('outline')}
+                  onMouseLeave={applyButtonNormalStyles('outline')}
                 >
                   {businessSettings.styling.customButtonText || "Get Another Quote"}
                 </Button>
@@ -3955,18 +3931,8 @@ export default function StyledCalculator(props: any = {}) {
                   variant="outline"
                   className="button flex-1"
                   style={getButtonStyles('outline')}
-                  onMouseEnter={(e) => {
-                    const hoverStyles = {
-                      backgroundColor: styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                      color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                      borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || styling.buttonBackgroundColor || styling.primaryColor || '#2563EB',
-                    };
-                    Object.assign(e.target.style, hoverStyles);
-                  }}
-                  onMouseLeave={(e) => {
-                    const normalStyles = getButtonStyles('outline');
-                    Object.assign(e.target.style, normalStyles);
-                  }}
+                  onMouseEnter={applyButtonHoverStyles('outline')}
+                  onMouseLeave={applyButtonNormalStyles('outline')}
                 >
                   Start New Quote
                 </Button>
@@ -4108,21 +4074,15 @@ export default function StyledCalculator(props: any = {}) {
                         padding: '12px 24px',
                         fontSize: '16px',
                       }}
-                      onMouseEnter={(e) => {
-                        const hoverStyles = {
-                          backgroundColor: styling.buttonHoverBackgroundColor || '#1d4ed8',
-                          color: styling.buttonHoverTextColor || styling.buttonTextColor || '#FFFFFF',
-                          borderColor: styling.buttonHoverBorderColor || styling.buttonHoverBackgroundColor || '#1d4ed8',
-                        };
-                        Object.assign(e.target.style, hoverStyles);
-                      }}
+                      onMouseEnter={applyButtonHoverStyles('primary')}
                       onMouseLeave={(e) => {
+                        if (designSettings?.customCSS) return;
                         const normalStyles = {
                           ...getButtonStyles('primary'),
                           padding: '12px 24px',
                           fontSize: '16px',
                         };
-                        Object.assign(e.target.style, normalStyles);
+                        Object.assign(e.currentTarget.style, normalStyles);
                       }}
                     >
                       {businessSettings.customButtonText || 'Get Another Quote'}
@@ -4187,7 +4147,7 @@ export default function StyledCalculator(props: any = {}) {
     <div className="force-light-mode min-h-screen flex items-start justify-center p-0" style={{ margin: '0' }}>
       <div 
         id="autobidder-form"
-        className="ab-form-container form-container max-w-4xl w-full mx-auto"
+        className="ab-form-container form-container max-w-5xl w-full mx-auto"
         style={hasCustomCSS ? {} : {
           backgroundColor: styling.backgroundColor || 'transparent',
           borderRadius: `${styling.containerBorderRadius || 16}px`,

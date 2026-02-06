@@ -3109,6 +3109,7 @@ export const blogPosts = pgTable("blog_posts", {
   metaDescription: text("meta_description"),
   excerpt: text("excerpt"),
   content: jsonb("content").notNull().$type<BlogContentSection[]>(),
+  contentHtml: text("content_html"),
   layoutTemplateId: integer("layout_template_id"),
 
   // SEO

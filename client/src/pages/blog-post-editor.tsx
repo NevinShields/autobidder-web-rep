@@ -91,11 +91,20 @@ const WIZARD_STEPS = [
 ];
 
 export default function BlogPostEditorPage() {
-  const { id } = useParams();
+  const { id: routeId } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isEditing = id && id !== "new";
+  const [postId, setPostId] = useState<string | undefined>(routeId && routeId !== "new" ? routeId : undefined);
+  const id = postId || (routeId && routeId !== "new" ? routeId : undefined);
+  const isEditing = !!id;
+
+  // Sync routeId changes to postId (e.g. after navigation)
+  useEffect(() => {
+    if (routeId && routeId !== "new") {
+      setPostId(routeId);
+    }
+  }, [routeId]);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState(0);
@@ -135,8 +144,8 @@ export default function BlogPostEditorPage() {
 
   // Fetch existing post if editing
   const { data: existingPost, isLoading: isLoadingPost } = useQuery<BlogPost & { sectionLocks: any[] }>({
-    queryKey: ["/api/blog-posts", id],
-    enabled: !!isEditing,
+    queryKey: [`/api/blog-posts/${id}`],
+    enabled: !!id,
   });
 
   // Fetch services/formulas
@@ -192,12 +201,16 @@ export default function BlogPostEditorPage() {
 
       const input = {
         blogType,
+        primaryServiceId,
         serviceName,
         serviceDescription: formulas.find(f => f.id === primaryServiceId)?.description,
         targetCity,
         targetNeighborhood: targetNeighborhood || undefined,
         goal,
         tonePreference,
+        workOrderId,
+        jobNotes,
+        layoutTemplateId: selectedTemplate?.id > 0 ? selectedTemplate.id : null,
         talkingPoints: talkingPoints.filter(p => p.trim()),
         layoutTemplate: selectedTemplate?.sections || [],
         jobData: selectedWorkOrder ? {
@@ -209,18 +222,25 @@ export default function BlogPostEditorPage() {
         } : undefined
       };
 
-      return await apiRequest("POST", "/api/blog-posts/generate-content", input);
+      const response = await apiRequest("POST", "/api/blog-posts/generate-content", input);
+      return await response.json();
     },
     onSuccess: (data: any) => {
       setTitle(data.title);
-      setSlug(data.suggestedSlug);
-      setMetaTitle(data.metaTitle);
-      setMetaDescription(data.metaDescription);
-      setExcerpt(data.excerpt);
-      setContent(data.content);
-      setSeoScore(data.seoScore);
+      setSlug(data.slug);
+      setMetaTitle(data.metaTitle || "");
+      setMetaDescription(data.metaDescription || "");
+      setExcerpt(data.excerpt || "");
+      setContent(data.content || []);
+      setSeoScore(data.seoScore ?? null);
       setSeoChecklist(data.seoChecklist || []);
       setCurrentStep(4); // Move to editor step
+      if (data.id) {
+        setPostId(String(data.id));
+        if (!isEditing) {
+          navigate(`/blog-posts/${data.id}/edit`);
+        }
+      }
       toast({
         title: "Content Generated",
         description: "Your blog content has been generated. Review and edit as needed.",
@@ -264,13 +284,18 @@ export default function BlogPostEditorPage() {
       };
 
       if (isEditing) {
-        return await apiRequest("PATCH", `/api/blog-posts/${id}`, data);
+        const response = await apiRequest("PATCH", `/api/blog-posts/${id}`, data);
+        return await response.json();
       } else {
-        return await apiRequest("POST", "/api/blog-posts", data);
+        const response = await apiRequest("POST", "/api/blog-posts", data);
+        return await response.json();
       }
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+      if (data.id) {
+        setPostId(String(data.id));
+      }
       toast({
         title: "Saved",
         description: "Blog post saved successfully.",
@@ -283,6 +308,28 @@ export default function BlogPostEditorPage() {
       toast({
         title: "Save Failed",
         description: error.message || "Failed to save blog post",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Sync to Duda mutation
+  const syncToDudaMutation = useMutation({
+    mutationFn: async (blogPostId: string) => {
+      const response = await apiRequest("POST", `/api/blog-posts/${blogPostId}/sync-to-duda`);
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+      toast({
+        title: "Synced to Duda",
+        description: `Blog post synced successfully. Duda post ID: ${data.dudaPostId}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync blog post to Duda",
         variant: "destructive",
       });
     }
@@ -321,6 +368,65 @@ export default function BlogPostEditorPage() {
 
   const handleSave = (publish: boolean = false) => {
     saveMutation.mutate(publish);
+  };
+
+  const handleSaveAndSync = async () => {
+    // Save the post first (as draft), then sync to Duda
+    const data = {
+      blogType,
+      primaryServiceId,
+      targetCity,
+      targetNeighborhood: targetNeighborhood || null,
+      goal,
+      tonePreference,
+      workOrderId,
+      jobNotes,
+      talkingPoints: talkingPoints.filter(p => p.trim()),
+      layoutTemplateId,
+      title,
+      slug,
+      metaTitle,
+      metaDescription,
+      excerpt,
+      content,
+      seoScore,
+      seoChecklist,
+      category: category || null,
+      tags,
+      featuredImageUrl: featuredImageUrl || null,
+      status: "draft"
+    };
+
+    try {
+      let savedPost: any;
+      if (isEditing) {
+        const response = await apiRequest("PATCH", `/api/blog-posts/${id}`, data);
+        savedPost = await response.json();
+      } else {
+        const response = await apiRequest("POST", "/api/blog-posts", data);
+        savedPost = await response.json();
+      }
+
+      const savedId = savedPost.id ? String(savedPost.id) : id;
+      if (savedId) {
+        setPostId(savedId);
+        if (!isEditing) {
+          navigate(`/blog-posts/${savedId}/edit`);
+        }
+        queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
+        toast({
+          title: "Saved",
+          description: "Blog post saved. Syncing to Duda...",
+        });
+        syncToDudaMutation.mutate(savedId);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Save Failed",
+        description: error.message || "Failed to save blog post before syncing",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTalkingPointChange = (index: number, value: string) => {
@@ -844,12 +950,16 @@ export default function BlogPostEditorPage() {
                     Save as Draft
                   </Button>
                   <Button
-                    onClick={() => handleSave(true)}
-                    disabled={saveMutation.isPending}
+                    onClick={handleSaveAndSync}
+                    disabled={saveMutation.isPending || syncToDudaMutation.isPending}
                     className="flex-1"
                   >
-                    <Globe className="h-4 w-4 mr-2" />
-                    Save & Sync to Duda
+                    {syncToDudaMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Globe className="h-4 w-4 mr-2" />
+                    )}
+                    {syncToDudaMutation.isPending ? "Syncing to Duda..." : "Save & Sync to Duda"}
                   </Button>
                 </div>
               </CardContent>

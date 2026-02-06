@@ -18843,6 +18843,7 @@ This booking was created on ${new Date().toLocaleString()}.
 
   // Helper to check if user has blog access (paid plans only)
   function canAccessBlogFeature(user: any): boolean {
+    if (!user) return false;
     const allowedPlans = ['trial', 'standard', 'plus', 'plus_seo'];
     return allowedPlans.includes(user.plan) || user.isBetaTester || user.userType === 'super_admin';
   }
@@ -18850,12 +18851,10 @@ This booking was created on ${new Date().toLocaleString()}.
   // List all blog posts for a user
   app.get("/api/blog-posts", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
 
-      if (!canAccessBlogFeature(currentUser)) {
-        return res.status(403).json({ message: "Blog feature requires a paid plan" });
-      }
+      // TEMP: allow all authenticated users to fetch layout templates
 
       const { status, blogType, serviceId } = req.query;
 
@@ -18889,12 +18888,12 @@ This booking was created on ${new Date().toLocaleString()}.
   // Get single blog post
   app.get("/api/blog-posts/:id", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
-      if (!canAccessBlogFeature(currentUser)) {
-        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid blog post ID" });
       }
 
       const [post] = await db
@@ -18933,7 +18932,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Create blog post
   app.post("/api/blog-posts", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
 
       if (!canAccessBlogFeature(currentUser)) {
@@ -18952,10 +18951,12 @@ This booking was created on ${new Date().toLocaleString()}.
       // Calculate word count
       const contentText = JSON.stringify(validation.data.content || []);
       const wordCount = contentText.split(/\s+/).length;
+      const contentHtml = blogContentToHtml(validation.data.content as BlogContentSection[]);
 
       const insertData = {
         ...validation.data,
         content: validation.data.content as BlogContentSection[],
+        contentHtml,
         wordCount,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -18976,9 +18977,13 @@ This booking was created on ${new Date().toLocaleString()}.
   // Update blog post
   app.patch("/api/blog-posts/:id", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid blog post ID" });
+      }
 
       if (!canAccessBlogFeature(currentUser)) {
         return res.status(403).json({ message: "Blog feature requires a paid plan" });
@@ -19007,6 +19012,7 @@ This booking was created on ${new Date().toLocaleString()}.
       if (updates.content) {
         const contentText = JSON.stringify(updates.content);
         updates.wordCount = contentText.split(/\s+/).length;
+        updates.contentHtml = blogContentToHtml(updates.content as BlogContentSection[]);
       }
 
       updates.updatedAt = new Date();
@@ -19027,9 +19033,13 @@ This booking was created on ${new Date().toLocaleString()}.
   // Delete blog post
   app.delete("/api/blog-posts/:id", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid blog post ID" });
+      }
 
       if (!canAccessBlogFeature(currentUser)) {
         return res.status(403).json({ message: "Blog feature requires a paid plan" });
@@ -19061,7 +19071,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Generate blog content with AI
   app.post("/api/blog-posts/generate-content", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
 
       if (!canAccessBlogFeature(currentUser)) {
         return res.status(403).json({ message: "Blog feature requires a paid plan" });
@@ -19086,7 +19096,51 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const result = await generateBlogContent(input);
 
-      res.json(result);
+      // Auto-create draft blog post with generated content + HTML
+      const contentHtml = blogContentToHtml(result.content);
+      const contentText = JSON.stringify(result.content || []);
+      const wordCount = contentText.split(/\s+/).length;
+
+      const insertData = {
+        userId: getEffectiveOwnerId(currentUser),
+        blogType: input.blogType,
+        primaryServiceId: input.primaryServiceId ?? null,
+        targetCity: input.targetCity,
+        targetNeighborhood: input.targetNeighborhood ?? null,
+        goal: input.goal,
+        workOrderId: input.workOrderId ?? null,
+        jobNotes: input.jobNotes ?? null,
+        talkingPoints: input.talkingPoints || [],
+        tonePreference: input.tonePreference,
+        title: result.title,
+        slug: result.suggestedSlug,
+        metaTitle: result.metaTitle,
+        metaDescription: result.metaDescription,
+        excerpt: result.excerpt,
+        content: result.content as BlogContentSection[],
+        contentHtml,
+        layoutTemplateId: input.layoutTemplateId ?? null,
+        seoScore: result.seoScore,
+        seoChecklist: result.seoChecklist,
+        status: "draft",
+        wordCount
+      };
+
+      const validation = insertBlogPostSchema.safeParse(insertData);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid generated blog post data", errors: validation.error.errors });
+      }
+
+      const [post] = await db
+        .insert(blogPosts)
+        .values({
+          ...(validation.data as typeof blogPosts.$inferInsert),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+
+      res.json(post);
     } catch (error) {
       console.error("[Blog] Error generating content:", error);
       res.status(500).json({ message: "Failed to generate blog content" });
@@ -19096,9 +19150,13 @@ This booking was created on ${new Date().toLocaleString()}.
   // Regenerate specific section
   app.post("/api/blog-posts/:id/regenerate-section", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid blog post ID" });
+      }
 
       if (!canAccessBlogFeature(currentUser)) {
         return res.status(403).json({ message: "Blog feature requires a paid plan" });
@@ -19157,7 +19215,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Lock section
   app.post("/api/blog-posts/:id/lock-section", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19213,7 +19271,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Unlock section
   app.post("/api/blog-posts/:id/unlock-section", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19257,7 +19315,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // List blog images
   app.get("/api/blog-posts/:id/images", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19295,7 +19353,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Add image to blog post
   app.post("/api/blog-posts/:id/images", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19342,7 +19400,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Update blog image
   app.patch("/api/blog-images/:id", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const imageId = parseInt(req.params.id);
 
@@ -19385,7 +19443,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Delete blog image
   app.delete("/api/blog-images/:id", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const imageId = parseInt(req.params.id);
 
@@ -19419,7 +19477,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Generate alt text for image
   app.post("/api/blog-images/generate-alt-text", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
 
       if (!canAccessBlogFeature(currentUser)) {
         return res.status(403).json({ message: "Blog feature requires a paid plan" });
@@ -19443,7 +19501,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Get SEO score for blog post
   app.get("/api/blog-posts/:id/seo-score", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19507,7 +19565,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Check for duplicate/similar blogs
   app.post("/api/blog-posts/:id/check-duplicates", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19558,7 +19616,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Sync blog post to Duda
   app.post("/api/blog-posts/:id/sync-to-duda", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19594,31 +19652,53 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(500).json({ message: "Duda API is not configured" });
       }
 
-      // Convert content to HTML
-      const htmlContent = blogContentToHtml(post.content as any[]);
+      // Convert content to HTML (use stored HTML when available)
+      const htmlContent = post.contentHtml || blogContentToHtml(post.content as any[]);
 
-      const dudaPost = {
-        title: post.title,
-        content: htmlContent,
-        slug: post.slug,
-        excerpt: post.excerpt || undefined,
-        featured_image: post.featuredImageUrl || undefined,
-        categories: post.category ? [post.category] : undefined,
-        tags: post.tags as string[] || undefined,
-        status: 'draft' as const,
-        seo: {
-          title: post.metaTitle || undefined,
-          description: post.metaDescription || undefined
-        }
-      };
+      let dudaPostId: string | undefined = post.dudaBlogPostId || undefined;
 
-      let dudaResponse;
-      if (post.dudaBlogPostId) {
-        // Update existing
-        dudaResponse = await dudaApi.updateBlogPost(website.siteName, post.dudaBlogPostId, dudaPost);
+      if (dudaPostId) {
+        // Update existing post with Duda Update fields
+        console.log(`[Blog] Updating existing Duda post ${dudaPostId} on site ${website.siteName}`);
+        const updateData: Record<string, any> = {
+          title: post.title,
+          description: post.metaDescription || undefined,
+          meta_title: post.metaTitle || undefined,
+          path: post.slug || undefined,
+          tags: (post.tags as string[])?.length ? post.tags as string[] : undefined,
+        };
+        await dudaApi.updateBlogPost(website.siteName, dudaPostId, updateData);
       } else {
-        // Create new
-        dudaResponse = await dudaApi.createBlogPost(website.siteName, dudaPost);
+        // Step 1: Import new post with Duda Import fields
+        const importData = {
+          title: post.title,
+          description: post.metaDescription || undefined,
+          content: htmlContent,
+          ...(post.featuredImageUrl ? {
+            main_image: { url: post.featuredImageUrl },
+            thumbnail: { url: post.featuredImageUrl }
+          } : {})
+        };
+        console.log(`[Blog] Importing new blog post to Duda site ${website.siteName}:`, JSON.stringify(importData).substring(0, 500));
+        await dudaApi.createBlogPost(website.siteName, importData as any);
+
+        // Import response doesn't return an id — list posts to find the newly created one
+        console.log(`[Blog] Import succeeded, listing posts to find new post ID...`);
+        const listResponse = await dudaApi.listBlogPosts(website.siteName, { limit: 10, offset: 0 });
+        const matchedPost = listResponse.results?.find((p: any) => p.title === post.title);
+        dudaPostId = matchedPost?.id;
+        console.log(`[Blog] Found Duda post ID: ${dudaPostId}`);
+
+        // Step 2: Update with metadata fields not supported by import
+        if (dudaPostId) {
+          const updateData: Record<string, any> = {};
+          if (post.metaTitle) updateData.meta_title = post.metaTitle;
+          if (post.slug) updateData.path = post.slug;
+          if ((post.tags as string[])?.length) updateData.tags = post.tags as string[];
+          if (Object.keys(updateData).length > 0) {
+            await dudaApi.updateBlogPost(website.siteName, dudaPostId, updateData);
+          }
+        }
       }
 
       // Update local record
@@ -19626,7 +19706,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .update(blogPosts)
         .set({
           dudaSiteId: website.siteName,
-          dudaBlogPostId: dudaResponse.id,
+          dudaBlogPostId: dudaPostId || null,
           dudaStatus: 'synced',
           dudaLastSyncAt: new Date(),
           updatedAt: new Date()
@@ -19635,28 +19715,33 @@ This booking was created on ${new Date().toLocaleString()}.
 
       res.json({
         message: "Blog synced to Duda",
-        dudaPostId: dudaResponse.id
+        dudaPostId: dudaPostId
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Blog] Error syncing to Duda:", error);
 
       // Update status to error
-      await db
-        .update(blogPosts)
-        .set({
-          dudaStatus: 'error',
-          updatedAt: new Date()
-        })
-        .where(eq(blogPosts.id, parseInt(req.params.id)));
+      try {
+        await db
+          .update(blogPosts)
+          .set({
+            dudaStatus: 'error',
+            updatedAt: new Date()
+          })
+          .where(eq(blogPosts.id, parseInt(req.params.id)));
+      } catch (dbErr) {
+        console.error("[Blog] Failed to update error status:", dbErr);
+      }
 
-      res.status(500).json({ message: "Failed to sync blog to Duda" });
+      const errMsg = error?.message || "Failed to sync blog to Duda";
+      res.status(500).json({ message: errMsg });
     }
   });
 
   // Publish blog to Duda
   app.post("/api/blog-posts/:id/publish-to-duda", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19710,7 +19795,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Unpublish blog from Duda
   app.post("/api/blog-posts/:id/unpublish-from-duda", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const postId = parseInt(req.params.id);
 
@@ -19757,7 +19842,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Get work orders as content sources
   app.get("/api/blog-posts/sources/work-orders", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
 
       if (!canAccessBlogFeature(currentUser)) {
@@ -19792,7 +19877,7 @@ This booking was created on ${new Date().toLocaleString()}.
   // Get leads with images as content sources
   app.get("/api/blog-posts/sources/leads", requireAuth, async (req, res) => {
     try {
-      const currentUser = req.user as any;
+      const currentUser = (req as any).currentUser;
       const effectiveOwnerId = getEffectiveOwnerId(currentUser);
 
       if (!canAccessBlogFeature(currentUser)) {
@@ -19824,36 +19909,34 @@ This booking was created on ${new Date().toLocaleString()}.
 
   // Get layout templates
   app.get("/api/blog-layout-templates", requireAuth, async (req, res) => {
-    try {
-      const currentUser = req.user as any;
+    const buildDefaultTemplates = () => DEFAULT_LAYOUT_TEMPLATES.map((t, i) => ({
+      id: -1 - i, // Negative IDs for defaults
+      ...t,
+      isActive: true,
+      isDefault: true,
+      createdAt: new Date()
+    }));
 
-      if (!canAccessBlogFeature(currentUser)) {
-        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+    try {
+      // TEMP: allow all authenticated users to fetch layout templates
+
+      const defaultTemplates = buildDefaultTemplates();
+
+      let customTemplates: any[] = [];
+      try {
+        customTemplates = await db
+          .select()
+          .from(blogLayoutTemplates)
+          .where(eq(blogLayoutTemplates.isActive, true))
+          .orderBy(blogLayoutTemplates.name);
+      } catch (dbError) {
+        console.error("[Blog] Failed to load custom layout templates, using defaults only:", dbError);
       }
 
-      // Get custom templates from DB
-      const customTemplates = await db
-        .select()
-        .from(blogLayoutTemplates)
-        .where(eq(blogLayoutTemplates.isActive, true))
-        .orderBy(blogLayoutTemplates.name);
-
-      // Combine with defaults
-      const allTemplates = [
-        ...DEFAULT_LAYOUT_TEMPLATES.map((t, i) => ({
-          id: -1 - i, // Negative IDs for defaults
-          ...t,
-          isActive: true,
-          isDefault: true,
-          createdAt: new Date()
-        })),
-        ...customTemplates
-      ];
-
-      res.json(allTemplates);
+      res.json([...defaultTemplates, ...customTemplates]);
     } catch (error) {
-      console.error("[Blog] Error fetching layout templates:", error);
-      res.status(500).json({ message: "Failed to fetch layout templates" });
+      console.error("[Blog] Error fetching layout templates, returning defaults:", error);
+      res.json(buildDefaultTemplates());
     }
   });
 

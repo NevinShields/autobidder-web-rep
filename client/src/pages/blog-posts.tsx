@@ -111,10 +111,10 @@ export default function BlogPostsPage() {
         description: "Blog post has been synced to your website.",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Sync Failed",
-        description: "Failed to sync blog post to Duda",
+        description: error.message || "Failed to sync blog post to Duda",
         variant: "destructive",
       });
     },

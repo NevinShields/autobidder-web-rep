@@ -44,7 +44,14 @@
       "Bash(npx esbuild:*)",
       "Bash(npx drizzle-kit:*)",
       "Bash(npm run dev:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(pm2 logs:*)",
+      "Bash(# Find the process and check its output # The server runs on pts/1 - let me check recent console output lsof -i :5000)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.duda.co)",
+      "Bash(journalctl:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }

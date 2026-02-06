@@ -49,6 +49,10 @@ export interface BlogGenerationInput {
   targetCity: string;
   targetNeighborhood?: string;
   goal: string; // "rank_seo", "educate", "convert"
+  primaryServiceId?: number | null;
+  workOrderId?: number | null;
+  jobNotes?: string;
+  layoutTemplateId?: number | null;
   jobData?: {
     title: string;
     customerAddress: string;
@@ -176,9 +180,9 @@ SECTION CONTENT FORMATS:
 // Main generation function with provider fallback
 export async function generateBlogContent(input: BlogGenerationInput): Promise<BlogGenerationOutput> {
   const providers = [
+    { name: 'OpenAI', fn: () => generateWithOpenAI(input) },
     { name: 'Claude', fn: () => generateWithClaude(input) },
-    { name: 'Gemini', fn: () => generateWithGemini(input) },
-    { name: 'OpenAI', fn: () => generateWithOpenAI(input) }
+    { name: 'Gemini', fn: () => generateWithGemini(input) }
   ];
 
   let lastError: Error | null = null;

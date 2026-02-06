@@ -96,24 +96,26 @@ interface DudaFormSubmission {
   event_timestamp: number;
 }
 
-// Blog API Types
-interface DudaBlogPostRequest {
+// Blog API Types — Import (POST .../blog/posts/import)
+interface DudaImportBlogPostRequest {
   title: string;
-  content: string; // HTML content
-  slug?: string;
-  excerpt?: string;
-  featured_image?: string;
-  author?: {
-    name: string;
-    email?: string;
-  };
-  categories?: string[];
+  description?: string;   // meta description
+  content: string;         // HTML body
+  author?: string;         // author name (plain string)
+  main_image?: { url: string };
+  thumbnail?: { url: string };
+}
+
+// Blog API Types — Update (PATCH .../blog/posts/{id})
+interface DudaUpdateBlogPostRequest {
+  title?: string;
+  meta_title?: string;
+  description?: string;
+  author_name?: string;
   tags?: string[];
-  status?: 'draft' | 'published';
-  seo?: {
-    title?: string;
-    description?: string;
-  };
+  path?: string;           // URL slug
+  no_index?: boolean;
+  schedule_publish_date?: string;
 }
 
 interface DudaBlogPostResponse {
@@ -568,36 +570,44 @@ export class DudaApiService {
 
   // ==================== Blog API Methods ====================
 
-  async createBlogPost(siteName: string, post: DudaBlogPostRequest): Promise<DudaBlogPostResponse> {
+  async createBlogPost(siteName: string, post: DudaImportBlogPostRequest): Promise<DudaBlogPostResponse> {
     try {
-      console.log(`📝 Creating blog post for site: ${siteName}`);
+      const url = `${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts/import`;
+      console.log(`📝 Importing blog post for site: ${siteName}`);
+      console.log(`📝 Import URL: ${url}`);
+      console.log(`📝 Import payload keys: ${Object.keys(post).join(', ')}`);
 
-      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts`, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify(post)
       });
 
-      console.log(`📝 Duda create blog post response status: ${response.status}`);
+      console.log(`📝 Duda import blog post response status: ${response.status}`);
 
       if (!response.ok) {
         const error = await response.text();
-        console.error(`❌ Duda create blog post error (${response.status}):`, error);
-        throw new Error(`Duda API error creating blog post: ${response.status} - ${error}`);
+        console.error(`❌ Duda import blog post error (${response.status}):`, error);
+        throw new Error(`Duda API error importing blog post: ${response.status} - ${error}`);
       }
 
       const responseText = await response.text();
+      console.log(`📝 Duda import response body: ${responseText.substring(0, 500)}`);
+
       if (!responseText.trim()) {
-        throw new Error('Duda API returned empty response for blog post creation');
+        // Import endpoint may return empty on success
+        console.log('📝 Empty response from import (OK — will look up post ID via list)');
+        return { id: '', title: post.title, slug: '', status: 'draft' };
       }
 
       try {
         const parsed = JSON.parse(responseText);
-        console.log('✅ Successfully created blog post:', parsed.id);
+        console.log('✅ Successfully imported blog post:', JSON.stringify(parsed).substring(0, 300));
         return parsed;
       } catch (parseError) {
-        console.error('❌ JSON parse failed for blog post creation response');
-        throw new Error(`Failed to parse Duda blog post response: ${responseText}`);
+        // Non-JSON response is acceptable for import
+        console.log('📝 Non-JSON response from import (OK — will look up post ID via list)');
+        return { id: '', title: post.title, slug: '', status: 'draft' };
       }
     } catch (error) {
       console.error('❌ Full error in createBlogPost:', error);
@@ -605,7 +615,7 @@ export class DudaApiService {
     }
   }
 
-  async updateBlogPost(siteName: string, postId: string, updates: Partial<DudaBlogPostRequest>): Promise<DudaBlogPostResponse> {
+  async updateBlogPost(siteName: string, postId: string, updates: DudaUpdateBlogPostRequest): Promise<DudaBlogPostResponse> {
     try {
       console.log(`📝 Updating blog post ${postId} for site: ${siteName}`);
 

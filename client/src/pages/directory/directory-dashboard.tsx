@@ -36,6 +36,7 @@ interface DirectoryProfile {
   zipCode: string | null;
   isActive: boolean;
   showOnDirectory: boolean;
+  showAllServices: boolean;
   totalServices: number;
 }
 
@@ -76,12 +77,22 @@ export default function DirectoryDashboard() {
 
   const toggleVisibility = useMutation({
     mutationFn: (showOnDirectory: boolean) =>
-      apiRequest("/api/directory/profile", { method: "PATCH", body: JSON.stringify({ showOnDirectory }) }),
+      apiRequest("PATCH", "/api/directory/profile", { showOnDirectory }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/profile"] });
       toast({ title: "Visibility updated!" });
     },
     onError: () => toast({ title: "Failed to update visibility", variant: "destructive" }),
+  });
+
+  const toggleShowAllServices = useMutation({
+    mutationFn: (showAllServices: boolean) =>
+      apiRequest("PATCH", "/api/directory/profile", { showAllServices }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/directory/profile"] });
+      toast({ title: "Service display updated!" });
+    },
+    onError: () => toast({ title: "Failed to update setting", variant: "destructive" }),
   });
 
   if (profileLoading) {
@@ -215,6 +226,32 @@ export default function DirectoryDashboard() {
           </CardContent>
         </Card>
 
+        {/* Show All Services Toggle */}
+        <Card>
+          <CardContent className="py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Calculator className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Show All Services</h3>
+                  <p className="text-sm text-gray-500">
+                    {profile.showAllServices
+                      ? "All active services are shown on your company page"
+                      : "Only selected services are shown on your company page"}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={profile.showAllServices}
+                onCheckedChange={checked => toggleShowAllServices.mutate(checked)}
+                disabled={toggleShowAllServices.isPending}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Profile Card */}
         <Card>
           <CardHeader>
@@ -338,14 +375,15 @@ export default function DirectoryDashboard() {
                 </Link>
               </div>
             ) : (
-              <div>
-                {area.areaType === "radius" ? (
+              <div className="space-y-3">
+                {area.radiusMiles && (
                   <p className="text-gray-700">
                     <span className="font-medium">{area.radiusMiles} mile radius</span> from {profile.city}, {profile.state}
                   </p>
-                ) : area.areaType === "cities" && area.cities ? (
+                )}
+                {area.cities && area.cities.length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-2">Serving {area.cities.length} cities:</p>
+                    <p className="text-sm text-gray-500 mb-2">Additional target cities:</p>
                     <div className="flex flex-wrap gap-2">
                       {area.cities.map((city, i) => (
                         <Badge key={i} variant="outline">
@@ -354,8 +392,6 @@ export default function DirectoryDashboard() {
                       ))}
                     </div>
                   </div>
-                ) : (
-                  <p className="text-gray-500">Service area type: {area.areaType}</p>
                 )}
               </div>
             )}

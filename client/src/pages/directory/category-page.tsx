@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, MapPin, Search, Building2 } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, MapPin, Search, Building2, ArrowRight, Zap, ShieldCheck, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useForceLightMode } from "@/hooks/use-force-light-mode";
 
 interface DirectoryCategory {
   id: number;
@@ -29,6 +30,7 @@ interface CategoryCitiesResponse {
 }
 
 export default function DirectoryCategoryPage() {
+  useForceLightMode();
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -52,6 +54,26 @@ export default function DirectoryCategoryPage() {
 
   const sortedStates = Object.keys(citiesByState).sort();
 
+  const totalProviders = filteredCities.reduce((sum, c) => sum + c.profileCount, 0);
+
+  // SEO: Set page title and meta description
+  useEffect(() => {
+    if (data?.category) {
+      const name = data.category.name;
+      document.title = data.category.seoTitle || `${name} Prices & Cost Calculator | Compare Local ${name} Costs`;
+      const desc = data.category.seoDescription || `Check ${name.toLowerCase()} prices and costs in your city. Use our free ${name.toLowerCase()} cost calculator to compare prices from verified local providers.`;
+      const meta = document.querySelector('meta[name="description"]');
+      if (meta) {
+        meta.setAttribute("content", desc);
+      } else {
+        const tag = document.createElement("meta");
+        tag.name = "description";
+        tag.content = desc;
+        document.head.appendChild(tag);
+      }
+    }
+  }, [data?.category]);
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -70,43 +92,60 @@ export default function DirectoryCategoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+      <div className="bg-white border-b border-gray-100">
+        <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500" />
+        <div className="max-w-6xl mx-auto px-4 py-6">
           <Link href="/directory">
-            <Button variant="ghost" size="sm" className="mb-4">
+            <Button variant="ghost" size="sm" className="mb-4 -ml-2 text-gray-500 hover:text-gray-900">
               <ChevronLeft className="h-4 w-4 mr-1" />
               All Services
             </Button>
           </Link>
 
           {isLoading ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Skeleton className="h-10 w-64" />
               <Skeleton className="h-5 w-96" />
             </div>
           ) : (
             <>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {data?.category?.seoTitle || `${data?.category?.name} Services`}
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-3">
+                {data?.category?.seoTitle || `${data?.category?.name} Prices & Cost Calculator`}
               </h1>
-              <p className="text-gray-600 max-w-2xl">
-                {data?.category?.seoDescription || `Find local ${data?.category?.name?.toLowerCase()} professionals with instant pricing in your city.`}
+              <p className="text-gray-500 max-w-2xl text-lg leading-relaxed">
+                {data?.category?.seoDescription || `Compare ${data?.category?.name?.toLowerCase()} prices and costs in your city. Use our free calculator to get instant pricing from verified local providers.`}
               </p>
+              <div className="flex items-center gap-3 mt-4">
+                <Badge className="bg-emerald-50 text-emerald-700 border-0 rounded-full px-3 py-1">
+                  <Zap className="h-3 w-3 mr-1" />
+                  Free Price Calculator
+                </Badge>
+                <Badge className="bg-blue-50 text-blue-700 border-0 rounded-full px-3 py-1">
+                  <ShieldCheck className="h-3 w-3 mr-1" />
+                  Verified Providers
+                </Badge>
+                {totalProviders > 0 && (
+                  <span className="text-sm text-gray-400 flex items-center gap-1.5 ml-1">
+                    <Users className="h-3.5 w-3.5" />
+                    {totalProviders} provider{totalProviders !== 1 ? 's' : ''} across {filteredCities.length} {filteredCities.length !== 1 ? 'cities' : 'city'}
+                  </span>
+                )}
+              </div>
             </>
           )}
         </div>
       </div>
 
       {/* Search & Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-10">
         <div className="mb-8">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="Search by city or state..."
-              className="pl-10"
+              className="pl-11 h-11 rounded-xl border-gray-200 focus:border-blue-300"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -116,58 +155,57 @@ export default function DirectoryCategoryPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {[...Array(12)].map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-lg" />
+              <Skeleton key={i} className="h-20 rounded-xl" />
             ))}
           </div>
         ) : filteredCities.length === 0 ? (
-          <Card className="max-w-lg mx-auto">
-            <CardContent className="py-12 text-center">
-              <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchQuery ? "No cities match your search" : "No providers listed yet"}
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {searchQuery
-                  ? "Try a different search term."
-                  : `Be the first ${data?.category?.name?.toLowerCase()} provider in your area!`}
-              </p>
-              {!searchQuery && (
-                <Link href="/directory-setup">
-                  <Button>List Your Business</Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
+          <div className="max-w-lg mx-auto text-center py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <MapPin className="h-8 w-8 text-gray-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery ? "No cities match your search" : "No price calculators listed yet"}
+            </h3>
+            <p className="text-gray-500 mb-6">
+              {searchQuery
+                ? "Try a different search term."
+                : `Be the first to list ${data?.category?.name?.toLowerCase()} prices and costs in your area!`}
+            </p>
+            {!searchQuery && (
+              <Link href="/directory-setup">
+                <Button className="rounded-lg">List Your Business</Button>
+              </Link>
+            )}
+          </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {sortedStates.map((state) => (
               <div key={state}>
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">
                   {state}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   {citiesByState[state].map((city) => (
                     <Link
                       key={city.citySlug}
-                      href={`/quotes/${categorySlug}/${city.citySlug}`}
+                      href={`/prices/${categorySlug}/${city.citySlug}`}
                     >
-                      <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                        <CardContent className="p-4 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                              <Building2 className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <div>
-                              <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
-                                {city.city}
-                              </h3>
-                              <p className="text-sm text-gray-500">
-                                {city.profileCount} provider{city.profileCount !== 1 ? 's' : ''}
-                              </p>
-                            </div>
+                      <div className="group bg-white rounded-xl border border-gray-200/80 p-4 hover:shadow-md hover:shadow-blue-500/5 hover:border-blue-200/80 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center group-hover:from-blue-100 group-hover:to-blue-200 transition-all duration-200">
+                            <Building2 className="h-4 w-4 text-blue-600" />
                           </div>
-                        </CardContent>
-                      </Card>
+                          <div>
+                            <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                              {city.city}
+                            </h3>
+                            <p className="text-xs text-gray-400">
+                              {city.profileCount} provider{city.profileCount !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all duration-200" />
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -178,9 +216,9 @@ export default function DirectoryCategoryPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t py-8 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>Powered by Autobidder - Instant Pricing Calculators for Service Businesses</p>
+      <footer className="border-t border-gray-100 py-8 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 text-center text-gray-400 text-sm">
+          <p>Powered by <a href="/" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">Autobidder</a> — Instant Pricing Calculators for Service Businesses</p>
         </div>
       </footer>
     </div>

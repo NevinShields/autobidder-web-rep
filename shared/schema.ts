@@ -2917,6 +2917,7 @@ export const directoryProfiles = pgTable("directory_profiles", {
   longitude: text("longitude"),
   isActive: boolean("is_active").notNull().default(true),
   showOnDirectory: boolean("show_on_directory").notNull().default(true),
+  showAllServices: boolean("show_all_services").notNull().default(false),
   metaDescription: text("meta_description"),
   totalServices: integer("total_services").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

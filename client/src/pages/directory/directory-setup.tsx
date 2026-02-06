@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import {
   ChevronLeft,
   ChevronRight,
@@ -39,6 +40,7 @@ interface DirectoryProfile {
   zipCode: string | null;
   isActive: boolean;
   showOnDirectory: boolean;
+  showAllServices: boolean;
 }
 
 interface Formula {
@@ -90,6 +92,7 @@ const US_STATES = [
 export default function DirectorySetup() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -110,8 +113,7 @@ export default function DirectorySetup() {
   const [categorySearch, setCategorySearch] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
 
-  // Service area state
-  const [areaType, setAreaType] = useState<"radius" | "cities">("radius");
+  // Service area state - radius is always on, cities are optional additional targets
   const [radiusMiles, setRadiusMiles] = useState(25);
   const [selectedCities, setSelectedCities] = useState<Array<{ city: string; state: string }>>([]);
   const [newCity, setNewCity] = useState("");
@@ -128,7 +130,10 @@ export default function DirectorySetup() {
 
   const { data: categories } = useQuery<DirectoryCategory[]>({
     queryKey: ["/api/directory/categories/search", categorySearch],
-    queryFn: () => apiRequest(`/api/directory/categories/search?q=${categorySearch}`),
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/directory/categories/search?q=${categorySearch}`);
+      return res.json();
+    },
   });
 
   const { data: existingServices } = useQuery<ServiceListing[]>({
@@ -161,14 +166,40 @@ export default function DirectorySetup() {
     } else if (businessSettings) {
       // Pre-fill from business settings
       const bs = businessSettings as any;
+
+      // Try to parse city, state, and zip from businessAddress
+      // Common formats: "123 Main St, Philadelphia, PA 19103" or "Philadelphia, PA"
+      let city = "";
+      let state = "";
+      let zipCode = "";
+      if (bs.businessAddress) {
+        const addr = bs.businessAddress as string;
+        // Match trailing state abbreviation and optional zip
+        const match = addr.match(/,?\s*([A-Za-z\s]+),\s*([A-Z]{2})\s*(\d{5}(?:-\d{4})?)?$/);
+        if (match) {
+          city = match[1].trim();
+          state = match[2].trim();
+          zipCode = (match[3] || "").trim();
+        }
+      }
+
       setProfileForm(prev => ({
         ...prev,
-        companyName: bs.businessName || "",
-        phoneNumber: bs.businessPhone || "",
-        email: bs.businessEmail || "",
+        companyName: bs.businessName || prev.companyName,
+        companyDescription: bs.businessDescription || prev.companyDescription,
+        phoneNumber: bs.businessPhone || prev.phoneNumber,
+        email: bs.businessEmail || user?.email || prev.email,
+        city: city || prev.city,
+        state: state || prev.state,
+        zipCode: zipCode || prev.zipCode,
       }));
+
+      // Pre-fill service area radius from business settings
+      if (bs.serviceRadius) {
+        setRadiusMiles(bs.serviceRadius);
+      }
     }
-  }, [existingProfile, businessSettings]);
+  }, [existingProfile, businessSettings, user]);
 
   useEffect(() => {
     if (existingServices) {
@@ -181,7 +212,6 @@ export default function DirectorySetup() {
   useEffect(() => {
     if (existingAreas && existingAreas.length > 0) {
       const area = existingAreas[0];
-      setAreaType(area.areaType as "radius" | "cities");
       if (area.radiusMiles) setRadiusMiles(area.radiusMiles);
       if (area.cities) setSelectedCities(area.cities);
     }
@@ -190,7 +220,7 @@ export default function DirectorySetup() {
   // Mutations
   const createProfile = useMutation({
     mutationFn: (data: typeof profileForm) =>
-      apiRequest("/api/directory/profile", { method: "POST", body: JSON.stringify(data) }),
+      apiRequest("POST", "/api/directory/profile", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/profile"] });
       toast({ title: "Profile created!" });
@@ -201,7 +231,7 @@ export default function DirectorySetup() {
 
   const updateProfile = useMutation({
     mutationFn: (data: typeof profileForm) =>
-      apiRequest("/api/directory/profile", { method: "PATCH", body: JSON.stringify(data) }),
+      apiRequest("PATCH", "/api/directory/profile", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/profile"] });
       toast({ title: "Profile updated!" });
@@ -212,7 +242,7 @@ export default function DirectorySetup() {
 
   const addService = useMutation({
     mutationFn: (data: { formulaId: number; categoryId: number }) =>
-      apiRequest("/api/directory/services", { method: "POST", body: JSON.stringify(data) }),
+      apiRequest("POST", "/api/directory/services", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/services"] });
     },
@@ -220,15 +250,17 @@ export default function DirectorySetup() {
 
   const removeService = useMutation({
     mutationFn: (id: number) =>
-      apiRequest(`/api/directory/services/${id}`, { method: "DELETE" }),
+      apiRequest("DELETE", `/api/directory/services/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/services"] });
     },
   });
 
   const suggestCategory = useMutation({
-    mutationFn: (name: string) =>
-      apiRequest("/api/directory/categories/suggest", { method: "POST", body: JSON.stringify({ name }) }),
+    mutationFn: async (name: string) => {
+      const res = await apiRequest("POST", "/api/directory/categories/suggest", { name });
+      return await res.json() as DirectoryCategory;
+    },
     onSuccess: (data: DirectoryCategory) => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/categories/search"] });
       toast({ title: data.status === "pending" ? "Category suggested! It will appear once approved." : "Category found!" });
@@ -238,7 +270,7 @@ export default function DirectorySetup() {
 
   const saveServiceArea = useMutation({
     mutationFn: (data: any) =>
-      apiRequest("/api/directory/service-areas", { method: "POST", body: JSON.stringify(data) }),
+      apiRequest("POST", "/api/directory/service-areas", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/service-areas"] });
       toast({ title: "Service area saved!" });
@@ -249,10 +281,19 @@ export default function DirectorySetup() {
 
   const toggleVisibility = useMutation({
     mutationFn: (showOnDirectory: boolean) =>
-      apiRequest("/api/directory/profile", { method: "PATCH", body: JSON.stringify({ showOnDirectory }) }),
+      apiRequest("PATCH", "/api/directory/profile", { showOnDirectory }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/directory/profile"] });
       toast({ title: "Visibility updated!" });
+    },
+  });
+
+  const toggleShowAllServices = useMutation({
+    mutationFn: (showAllServices: boolean) =>
+      apiRequest("PATCH", "/api/directory/profile", { showAllServices }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/directory/profile"] });
+      toast({ title: "Service display updated!" });
     },
   });
 
@@ -294,15 +335,13 @@ export default function DirectorySetup() {
 
   const handleSaveServiceArea = () => {
     const data: any = {
-      areaType,
+      areaType: "radius",
       isActive: true,
+      radiusMiles,
     };
 
-    if (areaType === "radius") {
-      data.radiusMiles = radiusMiles;
-      data.centerLatitude = existingProfile?.city; // Would use actual coords in production
-      data.centerLongitude = existingProfile?.state;
-    } else if (areaType === "cities") {
+    // Always include additional target cities if any are selected
+    if (selectedCities.length > 0) {
       data.cities = selectedCities;
     }
 
@@ -546,7 +585,7 @@ export default function DirectorySetup() {
                             }}
                           />
                           <div className="flex-1">
-                            <h4 className="font-medium">{formula.title || formula.name}</h4>
+                            <h4 className="font-medium">{formula.name}</h4>
 
                             {isSelected && (
                               <div className="mt-3">
@@ -634,85 +673,67 @@ export default function DirectorySetup() {
                 Define where you provide services so customers can find you
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div>
-                <Label>How do you want to define your service area?</Label>
-                <div className="flex gap-4 mt-2">
-                  <Button
-                    variant={areaType === "radius" ? "default" : "outline"}
-                    onClick={() => setAreaType("radius")}
-                  >
-                    <MapPin className="h-4 w-4 mr-2" />
-                    Radius from Business
-                  </Button>
-                  <Button
-                    variant={areaType === "cities" ? "default" : "outline"}
-                    onClick={() => setAreaType("cities")}
-                  >
-                    <Building2 className="h-4 w-4 mr-2" />
-                    Specific Cities
-                  </Button>
+                <Label>Service Radius</Label>
+                <p className="text-sm text-gray-500 mt-1">
+                  Customers within this radius of {profileForm.city || "your location"} will find your business automatically.
+                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <Input
+                    type="number"
+                    value={radiusMiles}
+                    onChange={e => setRadiusMiles(parseInt(e.target.value) || 0)}
+                    min={1}
+                    max={500}
+                    className="w-24"
+                  />
+                  <span className="text-gray-500">miles from {profileForm.city || "your location"}</span>
                 </div>
               </div>
 
-              {areaType === "radius" && (
-                <div>
-                  <Label>Service Radius (miles)</Label>
-                  <div className="flex items-center gap-4 mt-2">
-                    <Input
-                      type="number"
-                      value={radiusMiles}
-                      onChange={e => setRadiusMiles(parseInt(e.target.value) || 0)}
-                      min={1}
-                      max={500}
-                      className="w-24"
-                    />
-                    <span className="text-gray-500">miles from {profileForm.city || "your location"}</span>
-                  </div>
-                </div>
-              )}
-
-              {areaType === "cities" && (
-                <div>
-                  <Label>Cities You Serve</Label>
-                  <div className="flex gap-2 mt-2">
-                    <Input
-                      value={newCity}
-                      onChange={e => setNewCity(e.target.value)}
-                      placeholder="City name"
-                      className="flex-1"
-                    />
-                    <Select value={newCityState} onValueChange={setNewCityState}>
-                      <SelectTrigger className="w-24">
-                        <SelectValue placeholder="State" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {US_STATES.map(s => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={addCity} disabled={!newCity || !newCityState}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {selectedCities.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {selectedCities.map((city, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="cursor-pointer"
-                          onClick={() => removeCity(index)}
-                        >
-                          {city.city}, {city.state} ×
-                        </Badge>
+              <div>
+                <Label>Additional Target Cities (Optional)</Label>
+                <p className="text-sm text-gray-500 mt-1">
+                  Add specific cities you want to appear in, even if they're outside your radius.
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    value={newCity}
+                    onChange={e => setNewCity(e.target.value)}
+                    placeholder="City name"
+                    className="flex-1"
+                  />
+                  <Select value={newCityState} onValueChange={setNewCityState}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue placeholder="State" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {US_STATES.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
-                    </div>
-                  )}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={addCity} disabled={!newCity || !newCityState}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
+
+                {selectedCities.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {selectedCities.map((city, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => removeCity(index)}
+                      >
+                        {city.city}, {city.state} ×
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="pt-4 flex justify-between">
                 <Button variant="outline" onClick={() => setCurrentStep(2)}>
@@ -768,7 +789,7 @@ export default function DirectorySetup() {
                           const category = approvedCategories.find(c => c.id === categoryId);
                           return (
                             <div key={formulaId} className="flex items-center justify-between">
-                              <span>{formula?.title || formula?.name}</span>
+                              <span>{formula?.name}</span>
                               <Badge variant="outline">{category?.name}</Badge>
                             </div>
                           );
@@ -781,12 +802,40 @@ export default function DirectorySetup() {
                 {/* Service Area Summary */}
                 <div>
                   <h3 className="font-medium text-gray-900 mb-2">Service Area</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    {areaType === "radius" ? (
-                      <p>{radiusMiles} mile radius from {profileForm.city}</p>
-                    ) : (
-                      <p>{selectedCities.length} cities: {selectedCities.map(c => `${c.city}, ${c.state}`).join("; ")}</p>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                    <p>{radiusMiles} mile radius from {profileForm.city}</p>
+                    {selectedCities.length > 0 && (
+                      <p className="text-sm text-gray-600">
+                        + {selectedCities.length} additional {selectedCities.length === 1 ? "city" : "cities"}: {selectedCities.map(c => `${c.city}, ${c.state}`).join("; ")}
+                      </p>
                     )}
+                  </div>
+                </div>
+
+                {/* Show All Services Toggle */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-gray-900">Show All Services</h3>
+                      <p className="text-sm text-gray-500">
+                        {existingProfile?.showAllServices
+                          ? "All your active services are visible on your company page"
+                          : "Only services you selected above are shown"}
+                      </p>
+                    </div>
+                    <Button
+                      variant={existingProfile?.showAllServices ? "outline" : "default"}
+                      onClick={() => toggleShowAllServices.mutate(!existingProfile?.showAllServices)}
+                      disabled={toggleShowAllServices.isPending}
+                    >
+                      {toggleShowAllServices.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : existingProfile?.showAllServices ? (
+                        "Selected Only"
+                      ) : (
+                        "Show All"
+                      )}
+                    </Button>
                   </div>
                 </div>
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -27,9 +27,26 @@ export default function Support() {
     category: "general",
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: () => fetch("/api/auth/user").then((res) => res.json()),
+  });
+
   const submitTicketMutation = useMutation({
     mutationFn: async (data: SupportForm) => {
-      return await apiRequest("POST", "/api/support-tickets", data);
+      if (!currentUser?.id) {
+        throw new Error("Unable to verify your account. Please refresh and try again.");
+      }
+      const customerName =
+        [currentUser.firstName, currentUser.lastName].filter(Boolean).join(" ") ||
+        currentUser.email ||
+        "Customer";
+      return await apiRequest("POST", "/api/support-tickets", {
+        ...data,
+        userId: currentUser.id,
+        customerName,
+        customerEmail: currentUser.email || "",
+      });
     },
     onSuccess: () => {
       setFormData({

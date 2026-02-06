@@ -218,8 +218,8 @@ function Router() {
         <Route path="/icon-generator" component={IconGeneratorPage} />
         {/* Public Directory Routes */}
         <Route path="/directory" component={DirectoryHome} />
-        <Route path="/quotes/:categorySlug/:citySlug" component={DirectoryCityCategoryPage} />
-        <Route path="/quotes/:categorySlug" component={DirectoryCategoryPage} />
+        <Route path="/prices/:categorySlug/:citySlug" component={DirectoryCityCategoryPage} />
+        <Route path="/prices/:categorySlug" component={DirectoryCategoryPage} />
         <Route path="/directory/company/:companySlug" component={DirectoryCompanyPage} />
         <Route component={Landing} />
       </Switch>
@@ -332,8 +332,8 @@ function Router() {
         <Route path="/icon-generator" component={IconGeneratorPage} />
         {/* Directory routes (public pages accessible when authenticated + owner pages) */}
         <Route path="/directory" component={DirectoryHome} />
-        <Route path="/quotes/:categorySlug/:citySlug" component={DirectoryCityCategoryPage} />
-        <Route path="/quotes/:categorySlug" component={DirectoryCategoryPage} />
+        <Route path="/prices/:categorySlug/:citySlug" component={DirectoryCityCategoryPage} />
+        <Route path="/prices/:categorySlug" component={DirectoryCategoryPage} />
         <Route path="/directory/company/:companySlug" component={DirectoryCompanyPage} />
         <Route path="/directory-setup" component={DirectorySetup} />
         <Route path="/directory-dashboard" component={DirectoryDashboard} />

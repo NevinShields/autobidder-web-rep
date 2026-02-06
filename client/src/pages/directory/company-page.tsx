@@ -1,10 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   ChevronLeft,
   MapPin,
@@ -16,11 +14,15 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Zap,
+  ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useForceLightMode } from "@/hooks/use-force-light-mode";
 
 interface DirectoryProfile {
   id: number;
+  userId: string;
   companySlug: string;
   companyName: string;
   companyDescription: string | null;
@@ -57,8 +59,9 @@ interface CompanyResponse {
 }
 
 export default function DirectoryCompanyPage() {
+  useForceLightMode();
   const { companySlug } = useParams<{ companySlug: string }>();
-  const [expandedService, setExpandedService] = useState<number | null>(null);
+  const [showAllServices, setShowAllServices] = useState(false);
 
   const { data, isLoading, error } = useQuery<CompanyResponse>({
     queryKey: [`/api/public/directory/company/${companySlug}`],
@@ -84,23 +87,31 @@ export default function DirectoryCompanyPage() {
   const profile = data?.profile;
   const services = data?.services || [];
 
-  // Group services by category
-  const servicesByCategory = services.reduce((acc, service) => {
-    const cat = service.categoryName;
-    if (!acc[cat]) {
-      acc[cat] = [];
+  // SEO: Set page title and meta description
+  useEffect(() => {
+    if (profile) {
+      document.title = `${profile.companyName} Prices & Cost Calculator | ${profile.city}, ${profile.state}`;
+      const desc = `Check prices and costs from ${profile.companyName} in ${profile.city}, ${profile.state}. Use free pricing calculators to get instant quotes for ${profile.totalServices} service${profile.totalServices !== 1 ? 's' : ''}.`;
+      const meta = document.querySelector('meta[name="description"]');
+      if (meta) {
+        meta.setAttribute("content", desc);
+      } else {
+        const tag = document.createElement("meta");
+        tag.name = "description";
+        tag.content = desc;
+        document.head.appendChild(tag);
+      }
     }
-    acc[cat].push(service);
-    return acc;
-  }, {} as Record<string, ServiceListing[]>);
+  }, [profile]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Top accent + nav */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500" />
+        <div className="max-w-6xl mx-auto px-4 py-3">
           <Link href="/directory">
-            <Button variant="ghost" size="sm" className="mb-4">
+            <Button variant="ghost" size="sm" className="-ml-2 text-gray-500 hover:text-gray-900">
               <ChevronLeft className="h-4 w-4 mr-1" />
               Back to Directory
             </Button>
@@ -109,12 +120,12 @@ export default function DirectoryCompanyPage() {
       </div>
 
       {/* Company Profile Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-4 py-10">
           {isLoading ? (
             <div className="flex gap-6">
-              <Skeleton className="w-24 h-24 rounded-lg" />
-              <div className="flex-1 space-y-2">
+              <Skeleton className="w-20 h-20 rounded-xl" />
+              <div className="flex-1 space-y-3">
                 <Skeleton className="h-8 w-64" />
                 <Skeleton className="h-5 w-48" />
                 <Skeleton className="h-4 w-full max-w-lg" />
@@ -128,60 +139,67 @@ export default function DirectoryCompanyPage() {
                   <img
                     src={profile.companyLogoUrl}
                     alt={profile.companyName}
-                    className="w-24 h-24 object-contain rounded-lg border bg-white"
+                    className="w-20 h-20 object-contain rounded-xl border border-gray-100 bg-white shadow-sm"
                   />
                 ) : (
-                  <div className="w-24 h-24 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Building2 className="h-12 w-12 text-blue-600" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center shadow-sm">
+                    <Building2 className="h-10 w-10 text-blue-600" />
                   </div>
                 )}
               </div>
 
               {/* Info */}
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {profile?.companyName}
-                </h1>
-                <p className="text-gray-500 flex items-center gap-1 mb-3">
+                <div className="flex flex-wrap items-start gap-3 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                    {profile?.companyName}
+                  </h1>
+                  <Badge className="bg-blue-50 text-blue-700 border-0 rounded-full px-3 py-1 mt-1">
+                    <ShieldCheck className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
+                </div>
+
+                <p className="text-gray-400 flex items-center gap-1.5 mb-3">
                   <MapPin className="h-4 w-4" />
                   {profile?.city}, {profile?.state} {profile?.zipCode}
                 </p>
 
                 {profile?.companyDescription && (
-                  <p className="text-gray-600 mb-4 max-w-2xl">
+                  <p className="text-gray-600 mb-5 max-w-2xl leading-relaxed">
                     {profile.companyDescription}
                   </p>
                 )}
 
-                {/* Contact Info */}
-                <div className="flex flex-wrap gap-4">
+                {/* Contact Info - pill style */}
+                <div className="flex flex-wrap gap-2">
                   {profile?.websiteUrl && (
                     <a
                       href={profile.websiteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-blue-600 hover:underline"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full px-4 py-2 transition-colors"
                     >
-                      <Globe className="h-4 w-4" />
-                      Visit Website
+                      <Globe className="h-3.5 w-3.5" />
+                      Website
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   )}
                   {profile?.phoneNumber && (
                     <a
                       href={`tel:${profile.phoneNumber}`}
-                      className="flex items-center gap-2 text-gray-600 hover:text-blue-600"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 transition-colors"
                     >
-                      <Phone className="h-4 w-4" />
+                      <Phone className="h-3.5 w-3.5" />
                       {profile.phoneNumber}
                     </a>
                   )}
                   {profile?.email && (
                     <a
                       href={`mailto:${profile.email}`}
-                      className="flex items-center gap-2 text-gray-600 hover:text-blue-600"
+                      className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 transition-colors"
                     >
-                      <Mail className="h-4 w-4" />
+                      <Mail className="h-3.5 w-3.5" />
                       {profile.email}
                     </a>
                   )}
@@ -193,116 +211,92 @@ export default function DirectoryCompanyPage() {
       </div>
 
       {/* Services */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-          <Calculator className="h-6 w-6 text-blue-600" />
-          Services with Instant Pricing
-        </h2>
+      <div className="max-w-6xl mx-auto px-4 py-10 space-y-6">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+            Pricing Calculators
+          </h2>
+          <Badge className="bg-emerald-50 text-emerald-700 border-0 rounded-full px-3 py-1">
+            <Zap className="h-3 w-3 mr-1" />
+            Check Prices & Costs
+          </Badge>
+        </div>
 
-        {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-24 rounded-lg" />
-            ))}
-          </div>
-        ) : services.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Calculator className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No services listed yet
-              </h3>
-              <p className="text-gray-500">
-                This company hasn't added any services to their profile yet.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {Object.entries(servicesByCategory).map(([category, categoryServices]) => (
-              <div key={category}>
-                <Badge variant="outline" className="mb-3">
-                  {category}
-                </Badge>
-                <div className="space-y-3">
-                  {categoryServices.map((service) => (
-                    <Card key={service.id}>
-                      <CardContent className="p-0">
-                        {/* Service Header - Always visible */}
-                        <button
-                          className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                          onClick={() =>
-                            setExpandedService(
-                              expandedService === service.id ? null : service.id
-                            )
-                          }
-                        >
-                          <div className="flex items-center gap-4">
-                            {service.formulaIconUrl ? (
-                              <img
-                                src={service.formulaIconUrl}
-                                alt=""
-                                className="w-12 h-12 object-contain"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                                <Calculator className="h-6 w-6 text-blue-600" />
-                              </div>
-                            )}
-                            <div className="text-left">
-                              <h3 className="font-semibold text-gray-900">
-                                {service.customDisplayName || service.formulaTitle || service.formulaName}
-                              </h3>
-                              {service.formulaDescription && (
-                                <p className="text-sm text-gray-500 line-clamp-1">
-                                  {service.formulaDescription}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Badge variant="secondary">Get Quote</Badge>
-                            {expandedService === service.id ? (
-                              <ChevronUp className="h-5 w-5 text-gray-400" />
-                            ) : (
-                              <ChevronDown className="h-5 w-5 text-gray-400" />
-                            )}
-                          </div>
-                        </button>
-
-                        {/* Expanded Calculator */}
-                        {expandedService === service.id && (
-                          <div className="border-t">
-                            <div className="p-4 bg-gray-50">
-                              <iframe
-                                src={`/embed/${service.formulaEmbedId}?embedded=true`}
-                                className="w-full min-h-[600px] border-0 rounded-lg bg-white"
-                                title={`${service.formulaName} Calculator`}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+        {/* View All Services - shown first */}
+        {profile && !isLoading && (
+          <div className="bg-white rounded-xl border border-gray-200/80 overflow-hidden hover:shadow-md hover:border-blue-200/80 transition-all duration-200">
+            <button
+              className="w-full p-6 flex items-center justify-between hover:bg-gray-50/50 transition-colors"
+              onClick={() => setShowAllServices(!showAllServices)}
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl flex items-center justify-center">
+                  <Calculator className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-bold text-gray-900 text-lg">
+                    View All Price Calculators
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Check prices and calculate costs for all services offered by {profile.companyName}
+                  </p>
                 </div>
               </div>
-            ))}
+              <div className="flex items-center gap-3 shrink-0">
+                <Badge className="bg-emerald-50 text-emerald-700 border-0 rounded-full hidden sm:flex">
+                  <Zap className="h-3 w-3 mr-1" />
+                  Free Calculator
+                </Badge>
+                {showAllServices ? (
+                  <ChevronUp className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+            </button>
+
+            {showAllServices && (
+              <div className="border-t border-gray-100">
+                <div className="p-4 bg-gray-50/50">
+                  <iframe
+                    src={`/styled-calculator?userId=${profile.userId}`}
+                    className="w-full min-h-[800px] border-0 rounded-lg bg-white"
+                    title={`${profile.companyName} - All Services`}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Empty state when no services at all */}
+        {!isLoading && services.length === 0 && !profile && (
+          <div className="bg-white rounded-xl border border-gray-200/80 text-center py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Calculator className="h-8 w-8 text-gray-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No pricing calculators listed yet
+            </h3>
+            <p className="text-gray-500">
+              This company hasn't added any services to their profile yet.
+            </p>
           </div>
         )}
       </div>
 
       {/* CTA Section */}
-      <div className="bg-blue-600 text-white py-12">
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-4">
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 py-16">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(59,130,246,0.2),transparent)]" />
+        <div className="relative max-w-6xl mx-auto px-4 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">
             Are you a service provider?
           </h2>
-          <p className="text-blue-100 mb-6 max-w-xl mx-auto">
-            List your business in our directory and let customers get instant quotes with your pricing calculator.
+          <p className="text-blue-200/80 mb-8 max-w-xl mx-auto leading-relaxed">
+            List your business and let customers check your prices instantly with a free cost calculator.
           </p>
           <Link href="/directory-setup">
-            <Button variant="secondary" size="lg">
+            <Button size="lg" className="bg-white text-blue-700 hover:bg-gray-100 font-semibold rounded-xl px-8 shadow-lg">
               List Your Business
             </Button>
           </Link>
@@ -310,9 +304,9 @@ export default function DirectoryCompanyPage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t py-8 bg-white">
-        <div className="max-w-6xl mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>Powered by Autobidder - Instant Pricing Calculators for Service Businesses</p>
+      <footer className="border-t border-gray-100 py-8 bg-white">
+        <div className="max-w-6xl mx-auto px-4 text-center text-gray-400 text-sm">
+          <p>Powered by <a href="/" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">Autobidder</a> — Instant Pricing Calculators for Service Businesses</p>
         </div>
       </footer>
     </div>

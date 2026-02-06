@@ -10389,6 +10389,151 @@ ${brandingWebsite}
     }
   });
 
+  // DFY onboarding lead capture (public)
+  app.post("/api/dfy-onboarding-lead", async (req, res) => {
+    const dfyLeadSchema = z.object({
+      services: z.array(z.string().trim().min(1)).min(1),
+      customServices: z.array(z.string().trim().min(1)).optional().default([]),
+      hasWebsite: z.string().optional().nullable(),
+      crmStatus: z.string().optional().nullable(),
+      selectedCrm: z.string().optional().nullable(),
+      customCrms: z.array(z.string().trim().min(1)).optional().default([]),
+      hasFbAds: z.string().optional().nullable(),
+      hasLogo: z.boolean().optional().nullable(),
+      logoFileName: z.string().optional().nullable(),
+      logoUrl: z.string().optional().nullable(),
+    });
+
+    const escapeHtml = (value: string) =>
+      value.replace(/[&<>"']/g, (char) => {
+        switch (char) {
+          case "&":
+            return "&amp;";
+          case "<":
+            return "&lt;";
+          case ">":
+            return "&gt;";
+          case "\"":
+            return "&quot;";
+          case "'":
+            return "&#39;";
+          default:
+            return char;
+        }
+      });
+
+    try {
+      const payload = dfyLeadSchema.parse(req.body);
+      const safeServices = payload.services.map((service) => escapeHtml(service));
+      const safeCustomServices = payload.customServices.map((service) => escapeHtml(service));
+      const safeCustomCrms = payload.customCrms.map((crm) => escapeHtml(crm));
+      const safeLogoUrl = payload.logoUrl ? escapeHtml(payload.logoUrl) : null;
+
+      const emailSubject = "DFY Onboarding Lead";
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+          <h2 style="color: #2563eb; margin-bottom: 8px;">DFY Onboarding Lead</h2>
+          <p style="color: #4b5563; margin-top: 0;">Submitted on ${new Date().toLocaleString()}</p>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Services</h3>
+            <ul style="margin: 0; padding-left: 18px; color: #111827;">
+              ${safeServices.map((service) => `<li>${service}</li>`).join("")}
+            </ul>
+            ${
+              safeCustomServices.length > 0
+                ? `<p style="margin: 8px 0 0; color: #1f2937;"><strong>Other Services:</strong> ${safeCustomServices.join(
+                    ", "
+                  )}</p>`
+                : ""
+            }
+          </div>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Website</h3>
+            <p style="margin: 0; color: #1f2937;">${escapeHtml(payload.hasWebsite || "Not provided")}</p>
+          </div>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">CRM</h3>
+            <p style="margin: 0; color: #1f2937;"><strong>Status:</strong> ${escapeHtml(payload.crmStatus || "Not provided")}</p>
+            <p style="margin: 4px 0 0; color: #1f2937;"><strong>Selected:</strong> ${escapeHtml(payload.selectedCrm || "Not provided")}</p>
+            ${
+              safeCustomCrms.length > 0
+                ? `<p style="margin: 4px 0 0; color: #1f2937;"><strong>Other CRMs:</strong> ${safeCustomCrms.join(
+                    ", "
+                  )}</p>`
+                : ""
+            }
+          </div>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Facebook Ads</h3>
+            <p style="margin: 0; color: #1f2937;">${escapeHtml(payload.hasFbAds || "Not provided")}</p>
+          </div>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Logo</h3>
+            <p style="margin: 0; color: #1f2937;">
+              ${payload.hasLogo === null || payload.hasLogo === undefined ? "Not provided" : payload.hasLogo ? "Yes" : "No"}
+            </p>
+            ${
+              payload.logoFileName
+                ? `<p style="margin: 4px 0 0; color: #1f2937;"><strong>File:</strong> ${escapeHtml(
+                    payload.logoFileName
+                  )}</p>`
+                : ""
+            }
+            ${
+              safeLogoUrl
+                ? `<p style="margin: 4px 0 0; color: #1f2937;"><strong>Logo URL:</strong> <a href="${safeLogoUrl}" target="_blank" rel="noopener noreferrer">${safeLogoUrl}</a></p>`
+                : ""
+            }
+          </div>
+        </div>
+      `;
+
+      const emailText = `DFY Onboarding Lead
+
+Submitted on: ${new Date().toLocaleString()}
+
+Services:
+${payload.services.map((service) => `- ${service}`).join("\n")}
+${payload.customServices.length ? `Other Services: ${payload.customServices.join(", ")}` : ""}
+
+Website:
+${payload.hasWebsite || "Not provided"}
+
+CRM:
+Status: ${payload.crmStatus || "Not provided"}
+Selected: ${payload.selectedCrm || "Not provided"}
+${payload.customCrms.length ? `Other CRMs: ${payload.customCrms.join(", ")}` : ""}
+
+Facebook Ads:
+${payload.hasFbAds || "Not provided"}
+
+Logo:
+${payload.hasLogo === null || payload.hasLogo === undefined ? "Not provided" : payload.hasLogo ? "Yes" : "No"}
+${payload.logoFileName ? `File: ${payload.logoFileName}` : ""}
+${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
+`;
+
+      const emailSent = await sendEmailWithFallback({
+        to: "admin@autobidder.org",
+        subject: emailSubject,
+        html: emailHtml,
+        text: emailText,
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: "Email service is not configured. Please contact support." });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid onboarding payload", errors: error.errors });
+      }
+      console.error("Error submitting DFY onboarding lead:", error);
+      res.status(500).json({ message: "Failed to submit onboarding lead" });
+    }
+  });
+
   // Support Ticket API endpoints
   app.get("/api/support-tickets", requireAuth, async (req: any, res) => {
     try {
@@ -17569,6 +17714,136 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // PUBLIC: Search available locations in the directory (supports radius-based matching)
+  app.get("/api/public/directory/locations", async (req, res) => {
+    try {
+      const q = ((req.query.q as string) || "").trim().toLowerCase();
+
+      // Get all active directory profiles with their service areas
+      const profiles = await db
+        .select({
+          id: directoryProfiles.id,
+          city: directoryProfiles.city,
+          state: directoryProfiles.state,
+          latitude: directoryProfiles.latitude,
+          longitude: directoryProfiles.longitude,
+        })
+        .from(directoryProfiles)
+        .where(and(
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true)
+        ));
+
+      const serviceAreas = await db
+        .select()
+        .from(directoryServiceAreas)
+        .where(eq(directoryServiceAreas.isActive, true));
+
+      // Build a map of profileId -> radius
+      const radiusMap: Record<number, number> = {};
+      for (const area of serviceAreas) {
+        if (area.areaType === "radius" && area.radiusMiles) {
+          radiusMap[area.directoryProfileId] = area.radiusMiles;
+        }
+      }
+
+      // Get category listings per profile
+      const allListings = await db
+        .select({
+          directoryProfileId: directoryServiceListings.directoryProfileId,
+          categoryId: directoryServiceListings.categoryId,
+        })
+        .from(directoryServiceListings)
+        .where(eq(directoryServiceListings.isActive, true));
+
+      const profileCategories: Record<number, number[]> = {};
+      for (const listing of allListings) {
+        if (!profileCategories[listing.directoryProfileId]) {
+          profileCategories[listing.directoryProfileId] = [];
+        }
+        if (!profileCategories[listing.directoryProfileId].includes(listing.categoryId)) {
+          profileCategories[listing.directoryProfileId].push(listing.categoryId);
+        }
+      }
+
+      // If query is long enough, try to geocode it for radius matching
+      let searchLat: number | null = null;
+      let searchLng: number | null = null;
+      if (q.length >= 2) {
+        try {
+          const geo = await geocodeAddress(q);
+          if (geo) {
+            searchLat = geo.latitude;
+            searchLng = geo.longitude;
+          }
+        } catch (e) {
+          // Geocoding failed, fall back to text matching only
+        }
+      }
+
+      // Build results: for each profile, check if the searched location is within range
+      const locationResults: Record<string, { city: string; state: string; citySlug: string; categoryIds: Set<number> }> = {};
+
+      for (const profile of profiles) {
+        const profLat = profile.latitude ? parseFloat(profile.latitude) : null;
+        const profLng = profile.longitude ? parseFloat(profile.longitude) : null;
+        const radius = radiusMap[profile.id] || 0;
+        const catIds = profileCategories[profile.id] || [];
+
+        // Always include the profile's own city
+        const textMatch = !q ||
+          profile.city.toLowerCase().includes(q) ||
+          profile.state.toLowerCase().includes(q) ||
+          `${profile.city}, ${profile.state}`.toLowerCase().includes(q);
+
+        if (textMatch) {
+          const key = `${profile.city}|${profile.state}`;
+          if (!locationResults[key]) {
+            locationResults[key] = {
+              city: profile.city,
+              state: profile.state,
+              citySlug: generateSlug(`${profile.city} ${profile.state}`),
+              categoryIds: new Set(),
+            };
+          }
+          catIds.forEach(id => locationResults[key].categoryIds.add(id));
+        }
+
+        // If we have geocoded the search query, check radius coverage
+        if (searchLat && searchLng && profLat && profLng && radius > 0) {
+          const distance = calculateDistance(searchLat, searchLng, profLat, profLng);
+          if (distance <= radius) {
+            // This profile covers the searched location — add it as a result
+            // Use the searched location's name as the display, but reference this profile's categories
+            // We add the profile's own city as a result with its categories
+            const key = `${profile.city}|${profile.state}`;
+            if (!locationResults[key]) {
+              locationResults[key] = {
+                city: profile.city,
+                state: profile.state,
+                citySlug: generateSlug(`${profile.city} ${profile.state}`),
+                categoryIds: new Set(),
+              };
+            }
+            catIds.forEach(id => locationResults[key].categoryIds.add(id));
+          }
+        }
+      }
+
+      const result = Object.values(locationResults).map(l => ({
+        city: l.city,
+        state: l.state,
+        citySlug: l.citySlug,
+        categoryIds: Array.from(l.categoryIds),
+      }));
+
+      res.json(result);
+    } catch (error) {
+      console.error("[Directory] Error searching locations:", error);
+      res.status(500).json({ message: "Failed to search locations" });
+    }
+  });
+
   // PUBLIC: Get cities with listings for a category
   app.get("/api/public/directory/cities/:categorySlug", async (req, res) => {
     try {
@@ -17625,58 +17900,121 @@ This booking was created on ${new Date().toLocaleString()}.
         ))
         .limit(1);
 
-      if (!cacheEntry || cacheEntry.profileCount === 0) {
-        // Get category for meta info even if no listings
-        const [category] = await db
-          .select()
-          .from(directoryCategories)
-          .where(eq(directoryCategories.slug, categorySlug))
-          .limit(1);
-
-        return res.json({
-          category: category || null,
-          city: cacheEntry?.city || citySlug.split('-').slice(0, -1).join(' '),
-          state: cacheEntry?.state || citySlug.split('-').pop()?.toUpperCase(),
-          listings: [],
-          isIndexable: false
-        });
-      }
-
       // Get category
       const [category] = await db
         .select()
         .from(directoryCategories)
-        .where(eq(directoryCategories.id, cacheEntry.categoryId))
+        .where(eq(directoryCategories.slug, categorySlug))
         .limit(1);
 
-      // Fetch profiles by IDs
-      const profileIds = cacheEntry.profileIds as number[];
-      const profiles = await db
-        .select({
-          id: directoryProfiles.id,
-          companySlug: directoryProfiles.companySlug,
-          companyName: directoryProfiles.companyName,
-          companyDescription: directoryProfiles.companyDescription,
-          companyLogoUrl: directoryProfiles.companyLogoUrl,
-          city: directoryProfiles.city,
-          state: directoryProfiles.state,
-          totalServices: directoryProfiles.totalServices,
-        })
-        .from(directoryProfiles)
-        .where(and(
-          eq(directoryProfiles.isActive, true),
-          eq(directoryProfiles.showOnDirectory, true)
-        ));
+      // Parse city and state from slug (e.g. "york-pa" -> "york", "pa")
+      const slugParts = citySlug.split('-');
+      const slugState = slugParts.pop()?.toUpperCase() || "";
+      const slugCity = slugParts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
 
-      // Filter to only profiles in our cache
-      const filteredProfiles = profiles.filter(p => profileIds.includes(p.id));
+      // Start with cache results
+      let resultProfiles: any[] = [];
+      let resultCity = cacheEntry?.city || slugCity;
+      let resultState = cacheEntry?.state || slugState;
+
+      if (cacheEntry && cacheEntry.profileCount > 0) {
+        const profileIds = cacheEntry.profileIds as number[];
+        const profiles = await db
+          .select({
+            id: directoryProfiles.id,
+            companySlug: directoryProfiles.companySlug,
+            companyName: directoryProfiles.companyName,
+            companyDescription: directoryProfiles.companyDescription,
+            companyLogoUrl: directoryProfiles.companyLogoUrl,
+            city: directoryProfiles.city,
+            state: directoryProfiles.state,
+            totalServices: directoryProfiles.totalServices,
+          })
+          .from(directoryProfiles)
+          .where(and(
+            eq(directoryProfiles.isActive, true),
+            eq(directoryProfiles.showOnDirectory, true)
+          ));
+
+        resultProfiles = profiles.filter(p => profileIds.includes(p.id));
+        resultCity = cacheEntry.city;
+        resultState = cacheEntry.state;
+      }
+
+      // Also find nearby businesses via radius-based service areas
+      if (category) {
+        try {
+          const searchGeo = await geocodeAddress(`${slugCity}, ${slugState}`);
+          if (searchGeo) {
+            // Get all active profiles with radius service areas that have listings in this category
+            const radiusProfiles = await db
+              .select({
+                id: directoryProfiles.id,
+                companySlug: directoryProfiles.companySlug,
+                companyName: directoryProfiles.companyName,
+                companyDescription: directoryProfiles.companyDescription,
+                companyLogoUrl: directoryProfiles.companyLogoUrl,
+                city: directoryProfiles.city,
+                state: directoryProfiles.state,
+                totalServices: directoryProfiles.totalServices,
+                latitude: directoryProfiles.latitude,
+                longitude: directoryProfiles.longitude,
+              })
+              .from(directoryProfiles)
+              .where(and(
+                eq(directoryProfiles.isActive, true),
+                eq(directoryProfiles.showOnDirectory, true)
+              ));
+
+            const areas = await db
+              .select()
+              .from(directoryServiceAreas)
+              .where(eq(directoryServiceAreas.isActive, true));
+
+            const radiusMap: Record<number, number> = {};
+            for (const area of areas) {
+              if (area.areaType === "radius" && area.radiusMiles) {
+                radiusMap[area.directoryProfileId] = area.radiusMiles;
+              }
+            }
+
+            // Check which profiles have listings in this category
+            const categoryListings = await db
+              .select({ directoryProfileId: directoryServiceListings.directoryProfileId })
+              .from(directoryServiceListings)
+              .where(eq(directoryServiceListings.categoryId, category.id));
+
+            const profilesInCategory = new Set(categoryListings.map(l => l.directoryProfileId));
+            const existingIds = new Set(resultProfiles.map(p => p.id));
+
+            for (const profile of radiusProfiles) {
+              if (existingIds.has(profile.id)) continue;
+              if (!profilesInCategory.has(profile.id)) continue;
+
+              const profLat = profile.latitude ? parseFloat(profile.latitude) : null;
+              const profLng = profile.longitude ? parseFloat(profile.longitude) : null;
+              const radius = radiusMap[profile.id];
+
+              if (profLat && profLng && radius) {
+                const distance = calculateDistance(searchGeo.latitude, searchGeo.longitude, profLat, profLng);
+                if (distance <= radius) {
+                  const { latitude, longitude, ...profileData } = profile;
+                  resultProfiles.push(profileData);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.log("[Directory] Radius search failed, using cache only");
+        }
+      }
 
       res.json({
-        category,
-        city: cacheEntry.city,
-        state: cacheEntry.state,
-        listings: filteredProfiles,
-        isIndexable: cacheEntry.isIndexable
+        category: category || null,
+        city: resultCity,
+        state: resultState,
+        listings: resultProfiles,
+        isIndexable: cacheEntry?.isIndexable || false
       });
     } catch (error) {
       console.error("[Directory] Error fetching listings:", error);
@@ -17703,7 +18041,7 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Company not found" });
       }
 
-      // Get service listings with formula and category info
+      // Get directory service listings with formula and category info
       const services = await db
         .select({
           id: directoryServiceListings.id,
@@ -17729,9 +18067,49 @@ This booking was created on ${new Date().toLocaleString()}.
         ))
         .orderBy(directoryServiceListings.displayOrder);
 
+      // If showAllServices is enabled, also include all active formulas not already in directory listings
+      let allServices: any[] = [];
+      if (profile.showAllServices) {
+        const listedFormulaIds = services.map(s => s.formulaId);
+        const remainingFormulas = await db
+          .select({
+            id: formulas.id,
+            name: formulas.name,
+            title: formulas.title,
+            description: formulas.description,
+            embedId: formulas.embedId,
+            iconUrl: formulas.iconUrl,
+            sortOrder: formulas.sortOrder,
+          })
+          .from(formulas)
+          .where(and(
+            eq(formulas.userId, profile.userId),
+            eq(formulas.isActive, true)
+          ))
+          .orderBy(formulas.sortOrder);
+
+        // Map remaining formulas into the same shape, excluding already-listed ones
+        allServices = remainingFormulas
+          .filter(f => !listedFormulaIds.includes(f.id))
+          .map(f => ({
+            id: null,
+            formulaId: f.id,
+            categoryId: null,
+            customDisplayName: null,
+            displayOrder: f.sortOrder,
+            formulaName: f.name,
+            formulaTitle: f.title,
+            formulaDescription: f.description,
+            formulaEmbedId: f.embedId,
+            formulaIconUrl: f.iconUrl,
+            categoryName: "Other Services",
+            categorySlug: "other-services",
+          }));
+      }
+
       res.json({
         profile,
-        services,
+        services: [...services, ...allServices],
         isIndexable: profile.showOnDirectory
       });
     } catch (error) {
@@ -17794,9 +18172,24 @@ This booking was created on ${new Date().toLocaleString()}.
         counter++;
       }
 
+      // Geocode the business location
+      let latitude: string | null = null;
+      let longitude: string | null = null;
+      if (validatedData.city && validatedData.state) {
+        try {
+          const geo = await geocodeAddress(`${validatedData.city}, ${validatedData.state}`);
+          if (geo) {
+            latitude = geo.latitude.toString();
+            longitude = geo.longitude.toString();
+          }
+        } catch (e) {
+          console.log("[Directory] Geocoding failed, continuing without coordinates");
+        }
+      }
+
       const [profile] = await db
         .insert(directoryProfiles)
-        .values({ ...validatedData, companySlug: slug })
+        .values({ ...validatedData, companySlug: slug, latitude, longitude })
         .returning();
 
       res.status(201).json(profile);
@@ -17823,6 +18216,21 @@ This booking was created on ${new Date().toLocaleString()}.
 
       // Don't allow changing userId or companySlug through update
       const { userId: _, companySlug: __, ...updateData } = req.body;
+
+      // Re-geocode if city or state changed
+      const newCity = updateData.city || existing.city;
+      const newState = updateData.state || existing.state;
+      if (updateData.city || updateData.state) {
+        try {
+          const geo = await geocodeAddress(`${newCity}, ${newState}`);
+          if (geo) {
+            updateData.latitude = geo.latitude.toString();
+            updateData.longitude = geo.longitude.toString();
+          }
+        } catch (e) {
+          console.log("[Directory] Geocoding failed during update");
+        }
+      }
 
       const [updated] = await db
         .update(directoryProfiles)
@@ -17908,6 +18316,29 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(400).json({ message: "Formula not found or not owned by you" });
       }
 
+      // Check for duplicate listing
+      const [existingListing] = await db
+        .select()
+        .from(directoryServiceListings)
+        .where(and(
+          eq(directoryServiceListings.directoryProfileId, profile.id),
+          eq(directoryServiceListings.formulaId, formulaId)
+        ))
+        .limit(1);
+
+      if (existingListing) {
+        // Update category if different, otherwise return existing
+        if (existingListing.categoryId !== categoryId) {
+          const [updated] = await db
+            .update(directoryServiceListings)
+            .set({ categoryId, customDisplayName })
+            .where(eq(directoryServiceListings.id, existingListing.id))
+            .returning();
+          return res.json(updated);
+        }
+        return res.json(existingListing);
+      }
+
       // Get max display order
       const existingServices = await db
         .select({ displayOrder: directoryServiceListings.displayOrder })
@@ -17935,10 +18366,15 @@ This booking was created on ${new Date().toLocaleString()}.
         .set({ totalServices: profile.totalServices + 1, updatedAt: new Date() })
         .where(eq(directoryProfiles.id, profile.id));
 
-      // Update category listing count
+      // Update category listing count (unique providers, not services)
+      const uniqueProviders = await db
+        .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
+        .from(directoryServiceListings)
+        .where(eq(directoryServiceListings.categoryId, categoryId));
+
       await db
         .update(directoryCategories)
-        .set({ listingCount: sql`${directoryCategories.listingCount} + 1`, updatedAt: new Date() })
+        .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
         .where(eq(directoryCategories.id, categoryId));
 
       res.status(201).json(listing);
@@ -17988,10 +18424,15 @@ This booking was created on ${new Date().toLocaleString()}.
         .set({ totalServices: Math.max(0, profile.totalServices - 1), updatedAt: new Date() })
         .where(eq(directoryProfiles.id, profile.id));
 
-      // Update category listing count
+      // Update category listing count (unique providers, not services)
+      const uniqueProviders = await db
+        .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
+        .from(directoryServiceListings)
+        .where(eq(directoryServiceListings.categoryId, listing.categoryId));
+
       await db
         .update(directoryCategories)
-        .set({ listingCount: sql`GREATEST(0, ${directoryCategories.listingCount} - 1)`, updatedAt: new Date() })
+        .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
         .where(eq(directoryCategories.id, listing.categoryId));
 
       res.json({ message: "Service removed" });
@@ -18263,28 +18704,90 @@ This booking was created on ${new Date().toLocaleString()}.
         return; // No service area defined yet
       }
 
-      // Determine which cities this profile covers
-      let cities: Array<{ city: string; state: string; citySlug: string }> = [];
+      // Build the set of cities this profile covers using a Map to deduplicate by slug
+      const cityMap = new Map<string, { city: string; state: string; citySlug: string }>();
 
-      if (area.areaType === "radius" && profile.city && profile.state) {
-        // For radius type, just use the profile's city for now
-        // In production, you'd calculate nearby cities within radius
-        cities = [{
-          city: profile.city,
-          state: profile.state,
-          citySlug: generateSlug(`${profile.city}-${profile.state}`),
-        }];
-      } else if (area.areaType === "cities" && area.cities) {
-        cities = (area.cities as Array<{ city: string; state: string }>).map(c => ({
-          city: c.city,
-          state: c.state,
-          citySlug: generateSlug(`${c.city}-${c.state}`),
-        }));
-      } else if (area.areaType === "states" && area.states) {
-        // For states, we'd ideally have a list of cities per state
-        // For now, skip state-wide listings in cache
-        return;
+      // 1. Always include the profile's own city
+      if (profile.city && profile.state) {
+        const slug = generateSlug(`${profile.city}-${profile.state}`);
+        cityMap.set(slug, { city: profile.city, state: profile.state, citySlug: slug });
       }
+
+      // 2. Include any explicitly selected additional cities
+      if (area.cities) {
+        for (const c of area.cities as Array<{ city: string; state: string }>) {
+          const slug = generateSlug(`${c.city}-${c.state}`);
+          cityMap.set(slug, { city: c.city, state: c.state, citySlug: slug });
+        }
+      }
+
+      // 3. For radius: find nearby cities from other directory profiles within radius
+      if (area.radiusMiles && profile.latitude && profile.longitude) {
+        const profileLat = parseFloat(profile.latitude);
+        const profileLng = parseFloat(profile.longitude);
+        const radius = area.radiusMiles;
+
+        if (!isNaN(profileLat) && !isNaN(profileLng)) {
+          // Get all unique city/state/lat/lng from other active directory profiles
+          const allProfiles = await db
+            .select({
+              city: directoryProfiles.city,
+              state: directoryProfiles.state,
+              latitude: directoryProfiles.latitude,
+              longitude: directoryProfiles.longitude,
+            })
+            .from(directoryProfiles)
+            .where(and(
+              eq(directoryProfiles.isActive, true),
+              eq(directoryProfiles.showOnDirectory, true),
+            ));
+
+          for (const other of allProfiles) {
+            if (!other.latitude || !other.longitude || !other.city || !other.state) continue;
+            const otherLat = parseFloat(other.latitude);
+            const otherLng = parseFloat(other.longitude);
+            if (isNaN(otherLat) || isNaN(otherLng)) continue;
+
+            const distance = calculateDistance(profileLat, profileLng, otherLat, otherLng);
+            if (distance <= radius) {
+              const slug = generateSlug(`${other.city}-${other.state}`);
+              if (!cityMap.has(slug)) {
+                cityMap.set(slug, { city: other.city, state: other.state, citySlug: slug });
+              }
+            }
+          }
+
+          // Also check cities already in the index cache that have coordinates
+          // by geocoding unique city slugs not yet in our map
+          const existingCacheEntries = await db
+            .select({
+              city: directoryIndexCache.city,
+              state: directoryIndexCache.state,
+              citySlug: directoryIndexCache.citySlug,
+            })
+            .from(directoryIndexCache)
+            .groupBy(directoryIndexCache.citySlug, directoryIndexCache.city, directoryIndexCache.state);
+
+          for (const entry of existingCacheEntries) {
+            if (cityMap.has(entry.citySlug)) continue;
+            // Geocode this city to check distance
+            try {
+              const geo = await geocodeAddress(`${entry.city}, ${entry.state}`);
+              if (geo) {
+                const distance = calculateDistance(profileLat, profileLng, geo.latitude, geo.longitude);
+                if (distance <= radius) {
+                  cityMap.set(entry.citySlug, { city: entry.city, state: entry.state, citySlug: entry.citySlug });
+                }
+              }
+            } catch {
+              // Skip cities we can't geocode
+            }
+          }
+        }
+      }
+
+      const cities = Array.from(cityMap.values());
+      console.log(`[Directory] Cache update for profile ${profileId}: ${cities.length} cities (${cities.map(c => c.city).join(", ")})`);
 
       // Update cache for each category + city combination
       for (const service of services) {
@@ -19388,12 +19891,12 @@ This booking was created on ${new Date().toLocaleString()}.
 
       // Category pages
       for (const cat of categories) {
-        xml += `  <url>\n    <loc>${baseUrl}/quotes/${cat.slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+        xml += `  <url>\n    <loc>${baseUrl}/prices/${cat.slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
       }
 
       // Category + city pages
       for (const page of indexablePages) {
-        xml += `  <url>\n    <loc>${baseUrl}/quotes/${page.categorySlug}/${page.citySlug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
+        xml += `  <url>\n    <loc>${baseUrl}/prices/${page.categorySlug}/${page.citySlug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
       }
 
       // Company pages

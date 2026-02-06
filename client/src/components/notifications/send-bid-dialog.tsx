@@ -62,6 +62,7 @@ interface SendBidDialogProps {
   estimateLink: string;
   totalAmount: number;
   defaultMessage: string;
+  defaultSubject?: string;
   isPending?: boolean;
   templateType?: "initial_bid" | "updated_bid" | "booking_confirmation";
   showEstimateEditor?: boolean;
@@ -85,6 +86,7 @@ export default function SendBidDialog({
   estimateLink,
   totalAmount,
   defaultMessage,
+  defaultSubject,
   isPending = false,
   templateType = "initial_bid",
   showEstimateEditor = false,
@@ -132,8 +134,8 @@ export default function SendBidDialog({
     if (isOpen) {
       setNotifyEmail(!!customerEmail);
       setNotifySms(!!customerPhone);
-      setMessage(defaultMessage);
-      setSubject(`Your Estimate - $${(totalAmount / 100).toLocaleString()}`);
+      setMessage(replaceVariables(defaultMessage));
+      setSubject(defaultSubject ? replaceVariables(defaultSubject) : `Your Estimate - $${(totalAmount / 100).toLocaleString()}`);
       setSelectedTemplateId("custom");
       setIsEditing(false);
 
@@ -173,8 +175,8 @@ export default function SendBidDialog({
     setIsEditing(false);
 
     if (templateId === "custom") {
-      setMessage(defaultMessage);
-      setSubject(`Your Estimate - $${(totalAmount / 100).toLocaleString()}`);
+      setMessage(replaceVariables(defaultMessage));
+      setSubject(defaultSubject ? replaceVariables(defaultSubject) : `Your Estimate - $${(totalAmount / 100).toLocaleString()}`);
     } else {
       const template = templates.find((t) => t.id.toString() === templateId);
       if (template) {

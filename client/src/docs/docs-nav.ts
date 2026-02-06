@@ -25,7 +25,7 @@ export const docsNav: DocNavSection[] = [
     items: [
       { title: "Formula Builder", slug: "formula-builder" },
       { title: "Design & Theming", slug: "design-theming" },
-      { title: "Editor", slug: "editor" },
+      { title: "Custom Form", slug: "editor" },
       { title: "Logic Page", slug: "logic-page" },
     ],
   },

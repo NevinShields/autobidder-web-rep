@@ -10,7 +10,7 @@ const PAGE_SUPPORT_MAP: Record<string, { key: string; name: string }> = {
   "/": { key: "dashboard", name: "Dashboard" },
   "/dashboard": { key: "dashboard", name: "Dashboard" },
   "/formulas": { key: "formulas", name: "Formulas" },
-  "/formula-builder": { key: "formulas", name: "Formula Builder" },
+  "/formula-builder": { key: "formula-builder", name: "Formula Builder" },
   "/leads": { key: "leads", name: "Customers" },
   "/calendar": { key: "calendar", name: "Calendar" },
   "/design": { key: "design", name: "Design" },

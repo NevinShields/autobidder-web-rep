@@ -135,7 +135,9 @@ async function createDirectoryTables() {
       ('Deck Staining', 'deck-staining', 'approved', 17, 'Deck Staining Services', 'Find local deck staining professionals with instant pricing'),
       ('Christmas Lights', 'christmas-lights', 'approved', 18, 'Christmas Lights Installation', 'Find local Christmas lights professionals with instant pricing'),
       ('Solar Panel Cleaning', 'solar-panel-cleaning', 'approved', 19, 'Solar Panel Cleaning Services', 'Find local solar panel cleaning professionals with instant pricing'),
-      ('Driveway Sealing', 'driveway-sealing', 'approved', 20, 'Driveway Sealing Services', 'Find local driveway sealing professionals with instant pricing')
+      ('Driveway Sealing', 'driveway-sealing', 'approved', 20, 'Driveway Sealing Services', 'Find local driveway sealing professionals with instant pricing'),
+      ('Soft Washing', 'soft-washing', 'approved', 21, 'Soft Washing Services', 'Find local soft washing professionals with instant pricing'),
+      ('Paver Sealing', 'paver-sealing', 'approved', 22, 'Paver Sealing Services', 'Find local paver sealing professionals with instant pricing')
     ON CONFLICT (slug) DO NOTHING
   `);
   console.log("Seeded initial categories");

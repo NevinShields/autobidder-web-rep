@@ -42,7 +42,9 @@
       "Bash(timeout 30 npm run dev:*)",
       "Bash(npx esbuild client/src/components/add-variable-modal.tsx --bundle --loader:.tsx=tsx --loader:.ts=ts --external:react --external:react-dom --external:@shared/* --external:@/components/* --external:lucide-react --external:nanoid --format=esm --outfile=/dev/null)",
       "Bash(npx esbuild:*)",
-      "Bash(npx drizzle-kit:*)"
+      "Bash(npx drizzle-kit:*)",
+      "Bash(npm run dev:*)",
+      "Bash(python3:*)"
     ]
   }
 }

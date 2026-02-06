@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import type { BusinessSettings } from "@shared/schema";
+import type { BusinessSettings, EmailTemplate } from "@shared/schema";
 import {
   Phone,
   MessageSquare,
@@ -934,6 +934,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const { data: businessSettings } = useQuery({
     queryKey: ["/api/business-settings"],
   });
+
+  const { data: emailTemplates = [] } = useQuery<EmailTemplate[]>({
+    queryKey: ["/api/email-templates"],
+  });
+
+  const bidConfirmedTemplate = emailTemplates.find(
+    (template) => template.triggerType === "bid-confirmed" && template.isActive
+  );
 
   const googleMapsApiKey = (config as { googleMapsApiKey?: string })?.googleMapsApiKey || '';
 
@@ -3059,7 +3067,9 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             customerPhone={lead.phone}
             estimateLink={`${window.location.origin}/estimate/${confirmedBidEstimate.estimateNumber}`}
             totalAmount={confirmedBidEstimate.totalAmount}
-            defaultMessage={`Hi ${lead.name},\n\nThank you for your interest in our services! We've prepared an estimate for you.\n\nYour total: $${(confirmedBidEstimate.totalAmount / 100).toLocaleString()}\n\nPlease review the details using the link below. Feel free to reach out if you have any questions!`}
+            defaultMessage={bidConfirmedTemplate?.textContent
+              || `Hi ${lead.name},\n\nThank you for your interest in our services! We've prepared an estimate for you.\n\nYour total: $${(confirmedBidEstimate.totalAmount / 100).toLocaleString()}\n\nPlease review the details using the link below. Feel free to reach out if you have any questions!`}
+            defaultSubject={bidConfirmedTemplate?.subject}
             isPending={sendBidToCustomerMutation.isPending}
             showEstimateEditor={false}
             estimate={estimates.find((est: any) => est.id === confirmedBidEstimate.estimateId)}

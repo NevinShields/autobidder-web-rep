@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -35,7 +35,9 @@ import {
   TrendingUp,
   CheckCircle,
   AlertCircle,
-  LogOut
+  LogOut,
+  ExternalLink,
+  Globe
 } from "lucide-react";
 import SubscriptionManagement from "@/components/subscription-management";
 
@@ -197,6 +199,36 @@ export default function ProfilePage() {
       toast({
         title: "Password Change Failed",
         description: error.message || "Failed to change password. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Directory profile
+  const { data: directoryProfile } = useQuery<{
+    id: number;
+    companySlug: string;
+    companyName: string;
+    showOnDirectory: boolean;
+    totalServices: number;
+  } | null>({
+    queryKey: ["/api/directory/profile"],
+  });
+
+  const toggleDirectoryVisibility = useMutation({
+    mutationFn: (showOnDirectory: boolean) =>
+      apiRequest("PATCH", "/api/directory/profile", { showOnDirectory }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/directory/profile"] });
+      toast({
+        title: "Directory Listing Updated",
+        description: "Your directory visibility has been updated.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Update Failed",
+        description: "Failed to update directory visibility.",
         variant: "destructive",
       });
     },
@@ -641,6 +673,74 @@ export default function ProfilePage() {
                         {new Date(profile.createdAt).toLocaleDateString()}
                       </span>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Directory Listing */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 hidden sm:block" />
+                    Directory Listing
+                  </CardTitle>
+                  <CardDescription>
+                    Get found by homeowners in the public directory
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {directoryProfile ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Status</span>
+                        <Badge variant={directoryProfile.showOnDirectory ? "default" : "secondary"}>
+                          {directoryProfile.showOnDirectory ? "Listed" : "Hidden"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="directoryToggle" className="text-sm font-medium">
+                            Show in Directory
+                          </Label>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            {directoryProfile.showOnDirectory
+                              ? "Customers can find you"
+                              : "Your listing is hidden"}
+                          </p>
+                        </div>
+                        <Switch
+                          id="directoryToggle"
+                          checked={directoryProfile.showOnDirectory}
+                          onCheckedChange={checked => toggleDirectoryVisibility.mutate(checked)}
+                          disabled={toggleDirectoryVisibility.isPending}
+                        />
+                      </div>
+                      <Separator />
+                      <Link href={`/directory/company/${directoryProfile.companySlug}`}>
+                        <Button variant="outline" className="w-full justify-start">
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          View Company Page
+                        </Button>
+                      </Link>
+                      <Link href="/directory-dashboard">
+                        <Button variant="outline" className="w-full justify-start">
+                          <Settings className="w-4 h-4 mr-2" />
+                          Manage Listing
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-500">
+                        You haven't set up a directory listing yet. List your business to get found by customers.
+                      </p>
+                      <Link href="/directory-setup">
+                        <Button className="w-full">
+                          <Building2 className="w-4 h-4 mr-2" />
+                          Set Up Listing
+                        </Button>
+                      </Link>
+                    </>
                   )}
                 </CardContent>
               </Card>

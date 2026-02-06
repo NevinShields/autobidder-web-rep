@@ -17,6 +17,12 @@ Generate custom CSS designs by describing your desired aesthetic.
 
 <iframe width="100%" height="420" src="https://www.youtube.com/embed/fldH30OfRPk" title="AI - CSS Autobidder Design Editor" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
+### Making Your Autobidder Design Super Custom
+
+Advanced design customization, including CSS overrides and high-control styling.
+
+<iframe width="100%" height="420" src="https://www.youtube.com/embed/dwuDxe9nFFA" title="Making Your Autobidder Design Super Custom" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 ## Typical Use Cases
 
 - Match your brand's colors and fonts.

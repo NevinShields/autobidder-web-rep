@@ -1,720 +1,639 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Calculator, Users, BarChart3, Palette, Globe, ArrowRight, CheckCircle, Star, TrendingUp, Zap, Target, Award, PlayCircle, ChevronRight, DollarSign, Clock, Shield, X } from "lucide-react";
-import { Link } from "wouter";
-import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
+import React, { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Construction,
+  Droplets,
+  ExternalLink,
+  Flame,
+  Hammer,
+  Home,
+  Layout,
+  LayoutDashboard,
+  Layers,
+  Lightbulb,
+  MousePointerClick,
+  Play,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  TrendingUp,
+  Trees,
+  Waves,
+  Zap,
+  BrickWall,
+} from "lucide-react";
+
+const Section = ({
+  children,
+  className = "",
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) => <section className={`py-24 px-6 md:px-12 max-w-7xl mx-auto ${className}`}>{children}</section>;
+
+const Button = ({
+  children,
+  variant = "primary",
+  className = "",
+  onClick,
+}: {
+  children?: React.ReactNode;
+  variant?: "primary" | "secondary" | "ghost";
+  className?: string;
+  onClick?: () => void;
+}) => {
+  const baseStyles =
+    "px-8 py-4 rounded-full font-medium transition-all duration-300 flex items-center justify-center gap-2 text-sm uppercase tracking-widest";
+  const variants = {
+    primary: "bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]",
+    secondary: "bg-zinc-900 text-white border border-zinc-800 hover:border-zinc-700",
+    ghost: "bg-transparent text-zinc-400 hover:text-white",
+  };
+
+  return (
+    <button className={`${baseStyles} ${variants[variant]} ${className}`} onClick={onClick}>
+      {children}
+    </button>
+  );
+};
+
+const FeatureCard = ({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+}) => (
+  <div className="bg-zinc-900/50 border border-zinc-800 p-8 rounded-3xl hover:border-zinc-600 transition-colors group">
+    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/10 transition-colors">
+      <Icon className="text-white w-6 h-6" />
+    </div>
+    <h3 className="text-xl font-semibold mb-3">{title}</h3>
+    <p className="text-zinc-400 leading-relaxed text-sm">{description}</p>
+  </div>
+);
+
+const ServiceCard = ({
+  icon: Icon,
+  label,
+  selected = false,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  label: string;
+  selected?: boolean;
+}) => (
+  <div
+    className={`p-4 md:p-6 rounded-2xl border flex flex-col items-center justify-center text-center gap-3 transition-all duration-300 group cursor-pointer ${
+      selected
+        ? "bg-white/10 border-white/40 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+        : "bg-zinc-900/40 border-white/5 hover:border-white/20"
+    }`}
+  >
+    <div
+      className={`transition-transform duration-300 group-hover:scale-110 ${
+        selected ? "text-white" : "text-zinc-500 group-hover:text-zinc-300"
+      }`}
+    >
+      <Icon className="w-6 h-6 md:w-8 md:h-8" strokeWidth={1.5} />
+    </div>
+    <span
+      className={`text-[10px] md:text-xs font-bold tracking-tight leading-tight uppercase ${
+        selected ? "text-white" : "text-zinc-500"
+      }`}
+    >
+      {label}
+    </span>
+  </div>
+);
 
 export default function Landing() {
-  const [isYearly, setIsYearly] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const [showSticky, setShowSticky] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const benefits = [
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowSticky(window.scrollY >= 400);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const plans = [
     {
-      icon: TrendingUp,
-      title: "3x More Leads",
-      description: "Convert 67% more website visitors into qualified leads with instant pricing"
+      name: "Free",
+      price: "0",
+      description: "For solo pros getting started.",
+      features: ["1 Active Calculator", "Instant Estimates", "Basic Lead Capture"],
     },
     {
-      icon: Clock,
-      title: "Save 15 Hours/Week",
-      description: "Eliminate manual quotes and phone tag with automated pricing calculators"
+      name: "Starter",
+      price: "49",
+      description: "Perfect for growing operations.",
+      features: ["3 Active Calculators", "Owner Approval Flow", "Email Notifications"],
     },
     {
-      icon: DollarSign,
-      title: "Increase Profit 25%",
-      description: "Price confidently with data-driven calculators that maximize your margins"
-    }
+      name: "Pro",
+      price: "97",
+      description: "The complete automation engine.",
+      features: [
+        "Unlimited Calculators",
+        "Full CRM Integration",
+        "Conversion Tracking",
+        "Conditional Logic",
+      ],
+      featured: true,
+    },
+    {
+      name: "Enterprise",
+      price: "297",
+      description: "Scale without the friction.",
+      features: [
+        "Custom Integrations",
+        "Priority Support",
+        "Dedicated Account Manager",
+        "White-label Options",
+      ],
+    },
   ];
 
-  const features = [
-    {
-      icon: Calculator,
-      title: "AI-Powered Calculator Builder",
-      description: "Create complex pricing formulas in minutes with our intelligent builder"
-    },
-    {
-      icon: Palette,
-      title: "Complete Brand Customization",
-      description: "Match every color, font, and style to create seamless brand experiences"
-    },
-    {
-      icon: Globe,
-      title: "One-Click Website Integration",
-      description: "Embed anywhere with copy-paste code - works on any website or platform"
-    },
-    {
-      icon: Users,
-      title: "Smart Lead Capture",
-      description: "Automatically collect contact info and send leads directly to your CRM"
-    },
-    {
-      icon: BarChart3,
-      title: "Advanced Analytics",
-      description: "Track conversion rates, optimize pricing, and identify your best services"
-    },
-    {
-      icon: Shield,
-      title: "Enterprise Security",
-      description: "Bank-level encryption, GDPR compliance, and 99.9% uptime guarantee"
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Owner, Elite Cleaning Services",
-      company: "$2.1M Revenue",
-      content: "Autobidder transformed our business. We went from 20 leads per month to 65+ leads. The calculators do the selling for us!",
-      rating: 5,
-      image: "SJ"
-    },
-    {
-      name: "Mike Rodriguez",
-      role: "Rodriguez Landscaping",
-      company: "250% Growth",
-      content: "Our conversion rate jumped from 12% to 34%. Customers love getting instant quotes, and we love not chasing prospects.",
-      rating: 5,
-      image: "MR"
-    },
-    {
-      name: "Lisa Chen",
-      role: "Crystal Clear Windows",
-      company: "15 Employees",
-      content: "I was skeptical at first, but after one month we booked $47,000 in new work. This pays for itself 100x over.",
-      rating: 5,
-      image: "LC"
-    }
-  ];
-
-  const demoSites = [
+  const demos = [
     {
       title: "Pressure Washing",
-      description: "High-converting demo for exterior cleaning services with instant pricing.",
-      href: "https://mysite.autobidder.org/preview/19d655c0?t=176988756660"
+      icon: Droplets,
+      description: "Square footage + height based pricing logic.",
+      href: "https://mysite.autobidder.org/preview/19d655c0?t=176988756660",
+      color: "from-blue-500/20",
     },
     {
       title: "Holiday Lighting",
-      description: "Seasonal quoting experience built for fast booking and upsells.",
-      href: "https://mysite.autobidder.org/preview/cfa077a2?t=1769887566696"
+      icon: Lightbulb,
+      description: "Seasonal quoting with instant booking flows.",
+      href: "https://mysite.autobidder.org/preview/cfa077a2?t=1769887566696",
+      color: "from-emerald-500/20",
     },
     {
       title: "Pest Control",
-      description: "Lead-friendly flow that captures service type, property size, and urgency.",
-      href: "https://mysite.autobidder.org/preview/654c1998?t=1769887566590"
+      icon: ShieldCheck,
+      description: "Service type + urgency based pricing logic.",
+      href: "https://mysite.autobidder.org/preview/654c1998?t=1769887566590",
+      color: "from-cyan-500/20",
     },
     {
       title: "Epoxy Flooring",
-      description: "Premium look-and-feel with detailed scope inputs and instant estimates.",
-      href: "https://mysite.autobidder.org/preview/cb7a5041?t=1769887566755"
-    }
-  ];
-
-  const pricingPlans = [
-    {
-      name: "Standard",
-      price: 49,
-      yearlyPrice: 41.42, // $497/year = $41.42/month
-      popular: false,
-      description: "Essential features for growing businesses",
-      features: [
-        "Custom Price Calculations",
-        "Lead Generation",
-        "Scheduling",
-        "Custom Design Editor",
-        "Custom Logic Builder",
-        "Spam Filter",
-        "Template Library",
-        "Stats Panel",
-        "Facebook Pixel Tracking",
-        "Google Tracking"
-      ]
+      icon: BrickWall,
+      description: "Square footage + finish selection logic.",
+      href: "https://mysite.autobidder.org/preview/cb7a5041?t=1769887566755",
+      color: "from-orange-500/20",
     },
-    {
-      name: "Plus",
-      price: 97,
-      yearlyPrice: 80.83, // $970/year = $80.83/month
-      popular: true,
-      description: "Advanced features for professional businesses",
-      features: [
-        "Everything in Standard",
-        "Location Filtering",
-        "Bid Approval System",
-        "Zapier Integration",
-        "Website Included",
-        "Team Members",
-        "Multi Forms"
-      ]
-    },
-    {
-      name: "Plus SEO",
-      price: 297,
-      yearlyPrice: 247.50, // $2970/year = $247.50/month
-      popular: false,
-      description: "Complete solution with SEO services",
-      features: [
-        "Everything in Plus",
-        "Monthly SEO Done For You",
-        "Access to SEO Dashboard",
-        "Premium Support"
-      ]
-    }
-  ];
-
-  const stats = [
-    { number: "150,000+", label: "Quotes Generated" },
-    { number: "2,400+", label: "Businesses Growing" },
-    { number: "47%", label: "Average Conversion Increase" },
-    { number: "99.9%", label: "Uptime Guarantee" }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -inset-[10px] opacity-50">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-          <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0a] text-[#fafafa] selection:bg-white selection:text-black font-sans relative overflow-x-hidden">
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[9999] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      {/* Header */}
-      <header className="relative z-50 sticky top-0 backdrop-blur-xl bg-white/10 border-b border-white/20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30">
-                <img 
-                  src={autobidderLogo} 
-                  alt="Autobidder" 
-                  className="h-8 w-8"
-                />
-              </div>
-              <span className="hidden min-[400px]:block text-xl font-bold text-white">Autobidder</span>
-            </div>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-white/80 hover:text-white font-medium transition-colors">Features</a>
-              <a href="#testimonials" className="text-white/80 hover:text-white font-medium transition-colors">Success Stories</a>
-              <a href="#pricing" className="text-white/80 hover:text-white font-medium transition-colors">Pricing</a>
-              <Link href="/login">
-                <Button variant="ghost" className="text-white/80 hover:text-white hover:bg-white/10">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/onboarding">
-                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-6 rounded-xl backdrop-blur-sm border border-white/20 shadow-lg">
-                  Start Free Trial
-                </Button>
-              </Link>
-            </div>
-
-            {/* Mobile Navigation */}
-            <div className="flex md:hidden items-center space-x-3">
-              <Link href="/login">
-                <Button variant="ghost" className="text-white/90 hover:text-white hover:bg-white/10 px-4 py-2 text-sm font-medium">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/onboarding">
-                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-4 py-2 text-sm rounded-lg backdrop-blur-sm border border-white/20 shadow-lg">
-                  Start Trial
-                </Button>
-              </Link>
-            </div>
+      <nav className="fixed top-0 w-full z-50 px-6 py-6 flex justify-between items-center backdrop-blur-md bg-[#0a0a0a]/80 border-b border-white/5">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+            <Zap className="text-black w-5 h-5 fill-current" />
           </div>
+          <span className="text-xl font-bold tracking-tighter uppercase">Autobidder</span>
         </div>
-      </header>
+        <div className="hidden md:flex gap-8 text-xs font-medium tracking-widest text-zinc-400 uppercase">
+          <a href="#pricing" className="hover:text-white transition-colors">
+            Pricing
+          </a>
+          <a href="#demos" className="hover:text-white transition-colors">
+            Case Studies
+          </a>
+          <a href="/login" className="hover:text-white transition-colors">
+            Log In
+          </a>
+        </div>
+        <Button className="!py-2 !px-6 !text-[10px]" onClick={() => (window.location.href = "/onboarding")}>
+          Start Free
+        </Button>
+      </nav>
 
-      {/* Hero Section */}
-      <section className="relative py-20 md:py-32 text-white">
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <div className="mb-8 inline-block">
-            <div className="bg-gradient-to-r from-blue-400/20 to-purple-400/20 backdrop-blur-xl border border-white/20 rounded-full px-6 py-3">
-              <span className="text-sm font-medium text-white/90">
-                🚀 Trusted by 2,400+ Growing Businesses
-              </span>
-            </div>
-          </div>
-          
-          <h1 className="text-6xl md:text-8xl font-bold mb-8 leading-tight">
-            <span className="bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
-              Turn Website Visitors Into
-            </span>
+      <Section className="min-h-screen flex flex-col items-center justify-center text-center pt-32">
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
+          <h1 className="text-5xl md:text-8xl font-bold tracking-tight mb-8 max-w-4xl mx-auto leading-[1.1]">
+            Stop Chasing Quotes.
             <br />
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
-              Paying Customers
-            </span>
+            <span className="text-zinc-500 italic">Let Customers Price & Book Instantly.</span>
           </h1>
-          
-          <p className="text-xl md:text-2xl text-white/80 mb-12 max-w-4xl mx-auto leading-relaxed">
-            Stop losing leads to "I'll get back to you" responses. Give customers instant, accurate quotes 
-            with AI-powered pricing calculators that convert 3x better than traditional forms.
+          <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
+            Autobidder turns your services into an instant pricing and booking system — so leads convert while
+            you’re busy working.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-            <Link href="/onboarding">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-300" data-testid="button-start-trial">
-                Start Your Free Trial
-                <ArrowRight className="ml-3 h-5 w-5" />
-              </Button>
-            </Link>
-            <Dialog open={isVideoOpen} onOpenChange={setIsVideoOpen}>
-              <DialogTrigger asChild>
-                <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300" data-testid="button-watch-demo">
-                  <PlayCircle className="mr-3 h-5 w-5" />
-                  Watch 2-Min Demo
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-5xl w-full p-0 overflow-hidden bg-black border-0">
-                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
-                  <iframe
-                    className="absolute top-0 left-0 w-full h-full"
-                    src="https://www.youtube.com/embed/51FUePD1_20?autoplay=1&rel=0"
-                    title="Autobidder Demo Video"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          {/* Login link for existing users */}
-          <div className="mb-16">
-            <p className="text-white/60 text-sm">
-              Already have an account?{" "}
-              <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium underline">
-                Sign in here
-              </Link>
-            </p>
-          </div>
-
-          {/* Social Proof Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 hover:bg-white/15 transition-all duration-300">
-                  <div className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
-                    {stat.number}
-                  </div>
-                  <div className="text-white/70 font-medium">{stat.label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="relative py-20 bg-gradient-to-b from-slate-900 to-slate-800">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                The Results Speak for Themselves
-              </span>
-            </h2>
-            <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
-              Join thousands of service businesses who've transformed their lead generation 
-              and doubled their conversion rates with intelligent pricing calculators.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {benefits.map((benefit, index) => (
-              <div key={index} className="text-center group">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-500 hover:border-white/20 hover:shadow-2xl hover:shadow-purple-500/20 transform hover:-translate-y-2">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-400/20 to-purple-400/20 backdrop-blur-sm border border-white/20 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <benefit.icon className="h-10 w-10 text-blue-400" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">{benefit.title}</h3>
-                  <p className="text-white/70 text-lg leading-relaxed">{benefit.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="relative py-20 bg-gradient-to-b from-slate-800 to-slate-900">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <div className="mb-6 inline-block">
-              <div className="bg-gradient-to-r from-purple-400/20 to-pink-400/20 backdrop-blur-xl border border-white/20 rounded-full px-6 py-2">
-                <span className="text-sm font-medium text-white/90">Everything You Need</span>
-              </div>
-            </div>
-            <h2 className="text-4xl md:text-6xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-white to-purple-100 bg-clip-text text-transparent">
-                Built for Service Businesses Like Yours
-              </span>
-            </h2>
-            <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
-              From simple calculators to complex multi-service pricing, we've got everything 
-              you need to capture more leads and close more deals.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div key={index} className="group">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-500 hover:border-white/20 hover:shadow-2xl hover:shadow-blue-500/20 transform hover:-translate-y-1">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-600/20 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <feature.icon className="h-8 w-8 text-blue-400" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-4">{feature.title}</h3>
-                  <p className="text-white/70 leading-relaxed">{feature.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Demo Gallery Section */}
-      <section id="demos" className="relative py-20 bg-gradient-to-b from-slate-900 to-slate-800">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-14">
-            <div className="mb-6 inline-block">
-              <div className="bg-gradient-to-r from-blue-400/20 to-purple-400/20 backdrop-blur-xl border border-white/20 rounded-full px-6 py-2">
-                <span className="text-sm font-medium text-white/90">Live Demos</span>
-              </div>
-            </div>
-            <h2 className="text-4xl md:text-6xl font-bold mb-5">
-              <span className="bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                Explore Real-World Templates
-              </span>
-            </h2>
-            <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
-              Jump into live, interactive demos built for different service businesses. See the full customer experience.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {demoSites.map((demo) => (
-              <div key={demo.title} className="group">
-                <div className="h-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:bg-white/10 transition-all duration-500 hover:border-white/20 hover:shadow-2xl hover:shadow-blue-500/20 transform hover:-translate-y-1">
-                  <div>
-                    <div className="w-12 h-12 mb-4 rounded-2xl bg-gradient-to-br from-blue-500/20 to-purple-600/20 border border-white/20 flex items-center justify-center">
-                      <Globe className="h-6 w-6 text-blue-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-2">{demo.title}</h3>
-                    <p className="text-sm text-white/70 leading-relaxed">{demo.description}</p>
-                  </div>
-                  <a
-                    href={demo.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-5 inline-flex items-center justify-between rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
-                  >
-                    View Demo
-                    <ArrowRight className="h-4 w-4" />
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section id="testimonials" className="relative py-20 bg-gradient-to-b from-slate-900 to-slate-800">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <div className="mb-6 inline-block">
-              <div className="bg-gradient-to-r from-green-400/20 to-blue-400/20 backdrop-blur-xl border border-white/20 rounded-full px-6 py-2">
-                <span className="text-sm font-medium text-white/90">Success Stories</span>
-              </div>
-            </div>
-            <h2 className="text-4xl md:text-6xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">
-                Real Results from Real Businesses
-              </span>
-            </h2>
-            <p className="text-xl text-white/70 max-w-3xl mx-auto leading-relaxed">
-              Don't just take our word for it. See how service businesses are using 
-              Autobidder to grow their revenue and streamline operations.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="group">
-                <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-all duration-500 hover:border-white/20 hover:shadow-2xl hover:shadow-green-500/20 transform hover:-translate-y-2">
-                  <div className="flex items-center mb-6">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-400/20 to-purple-400/20 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center text-blue-400 font-bold mr-4 text-lg">
-                      {testimonial.image}
-                    </div>
-                    <div>
-                      <div className="font-bold text-white">{testimonial.name}</div>
-                      <div className="text-white/60 text-sm">{testimonial.role}</div>
-                      <div className="text-green-400 text-sm font-medium">{testimonial.company}</div>
-                    </div>
-                  </div>
-                  <div className="flex mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-white/80 italic leading-relaxed">"{testimonial.content}"</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-blue-100 text-blue-800">
-              Simple Pricing
-            </Badge>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Choose Your Growth Plan
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-              Start free, upgrade when you're ready. All plans include our core features 
-              to help you capture more leads and grow your business.
-            </p>
-            
-            <div className="flex items-center justify-center mb-8">
-              <span className={`mr-3 ${!isYearly ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>Monthly</span>
-              <div className="relative cursor-pointer" onClick={() => setIsYearly(!isYearly)}>
-                <input 
-                  type="checkbox" 
-                  className="sr-only" 
-                  checked={isYearly}
-                  onChange={(e) => setIsYearly(e.target.checked)}
-                  data-testid="toggle-pricing"
-                />
-                <div className={`w-12 h-6 rounded-full transition-colors ${isYearly ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isYearly ? 'left-7' : 'left-1'}`}></div>
-              </div>
-              <span className={`ml-3 ${isYearly ? 'text-gray-900 font-semibold' : 'text-gray-600'}`}>Yearly</span>
-              <Badge className="ml-2 bg-green-100 text-green-800">Save 20%</Badge>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <Card
-                key={index}
-                className={`group relative overflow-hidden p-8 ${
-                  plan.popular ? "border-2 border-indigo-300/70" : "border border-white/10"
-                } bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/20`}
-              >
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-indigo-400/20 via-purple-400/10 to-cyan-300/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <div className="pointer-events-none absolute -top-24 right-0 h-40 w-40 rounded-full bg-indigo-400/30 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                {plan.popular && (
-                  <Badge className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-1 shadow-lg">
-                    Most Popular
-                  </Badge>
-                )}
-                <CardContent className="p-0">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
-                    <p className="text-indigo-100 mb-4">{plan.description}</p>
-                    <div className="mb-4">
-                      <span className="text-5xl font-bold text-white" data-testid={`price-${plan.name.toLowerCase()}`}>
-                        ${isYearly ? plan.yearlyPrice : plan.price}
-                      </span>
-                      <span className="text-indigo-200">/month</span>
-                    </div>
-                    <p className="text-sm text-indigo-200/80">
-                      {isYearly ? 'billed annually' : `or $${plan.yearlyPrice}/month billed yearly`}
-                    </p>
-                  </div>
-
-                  <ul className="space-y-4 mb-8">
-                    {plan.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
-                        <span className="text-slate-100">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Link href="/signup-flow">
-                    <Button
-                      className={`w-full py-3 ${
-                        plan.popular
-                          ? "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-400 hover:to-purple-400 text-white shadow-lg"
-                          : "bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                      }`}
-                    >
-                      Start Free Trial
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <p className="text-gray-600 mb-4">14-day free trial • No credit card required • Cancel anytime</p>
-            <div className="flex justify-center items-center space-x-8 opacity-60">
-              <div className="text-sm">🔒 SSL Secured</div>
-              <div className="text-sm">💳 Stripe Payments</div>
-              <div className="text-sm">📞 24/7 Support</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Money Back Guarantee Section */}
-      <section className="relative py-20 bg-gradient-to-b from-gray-50 to-white">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-3xl p-12 text-center">
-              <div className="flex justify-center mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-                  <Shield className="h-8 w-8 text-white" />
-                </div>
-              </div>
-              
-              <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-                60-Day Money Back Guarantee
-              </h2>
-              
-              <p className="text-xl text-gray-700 mb-8 leading-relaxed">
-                We're confident you'll love Autobidder. If you're not completely satisfied with your results within 60 days, we'll refund every penny—no questions asked. That's how sure we are that this will transform your business.
-              </p>
-              
-              <div className="grid md:grid-cols-3 gap-6 mb-8">
-                <div className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 mb-2">Full Refund</h3>
-                    <p className="text-gray-600">100% money back if you're not satisfied</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 mb-2">No Questions</h3>
-                    <p className="text-gray-600">We won't ask why—simple one-click refund</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-600 mt-1 mr-3 flex-shrink-0" />
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-900 mb-2">60 Days</h3>
-                    <p className="text-gray-600">Plenty of time to test and see results</p>
-                  </div>
-                </div>
-              </div>
-              
-              <p className="text-gray-600 italic">
-                "Your success is our success. If we can't help you generate more leads and grow your business, we don't deserve your money."
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative py-20 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-xl">
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-4xl md:text-6xl font-bold mb-8">
-            <span className="bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
-              Ready to 3x Your Lead Generation?
-            </span>
-          </h2>
-          <p className="text-xl mb-12 max-w-4xl mx-auto text-white/80 leading-relaxed">
-            Join 2,400+ service businesses already using Autobidder to capture more leads, 
-            save time, and grow their revenue. Start your free trial today.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-            <Link href="/signup-flow">
-              <Button size="lg" className="bg-gradient-to-r from-white to-blue-50 text-blue-600 hover:from-blue-50 hover:to-white px-10 py-5 text-lg font-semibold rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300">
-                Start Your Free Trial
-                <ArrowRight className="ml-3 h-5 w-5" />
-              </Button>
-            </Link>
-            <Button size="lg" className="bg-white/10 hover:bg-white/20 text-white px-10 py-5 text-lg rounded-2xl backdrop-blur-sm border border-white/20 transition-all duration-300">
-              Schedule Demo
+          <div className="flex flex-col md:flex-row gap-4 justify-center">
+            <Button className="w-full md:w-auto" onClick={() => (window.location.href = "/onboarding")}>
+              Start Free
+            </Button>
+            <Button variant="ghost" className="w-full md:w-auto">
+              See How It Works <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
+        </div>
 
-          <div className="bg-white/5 backdrop-blur-xl border border-white/20 rounded-2xl px-8 py-4 inline-block">
-            <p className="text-white/70">
-              No credit card required • 14-day free trial • Setup in under 10 minutes
+        <div className="mt-20 w-full max-w-5xl aspect-video rounded-3xl bg-gradient-to-b from-zinc-800 to-transparent p-[1px] opacity-80 group">
+          <div className="bg-[#0f0f0f] w-full h-full rounded-[calc(1.5rem-1px)] overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-8 bg-zinc-900 border-b border-white/5 flex items-center px-4 gap-2">
+              <div className="w-2 h-2 rounded-full bg-zinc-700" />
+              <div className="w-2 h-2 rounded-full bg-zinc-700" />
+              <div className="w-2 h-2 rounded-full bg-zinc-700" />
+            </div>
+            <div className="flex items-center justify-center h-full flex-col gap-4">
+              <div className="w-48 h-4 bg-zinc-800 rounded animate-pulse" />
+              <div className="w-64 h-4 bg-zinc-800/50 rounded animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <section className="bg-white text-black py-32 overflow-hidden">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="space-y-12">
+            <div className="text-3xl md:text-5xl font-medium tracking-tight opacity-20 transition-opacity duration-1000 hover:opacity-100 cursor-default">
+              "Leads ask how much."
+            </div>
+            <div className="text-3xl md:text-5xl font-medium tracking-tight opacity-20 transition-opacity duration-1000 hover:opacity-100 cursor-default pl-8">
+              "You’re busy."
+            </div>
+            <div className="text-3xl md:text-5xl font-medium tracking-tight opacity-20 transition-opacity duration-1000 hover:opacity-100 cursor-default pl-16">
+              "You reply later."
+            </div>
+            <div className="text-3xl md:text-5xl font-medium tracking-tight opacity-100 transition-opacity duration-1000 border-l-4 border-black pl-8 italic">
+              "They’re gone."
+            </div>
+          </div>
+
+          <div className="mt-32 border-t border-black/10 pt-16">
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Speed wins jobs.</h2>
+            <p className="text-zinc-600 text-xl max-w-xl">
+              Autobidder removes the delay between interest and investment.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="relative bg-gradient-to-b from-slate-800 to-slate-900 text-white py-16">
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="p-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20">
-                  <img 
-                    src={autobidderLogo} 
-                    alt="Autobidder" 
-                    className="h-6 w-6"
-                  />
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                  Autobidder
-                </span>
+      <Section className="py-32">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 italic">
+            One minute to automate your growth.
+          </h2>
+          <p className="text-zinc-500 max-w-xl mx-auto">
+            Watch how Autobidder handles the heavy lifting while you're on the job.
+          </p>
+        </div>
+        <div className="relative group max-w-5xl mx-auto">
+          <div className="absolute -inset-1 bg-white/10 blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200 rounded-[2.5rem]" />
+          <button
+            type="button"
+            onClick={() => setIsVideoOpen(true)}
+            className="relative aspect-video rounded-[2rem] bg-zinc-900 border border-zinc-800 flex items-center justify-center cursor-pointer overflow-hidden shadow-2xl w-full"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-black via-zinc-900 to-zinc-800 opacity-80" />
+            <div className="z-10 flex flex-col items-center gap-6">
+              <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-black shadow-2xl transform group-hover:scale-110 transition-transform duration-300">
+                <Play className="fill-current w-8 h-8 ml-1" />
               </div>
-              <p className="text-white/60 leading-relaxed">
-                The complete pricing calculator platform for service businesses. 
-                Turn visitors into customers with intelligent quotes.
-              </p>
+              <span className="text-xs font-mono tracking-[0.3em] uppercase opacity-50">
+                Play Product Tour (1:12)
+              </span>
             </div>
-            
-            <div>
-              <h4 className="font-bold mb-4 text-white">Product</h4>
-              <ul className="space-y-2 text-white/60">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><Link href="/docs" className="hover:text-white transition-colors">Docs</Link></li>
-                <li><a href="#" className="hover:text-white transition-colors">Templates</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-bold mb-4 text-white">Company</h4>
-              <ul className="space-y-2 text-white/60">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-bold mb-4 text-white">Legal</h4>
-              <ul className="space-y-2 text-white/60">
-                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-                <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
-              </ul>
+          </button>
+        </div>
+      </Section>
+
+      <Section className="py-40">
+        <div className="grid lg:grid-cols-2 gap-20 items-center">
+          <div>
+            <h2 className="text-4xl md:text-6xl font-bold mb-8 leading-tight tracking-tight">
+              Autobidder isn't a form. <br />
+              <span className="text-zinc-600 italic">It's a pricing engine.</span>
+            </h2>
+            <p className="text-zinc-400 text-lg mb-12">
+              Every step is designed to reduce friction, qualify leads, and close faster. No more "contact for
+              price" dead ends.
+            </p>
+            <div className="space-y-6">
+              {[
+                { label: "Visitor Landing", desc: "User arrives on your site looking for value." },
+                { label: "Instant Estimate", desc: "Our engine calculates a precise quote based on your logic." },
+                { label: "Owner Approval", desc: "You review and confirm with one tap." },
+                { label: "Auto Booking", desc: "Customer pays or books directly on your calendar." },
+              ].map((step, idx) => (
+                <div
+                  key={step.label}
+                  className={`flex gap-6 p-4 rounded-2xl transition-all cursor-pointer ${
+                    activeStep === idx ? "bg-white/5 border border-white/10" : "opacity-40 hover:opacity-60"
+                  }`}
+                  onMouseEnter={() => setActiveStep(idx)}
+                >
+                  <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-sm font-mono shrink-0">
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-white">{step.label}</h4>
+                    {activeStep === idx && <p className="text-xs text-zinc-500 mt-1">{step.desc}</p>}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          
-          <div className="border-t border-white/10 mt-12 pt-8 text-center text-white/60">
-            <p>&copy; 2025 Autobidder. All rights reserved.</p>
+
+          <div className="relative">
+            <div className="relative bg-zinc-900 border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+              <div className="h-12 bg-zinc-800/50 flex items-center px-6 gap-2 border-b border-white/5">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-zinc-700" />
+                </div>
+                <div className="mx-auto text-[10px] font-mono text-zinc-600 tracking-widest uppercase">
+                  Select Your Service
+                </div>
+              </div>
+
+              <div className="p-4 md:p-8 bg-gradient-to-b from-zinc-900 to-[#0a0a0a]">
+                <div className="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
+                  <ServiceCard icon={Home} label="House Wash" selected />
+                  <ServiceCard icon={Construction} label="Fence Cleaning" />
+                  <ServiceCard icon={Hammer} label="Roof Cleaning" />
+                  <ServiceCard icon={Layers} label="Sidewalk Cleaning" />
+
+                  <ServiceCard icon={Droplets} label="Gutter Cleaning" />
+                  <ServiceCard icon={Layout} label="Deck Cleaning" />
+                  <ServiceCard icon={Smartphone} label="Driveway Cleaning" />
+                  <ServiceCard icon={Flame} label="Kitchen Exhaust" />
+
+                  <ServiceCard icon={Home} label="Gazebo Cleaning" />
+                  <ServiceCard icon={BrickWall} label="Pergola Cleaning" />
+                  <ServiceCard icon={Layers} label="Retaining Wall" />
+                  <ServiceCard icon={Lightbulb} label="Holiday Lights" />
+                </div>
+
+                <div className="mt-8 flex justify-center">
+                  <div className="w-full bg-white/5 p-4 rounded-2xl border border-white/5 flex items-center justify-between">
+                    <div className="text-[10px] font-mono text-zinc-500 uppercase">Estimated Total</div>
+                    <div className="text-xl font-bold tracking-tighter text-white">$245.00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute -inset-10 bg-white/5 blur-[80px] rounded-full -z-10" />
           </div>
         </div>
-      </footer>
+      </Section>
+
+      <Section id="demos" className="bg-zinc-950/50 rounded-[4rem] border border-white/5 my-20 py-32">
+        <div className="text-center mb-16 px-4">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 italic">See it in action.</h2>
+          <p className="text-zinc-500 max-w-xl mx-auto">
+            Choose an industry to see how Autobidder calculates real jobs in seconds.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {demos.map((demo) => (
+            <a
+              key={demo.title}
+              href={demo.href}
+              target="_blank"
+              rel="noreferrer"
+              className={`bg-zinc-900/80 border border-zinc-800 p-8 rounded-[2rem] hover:border-zinc-500 transition-all cursor-pointer group flex flex-col bg-gradient-to-br ${demo.color} to-transparent`}
+            >
+              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6 text-white group-hover:scale-110 transition-transform">
+                <demo.icon className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-3">{demo.title}</h3>
+              <p className="text-zinc-500 text-xs leading-relaxed mb-8 flex-grow">{demo.description}</p>
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">
+                Try Live Demo <ExternalLink className="w-3 h-3" />
+              </div>
+            </a>
+          ))}
+        </div>
+      </Section>
+
+      <Section className="bg-zinc-950 rounded-[4rem] border border-white/5 my-20">
+        <div className="grid md:grid-cols-3 gap-12 text-center md:text-left">
+          {[
+            { title: "Quote jobs in seconds — automatically.", icon: Clock },
+            { title: "Only review serious, qualified leads.", icon: ShieldCheck },
+            { title: "Let customers book without calling you.", icon: MousePointerClick },
+            { title: "Track every lead from ad to approval.", icon: TrendingUp },
+            { title: "Works while you're asleep or offline.", icon: Zap },
+            { title: "No tech-skills required. Set and forget.", icon: LayoutDashboard },
+          ].map((benefit) => (
+            <div key={benefit.title} className="group cursor-default">
+              <benefit.icon className="w-8 h-8 mb-6 text-zinc-500 group-hover:text-white transition-colors mx-auto md:mx-0" />
+              <h3 className="text-2xl font-semibold tracking-tight leading-snug">{benefit.title}</h3>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section>
+        <div className="text-center mb-20">
+          <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 italic">Built for Revenue.</h2>
+          <p className="text-zinc-500 max-w-xl mx-auto">Standard forms create work. Autobidder eliminates it.</p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8">
+          <FeatureCard
+            icon={Layers}
+            title="Logic-Based Calculators"
+            description="Build your pricing once based on sqft, height, roof pitch, or any custom variable."
+          />
+          <FeatureCard
+            icon={Sparkles}
+            title="Conditional Logic"
+            description="Automatically upsell add-ons like gutter cleaning or window washing during the quote process."
+          />
+          <FeatureCard
+            icon={ShieldCheck}
+            title="Owner Approval Flow"
+            description="Optionally review every quote before it's sent to ensure total accuracy on complex jobs."
+          />
+          <FeatureCard
+            icon={Smartphone}
+            title="Mobile Management"
+            description="Accept leads and approve quotes from your phone while you're on a job site."
+          />
+          <FeatureCard
+            icon={TrendingUp}
+            title="Conversion Tracking"
+            description="See exactly which ads and keywords are driving booked appointments, not just leads."
+          />
+          <FeatureCard
+            icon={CheckCircle2}
+            title="CRM Integrations"
+            description="Sync instantly with Jobber, Housecall Pro, or your existing workflow tools."
+          />
+        </div>
+      </Section>
+
+      <Section id="pricing" className="relative">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-4 italic">Calm, Confident Pricing.</h2>
+          <p className="text-zinc-500">No contracts. Cancel anytime.</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={`relative flex flex-col p-8 rounded-[2.5rem] border transition-all duration-500 ${
+                plan.featured
+                  ? "bg-zinc-900 border-white/20 scale-105 z-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                  : "bg-zinc-950/50 border-white/5 hover:border-white/10"
+              }`}
+            >
+              {plan.featured && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-black text-[10px] font-bold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full">
+                  Most Popular
+                </div>
+              )}
+
+              <div className="mb-8">
+                <h3 className="text-lg font-bold uppercase tracking-widest mb-2">{plan.name}</h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold tracking-tighter">${plan.price}</span>
+                  <span className="text-zinc-500 text-sm font-medium">/mo</span>
+                </div>
+                <p className="text-zinc-500 text-xs mt-4 leading-relaxed">{plan.description}</p>
+              </div>
+
+              <div className="space-y-4 mb-10 flex-grow">
+                {plan.features.map((feature) => (
+                  <div key={feature} className="flex gap-3 items-start text-xs text-zinc-400">
+                    <Check className={`w-4 h-4 shrink-0 ${plan.featured ? "text-white" : "text-zinc-600"}`} />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant={plan.featured ? "primary" : "secondary"}
+                className="w-full !py-3 !text-[10px]"
+                onClick={() => (window.location.href = "/onboarding")}
+              >
+                {plan.price === "0" ? "Get Started" : "Choose Plan"}
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-20 max-w-2xl mx-auto text-center">
+          <p className="text-zinc-500 text-sm leading-relaxed italic">
+            "One closed job usually pays for Autobidder many times over. Every minute you spend manually quoting
+            is a minute you aren't on the tools or growing your business."
+          </p>
+        </div>
+      </Section>
+
+      <section className="bg-emerald-500 py-32 text-black relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 className="text-4xl md:text-6xl font-bold tracking-tighter mb-6">Want it built for you?</h2>
+            <p className="text-black/80 text-xl max-w-md mb-8">
+              We’ll design your high-converting website, build your pricing logic, and launch your automated
+              growth system in 14 days.
+            </p>
+            <Button
+              variant="secondary"
+              className="!bg-black !text-white !border-none"
+              onClick={() => (window.location.href = "/dfy-setup")}
+            >
+              See DFY Growth System <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="hidden md:block">
+            <div className="flex flex-col gap-4 opacity-30 transform -rotate-12 translate-x-20">
+              <div className="h-20 bg-black/10 rounded-2xl w-[400px]" />
+              <div className="h-20 bg-black/10 rounded-2xl w-[500px]" />
+              <div className="h-20 bg-black/10 rounded-2xl w-[450px]" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Section className="py-40 text-center">
+        <h2 className="text-4xl md:text-7xl font-bold tracking-tighter mb-8 max-w-4xl mx-auto">
+          Autobidder doesn't replace your sales process. <br />
+          <span className="text-zinc-600 italic">It removes the slow parts.</span>
+        </h2>
+        <div className="flex flex-col md:flex-row gap-6 justify-center mt-16">
+          <Button className="w-full md:w-auto px-12" onClick={() => (window.location.href = "/onboarding")}>
+            Start Free
+          </Button>
+          <Button variant="secondary" className="w-full md:w-auto px-12">
+            Book a Demo
+          </Button>
+        </div>
+        <div className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] tracking-[0.2em] text-zinc-600 uppercase">
+          <div>© 2024 Autobidder Inc.</div>
+          <div className="flex gap-12">
+            <a href="/privacy" className="hover:text-white transition-colors">
+              Privacy
+            </a>
+            <a href="/terms" className="hover:text-white transition-colors">
+              Terms
+            </a>
+            <a href="https://twitter.com" className="hover:text-white transition-colors">
+              Twitter
+            </a>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            System Operational
+          </div>
+        </div>
+      </Section>
+
+      {showSticky && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-md z-[100] md:hidden animate-in slide-in-from-bottom-20 duration-500">
+          <Button className="w-full !shadow-2xl" onClick={() => (window.location.href = "/onboarding")}>
+            Start Free Trial
+          </Button>
+        </div>
+      )}
+
+      {isVideoOpen && (
+        <>
+          <div
+            onClick={() => setIsVideoOpen(false)}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[140]"
+          />
+          <div className="fixed left-4 right-4 top-24 md:left-20 md:right-20 md:top-28 z-[150]">
+            <div className="relative bg-black rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+              <button
+                onClick={() => setIsVideoOpen(false)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              >
+                ×
+              </button>
+              <div className="aspect-video w-full">
+                <iframe
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/0Nc2_mwGqlE?autoplay=1"
+                  title="Autobidder Product Tour"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

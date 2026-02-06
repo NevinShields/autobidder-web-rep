@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,11 +42,19 @@ export default function SupportContact({ trigger }: SupportContactProps) {
     customerEmail: "",
   });
 
+  const { data: currentUser } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: () => fetch("/api/auth/user").then((res) => res.json()),
+  });
+
   const createTicketMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      if (!currentUser?.id) {
+        throw new Error("Unable to verify your account. Please refresh and try again.");
+      }
       return await apiRequest("POST", "/api/support-tickets", {
         ...data,
-        userId: "user_support", // For user-created tickets
+        userId: currentUser.id,
       });
     },
     onSuccess: () => {
@@ -103,7 +111,7 @@ export default function SupportContact({ trigger }: SupportContactProps) {
       description: "Watch step-by-step video guides",
       action: "videos",
       external: true,
-      url: "#"
+      url: "https://www.youtube.com/playlist?list=PLkRcrsyUsL2NgaSBhP1EZQ1C8LwjP05Bw"
     },
     {
       icon: FileText,

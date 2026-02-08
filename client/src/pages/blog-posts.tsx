@@ -588,59 +588,27 @@ export default function BlogPostsPage() {
               </>
             )}
           </CardContent>
-        </Card>                                  Sync to Website
-                                </DropdownMenuItem>
-                                {post.dudaStatus === "synced" && post.status !== "published" && (
-                                  <DropdownMenuItem
-                                    onClick={() => publishMutation.mutate(post.id)}
-                                    disabled={publishMutation.isPending}
-                                  >
-                                    <Globe className="h-4 w-4 mr-2" />
-                                    Publish
-                                  </DropdownMenuItem>
-                                )}
-                                {post.dudaLiveUrl && (
-                                  <DropdownMenuItem onClick={() => window.open(post.dudaLiveUrl!, "_blank")}>
-                                    <ExternalLink className="h-4 w-4 mr-2" />
-                                    View Live
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600" onClick={() => setDeletePost(post)}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            )}
-          </CardContent>
         </Card>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletePost} onOpenChange={(open) => !open && setDeletePost(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="dark:bg-slate-900 dark:border-slate-800">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Blog Post?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="dark:text-slate-100">Delete Blog Post?</AlertDialogTitle>
+            <AlertDialogDescription className="dark:text-slate-400">
               Are you sure you want to delete "{deletePost?.title}"? This action cannot be undone.
               {deletePost?.dudaStatus === "published" && (
-                <span className="block mt-2 text-orange-600">
+                <span className="block mt-2 text-orange-600 dark:text-orange-400">
                   Note: This will also remove the post from your website.
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
               onClick={() => deletePost && deleteMutation.mutate(deletePost.id)}
             >
               Delete
@@ -648,7 +616,6 @@ export default function BlogPostsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      </div>
     </DashboardLayout>
   );
 }

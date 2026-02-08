@@ -176,7 +176,6 @@
 }
 
 /* Force light mode for customer-facing pages (calculator, embed, etc.) */
-/* COMMENTED OUT TO ALLOW DARK MODE
 .force-light-mode,
 .force-light-mode * {
   --background: hsl(0, 0%, 100%) !important;
@@ -195,7 +194,6 @@
   --accent-foreground: hsl(24, 9.8%, 10%) !important;
   --ring: hsl(20, 14.3%, 4.1%) !important;
 }
-*/
 
 /* Font Family Classes for Design System */
 .font-inter { font-family: 'Inter', sans-serif; }

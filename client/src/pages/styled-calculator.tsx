@@ -4367,7 +4367,7 @@ export default function StyledCalculator(props: any = {}) {
   const hasCustomCSS = !!designSettings?.customCSS;
 
   return (
-    <div className="min-h-screen flex items-start justify-center p-0 transition-colors duration-300 bg-background text-foreground" style={{ margin: '0' }}>
+    <div className="force-light-mode min-h-screen flex items-start justify-center p-0" style={{ margin: '0' }}>
       <div 
         id="autobidder-form"
         className="ab-form-container form-container max-w-5xl w-full mx-auto"

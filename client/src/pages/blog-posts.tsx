@@ -155,20 +155,20 @@ export default function BlogPostsPage() {
 
   const getStatusBadge = (status: string, dudaStatus?: string | null) => {
     if (status === "published" && dudaStatus === "published") {
-      return <Badge className="bg-green-100 text-green-800">Live</Badge>;
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">Live</Badge>;
     }
     if (dudaStatus === "synced") {
-      return <Badge className="bg-blue-100 text-blue-800">Synced</Badge>;
+      return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">Synced</Badge>;
     }
     if (status === "scheduled") {
-      return <Badge className="bg-purple-100 text-purple-800">Scheduled</Badge>;
+      return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">Scheduled</Badge>;
     }
-    return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+    return <Badge className="bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-400">Draft</Badge>;
   };
 
   const getBlogTypeBadge = (type: string) => {
     const typeInfo = BLOG_TYPES.find(t => t.value === type);
-    return <Badge variant="outline">{typeInfo?.label || type}</Badge>;
+    return <Badge variant="outline" className="dark:border-slate-700 dark:text-slate-400">{typeInfo?.label || type}</Badge>;
   };
 
   // Stats
@@ -205,7 +205,7 @@ export default function BlogPostsPage() {
       <div className="inline-flex items-center gap-1.5">
         {hasFacebook && (
           <span
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
             title="Facebook post linked"
           >
             <FaFacebookF className="h-2.5 w-2.5" />
@@ -213,7 +213,7 @@ export default function BlogPostsPage() {
         )}
         {hasGmb && (
           <span
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-700"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
             title="Google Business Profile post linked"
           >
             <FaGoogle className="h-2.5 w-2.5" />
@@ -221,7 +221,7 @@ export default function BlogPostsPage() {
         )}
         {hasVideo && (
           <span
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400"
             title="Video linked"
           >
             <Video className="h-2.5 w-2.5" />
@@ -259,56 +259,56 @@ export default function BlogPostsPage() {
         </section>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <Card className="border-slate-200/80 shadow-sm">
+          <Card className="border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Total Posts</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Total Posts</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{totalPosts}</p>
-                <span className="grid place-items-center h-8 w-8 rounded-full bg-slate-100 text-slate-600">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">{totalPosts}</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                   <BookOpen className="h-4 w-4" />
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/80 shadow-sm">
+          <Card className="border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Published</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Published</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{publishedPosts}</p>
-                <span className="grid place-items-center h-8 w-8 rounded-full bg-emerald-100 text-emerald-700">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">{publishedPosts}</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
                   <CheckCircle className="h-4 w-4" />
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/80 shadow-sm">
+          <Card className="border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Drafts</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Drafts</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{draftPosts}</p>
-                <span className="grid place-items-center h-8 w-8 rounded-full bg-amber-100 text-amber-700">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">{draftPosts}</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
                   <Clock className="h-4 w-4" />
                 </span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/80 shadow-sm">
+          <Card className="border-slate-200/80 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Avg SEO Score</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">Avg SEO Score</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{avgSeoScore}%</p>
-                <span className="grid place-items-center h-8 w-8 rounded-full bg-blue-100 text-blue-700">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-slate-100">{avgSeoScore}%</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                   <TrendingUp className="h-4 w-4" />
                 </span>
               </div>
@@ -316,23 +316,23 @@ export default function BlogPostsPage() {
           </Card>
         </div>
 
-        <Card className="overflow-hidden border-slate-200/90 shadow-sm">
-          <CardHeader className="bg-slate-50/80 border-b border-slate-200/80 pb-4">
+        <Card className="overflow-hidden border-slate-200/90 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+          <CardHeader className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200/80 dark:border-slate-800 pb-4">
             <div className="space-y-3">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div className="relative w-full lg:max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 h-4 w-4" />
                   <Input
                     placeholder="Search by title or city..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white"
+                    className="pl-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 w-full lg:w-auto">
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="bg-white min-w-[130px]">
+                    <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 min-w-[130px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -344,7 +344,7 @@ export default function BlogPostsPage() {
                   </Select>
 
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="bg-white min-w-[150px]">
+                    <SelectTrigger className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 min-w-[150px]">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -360,12 +360,12 @@ export default function BlogPostsPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <p className="text-xs sm:text-sm text-slate-600">
-                  Showing <span className="font-medium text-slate-900">{filteredPosts.length}</span> of{" "}
-                  <span className="font-medium text-slate-900">{posts.length}</span> posts
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                  Showing <span className="font-medium text-slate-900 dark:text-slate-100">{filteredPosts.length}</span> of{" "}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{posts.length}</span> posts
                 </p>
                 {hasActiveFilters && (
-                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                  <Button variant="outline" size="sm" onClick={clearFilters} className="dark:border-slate-700 dark:hover:bg-slate-800">
                     <FilterX className="h-4 w-4 mr-2" />
                     Clear
                   </Button>
@@ -374,16 +374,16 @@ export default function BlogPostsPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="p-0 sm:p-4">
+          <CardContent className="p-0 sm:p-4 bg-white dark:bg-slate-900">
             {isLoading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               </div>
             ) : filteredPosts.length === 0 ? (
               <div className="text-center py-14 px-4">
-                <FileText className="mx-auto h-12 w-12 text-slate-400" />
-                <h3 className="mt-3 text-sm font-medium text-slate-900">No blog posts found</h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <FileText className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-600" />
+                <h3 className="mt-3 text-sm font-medium text-slate-900 dark:text-slate-100">No blog posts found</h3>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {hasActiveFilters
                     ? "No posts match the current filters."
                     : "Get started by creating your first blog post."}
@@ -399,10 +399,10 @@ export default function BlogPostsPage() {
               <>
                 <div className="space-y-3 p-3 sm:hidden">
                   {filteredPosts.map((post) => (
-                    <article key={post.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <article key={post.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
                       <div className="flex items-start gap-3">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-slate-900 truncate">{post.title}</h3>
+                          <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{post.title}</h3>
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             {getBlogTypeBadge(post.blogType)}
                             {getStatusBadge(post.status, post.dudaStatus)}
@@ -411,7 +411,7 @@ export default function BlogPostsPage() {
                         </div>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400">
                         <div className="inline-flex items-center gap-1.5">
                           <MapPin className="h-3.5 w-3.5" />
                           <span>{post.targetCity || "No location"}</span>
@@ -423,13 +423,13 @@ export default function BlogPostsPage() {
                       </div>
 
                       <div className="mt-3">
-                        <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
                           <span>SEO Score</span>
-                          <span className="font-medium text-slate-800">
+                          <span className="font-medium text-slate-800 dark:text-slate-200">
                             {post.seoScore !== null && post.seoScore !== undefined ? `${post.seoScore}%` : "-"}
                           </span>
                         </div>
-                        <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                        <div className="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                           <div
                             className={`h-full ${getSeoColorClass(post.seoScore)}`}
                             style={{ width: `${post.seoScore || 0}%` }}
@@ -438,7 +438,7 @@ export default function BlogPostsPage() {
                       </div>
 
                       <div className="mt-4 grid grid-cols-2 gap-2">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/blog-posts/${post.id}/edit`)}>
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/blog-posts/${post.id}/edit`)} className="dark:border-slate-700 dark:hover:bg-slate-800">
                           <Edit className="h-4 w-4 mr-1.5" />
                           Edit
                         </Button>
@@ -447,6 +447,7 @@ export default function BlogPostsPage() {
                           size="sm"
                           onClick={() => syncMutation.mutate(post.id)}
                           disabled={syncMutation.isPending}
+                          className="dark:border-slate-700 dark:hover:bg-slate-800"
                         >
                           <RefreshCw className={`h-4 w-4 mr-1.5 ${syncMutation.isPending ? "animate-spin" : ""}`} />
                           Sync
@@ -460,6 +461,7 @@ export default function BlogPostsPage() {
                             size="sm"
                             onClick={() => publishMutation.mutate(post.id)}
                             disabled={publishMutation.isPending}
+                            className="dark:border-slate-700 dark:hover:bg-slate-800"
                           >
                             <Globe className="h-4 w-4 mr-1.5" />
                             Publish
@@ -470,6 +472,7 @@ export default function BlogPostsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => window.open(post.dudaLiveUrl!, "_blank")}
+                            className="dark:border-slate-700 dark:hover:bg-slate-800"
                           >
                             <ExternalLink className="h-4 w-4 mr-1.5" />
                             Live
@@ -478,7 +481,7 @@ export default function BlogPostsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                          className="text-red-600 border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400"
                           onClick={() => setDeletePost(post)}
                         >
                           <Trash2 className="h-4 w-4 mr-1.5" />
@@ -489,65 +492,103 @@ export default function BlogPostsPage() {
                   ))}
                 </div>
 
-                <div className="hidden sm:block rounded-xl border border-slate-200 overflow-hidden">
+                <div className="hidden sm:block rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-900">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-slate-50/80">
-                        <TableHead>Title</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>SEO Score</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                      <TableRow className="bg-slate-50/80 dark:bg-slate-800/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/50">
+                        <TableHead className="dark:text-slate-400">Title</TableHead>
+                        <TableHead className="dark:text-slate-400">Type</TableHead>
+                        <TableHead className="dark:text-slate-400">Location</TableHead>
+                        <TableHead className="dark:text-slate-400">Status</TableHead>
+                        <TableHead className="dark:text-slate-400">SEO Score</TableHead>
+                        <TableHead className="dark:text-slate-400">Created</TableHead>
+                        <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredPosts.map((post) => (
-                        <TableRow key={post.id}>
-                          <TableCell className="font-medium">
+                        <TableRow key={post.id} className="dark:hover:bg-slate-800/50 dark:border-slate-800">
+                          <TableCell className="font-medium dark:text-slate-200">
                             <div className="max-w-[320px] truncate">{post.title}</div>
                             <div className="mt-1">{renderEnhancementIcons(post)}</div>
                           </TableCell>
-                          <TableCell>{getBlogTypeBadge(post.blogType)}</TableCell>
-                          <TableCell>{post.targetCity || "-"}</TableCell>
-                          <TableCell>{getStatusBadge(post.status, post.dudaStatus)}</TableCell>
+                          <TableCell className="dark:text-slate-300">{getBlogTypeBadge(post.blogType)}</TableCell>
+                          <TableCell className="dark:text-slate-300">{post.targetCity || "-"}</TableCell>
+                          <TableCell className="dark:text-slate-300">{getStatusBadge(post.status, post.dudaStatus)}</TableCell>
                           <TableCell>
                             {post.seoScore !== null && post.seoScore !== undefined ? (
                               <div className="flex items-center gap-2">
-                                <div className="w-16 h-2 rounded-full bg-slate-200 overflow-hidden">
+                                <div className="w-16 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                                   <div
                                     className={`h-full ${getSeoColorClass(post.seoScore)}`}
                                     style={{ width: `${post.seoScore}%` }}
                                   />
                                 </div>
-                                <span className="text-sm">{post.seoScore}%</span>
+                                <span className="text-sm dark:text-slate-300">{post.seoScore}%</span>
                               </div>
                             ) : (
-                              <span className="text-slate-400">-</span>
+                              <span className="text-slate-400 dark:text-slate-600">-</span>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="dark:text-slate-300">
                             {post.createdAt ? format(new Date(post.createdAt), "MMM d, yyyy") : "-"}
                           </TableCell>
                           <TableCell className="text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" className="dark:hover:bg-slate-800">
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => navigate(`/blog-posts/${post.id}/edit`)}>
+                              <DropdownMenuContent align="end" className="dark:bg-slate-900 dark:border-slate-800">
+                                <DropdownMenuItem onClick={() => navigate(`/blog-posts/${post.id}/edit`)} className="dark:focus:bg-slate-800">
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => syncMutation.mutate(post.id)}
                                   disabled={syncMutation.isPending}
+                                  className="dark:focus:bg-slate-800"
                                 >
-                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  <RefreshCw className={`h-4 w-4 mr-2 ${syncMutation.isPending ? "animate-spin" : ""}`} />
                                   Sync to Website
+                                </DropdownMenuItem>
+                                {post.dudaStatus === "synced" && post.status !== "published" && (
+                                  <DropdownMenuItem
+                                    onClick={() => publishMutation.mutate(post.id)}
+                                    disabled={publishMutation.isPending}
+                                    className="dark:focus:bg-slate-800"
+                                  >
+                                    <Globe className="h-4 w-4 mr-2" />
+                                    Publish Live
+                                  </DropdownMenuItem>
+                                )}
+                                {post.dudaLiveUrl && (
+                                  <DropdownMenuItem onClick={() => window.open(post.dudaLiveUrl!, "_blank")} className="dark:focus:bg-slate-800">
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    View Live Post
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator className="dark:bg-slate-800" />
+                                <DropdownMenuItem
+                                  className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 dark:focus:bg-red-900/20"
+                                  onClick={() => setDeletePost(post)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>                                  Sync to Website
                                 </DropdownMenuItem>
                                 {post.dudaStatus === "synced" && post.status !== "published" && (
                                   <DropdownMenuItem

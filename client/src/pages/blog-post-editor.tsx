@@ -1984,12 +1984,12 @@ export default function BlogPostEditorPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <Button
                     variant="outline"
                     onClick={() => handleSave(false)}
                     disabled={saveMutation.isPending}
-                    className="flex-1"
+                    className="flex-1 w-full"
                   >
                     <Save className="h-4 w-4 mr-2" />
                     Save as Draft
@@ -1997,14 +1997,14 @@ export default function BlogPostEditorPage() {
                   <Button
                     onClick={handleSaveAndSync}
                     disabled={saveMutation.isPending || syncToWebsiteMutation.isPending}
-                    className="flex-1"
+                    className="flex-1 w-full"
                   >
                     {syncToWebsiteMutation.isPending ? (
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Globe className="h-4 w-4 mr-2" />
                     )}
-                    {syncToWebsiteMutation.isPending ? "Syncing to website..." : "Save & Sync to Website"}
+                    {syncToWebsiteMutation.isPending ? "Syncing..." : "Save & Sync"}
                   </Button>
                 </div>
               </CardContent>

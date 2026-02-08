@@ -1666,6 +1666,15 @@ export default function StyledCalculator(props: any = {}) {
     };
   }, [designSettings?.customCSS]);
 
+  // Determine if address step should be shown
+  const shouldShowAddressStep = useMemo(() => {
+    if (!businessSettings?.styling?.enablePropertyAutofill) return false;
+    return selectedServices.some(serviceId => {
+      const formula = formulas?.find((f: Formula) => f.id === serviceId);
+      return formula?.variables?.some((v: any) => v.prefillSourceKey);
+    });
+  }, [selectedServices, formulas, businessSettings]);
+
   // Check loading state for both public and authenticated data
   const isLoading = isLoadingCalculatorData || isLoadingAuthData;
   
@@ -1769,15 +1778,6 @@ export default function StyledCalculator(props: any = {}) {
       return updated;
     });
   };
-
-  // Determine if address step should be shown
-  const shouldShowAddressStep = useMemo(() => {
-    if (!businessSettings?.styling?.enablePropertyAutofill) return false;
-    return selectedServices.some(serviceId => {
-      const formula = formulas?.find((f: Formula) => f.id === serviceId);
-      return formula?.variables?.some((v: any) => v.prefillSourceKey);
-    });
-  }, [selectedServices, formulas, businessSettings]);
 
   // Apply property data prefill to service variables
   const applyPropertyPrefill = (attributes: PropertyAttributes) => {

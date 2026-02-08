@@ -64,7 +64,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SupportTicket, TicketMessage, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag, TemplateCategory, InsertTemplateCategory, CallBooking, CallAvailabilitySlot, insertCallAvailabilitySlotSchema } from "@shared/schema";
+import { SupportTicket, TicketMessage, Formula, FormulaTemplate, InsertFormulaTemplate, IconTag, InsertIconTag, TemplateCategory, InsertTemplateCategory, CallBooking, CallAvailabilitySlot, insertCallAvailabilitySlotSchema } from "@shared/schema";
 import IconSelector from "@/components/icon-selector";
 import { format, addDays, startOfWeek, differenceInCalendarDays } from "date-fns";
 
@@ -94,6 +94,28 @@ interface AdminUser {
   lastActivity?: string;
   trialStartDate?: string | null;
   trialEndDate?: string | null;
+  permissions?: {
+    canEditFormulas?: boolean;
+    canViewLeads?: boolean;
+    canManageLeads?: boolean;
+    canAccessDesign?: boolean;
+    canViewStats?: boolean;
+    canManageCalendar?: boolean;
+    canCreateWebsites?: boolean;
+    canManageWebsites?: boolean;
+    canAccessAI?: boolean;
+    canUseMeasureMap?: boolean;
+    canCreateUpsells?: boolean;
+    canAccessZapier?: boolean;
+    canManageTeam?: boolean;
+    canManageBilling?: boolean;
+    canAccessAPI?: boolean;
+    canCustomizeBranding?: boolean;
+    maxFormulas?: number;
+    maxLeadsPerMonth?: number;
+    maxWebsites?: number;
+    maxTeamMembers?: number;
+  };
 }
 
 interface AdminLead {
@@ -151,10 +173,11 @@ function SystemUtilitiesSection() {
     try {
       setIsBackfilling(true);
       const response = await apiRequest('POST', '/api/admin/backfill-geocoding');
+      const result = await response.json() as { updated?: number; processed?: number };
       
       toast({
         title: "Geocoding Backfill Complete",
-        description: `Successfully geocoded ${response.updated} leads. ${response.processed} total processed.`,
+        description: `Successfully geocoded ${result.updated ?? 0} leads. ${result.processed ?? 0} total processed.`,
       });
     } catch (error: any) {
       console.error('Geocoding backfill error:', error);

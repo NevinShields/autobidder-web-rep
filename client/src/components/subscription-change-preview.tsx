@@ -2,7 +2,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Check, X, ArrowRight, DollarSign, Calendar, Zap, AlertTriangle } from "lucide-react";
-import { PLANS } from "./upgrade-button";
+
+const PLANS: Record<string, { name: string; monthly: number; yearly: number; features: string[] }> = {
+  standard: {
+    name: "Standard",
+    monthly: 97,
+    yearly: 970,
+    features: ["Core calculator", "Email support", "Lead management"],
+  },
+  plus: {
+    name: "Plus",
+    monthly: 147,
+    yearly: 1470,
+    features: ["Core calculator", "Email support", "Lead management", "Advanced automations"],
+  },
+  plusSeo: {
+    name: "Plus SEO",
+    monthly: 197,
+    yearly: 1970,
+    features: ["Core calculator", "Email support", "Lead management", "Advanced automations", "SEO features"],
+  },
+};
 
 interface SubscriptionChangePreviewProps {
   currentPlan: string;

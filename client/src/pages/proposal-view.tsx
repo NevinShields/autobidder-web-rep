@@ -4,24 +4,76 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, X, FileText, Calendar } from "lucide-react";
 
+interface ProposalServiceLine {
+  formulaName?: string;
+  calculatedPrice?: number;
+  variables?: Record<string, unknown>;
+  appliedDiscounts?: Array<{
+    name?: string;
+    percentage?: number;
+    amount?: number;
+  }>;
+  selectedUpsells?: Array<{
+    name?: string;
+    percentageOfMain?: number;
+    percentage?: number;
+    amount?: number;
+  }>;
+}
+
+interface PublicLeadData {
+  businessOwnerId?: string;
+  totalPrice?: number;
+  services?: ProposalServiceLine[];
+}
+
+interface ProposalStyling {
+  primaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  borderRadius: number;
+  fontFamily: string;
+}
+
+interface PublicProposalData {
+  styling?: Partial<ProposalStyling>;
+  showCompanyLogo?: boolean;
+  title?: string;
+  subtitle?: string;
+  headerText?: string;
+  videoUrl?: string;
+  showServiceBreakdown?: boolean;
+  showTotal?: boolean;
+  customText?: string;
+  termsAndConditionsPdfUrl?: string;
+  insurancePdfUrl?: string;
+  enableAcceptReject?: boolean;
+  acceptButtonText?: string;
+  rejectButtonText?: string;
+}
+
+interface PublicBusinessSettingsData {
+  businessName?: string;
+}
+
 export default function ProposalViewPage() {
   const { leadId } = useParams();
 
   // Fetch lead data including selected services
-  const { data: lead, isLoading: leadLoading } = useQuery({
+  const { data: lead, isLoading: leadLoading } = useQuery<PublicLeadData>({
     queryKey: [`/api/multi-service-leads/${leadId}`],
     retry: false,
   });
 
   // Fetch proposal template
-  const { data: proposal, isLoading: proposalLoading } = useQuery({
+  const { data: proposal, isLoading: proposalLoading } = useQuery<PublicProposalData>({
     queryKey: [`/api/proposals/public/${lead?.businessOwnerId}`],
     enabled: !!lead?.businessOwnerId,
     retry: false,
   });
 
   // Fetch business settings for branding
-  const { data: businessSettings, isLoading: businessLoading } = useQuery({
+  const { data: businessSettings, isLoading: businessLoading } = useQuery<PublicBusinessSettingsData>({
     queryKey: [`/api/public/business-settings/${lead?.businessOwnerId}`],
     enabled: !!lead?.businessOwnerId,
     retry: false,
@@ -58,20 +110,28 @@ export default function ProposalViewPage() {
 
   const totalPrice = lead.totalPrice || 0;
   const services = lead.services || [];
-  const styling = proposal?.styling || {
+  const styling: ProposalStyling = {
+    primaryColor: proposal?.styling?.primaryColor || "#2563EB",
+    backgroundColor: proposal?.styling?.backgroundColor || "#FFFFFF",
+    textColor: proposal?.styling?.textColor || "#1F2937",
+    borderRadius: proposal?.styling?.borderRadius ?? 12,
+    fontFamily: proposal?.styling?.fontFamily || "inter",
+  };
+  const fallbackStyling: ProposalStyling = {
     primaryColor: "#2563EB",
     backgroundColor: "#FFFFFF",
     textColor: "#1F2937",
     borderRadius: 12,
     fontFamily: "inter"
   };
+  const resolvedStyling = styling || fallbackStyling;
 
   return (
     <div 
       className="min-h-screen py-8 px-4"
       style={{ 
-        backgroundColor: styling.backgroundColor,
-        fontFamily: styling.fontFamily,
+        backgroundColor: resolvedStyling.backgroundColor,
+        fontFamily: resolvedStyling.fontFamily,
       }}
     >
       <div className="max-w-4xl mx-auto">
@@ -81,7 +141,7 @@ export default function ProposalViewPage() {
             <div className="mb-6">
               <h1 
                 className="text-3xl font-bold"
-                style={{ color: styling.primaryColor }}
+                style={{ color: resolvedStyling.primaryColor }}
               >
                 {businessSettings.businessName}
               </h1>
@@ -90,7 +150,7 @@ export default function ProposalViewPage() {
           
           <h2 
             className="text-2xl font-semibold mb-4"
-            style={{ color: styling.textColor }}
+            style={{ color: resolvedStyling.textColor }}
           >
             {proposal?.title || "Service Proposal"}
           </h2>
@@ -98,7 +158,7 @@ export default function ProposalViewPage() {
           {proposal?.subtitle && (
             <p 
               className="text-lg mb-4"
-              style={{ color: styling.textColor }}
+              style={{ color: resolvedStyling.textColor }}
             >
               {proposal.subtitle}
             </p>
@@ -107,7 +167,7 @@ export default function ProposalViewPage() {
           {proposal?.headerText && (
             <p 
               className="mb-6"
-              style={{ color: styling.textColor }}
+              style={{ color: resolvedStyling.textColor }}
             >
               {proposal.headerText}
             </p>
@@ -117,7 +177,7 @@ export default function ProposalViewPage() {
         {/* Video */}
         {proposal?.videoUrl && (
           <div className="mb-8">
-            <Card style={{ borderRadius: `${styling.borderRadius}px` }}>
+            <Card style={{ borderRadius: `${resolvedStyling.borderRadius}px` }}>
               <CardContent className="p-6">
                 <div className="aspect-video">
                   <iframe
@@ -134,28 +194,28 @@ export default function ProposalViewPage() {
 
         {/* Service Breakdown */}
         {proposal?.showServiceBreakdown && services.length > 0 && (
-          <Card className="mb-8" style={{ borderRadius: `${styling.borderRadius}px` }}>
+          <Card className="mb-8" style={{ borderRadius: `${resolvedStyling.borderRadius}px` }}>
             <CardHeader>
-              <CardTitle style={{ color: styling.textColor }}>Services Requested</CardTitle>
+              <CardTitle style={{ color: resolvedStyling.textColor }}>Services Requested</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {services.map((service, index) => (
+                {services.map((service: ProposalServiceLine, index: number) => (
                   <div 
                     key={index}
                     className="p-4 rounded-lg"
-                    style={{ backgroundColor: `${styling.primaryColor}10` }}
+                    style={{ backgroundColor: `${resolvedStyling.primaryColor}10` }}
                   >
                     <div className="flex justify-between items-center">
                       <div>
                         <h4 
                           className="font-semibold"
-                          style={{ color: styling.textColor }}
+                          style={{ color: resolvedStyling.textColor }}
                         >
                           {service.formulaName}
                         </h4>
                         {service.variables && Object.keys(service.variables).length > 0 && (
-                          <div className="text-sm mt-1" style={{ color: styling.textColor + '80' }}>
+                          <div className="text-sm mt-1" style={{ color: resolvedStyling.textColor + '80' }}>
                             {Object.entries(service.variables).map(([key, value]) => (
                               <span key={key} className="mr-3">
                                 {key}: {String(value)}
@@ -164,7 +224,7 @@ export default function ProposalViewPage() {
                           </div>
                         )}
                       </div>
-                      <div className="text-lg font-bold" style={{ color: styling.primaryColor }}>
+                      <div className="text-lg font-bold" style={{ color: resolvedStyling.primaryColor }}>
                         ${service.calculatedPrice?.toLocaleString() || '0'}
                       </div>
                     </div>
@@ -203,18 +263,18 @@ export default function ProposalViewPage() {
 
         {/* Total */}
         {proposal?.showTotal && (
-          <Card className="mb-8" style={{ borderRadius: `${styling.borderRadius}px` }}>
+          <Card className="mb-8" style={{ borderRadius: `${resolvedStyling.borderRadius}px` }}>
             <CardContent className="p-6">
               <div className="flex justify-between items-center">
                 <span 
                   className="text-xl font-semibold"
-                  style={{ color: styling.textColor }}
+                  style={{ color: resolvedStyling.textColor }}
                 >
                   Total Investment:
                 </span>
                 <span 
                   className="text-3xl font-bold"
-                  style={{ color: styling.primaryColor }}
+                  style={{ color: resolvedStyling.primaryColor }}
                 >
                   ${totalPrice.toLocaleString()}
                 </span>
@@ -225,11 +285,11 @@ export default function ProposalViewPage() {
 
         {/* Custom Text */}
         {proposal?.customText && (
-          <Card className="mb-8" style={{ borderRadius: `${styling.borderRadius}px` }}>
+          <Card className="mb-8" style={{ borderRadius: `${resolvedStyling.borderRadius}px` }}>
             <CardContent className="p-6">
               <div 
                 className="prose max-w-none"
-                style={{ color: styling.textColor }}
+                style={{ color: resolvedStyling.textColor }}
                 dangerouslySetInnerHTML={{ __html: proposal.customText.replace(/\n/g, '<br>') }}
               />
             </CardContent>
@@ -238,14 +298,14 @@ export default function ProposalViewPage() {
 
         {/* PDF Documents */}
         {(proposal?.termsAndConditionsPdfUrl || proposal?.insurancePdfUrl) && (
-          <Card className="mb-8" style={{ borderRadius: `${styling.borderRadius}px` }}>
+          <Card className="mb-8" style={{ borderRadius: `${resolvedStyling.borderRadius}px` }}>
             <CardHeader>
-              <CardTitle style={{ color: styling.textColor }}>Documents</CardTitle>
+              <CardTitle style={{ color: resolvedStyling.textColor }}>Documents</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {proposal?.termsAndConditionsPdfUrl && (
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5" style={{ color: styling.primaryColor }} />
+                  <FileText className="w-5 h-5" style={{ color: resolvedStyling.primaryColor }} />
                   <a
                     href={proposal.termsAndConditionsPdfUrl}
                     target="_blank"
@@ -258,7 +318,7 @@ export default function ProposalViewPage() {
               )}
               {proposal?.insurancePdfUrl && (
                 <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5" style={{ color: styling.primaryColor }} />
+                  <FileText className="w-5 h-5" style={{ color: resolvedStyling.primaryColor }} />
                   <a
                     href={proposal.insurancePdfUrl}
                     target="_blank"
@@ -275,16 +335,16 @@ export default function ProposalViewPage() {
 
         {/* Accept/Reject Buttons */}
         {proposal?.enableAcceptReject && (
-          <Card style={{ borderRadius: `${styling.borderRadius}px` }}>
+          <Card style={{ borderRadius: `${resolvedStyling.borderRadius}px` }}>
             <CardContent className="p-6">
               <div className="text-center mb-6">
                 <h3 
                   className="text-lg font-semibold mb-2"
-                  style={{ color: styling.textColor }}
+                  style={{ color: resolvedStyling.textColor }}
                 >
                   What would you like to do next?
                 </h3>
-                <p style={{ color: styling.textColor + '80' }}>
+                <p style={{ color: resolvedStyling.textColor + '80' }}>
                   Please let us know your decision regarding this proposal.
                 </p>
               </div>
@@ -294,9 +354,9 @@ export default function ProposalViewPage() {
                   onClick={handleAccept}
                   className="flex items-center gap-2 px-8 py-3"
                   style={{
-                    backgroundColor: styling.primaryColor,
+                    backgroundColor: resolvedStyling.primaryColor,
                     color: '#FFFFFF',
-                    borderRadius: `${styling.borderRadius / 2}px`,
+                    borderRadius: `${resolvedStyling.borderRadius / 2}px`,
                   }}
                 >
                   <Check className="w-5 h-5" />
@@ -308,9 +368,9 @@ export default function ProposalViewPage() {
                   variant="outline"
                   className="flex items-center gap-2 px-8 py-3"
                   style={{
-                    borderColor: styling.primaryColor,
-                    color: styling.primaryColor,
-                    borderRadius: `${styling.borderRadius / 2}px`,
+                    borderColor: resolvedStyling.primaryColor,
+                    color: resolvedStyling.primaryColor,
+                    borderRadius: `${resolvedStyling.borderRadius / 2}px`,
                   }}
                 >
                   <X className="w-5 h-5" />
@@ -322,7 +382,7 @@ export default function ProposalViewPage() {
         )}
 
         {/* Footer */}
-        <div className="text-center mt-8 text-sm" style={{ color: styling.textColor + '60' }}>
+        <div className="text-center mt-8 text-sm" style={{ color: resolvedStyling.textColor + '60' }}>
           <p>
             Powered by {businessSettings?.businessName || 'Autobidder'} • 
             Generated on {new Date().toLocaleDateString()}

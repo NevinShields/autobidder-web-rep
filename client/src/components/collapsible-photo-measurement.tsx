@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface PhotoMeasurementSetup {
   objectDescription: string;
+  customerInstructions?: string;
   measurementType: 'area' | 'length' | 'width' | 'height' | 'perimeter';
   referenceImages: Array<{
     image: string;

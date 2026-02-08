@@ -15,6 +15,11 @@ interface ServicePricing {
   icon?: string;
 }
 
+interface DisplayFeature {
+  name: string;
+  value: string;
+}
+
 interface PricingResultsProps {
   servicePricing: ServicePricing[];
   formulas: Formula[];
@@ -151,10 +156,10 @@ export default function PricingResults({
                 
                 return {
                   name: variable.name,
-                  value: displayValue
+                  value: String(displayValue)
                 };
               })
-              .filter(Boolean);
+              .filter((feature): feature is DisplayFeature => feature !== null);
 
             return (
               <Card 

@@ -4985,7 +4985,7 @@ export class DatabaseStorage implements IStorage {
       );
     
     // Get all unique tag IDs
-    const tagIds = [...new Set(assignments.map(a => a.tagId))];
+    const tagIds = Array.from(new Set(assignments.map((a) => a.tagId)));
     
     if (tagIds.length === 0) {
       return new Map();

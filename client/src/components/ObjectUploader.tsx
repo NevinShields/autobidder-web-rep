@@ -78,7 +78,7 @@ export function ObjectUploader({
       .use(AwsS3, {
         shouldUseMultipart: false,
         getUploadParameters: async (file) => {
-          const params = await onGetUploadParameters({ name: file.name });
+          const params = await onGetUploadParameters({ name: file.name ?? "upload" });
           if (params.objectPath) {
             instance.setFileMeta(file.id, { objectPath: params.objectPath });
           }

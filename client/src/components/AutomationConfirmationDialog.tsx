@@ -48,7 +48,7 @@ export function AutomationConfirmationDialog({
   const [editedSteps, setEditedSteps] = useState<Map<number, PendingStep>>(new Map());
   const [confirmedRunIds, setConfirmedRunIds] = useState<Set<number>>(new Set());
 
-  const { data: pendingRuns, isLoading } = useQuery({
+  const { data: pendingRuns = [], isLoading } = useQuery<PendingAutomationRun[]>({
     queryKey: ["/api/crm/automation-runs/pending"],
     enabled: isOpen && pendingRunIds.length > 0,
   });
@@ -62,7 +62,7 @@ export function AutomationConfirmationDialog({
   }, [isOpen]);
 
   const handleNextRun = (wasConfirmed: boolean, runId: number) => {
-    const filteredRuns = (pendingRuns || []).filter((run: PendingAutomationRun) =>
+    const filteredRuns = pendingRuns.filter((run) =>
       pendingRunIds.includes(run.id)
     );
 
@@ -85,8 +85,8 @@ export function AutomationConfirmationDialog({
   const confirmMutation = useMutation({
     mutationFn: async (runId: number) => {
       const editedStepsData = Array.from(editedSteps.values()).filter(
-        step => pendingRuns?.some((run: PendingAutomationRun) => 
-          run.id === runId && run.pendingStepsData.some(s => s.stepId === step.stepId)
+        step => pendingRuns.some((run) =>
+          run.id === runId && run.pendingStepsData.some((s) => s.stepId === step.stepId)
         )
       );
 
@@ -131,7 +131,7 @@ export function AutomationConfirmationDialog({
   });
 
   const updateStepContent = (stepId: number, field: string, value: string) => {
-    const currentRun = pendingRuns?.find((run: PendingAutomationRun) =>
+    const currentRun = pendingRuns.find((run) =>
       run.pendingStepsData.some(s => s.stepId === stepId)
     );
     const currentStep = currentRun?.pendingStepsData.find((s: PendingStep) => s.stepId === stepId);
@@ -160,7 +160,7 @@ export function AutomationConfirmationDialog({
     return null;
   }
 
-  const filteredRuns = (pendingRuns || []).filter((run: PendingAutomationRun) =>
+  const filteredRuns = pendingRuns.filter((run) =>
     pendingRunIds.includes(run.id)
   );
 

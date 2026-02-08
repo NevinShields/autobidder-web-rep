@@ -141,14 +141,14 @@ export function cleanupExpiredRateLimits(windowMs: number = 60000): void {
   const now = new Date();
   
   // Cleanup email-based rate limits
-  for (const [email, timestamp] of resetRequestRateLimit.entries()) {
+  for (const [email, timestamp] of Array.from(resetRequestRateLimit.entries())) {
     if ((now.getTime() - timestamp.getTime()) >= windowMs) {
       resetRequestRateLimit.delete(email);
     }
   }
   
   // Cleanup IP-based rate limits
-  for (const [ip, timestamp] of resetRequestRateLimitByIP.entries()) {
+  for (const [ip, timestamp] of Array.from(resetRequestRateLimitByIP.entries())) {
     if ((now.getTime() - timestamp.getTime()) >= windowMs) {
       resetRequestRateLimitByIP.delete(ip);
       ipRequestCount.delete(ip);
@@ -436,7 +436,7 @@ export function setupEmailAuth(app: Express) {
         lastName,
         businessName,
         signupDate: new Date(),
-        plan: user.plan,
+        plan: user.plan || "trial",
         trialEndDate: user.trialEndDate || undefined
       }).catch(error => {
         console.error('Failed to add user to Google Sheet:', error);
@@ -664,7 +664,8 @@ export function setupEmailAuth(app: Express) {
       
       // Find user by email
       const user = await storage.getUserByEmail(email);
-      const userExists = user && user.authProvider === "email";
+      const userExists = Boolean(user && user.authProvider === "email");
+      const emailUser = user && user.authProvider === "email" ? user : null;
       
       // Log the attempt
       logSecurityEvent({
@@ -683,7 +684,7 @@ export function setupEmailAuth(app: Express) {
         message: "If this email is registered, you will receive a 6-digit verification code shortly."
       };
       
-      if (!userExists) {
+      if (!userExists || !emailUser) {
         return res.json(genericResponse);
       }
       
@@ -691,7 +692,7 @@ export function setupEmailAuth(app: Express) {
       await storage.cleanupExpiredPasswordResetCodes();
       
       // Invalidate any existing active codes for this user
-      await storage.invalidateUserPasswordResetCodes(user.id);
+      await storage.invalidateUserPasswordResetCodes(emailUser.id);
       
       // Generate secure 6-digit code
       const resetCode = generate6DigitCode();
@@ -700,7 +701,7 @@ export function setupEmailAuth(app: Express) {
       
       // Store the code in database
       await storage.createPasswordResetCode({
-        userId: user.id,
+        userId: emailUser.id,
         codeHash,
         expiresAt,
         attempts: 0,
@@ -711,8 +712,8 @@ export function setupEmailAuth(app: Express) {
       // Send 6-digit code email
       const { sendPasswordResetCodeEmail } = await import('./email-templates');
       const emailSent = await sendPasswordResetCodeEmail(
-        user.email,
-        user.firstName ?? 'User',
+        emailUser.email || email,
+        emailUser.firstName ?? 'User',
         resetCode
       );
       
@@ -1003,7 +1004,7 @@ export function setupEmailAuth(app: Express) {
       
       logSecurityEvent({
         eventType: 'password_reset_complete',
-        email: user.email,
+        email: user.email || undefined,
         ip: clientIP,
         userAgent,
         timestamp: new Date(),
@@ -1098,7 +1099,7 @@ export function setupEmailAuth(app: Express) {
       // Send password reset email
       const { sendPasswordResetEmail } = await import('./email-templates');
       const emailSent = await sendPasswordResetEmail(
-        user.email,
+        user.email || email,
         user.firstName ?? 'User',
         resetLink
       );

@@ -25,6 +25,7 @@ import {
   Waves,
   Zap,
   BrickWall,
+  type LucideIcon,
 } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
@@ -72,7 +73,7 @@ const FeatureCard = ({
   title,
   description,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   title: string;
   description: string;
 }) => (
@@ -90,7 +91,7 @@ const ServiceCard = ({
   label,
   selected = false,
 }: {
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: LucideIcon;
   label: string;
   selected?: boolean;
 }) => (
@@ -119,9 +120,17 @@ const ServiceCard = ({
 );
 
 export default function Landing() {
+  type ComparisonTier = {
+    key: "free" | "starter" | "pro" | "scale";
+    label: string;
+    price: string;
+    featured?: boolean;
+  };
+
   const [activeStep, setActiveStep] = useState(0);
   const [showSticky, setShowSticky] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const [mobileComparisonTier, setMobileComparisonTier] = useState<ComparisonTier["key"]>("free");
 
   const scrollToSection = (sectionId: string) => () => {
     const el = document.getElementById(sectionId);
@@ -140,41 +149,118 @@ export default function Landing() {
 
   const plans = [
     {
-      name: "Free",
+      name: "Autobidder Free",
       price: "0",
-      description: "For solo pros getting started.",
-      features: ["1 Active Calculator", "Instant Estimates", "Basic Lead Capture"],
+      description: "Starter access with core visibility tools.",
+      features: ["No MeasureMap Features", "10 Leads per Month", "Access to Directory"],
     },
     {
-      name: "Starter",
+      name: "Core",
       price: "49",
-      description: "Perfect for growing operations.",
-      features: ["3 Active Calculators", "Owner Approval Flow", "Email Notifications"],
+      description: "Essential automation for growing service businesses.",
+      features: ["AI Formula Builder", "Dynamic Formula Builder", "Custom Design Editor", "CRM Integration - Zapier"],
     },
     {
-      name: "Pro",
+      name: "Plus",
       price: "97",
-      description: "The complete automation engine.",
+      description: "Expanded toolkit for teams scaling lead flow.",
       features: [
-        "Unlimited Calculators",
-        "Full CRM Integration",
-        "Conversion Tracking",
-        "Conditional Logic",
+        "Website Included",
+        "Autoblogger SEO Tool",
+        "AI Measure Tool",
+        "Property Data API",
       ],
       featured: true,
     },
     {
-      name: "Enterprise",
+      name: "Plus SEO",
       price: "297",
-      description: "Scale without the friction.",
+      description: "Growth + SEO acceleration in one plan.",
       features: [
-        "Custom Integrations",
-        "Priority Support",
-        "Dedicated Account Manager",
-        "White-label Options",
+        "Everything in Plus",
+        "50 Location Pages Added Monthly for SEO",
+        "Custom White Label Video",
       ],
     },
   ];
+
+  const comparisonTiers: ComparisonTier[] = [
+    { key: "free", label: "Free", price: "$0" },
+    { key: "starter", label: "Starter", price: "$49" },
+    { key: "pro", label: "Pro", price: "$97", featured: true },
+    { key: "scale", label: "Scale", price: "$297" },
+  ];
+
+  const comparisonRows: Array<Record<ComparisonTier["key"] | "feature", string>> = [
+    { feature: "Custom Formula Builder", free: "Yes", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Instant Price Estimate (Pre-Estimate)", free: "Yes", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Lead Capture (Name, Email, Phone)", free: "10/ Month", starter: "Unlimited", pro: "Unlimited", scale: "Unlimited" },
+    { feature: "Basic Embed (iframe / share link)", free: "Yes", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Publish / Unpublish Control", free: "Yes", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Basic Analytics (views + submissions)", free: "Limited", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Manual Estimate Approval", free: "Optional", starter: "Optional", pro: "Optional", scale: "Optional" },
+    { feature: "Multiple Services & Formulas", free: "Yes", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Smart Field Re-use (shared sqft, height)", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Instant Confirmed Estimates", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Custom Pricing Logic (rules & conditions)", free: "Yes", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Booking System (date & time selection)", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Automated Estimate Emails", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Custom Branding (logo & colors)", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Lead Management Dashboard", free: "Yes", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Basic Upsells (add-ons)", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Bundled Discounts", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Conditional Upsells (logic-based)", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Custom Automations", free: "No", starter: "Limited", pro: "Yes", scale: "Yes" },
+    { feature: "Zapier Integration", free: "No", starter: "Limited", pro: "Full", scale: "Full" },
+    { feature: "Workflow API / Webhooks", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "CRM Integrations (Jobber, HCP, etc.) - via zapier", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Automated SMS Follow-Ups - via twilio", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "AI Formula Builder", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Built-in MeasureMap Tool", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "AI Measure Tool", free: "No", starter: "10/ Day", pro: "20/ Day", scale: "Unlimited" },
+    { feature: "Estimate Revision & Resend", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Branded Estimate Pages", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Directory Listing (SEO Indexed)", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Custom Forms", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "ATTOM / Property Data Auto-Fill", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "Bid Verification System", free: "No", starter: "No", pro: "No", scale: "Yes" },
+    { feature: "Email Open & Engagement Tracking", free: "No", starter: "No", pro: "No", scale: "Yes" },
+    { feature: "Branded PDF Estimates", free: "No", starter: "Yes", pro: "No", scale: "Yes" },
+    { feature: "Image & File Attachments on Bids", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "Advanced Analytics & Conversion Tracking", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "Facebook Pixel", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
+    { feature: "White Label Videos", free: "No", starter: "1/ Month", pro: "3/ Month", scale: "3/ Month" },
+    { feature: "Employee Sub-Accounts", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "Priority Support", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "Early Access to New Features", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "SEO Autoblogger", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "SEO DFY", free: "No", starter: "No", pro: "No", scale: "Yes" },
+  ];
+
+  const getComparisonValueClass = (value: string, isFeaturedTier: boolean) => {
+    const normalized = value.trim().toLowerCase();
+    const base = "inline-flex min-w-[84px] items-center justify-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide";
+
+    if (normalized === "yes" || normalized === "full" || normalized === "unlimited") {
+      return `${base} ${isFeaturedTier ? "border-emerald-300/60 bg-emerald-300/15 text-emerald-100" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"}`;
+    }
+    if (normalized === "no") {
+      return `${base} border-zinc-700 bg-zinc-800/70 text-zinc-400`;
+    }
+    if (normalized.includes("limited")) {
+      return `${base} border-amber-400/40 bg-amber-400/10 text-amber-200`;
+    }
+    if (normalized.includes("/ month") || normalized.includes("/ day")) {
+      return `${base} ${isFeaturedTier ? "border-cyan-300/60 bg-cyan-300/15 text-cyan-100" : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"}`;
+    }
+    if (normalized === "optional") {
+      return `${base} border-violet-400/30 bg-violet-400/10 text-violet-200`;
+    }
+    return `${base} border-zinc-600 bg-zinc-800/80 text-zinc-200`;
+  };
+
+  const selectedMobileTier =
+    comparisonTiers.find((tier) => tier.key === mobileComparisonTier) || comparisonTiers[0];
 
   const demos = [
     {
@@ -540,6 +626,113 @@ export default function Landing() {
               </Button>
             </div>
           ))}
+        </div>
+
+        <div className="mt-16 rounded-[2.5rem] border border-white/10 bg-gradient-to-b from-zinc-950/95 to-zinc-900/90 shadow-[0_20px_80px_rgba(0,0,0,0.45)] overflow-hidden">
+          <div className="px-8 py-7 border-b border-white/10 bg-black/20">
+            <h3 className="text-2xl md:text-3xl font-bold tracking-tight">Feature Comparison</h3>
+            <p className="text-zinc-400 text-sm mt-2">
+              Compare every plan side by side and pick the level of automation that matches your growth stage.
+            </p>
+          </div>
+
+          <div className="md:hidden px-4 py-6">
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {comparisonTiers.map((tier) => (
+                <button
+                  key={`mobile-tab-${tier.key}`}
+                  type="button"
+                  onClick={() => setMobileComparisonTier(tier.key)}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] transition-colors ${
+                    mobileComparisonTier === tier.key
+                      ? "border-white bg-white text-black"
+                      : "border-white/20 bg-zinc-900/70 text-zinc-300 hover:border-white/40"
+                  }`}
+                >
+                  {tier.label} {tier.price}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Selected Plan</span>
+                <div className="text-right">
+                  <div className={`text-sm font-bold ${selectedMobileTier.featured ? "text-emerald-300" : "text-white"}`}>
+                    {selectedMobileTier.label}
+                  </div>
+                  <div className="text-[11px] text-zinc-400">{selectedMobileTier.price}/mo</div>
+                </div>
+              </div>
+
+              <div>
+                {comparisonRows.map((row) => {
+                  const value = row[selectedMobileTier.key];
+                  return (
+                    <div
+                      key={`mobile-row-${row.feature}`}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b border-white/5 px-4 py-3 last:border-b-0"
+                    >
+                      <p className="text-sm text-zinc-200 leading-snug">{row.feature}</p>
+                      <span className={getComparisonValueClass(value, Boolean(selectedMobileTier.featured))}>{value}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[1080px] text-left border-separate border-spacing-0">
+              <thead>
+                <tr>
+                  <th className="sticky left-0 z-20 bg-zinc-950/95 backdrop-blur px-6 py-5 border-r border-white/10 text-[11px] uppercase tracking-[0.18em] text-zinc-400">
+                    Feature
+                  </th>
+                  {comparisonTiers.map((tier) => (
+                    <th
+                      key={tier.key}
+                      className={`px-6 py-5 text-center border-b border-white/10 ${
+                        tier.featured ? "bg-white text-black" : "bg-zinc-900/60"
+                      }`}
+                    >
+                      <div className="text-[11px] uppercase tracking-[0.2em] font-bold">{tier.label}</div>
+                      <div className={`text-xl font-bold tracking-tight mt-1 ${tier.featured ? "text-black" : "text-white"}`}>
+                        {tier.price}
+                        <span className={`text-xs ml-1 ${tier.featured ? "text-black/70" : "text-zinc-500"}`}>/mo</span>
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map((row, rowIndex) => (
+                  <tr key={row.feature}>
+                    <td
+                      className={`sticky left-0 z-10 px-6 py-4 border-r border-white/10 text-sm font-medium backdrop-blur ${
+                        rowIndex % 2 === 0 ? "bg-zinc-950/96" : "bg-zinc-900/96"
+                      }`}
+                    >
+                      {row.feature}
+                    </td>
+                    {comparisonTiers.map((tier) => {
+                      const value = row[tier.key];
+                      return (
+                        <td
+                          key={`${row.feature}-${tier.key}`}
+                          className={`px-4 py-4 text-center border-t border-white/5 ${
+                            rowIndex % 2 === 0 ? "bg-zinc-950/60" : "bg-zinc-900/60"
+                          } ${tier.featured ? "bg-white/[0.06]" : ""}`}
+                        >
+                          <span className={getComparisonValueClass(value, Boolean(tier.featured))}>{value}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div className="mt-20 max-w-2xl mx-auto text-center">

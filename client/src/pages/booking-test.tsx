@@ -47,8 +47,9 @@ export default function BookingTest() {
     endTime: string;
   } | null>(null);
 
+  type AuthUser = { id: string };
   // Get current authenticated user
-  const { data: currentUser } = useQuery({
+  const { data: currentUser } = useQuery<AuthUser>({
     queryKey: ["/api/auth/user"],
   });
 
@@ -79,7 +80,7 @@ export default function BookingTest() {
       console.log("📅 BOOKING-TEST - Received slots from API:", {
         total: Array.isArray(data) ? data.length : 0,
         dates: Array.isArray(data)
-          ? [...new Set(data.map((s: any) => s.date))].sort()
+          ? Array.from(new Set(data.map((s: any) => s.date))).sort()
           : [],
         oct13Slots: Array.isArray(data)
           ? data.filter((s: any) => s.date === "2025-10-13")

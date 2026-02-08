@@ -305,8 +305,8 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
                 className={`text-sm ${inputPaddingClass}`}
                 style={{
                   ...inputStyles,
-                  '--tw-ring-color': formula.styling.inputFocusColor,
-                } as React.CSSProperties}
+                  ["--tw-ring-color" as any]: formula.styling.inputFocusColor,
+                }}
                 value={leadForm.name}
                 onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
               />
@@ -316,8 +316,8 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
                 className={`text-sm ${inputPaddingClass}`}
                 style={{
                   ...inputStyles,
-                  '--tw-ring-color': formula.styling.inputFocusColor,
-                } as React.CSSProperties}
+                  ["--tw-ring-color" as any]: formula.styling.inputFocusColor,
+                }}
                 value={leadForm.email}
                 onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
               />
@@ -327,8 +327,8 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
                 className={`text-sm ${inputPaddingClass}`}
                 style={{
                   ...inputStyles,
-                  '--tw-ring-color': formula.styling.inputFocusColor,
-                } as React.CSSProperties}
+                  ["--tw-ring-color" as any]: formula.styling.inputFocusColor,
+                }}
                 value={leadForm.phone}
                 onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
               />

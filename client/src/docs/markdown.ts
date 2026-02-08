@@ -35,8 +35,6 @@ renderer.link = (href, title, text) => {
 marked.setOptions({
   gfm: true,
   breaks: false,
-  mangle: false,
-  headerIds: false,
 });
 
 marked.use({ renderer });

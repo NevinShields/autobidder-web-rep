@@ -251,7 +251,7 @@ export default function AIIconGeneratorModal({
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isGenerating}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isGenerating && !generatedIcon) {
+                if (e.key === 'Enter' && !isGenerating && generatedIcons.length === 0) {
                   handleGenerate();
                 }
               }}

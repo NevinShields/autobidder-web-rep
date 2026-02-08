@@ -221,7 +221,7 @@ Click "Add Dynamic Content" above to insert variables easily.`}
         {/* Preview Note */}
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
           <strong>Note:</strong> Dynamic variables will be automatically replaced with actual customer and business data when emails are sent.
-          For example, {{customerName}} becomes "John Smith" and {{totalPrice}} becomes "$2,500".
+          {" "}For example, {"{{customerName}}"} becomes "John Smith" and {"{{totalPrice}}"} becomes "$2,500".
         </div>
       </CardContent>
     </Card>

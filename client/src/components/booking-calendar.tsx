@@ -70,7 +70,9 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
         count: Array.isArray(data) ? data.length : 0, 
         availableCount: Array.isArray(data) ? data.filter((s: any) => !s.isBooked).length : 0,
         bookedCount: Array.isArray(data) ? data.filter((s: any) => s.isBooked).length : 0,
-        uniqueDates: Array.isArray(data) ? [...new Set(data.map((s: any) => s.date))].sort() : []
+        uniqueDates: Array.isArray(data)
+          ? Array.from(new Set(data.map((s: any) => s.date))).sort()
+          : []
       });
       return Array.isArray(data) ? data : [];
     },

@@ -162,6 +162,11 @@ ${input.jobData.notes ? `- Notes: ${input.jobData.notes}` : ""}
 ${input.jobData.images.length > 0 ? `- Images available: ${input.jobData.images.length} photos` : ""}
 ` : ""}
 
+${input.jobNotes?.trim() ? `
+USER NOTES AND CONSTRAINTS (HIGHEST PRIORITY):
+${input.jobNotes.trim()}
+` : ""}
+
 ${input.images && input.images.length > 0 ? `
 IMAGES PROVIDED BY THE USER — embed these in the content using the exact placeholder format {{IMAGE:<type>}}:
 ${input.images.map(img => `- {{IMAGE:${img.imageType}}} — "${img.caption || img.imageType + ' image'}"`).join("\n")}
@@ -170,7 +175,7 @@ Use every provided image placeholder at least once. Do not omit uploaded images.
 ` : ""}
 
 ${input.talkingPoints.length > 0 ? `
-KEY TALKING POINTS TO INCLUDE:
+MANDATORY TALKING POINTS (cover every point directly in final content):
 ${input.talkingPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
 ` : ""}
 
@@ -185,6 +190,11 @@ ${input.gmbPostUrl ? `GOOGLE BUSINESS PROFILE POST URL TO REFERENCE IN THE CONTE
 
 REQUIRED SECTIONS (based on template):
 ${input.layoutTemplate.map(s => `- ${s.label} (${s.type})${s.required ? " [REQUIRED]" : ""}`).join("\n")}
+
+GUIDANCE ADHERENCE REQUIREMENTS:
+1. Treat USER NOTES AND CONSTRAINTS as factual project context. Do not ignore, contradict, or replace them with generic filler.
+2. Cover every MANDATORY TALKING POINT explicitly in the written content.
+3. When details are uncertain, keep claims conservative and aligned with user-provided notes.
 
 SEO REQUIREMENTS:
 1. Include the target city/location naturally throughout the content (2-4 times)
@@ -247,9 +257,10 @@ export async function generateBlogContent(input: BlogGenerationInput): Promise<B
         console.log(`✅ Blog generated successfully with ${provider.name}`);
         const contentWithGuaranteedImages = ensureUploadedImagesInContent(result.content, input.images);
         const contentWithDefaultFaqs = ensureDefaultFaqEntries(contentWithGuaranteedImages, input);
+        const contentWithGuidance = ensureUserGuidanceCoverage(contentWithDefaultFaqs, input);
         const normalizedResult = {
           ...result,
-          content: contentWithDefaultFaqs
+          content: contentWithGuidance
         };
 
         // Calculate SEO score and checklist
@@ -601,6 +612,165 @@ function ensureDefaultFaqEntries(
   return clonedContent;
 }
 
+function ensureUserGuidanceCoverage(
+  content: BlogContentSection[],
+  input: BlogGenerationInput
+): BlogContentSection[] {
+  const guidanceItems = buildGuidanceItems(input);
+  if (guidanceItems.length === 0) return content;
+
+  let clonedContent: BlogContentSection[];
+  try {
+    clonedContent = JSON.parse(JSON.stringify(content)) as BlogContentSection[];
+  } catch {
+    return content;
+  }
+
+  const serialized = normalizeGuidanceText(JSON.stringify(clonedContent));
+  const missingItems = guidanceItems.filter((item) => {
+    const normalizedItem = normalizeGuidanceText(item);
+    return normalizedItem.length > 0 && !serialized.includes(normalizedItem);
+  });
+
+  if (missingItems.length === 0) {
+    return clonedContent;
+  }
+
+  if (appendGuidanceToJobSummary(clonedContent, missingItems)) {
+    return clonedContent;
+  }
+
+  appendGuidanceToTextSection(clonedContent, missingItems);
+  return clonedContent;
+}
+
+function buildGuidanceItems(input: BlogGenerationInput): string[] {
+  const items: string[] = [];
+  const seen = new Set<string>();
+
+  for (const point of input.talkingPoints || []) {
+    const cleaned = String(point || "").trim();
+    if (!cleaned) continue;
+    const key = normalizeGuidanceText(cleaned);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    items.push(cleaned);
+  }
+
+  for (const noteLine of splitGuidanceNotes(input.jobNotes)) {
+    const key = normalizeGuidanceText(noteLine);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    items.push(noteLine);
+  }
+
+  return items.slice(0, 10);
+}
+
+function splitGuidanceNotes(raw?: string): string[] {
+  if (!raw || !raw.trim()) return [];
+
+  const cleaned = raw
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/^\s*[-*\d.)]+\s*/, "").trim())
+    .filter(Boolean);
+
+  if (cleaned.length > 1) {
+    return cleaned.slice(0, 5);
+  }
+
+  const single = cleaned[0];
+  if (!single) return [];
+
+  const sentenceParts = single
+    .split(/[.!?]\s+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 18);
+
+  return sentenceParts.length > 0 ? sentenceParts.slice(0, 4) : [single];
+}
+
+function normalizeGuidanceText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function appendGuidanceToJobSummary(
+  content: BlogContentSection[],
+  missingItems: string[]
+): boolean {
+  const jobSummary = content.find((section) => section.type === "job_summary");
+  if (!jobSummary || !jobSummary.content || typeof jobSummary.content !== "object") return false;
+
+  const sectionContent = jobSummary.content as Record<string, unknown>;
+  const highlights = Array.isArray(sectionContent.highlights)
+    ? [...sectionContent.highlights.map((item) => String(item).trim()).filter(Boolean)]
+    : [];
+  const seenHighlights = new Set(highlights.map((item) => normalizeGuidanceText(item)));
+
+  for (const item of missingItems) {
+    const key = normalizeGuidanceText(item);
+    if (!key || seenHighlights.has(key)) continue;
+    highlights.push(item);
+    seenHighlights.add(key);
+  }
+
+  jobSummary.content = {
+    ...sectionContent,
+    highlights: highlights.slice(0, 16),
+  };
+
+  return true;
+}
+
+function appendGuidanceToTextSection(
+  content: BlogContentSection[],
+  missingItems: string[]
+): void {
+  const guidanceText = missingItems
+    .map((item) => (/[.!?]$/.test(item.trim()) ? item.trim() : `${item.trim()}.`))
+    .join(" ");
+  if (!guidanceText) return;
+
+  const textSection = content.find((section) =>
+    section.type === "text" &&
+    section.content &&
+    typeof section.content === "object"
+  );
+
+  if (textSection) {
+    const sectionContent = textSection.content as Record<string, unknown>;
+    const existingBody = typeof sectionContent.body === "string" ? sectionContent.body.trim() : "";
+    textSection.content = {
+      ...sectionContent,
+      body: existingBody ? `${existingBody}\n\n${guidanceText}` : guidanceText,
+    };
+    return;
+  }
+
+  const guidanceSection: BlogContentSection = {
+    id: `guidance-${content.length + 1}`,
+    type: "text",
+    content: {
+      heading: "Project-Specific Details",
+      body: guidanceText,
+    },
+    isLocked: false,
+  };
+
+  const ctaIndex = content.findIndex((section) => section.type === "cta");
+  if (ctaIndex >= 0) {
+    content.splice(ctaIndex, 0, guidanceSection);
+    return;
+  }
+
+  content.push(guidanceSection);
+}
+
 function buildFallbackFaqEntries(input: BlogGenerationInput): BlogFaqEntry[] {
   const topic = (input.serviceName || input.targetKeyword || "this service").trim();
   const city = input.targetCity?.trim();
@@ -633,8 +803,9 @@ function buildFallbackFaqEntries(input: BlogGenerationInput): BlogFaqEntry[] {
 function countImagePlaceholders(content: BlogContentSection[]): Map<string, number> {
   const counts = new Map<string, number>();
   const serialized = JSON.stringify(content);
-  const matches = serialized.matchAll(/\{\{\s*IMAGE\s*:\s*([^}\s]+)\s*\}\}/gi);
-  for (const match of matches) {
+  const pattern = /\{\{\s*IMAGE\s*:\s*([^}\s]+)\s*\}\}/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(serialized)) !== null) {
     const type = normalizeImageType(match[1]);
     counts.set(type, (counts.get(type) || 0) + 1);
   }

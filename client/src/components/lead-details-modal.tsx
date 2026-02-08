@@ -1963,7 +1963,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                                     {(estimate.viewedByCustomerAt || ['viewed', 'accepted', 'rejected'].includes(estimate.status)) && (
                                       <Eye
                                         className="h-4 w-4 text-blue-600"
-                                        title={`Viewed ${estimate.viewedByCustomerAt ? new Date(estimate.viewedByCustomerAt).toLocaleDateString() : ''}`.trim()}
+                                        aria-label={`Viewed ${estimate.viewedByCustomerAt ? new Date(estimate.viewedByCustomerAt).toLocaleDateString() : ''}`.trim()}
                                       />
                                     )}
                                   </div>
@@ -2241,7 +2241,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             {(estimate.viewedByCustomerAt || ['viewed', 'accepted', 'rejected'].includes(estimate.status)) && (
                               <Eye
                                 className="h-4 w-4 text-blue-600"
-                                title={`Viewed ${estimate.viewedByCustomerAt ? new Date(estimate.viewedByCustomerAt).toLocaleDateString() : ''}`.trim()}
+                                aria-label={`Viewed ${estimate.viewedByCustomerAt ? new Date(estimate.viewedByCustomerAt).toLocaleDateString() : ''}`.trim()}
                               />
                             )}
                           </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -36,6 +36,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
 import {
   ArrowLeft,
@@ -170,6 +177,9 @@ export default function BlogPostEditorPage() {
   const [suggestedAngles, setSuggestedAngles] = useState<string[]>([]);
   const [suggestedContext, setSuggestedContext] = useState("");
   const lastSuggestionKeyRef = useRef("");
+  const [photoLibraryOpen, setPhotoLibraryOpen] = useState(false);
+  const [photoLibraryMode, setPhotoLibraryMode] = useState<"blog" | "featured">("blog");
+  const [photoLibrarySearch, setPhotoLibrarySearch] = useState("");
 
   // Fetch existing post if editing
   const { data: existingPost, isLoading: isLoadingPost } = useQuery<BlogPost & { sectionLocks: any[]; images?: any[] }>({
@@ -195,6 +205,67 @@ export default function BlogPostEditorPage() {
   const { data: businessSettings } = useQuery<any>({
     queryKey: ["/api/business-settings"],
   });
+
+  const { data: photoMeasurements = [] } = useQuery<any[]>({
+    queryKey: ["/api/photo-measurements"],
+  });
+
+  const { data: leadsForPhotos = [] } = useQuery<any[]>({
+    queryKey: ["/api/leads"],
+  });
+
+  const { data: multiServiceLeadsForPhotos = [] } = useQuery<any[]>({
+    queryKey: ["/api/multi-service-leads"],
+  });
+
+  const photoLibraryImages = useMemo(() => {
+    const fromLeadUploads = [...leadsForPhotos, ...multiServiceLeadsForPhotos].flatMap((lead: any, leadIndex: number) =>
+      (lead.uploadedImages || []).filter(Boolean).map((url: string, index: number) => ({
+        key: `lead-${lead.id || leadIndex}-${index}-${url}`,
+        url,
+        title: lead.name || lead.email || "Customer Upload",
+        subtitle: "Customer Upload",
+        createdAt: lead.createdAt || null,
+      }))
+    );
+
+    const fromMeasurements = photoMeasurements.flatMap((measurement: any) =>
+      (measurement.customerImageUrls || []).filter(Boolean).map((url: string, index: number) => ({
+        key: `measurement-${measurement.id}-${index}-${url}`,
+        url,
+        title: measurement.formulaName || measurement.setupConfig?.objectDescription || "Photo Measurement",
+        subtitle: (measurement.tags || []).slice(0, 2).join(", ") || "Photo Measurement",
+        createdAt: measurement.createdAt || null,
+      }))
+    );
+
+    const uniqueByUrl = new Map<string, {
+      key: string;
+      url: string;
+      title: string;
+      subtitle: string;
+      createdAt: string | null;
+    }>();
+
+    [...fromLeadUploads, ...fromMeasurements].forEach((img) => {
+      if (!img.url || uniqueByUrl.has(img.url)) return;
+      uniqueByUrl.set(img.url, img);
+    });
+
+    return Array.from(uniqueByUrl.values()).sort((a, b) => {
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [leadsForPhotos, multiServiceLeadsForPhotos, photoMeasurements]);
+
+  const filteredPhotoLibraryImages = useMemo(() => {
+    const term = photoLibrarySearch.trim().toLowerCase();
+    if (!term) return photoLibraryImages;
+    return photoLibraryImages.filter((img) =>
+      `${img.title} ${img.subtitle} ${img.url}`.toLowerCase().includes(term)
+    );
+  }, [photoLibraryImages, photoLibrarySearch]);
 
   // Load existing post data
   useEffect(() => {
@@ -342,6 +413,10 @@ export default function BlogPostEditorPage() {
     mutationFn: async () => {
       const serviceName = formulas.find(f => f.id === primaryServiceId)?.name || targetKeyword.trim();
       const selectedWorkOrder = workOrders.find(w => w.id === workOrderId);
+      const combinedJobNotes = [selectedWorkOrder?.instructions?.trim(), jobNotes.trim()]
+        .filter((value): value is string => Boolean(value))
+        .filter((value, index, arr) => arr.indexOf(value) === index)
+        .join("\n\n");
 
       const input = {
         blogType,
@@ -354,7 +429,7 @@ export default function BlogPostEditorPage() {
         goal,
         tonePreference,
         workOrderId,
-        jobNotes,
+        jobNotes: jobNotes.trim(),
         layoutTemplateId: selectedTemplate?.id > 0 ? selectedTemplate.id : null,
         talkingPoints: talkingPoints.filter(p => p.trim()),
         layoutTemplate: selectedTemplate?.sections || [],
@@ -362,7 +437,7 @@ export default function BlogPostEditorPage() {
           title: selectedWorkOrder.title,
           customerAddress: selectedWorkOrder.customerAddress || "",
           completedDate: selectedWorkOrder.completedDate ? format(new Date(selectedWorkOrder.completedDate), "MMMM d, yyyy") : "",
-          notes: selectedWorkOrder.instructions || jobNotes,
+          notes: combinedJobNotes || undefined,
           images: []
         } : undefined,
         images: uploadedImages
@@ -396,21 +471,7 @@ export default function BlogPostEditorPage() {
         if (!isEditing) {
           navigate(`/blog-posts/${data.id}/edit`);
         }
-        // Link uploaded images to the newly created post
-        for (const img of uploadedImages) {
-          if (img.id) {
-            try {
-              await apiRequest("PATCH", `/api/blog-images/${img.id}`, {
-                blogPostId: data.id,
-                imageType: img.imageType,
-                imageStyle: img.imageStyle,
-                caption: img.caption,
-              });
-            } catch (e) {
-              console.error('Failed to link image to post:', e);
-            }
-          }
-        }
+        await persistUploadedImagesToPost(data.id);
       }
       toast({
         title: "Content Generated",
@@ -475,19 +536,7 @@ export default function BlogPostEditorPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
       if (data.id) {
         setPostId(String(data.id));
-        for (const img of uploadedImages) {
-          if (!img.id) continue;
-          try {
-            await apiRequest("PATCH", `/api/blog-images/${img.id}`, {
-              blogPostId: data.id,
-              imageType: img.imageType,
-              imageStyle: img.imageStyle,
-              caption: img.caption,
-            });
-          } catch (e) {
-            console.error("Failed to persist image metadata:", e);
-          }
-        }
+        await persistUploadedImagesToPost(data.id);
       }
       toast({
         title: "Saved",
@@ -638,19 +687,7 @@ export default function BlogPostEditorPage() {
       const savedId = savedPost.id ? String(savedPost.id) : id;
       if (savedId) {
         setPostId(savedId);
-        for (const img of uploadedImages) {
-          if (!img.id) continue;
-          try {
-            await apiRequest("PATCH", `/api/blog-images/${img.id}`, {
-              blogPostId: Number(savedId),
-              imageType: img.imageType,
-              imageStyle: img.imageStyle,
-              caption: img.caption,
-            });
-          } catch (e) {
-            console.error("Failed to persist image metadata before sync:", e);
-          }
-        }
+        await persistUploadedImagesToPost(Number(savedId));
         if (!isEditing) {
           navigate(`/blog-posts/${savedId}/edit`);
         }
@@ -768,6 +805,186 @@ export default function BlogPostEditorPage() {
       });
     } finally {
       setFeaturedImageUploading(false);
+    }
+  };
+
+  const getImageExtensionFromMimeType = (mimeType: string): string => {
+    if (mimeType === "image/png") return ".png";
+    if (mimeType === "image/webp") return ".webp";
+    if (mimeType === "image/gif") return ".gif";
+    return ".jpg";
+  };
+
+  const uploadImageFromLibraryUrl = async ({
+    imageUrl,
+    imageType,
+    imageStyle,
+    caption,
+    blogPostId,
+  }: {
+    imageUrl: string;
+    imageType: string;
+    imageStyle: "default" | "rounded" | "rounded_shadow";
+    caption: string;
+    blogPostId?: string;
+  }) => {
+    const sourceResponse = await fetch(imageUrl, { credentials: "include" });
+    if (!sourceResponse.ok) {
+      throw new Error(`Failed to fetch library image (${sourceResponse.status})`);
+    }
+
+    const blob = await sourceResponse.blob();
+    const contentType = blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg";
+    const extension = getImageExtensionFromMimeType(contentType);
+    const file = new File([blob], `library-image-${Date.now()}${extension}`, { type: contentType });
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("imageType", imageType);
+    formData.append("imageStyle", imageStyle);
+    formData.append("caption", caption);
+    if (blogPostId) {
+      formData.append("blogPostId", blogPostId);
+    }
+
+    const uploadResponse = await fetch("/api/blog-images/upload", {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!uploadResponse.ok) {
+      throw new Error("Failed to copy library image into blog media");
+    }
+
+    return uploadResponse.json();
+  };
+
+  const persistUploadedImagesToPost = async (blogPostId: number) => {
+    const snapshot = [...uploadedImages];
+    for (let index = 0; index < snapshot.length; index++) {
+      const img = snapshot[index];
+      if (!img.url || img.uploading) continue;
+
+      try {
+        if (img.id) {
+          await apiRequest("PATCH", `/api/blog-images/${img.id}`, {
+            blogPostId,
+            imageType: img.imageType,
+            imageStyle: img.imageStyle,
+            caption: img.caption,
+          });
+          continue;
+        }
+
+        const response = await apiRequest("POST", `/api/blog-posts/${blogPostId}/images`, {
+          originalUrl: img.url,
+          processedUrl: img.url,
+          imageType: img.imageType,
+          imageStyle: img.imageStyle,
+          caption: img.caption,
+          altText: img.caption || null,
+          sourceType: "lead",
+        });
+        const created = await response.json();
+        setUploadedImages((prev) => prev.map((existing, existingIndex) =>
+          existingIndex === index
+            ? {
+                ...existing,
+                id: created.id,
+                url: created.processedUrl || created.originalUrl || existing.url,
+                preview: created.processedUrl || created.originalUrl || existing.preview,
+              }
+            : existing
+        ));
+      } catch (error) {
+        console.error("Failed to persist image metadata:", error);
+      }
+    }
+  };
+
+  const openPhotoLibrary = (mode: "blog" | "featured") => {
+    setPhotoLibraryMode(mode);
+    setPhotoLibrarySearch("");
+    setPhotoLibraryOpen(true);
+  };
+
+  const handlePhotoLibrarySelect = async (image: { url: string; title: string }) => {
+    if (photoLibraryMode === "featured") {
+      setFeaturedImageUploading(true);
+      try {
+        const result = await uploadImageFromLibraryUrl({
+          imageUrl: image.url,
+          imageType: "hero",
+          imageStyle: "default",
+          caption: "Featured image",
+          blogPostId: postId,
+        });
+        setFeaturedImageUrl(result.processedUrl || result.originalUrl || image.url);
+        setPhotoLibraryOpen(false);
+        toast({
+          title: "Featured image selected",
+          description: "Photo library image copied and set as featured image.",
+        });
+      } catch (error) {
+        toast({
+          title: "Featured image copy failed",
+          description: "Could not copy this library image. Try another image.",
+          variant: "destructive",
+        });
+      } finally {
+        setFeaturedImageUploading(false);
+      }
+      return;
+    }
+
+    const nextImageStyle: "default" | "rounded" | "rounded_shadow" = "default";
+    const nextCaption = image.title || "";
+    let insertIndex = -1;
+    let nextImageType = "process";
+
+    setUploadedImages((prev) => {
+      insertIndex = prev.length;
+      nextImageType = prev.length === 0 ? "hero" : "process";
+      return [...prev, {
+        preview: image.url,
+        url: image.url,
+        imageType: nextImageType,
+        imageStyle: nextImageStyle,
+        caption: nextCaption,
+        uploading: true,
+      }];
+    });
+
+    try {
+      const result = await uploadImageFromLibraryUrl({
+        imageUrl: image.url,
+        imageType: nextImageType,
+        imageStyle: nextImageStyle,
+        caption: nextCaption,
+        blogPostId: postId,
+      });
+      setUploadedImages((prev) => prev.map((existing, existingIndex) =>
+        existingIndex === insertIndex
+          ? {
+              ...existing,
+              id: result.id,
+              url: result.processedUrl || result.originalUrl || existing.url,
+              preview: result.processedUrl || result.originalUrl || existing.preview,
+              uploading: false,
+            }
+          : existing
+      ));
+    } catch (error) {
+      setUploadedImages((prev) => prev.map((existing, existingIndex) =>
+        existingIndex === insertIndex
+          ? { ...existing, uploading: false }
+          : existing
+      ));
+      toast({
+        title: "Library image copy failed",
+        description: "Using the original image URL instead. If it fails on publish, pick another image.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1114,6 +1331,17 @@ export default function BlogPostEditorPage() {
                 <p className="text-sm text-gray-500 mb-3">
                   Upload images and tag them so the AI can place them in the right sections of your blog post.
                 </p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openPhotoLibrary("blog")}
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Choose from Photo Library
+                  </Button>
+                </div>
 
                 <div
                   className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
@@ -1562,6 +1790,17 @@ export default function BlogPostEditorPage() {
                     className="hidden"
                     onChange={e => handleFeaturedImageUpload(e.target.files?.[0] || null)}
                   />
+                </div>
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openPhotoLibrary("featured")}
+                  >
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Choose from Photo Library
+                  </Button>
                 </div>
 
                 {featuredImageUrl && (
@@ -2024,6 +2263,55 @@ export default function BlogPostEditorPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={photoLibraryOpen} onOpenChange={setPhotoLibraryOpen}>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Photo Library</DialogTitle>
+            <DialogDescription>
+              Choose from the same images available on the `/photos` page.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              value={photoLibrarySearch}
+              onChange={(e) => setPhotoLibrarySearch(e.target.value)}
+              placeholder="Search by customer, service, tag, or URL"
+              className="pl-9"
+            />
+          </div>
+          <div className="overflow-y-auto pr-1">
+            {filteredPhotoLibraryImages.length === 0 ? (
+              <div className="border rounded-lg p-8 text-center text-sm text-gray-500">
+                No matching photos found.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPhotoLibraryImages.map((img) => (
+                  <div key={img.key} className="border rounded-lg overflow-hidden bg-white">
+                    <div className="aspect-video bg-gray-100">
+                      <img src={img.url} alt={img.title} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <p className="text-sm font-medium truncate">{img.title}</p>
+                      <p className="text-xs text-gray-500 truncate">{img.subtitle}</p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handlePhotoLibrarySelect({ url: img.url, title: img.title })}
+                      >
+                        {photoLibraryMode === "featured" ? "Set as Featured Image" : "Add to Blog Images"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Navigation */}
       {!generateMutation.isPending && (

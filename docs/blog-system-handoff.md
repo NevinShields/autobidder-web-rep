@@ -4,7 +4,7 @@
 
 **Last Updated:** February 2026
 **Original Author:** Claude (AI-assisted implementation)
-**System Status:** MVP Complete
+**System Status:** MVP Complete + Image Upload Flow
 
 ---
 
@@ -72,14 +72,14 @@ User clicks "New Blog Post"
         ▼
 ┌─────────────────────────────────────────────────────────┐
 │  FRONTEND: blog-post-editor.tsx                         │
-│  - 7-step wizard guides user through:                   │
+│  - 5-step wizard guides user through:                   │
 │    1. Type selection (job_showcase, expert_opinion...)  │
-│    2. Targeting (service, city, goal)                   │
-│    3. Content source (work order or freeform notes)     │
-│    4. Layout template selection                         │
-│    5. AI content generation + section editing           │
-│    6. SEO review checklist                              │
-│    7. Publish settings (slug, meta, schedule)           │
+│    2. Strategy (keyword, targeting, inputs, layout)     │
+│    3. AI content generation + section editing           │
+│    4. SEO review checklist                              │
+│    5. Publish settings (slug, meta, schedule)           │
+│  - Users can target any keyword and request AI          │
+│    talking-point/context suggestions                     │
 └─────────────────────────────────────────────────────────┘
         │
         │ POST /api/blog-posts/generate-content
@@ -89,6 +89,9 @@ User clicks "New Blog Post"
 │  - Validates user plan access                           │
 │  - Calls generateBlogContent() with input data          │
 │  - AI generates title, meta, excerpt, and sections      │
+│  - If images provided, AI embeds {{IMAGE:type}}         │
+│    placeholders; blogContentToHtml() replaces them      │
+│    with <img> tags using uploaded image URLs             │
 │  - Returns structured BlogContentSection[] array        │
 └─────────────────────────────────────────────────────────┘
         │
@@ -122,8 +125,12 @@ User clicks "Sync to Duda"
 ┌─────────────────────────────────────────────────────────┐
 │  BACKEND: routes.ts                                     │
 │  - Fetches post from database                           │
-│  - Gets user's Duda site ID from businessSettings       │
+│  - Gets user's Duda site ID from websites table         │
 │  - Converts content to HTML via blogContentToHtml()     │
+│  - Fetches blog_images linked to this post              │
+│  - Uploads images to Duda CDN via                       │
+│    dudaApi.uploadResources() (Duda re-hosts them)       │
+│  - Replaces local image URLs in HTML with Duda CDN URLs │
 │  - Calls dudaApi.createBlogPost() or updateBlogPost()   │
 │  - Updates post with dudaBlogPostId, dudaStatus         │
 └─────────────────────────────────────────────────────────┘
@@ -136,6 +143,50 @@ User clicks "Sync to Duda"
 │  - Calls dudaApi.publishBlogPost()                      │
 │  - Updates dudaStatus to "published"                    │
 │  - Stores dudaLiveUrl for "View Live" link              │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Flow 3: Image Upload & AI Placement
+
+```
+User uploads images in Wizard Step 3 (Content Source)
+        │
+        │ POST /api/blog-images/upload (multipart FormData)
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  BACKEND: routes.ts (multer middleware)                  │
+│  - Saves file to uploads/form-images/                   │
+│  - Creates blog_images DB record (blogPostId = null)    │
+│  - Returns { id, originalUrl, imageType, caption }      │
+└─────────────────────────────────────────────────────────┘
+        │
+        │ User tags each image (hero/before/after/etc.)
+        │ User adds captions for AI context
+        │ User clicks "Generate Content"
+        │
+        │ POST /api/blog-posts/generate-content
+        │   (includes images[] in request body)
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  BACKEND: blog-content-generator.ts                     │
+│  - AI prompt includes {{IMAGE:type}} placeholders       │
+│  - AI places placeholders in appropriate sections       │
+│  - blogContentToHtml() replaces placeholders with       │
+│    <img src="<local_url>" alt="<caption>"> tags         │
+└─────────────────────────────────────────────────────────┘
+        │
+        │ On generation success, frontend links images
+        │ to the created post via PATCH /api/blog-images/:id
+        │
+        │ Later, on "Sync to Duda":
+        ▼
+┌─────────────────────────────────────────────────────────┐
+│  BACKEND: routes.ts (sync-to-duda handler)              │
+│  - Fetches all blog_images for the post                 │
+│  - Builds full public URLs from local paths             │
+│  - Calls dudaApi.uploadResources() to upload to CDN     │
+│  - Replaces local URLs with Duda CDN URLs in HTML       │
+│  - Proceeds with Duda blog import                       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -160,7 +211,8 @@ interface BlogContentSection {
 ```typescript
 interface BlogGenerationInput {
   blogType: string;              // e.g., "job_showcase"
-  serviceName: string;           // e.g., "Roof Cleaning"
+  targetKeyword: string;         // e.g., "roof cleaning cost philadelphia"
+  serviceName: string;           // linked service context/fallback display name
   serviceDescription?: string;
   targetCity: string;
   targetNeighborhood?: string;
@@ -174,6 +226,11 @@ interface BlogGenerationInput {
   talkingPoints: string[];
   tonePreference: string;        // "professional" | "friendly" | "technical"
   layoutTemplate: LayoutSection[];
+  images?: {                     // User-uploaded images with tags
+    url: string;                 // Local upload path (e.g., /uploads/form-images/...)
+    imageType: string;           // "hero" | "before" | "after" | "process" | "equipment" | "team"
+    caption?: string;            // Description for AI context and alt text
+  }[];
 }
 ```
 
@@ -231,7 +288,7 @@ blog_section_locks
 
 **Change AI provider priority:**
 - Edit `generateBlogContent()` in `blog-content-generator.ts`
-- Current order: Claude → Gemini → OpenAI
+- Current order: OpenAI → Claude → Gemini
 - Each provider call is wrapped in try/catch for fallback
 
 **Modify Duda sync behavior:**
@@ -264,7 +321,7 @@ blog_section_locks
 
 3. **Content is English:** AI prompts are English-only. Localization would require prompt translation.
 
-4. **Images are accessible URLs:** Image URLs in work orders must be publicly accessible for AI alt-text generation.
+4. **Images are accessible URLs:** Image URLs in work orders must be publicly accessible for AI alt-text generation. For user-uploaded blog images, the server must be reachable by Duda's CDN during sync (Duda downloads from the provided URL).
 
 ### Edge Cases Handled
 
@@ -275,6 +332,9 @@ blog_section_locks
 | AI generation returns malformed JSON | Caught in try/catch; returns error to frontend |
 | User has no work orders to choose from | Freeform notes input is always available |
 | SEO score is 0 | Valid state; displayed with red indicator |
+| Image upload to Duda CDN fails | Logs warning, proceeds with local URLs in HTML |
+| AI doesn't use all image placeholders | Unmatched `{{IMAGE:type}}` placeholders are stripped from HTML |
+| Images uploaded but post not yet created | Images stored with `blogPostId = null`; linked after generation |
 
 ### Edge Cases NOT Handled
 
@@ -284,6 +344,8 @@ blog_section_locks
 | Very long content (>50k chars) | May timeout on AI generation | Add chunking or streaming |
 | Concurrent edits to same post | Last write wins | Add optimistic locking with version field |
 | Rate limiting from AI providers | Returns 500 error | Add retry with backoff |
+| Server not publicly accessible | Duda CDN upload fails (can't download images) | Use Duda's base64 upload or a CDN proxy |
+| Orphaned blog_images (never linked to post) | Remain in DB with `blogPostId = null` | Add cleanup job for unlinked images older than 24h |
 
 ---
 
@@ -291,15 +353,13 @@ blog_section_locks
 
 ### Limitations
 
-1. **No image upload flow:** `blog_images` table exists but upload UI is not implemented. Images must be URLs.
+1. **Layout templates are hardcoded:** `DEFAULT_LAYOUT_TEMPLATES` is defined in code. The `blog_layout_templates` table exists but admin UI to manage templates is not built.
 
-2. **Layout templates are hardcoded:** `DEFAULT_LAYOUT_TEMPLATES` is defined in code. The `blog_layout_templates` table exists but admin UI to manage templates is not built.
+2. **No version history UI:** The `version` and `parentVersionId` columns exist for version tracking, but the UI only shows current version.
 
-3. **No version history UI:** The `version` and `parentVersionId` columns exist for version tracking, but the UI only shows current version.
+3. **No scheduling backend:** `scheduledPublishAt` column exists but there's no cron job or scheduler to auto-publish.
 
-4. **No scheduling backend:** `scheduledPublishAt` column exists but there's no cron job or scheduler to auto-publish.
-
-5. **Single Duda site per user:** System assumes one Duda site per user. Multi-site support would require site selection UI.
+4. **Single Duda site per user:** System assumes one Duda site per user. Multi-site support would require site selection UI.
 
 ### Technical Debt
 
@@ -332,10 +392,14 @@ Or create migration SQL manually if interactive prompts block CI/CD.
 | POST | `/api/blog-posts` | Create new post |
 | PATCH | `/api/blog-posts/:id` | Update post |
 | DELETE | `/api/blog-posts/:id` | Delete post |
-| POST | `/api/blog-posts/generate-content` | AI generate full blog |
+| POST | `/api/blog-posts/generate-content` | AI generate full blog (accepts `images` array) |
+| POST | `/api/blog-posts/suggest-keyword-context` | Suggest talking points/context from keyword |
 | POST | `/api/blog-posts/:id/regenerate-section` | Regenerate one section |
-| POST | `/api/blog-posts/:id/sync-to-duda` | Create/update on Duda |
+| POST | `/api/blog-posts/:id/sync-to-duda` | Upload images to Duda CDN, create/update on Duda |
 | POST | `/api/blog-posts/:id/publish-to-duda` | Publish on Duda |
+| POST | `/api/blog-images/upload` | Upload image file (multipart form: image + imageType + caption) |
+| PATCH | `/api/blog-images/:id` | Update image metadata (link to post, change type/caption) |
+| GET | `/api/blog-posts/:id/images` | List images for a post |
 | GET | `/api/blog-layout-templates` | Get available templates |
 
 ### Key Functions
@@ -344,9 +408,10 @@ Or create migration SQL manually if interactive prompts block CI/CD.
 |----------|------|---------|
 | `generateBlogContent()` | blog-content-generator.ts | Main AI generation entry point |
 | `calculateSeoScore()` | blog-content-generator.ts | Returns score + checklist |
-| `blogContentToHtml()` | blog-content-generator.ts | Converts sections to HTML |
+| `blogContentToHtml()` | blog-content-generator.ts | Converts sections to HTML; replaces `{{IMAGE:type}}` placeholders with `<img>` tags |
 | `canAccessBlogFeature()` | routes.ts | Plan-based access check |
-| `dudaApi.createBlogPost()` | duda-api.ts | Duda API create call |
+| `dudaApi.createBlogPost()` | duda-api.ts | Duda API create/import call |
+| `dudaApi.uploadResources()` | duda-api.ts | Upload images to Duda CDN; returns CDN URLs |
 
 ---
 

@@ -56,6 +56,9 @@ interface CompanyResponse {
   profile: DirectoryProfile;
   services: ServiceListing[];
   isIndexable: boolean;
+  landingPageUrl?: string | null;
+  landingPagePublished?: boolean;
+  isFreePlan?: boolean;
 }
 
 export default function DirectoryCompanyPage() {
@@ -86,6 +89,11 @@ export default function DirectoryCompanyPage() {
 
   const profile = data?.profile;
   const services = data?.services || [];
+  const landingPageUrl = data?.landingPageUrl || null;
+  const landingPagePublished = data?.landingPagePublished || false;
+  const isFreePlan = data?.isFreePlan || false;
+  const websiteUrl = isFreePlan ? landingPageUrl : (profile?.websiteUrl || landingPageUrl);
+  const websiteAvailable = isFreePlan ? landingPagePublished : Boolean(profile?.websiteUrl || landingPagePublished);
 
   // SEO: Set page title and meta description
   useEffect(() => {
@@ -101,8 +109,19 @@ export default function DirectoryCompanyPage() {
         tag.content = desc;
         document.head.appendChild(tag);
       }
+      if (!landingPagePublished) {
+        const robots = document.querySelector('meta[name="robots"]');
+        if (robots) {
+          robots.setAttribute("content", "noindex, nofollow");
+        } else {
+          const tag = document.createElement("meta");
+          tag.name = "robots";
+          tag.content = "noindex, nofollow";
+          document.head.appendChild(tag);
+        }
+      }
     }
-  }, [profile]);
+  }, [profile, landingPagePublished]);
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -173,9 +192,9 @@ export default function DirectoryCompanyPage() {
 
                 {/* Contact Info - pill style */}
                 <div className="flex flex-wrap gap-2">
-                  {profile?.websiteUrl && (
+                  {websiteAvailable && websiteUrl ? (
                     <a
-                      href={profile.websiteUrl}
+                      href={websiteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-full px-4 py-2 transition-colors"
@@ -184,6 +203,11 @@ export default function DirectoryCompanyPage() {
                       Website
                       <ExternalLink className="h-3 w-3" />
                     </a>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 bg-gray-100 rounded-full px-4 py-2">
+                      <Globe className="h-3.5 w-3.5" />
+                      Website Unavailable
+                    </div>
                   )}
                   {profile?.phoneNumber && (
                     <a

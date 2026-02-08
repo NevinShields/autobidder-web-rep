@@ -13,6 +13,7 @@ import EnhancedVariableInput from "./enhanced-variable-input";
 
 interface CalculatorPreviewProps {
   formula: Formula & { showAutobidderBranding?: boolean };
+  onLeadSubmitted?: () => void;
 }
 
 interface LeadFormData {
@@ -21,7 +22,7 @@ interface LeadFormData {
   phone: string;
 }
 
-export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
+export default function CalculatorPreview({ formula, onLeadSubmitted }: CalculatorPreviewProps) {
   const [values, setValues] = useState<Record<string, any>>({});
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [leadForm, setLeadForm] = useState<LeadFormData>({ name: "", email: "", phone: "" });
@@ -75,6 +76,7 @@ export default function CalculatorPreview({ formula }: CalculatorPreviewProps) {
         description: "Thank you for your interest. We'll contact you soon.",
       });
       setLeadForm({ name: "", email: "", phone: "" });
+      onLeadSubmitted?.();
     },
     onError: () => {
       toast({

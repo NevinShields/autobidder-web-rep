@@ -22,6 +22,9 @@ interface BusinessInfo {
   businessName?: string;
   businessType?: string;
   industry?: string;
+  serviceCity?: string;
+  serviceState?: string;
+  serviceLocation?: string;
   website?: string;
   phone?: string;
   address?: string;
@@ -40,6 +43,14 @@ interface OnboardingStep {
   completed: boolean;
 }
 
+const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+];
+
 export default function Onboarding() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
@@ -53,6 +64,27 @@ export default function Onboarding() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated, user, isLoading: authLoading } = useAuth();
+
+  const parseServiceLocation = (location?: string) => {
+    if (!location || !location.includes(",")) return { city: "", state: "" };
+    const parts = location.split(",").map(part => part.trim()).filter(Boolean);
+    if (parts.length < 2) return { city: "", state: "" };
+    return {
+      city: parts.slice(0, parts.length - 1).join(", "),
+      state: parts[parts.length - 1],
+    };
+  };
+
+  const normalizeBusinessInfo = (info: BusinessInfo): BusinessInfo => {
+    const city = (info.serviceCity || "").trim();
+    const state = (info.serviceState || "").trim();
+    return {
+      ...info,
+      serviceCity: city,
+      serviceState: state,
+      serviceLocation: city && state ? `${city}, ${state}` : info.serviceLocation,
+    };
+  };
 
   const userId = (user as any)?.id;
 
@@ -72,7 +104,9 @@ export default function Onboarding() {
         firstName: data.userInfo.firstName,
         lastName: data.userInfo.lastName,
         password: data.userInfo.password,
-        businessName: data.businessInfo.businessName
+        businessName: data.businessInfo.businessName,
+        industry: data.businessInfo.industry,
+        serviceLocation: data.businessInfo.serviceLocation,
       };
       
       const response = await fetch("/api/auth/signup", {
@@ -180,7 +214,13 @@ export default function Onboarding() {
       }
       
       if ((user as any).businessInfo) {
-        setBusinessInfo((user as any).businessInfo);
+        const savedInfo = (user as any).businessInfo as BusinessInfo;
+        const parsed = parseServiceLocation(savedInfo.serviceLocation);
+        setBusinessInfo({
+          ...savedInfo,
+          serviceCity: savedInfo.serviceCity || parsed.city,
+          serviceState: savedInfo.serviceState || parsed.state,
+        });
       }
     }
   }, [isAuthenticated, user, createAccountMutation.isPending, setLocation]);
@@ -299,16 +339,15 @@ export default function Onboarding() {
       }
 
       if (currentStep === 3) {
-        if (!businessInfo.businessName || !businessInfo.industry) {
+        if (!businessInfo.businessName || !businessInfo.industry || !businessInfo.serviceCity || !businessInfo.serviceState) {
           toast({
             title: "Missing Information",
-            description: "Please provide your business name and industry to continue.",
+            description: "Please provide your business name, industry, city, and state to continue.",
             variant: "destructive",
           });
           return;
         }
-
-        createAccountMutation.mutate({ userInfo, businessInfo });
+        createAccountMutation.mutate({ userInfo, businessInfo: normalizeBusinessInfo(businessInfo) });
         return;
       }
 
@@ -324,10 +363,10 @@ export default function Onboarding() {
       }
       
       if (currentStep === 2) {
-        if (!businessInfo.businessName || !businessInfo.industry) {
+        if (!businessInfo.businessName || !businessInfo.industry || !businessInfo.serviceCity || !businessInfo.serviceState) {
           toast({
             title: "Missing Information",
-            description: "Please provide your business name and industry to continue.",
+            description: "Please provide your business name, industry, city, and state to continue.",
             variant: "destructive",
           });
           return;
@@ -353,7 +392,7 @@ export default function Onboarding() {
       try {
         await updateStepMutation.mutateAsync({ 
           step: nextStep, 
-          businessInfo: currentStep === 2 ? businessInfo : undefined 
+          businessInfo: currentStep === 2 ? normalizeBusinessInfo(businessInfo) : undefined 
         });
         
         if (currentStep === 2 && businessInfo.industry && businessInfo.industry !== 'Other' && !businessInfo.templatesPrepopulated) {
@@ -584,6 +623,44 @@ export default function Onboarding() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="serviceCity" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                      City
+                    </Label>
+                    <Input
+                      id="serviceCity"
+                      value={businessInfo.serviceCity || ""}
+                      onChange={(e) => setBusinessInfo(prev => ({ ...prev, serviceCity: e.target.value }))}
+                      placeholder="Austin"
+                      className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
+                      data-testid="input-serviceCity"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="serviceState" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                      State
+                    </Label>
+                    <Select
+                      value={businessInfo.serviceState || ""}
+                      onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, serviceState: value }))}
+                    >
+                      <SelectTrigger
+                        id="serviceState"
+                        className="bg-[#1a1a24] border-[#2a2a3a] text-white h-12 focus:border-blue-500/50"
+                        data-testid="select-serviceState"
+                      >
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {US_STATES.map(state => (
+                          <SelectItem key={state} value={state}>{state}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </>
             )}

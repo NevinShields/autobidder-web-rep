@@ -577,10 +577,16 @@ export class DudaApiService {
       console.log(`📝 Import URL: ${url}`);
       console.log(`📝 Import payload keys: ${Object.keys(post).join(', ')}`);
 
+      // Duda requires the content field to be base64 encoded
+      const payload = {
+        ...post,
+        content: Buffer.from(post.content, 'utf-8').toString('base64')
+      };
+
       const response = await fetch(url, {
         method: 'POST',
         headers: this.getAuthHeaders(),
-        body: JSON.stringify(post)
+        body: JSON.stringify(payload)
       });
 
       console.log(`📝 Duda import blog post response status: ${response.status}`);
@@ -798,6 +804,56 @@ export class DudaApiService {
       console.log('✅ Successfully deleted blog post:', postId);
     } catch (error) {
       console.error('❌ Full error in deleteBlogPost:', error);
+      throw error;
+    }
+  }
+
+  async uploadResources(siteName: string, imageUrls: string[]): Promise<{ src: string; url: string }[]> {
+    try {
+      console.log(`🖼️ Uploading ${imageUrls.length} image(s) to Duda CDN for site: ${siteName}`);
+
+      const resources = imageUrls.map(src => ({
+        resource_type: "IMAGE",
+        src
+      }));
+
+      const response = await fetch(
+        `${this.config.baseUrl}/sites/multiscreen/resources/${encodeURIComponent(siteName)}/upload`,
+        {
+          method: 'POST',
+          headers: this.getAuthHeaders(),
+          body: JSON.stringify(resources)
+        }
+      );
+
+      console.log(`🖼️ Duda upload resources response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda upload resources error (${response.status}):`, error);
+        throw new Error(`Duda API error uploading resources: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        console.log('🖼️ Empty response from upload (returning empty array)');
+        return [];
+      }
+
+      try {
+        const parsed = JSON.parse(responseText);
+        const results = Array.isArray(parsed) ? parsed : (parsed.resources || []);
+        console.log(`✅ Successfully uploaded ${results.length} resource(s) to Duda CDN`);
+        return results.map((r: any, i: number) => ({
+          src: imageUrls[i] || r.original_url || r.src || '',
+          url: r.url || r.resource_url || r.src || ''
+        }));
+      } catch (parseError) {
+        console.error('❌ JSON parse failed for upload resources response');
+        throw new Error(`Failed to parse Duda upload resources response: ${responseText}`);
+      }
+    } catch (error) {
+      console.error('❌ Full error in uploadResources:', error);
       throw error;
     }
   }

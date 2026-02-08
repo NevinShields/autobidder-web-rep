@@ -120,7 +120,7 @@ export default function DirectorySetup() {
   const [newCityState, setNewCityState] = useState("");
 
   // Queries
-  const { data: existingProfile, isLoading: profileLoading } = useQuery<DirectoryProfile | null>({
+  const { data: existingProfile, isLoading: profileLoading, isError: profileError } = useQuery<DirectoryProfile | null>({
     queryKey: ["/api/directory/profile"],
   });
 
@@ -226,7 +226,7 @@ export default function DirectorySetup() {
       toast({ title: "Profile created!" });
       setCurrentStep(2);
     },
-    onError: () => toast({ title: "Failed to create profile", variant: "destructive" }),
+    onError: (err: any) => toast({ title: "Failed to create profile", description: err.message || "Please try again", variant: "destructive" }),
   });
 
   const updateProfile = useMutation({
@@ -237,7 +237,7 @@ export default function DirectorySetup() {
       toast({ title: "Profile updated!" });
       setCurrentStep(2);
     },
-    onError: () => toast({ title: "Failed to update profile", variant: "destructive" }),
+    onError: (err: any) => toast({ title: "Failed to update profile", description: err.message || "Please try again", variant: "destructive" }),
   });
 
   const addService = useMutation({
@@ -276,7 +276,7 @@ export default function DirectorySetup() {
       toast({ title: "Service area saved!" });
       setCurrentStep(4);
     },
-    onError: () => toast({ title: "Failed to save service area", variant: "destructive" }),
+    onError: (err: any) => toast({ title: "Failed to save service area", description: err.message || "Please try again", variant: "destructive" }),
   });
 
   const toggleVisibility = useMutation({
@@ -306,30 +306,43 @@ export default function DirectorySetup() {
     if (existingProfile) {
       updateProfile.mutate(profileForm);
     } else {
+      // Always use POST (create) — the backend handles upsert if profile already exists
       createProfile.mutate(profileForm);
     }
   };
 
   const handleServiceToggle = async (formulaId: number, categoryId: number | null) => {
+    const previous = new Map(selectedServices);
     const existing = existingServices?.find(s => s.formulaId === formulaId);
 
-    if (categoryId === null) {
-      // Remove service
-      if (existing) {
-        await removeService.mutateAsync(existing.id);
-        setSelectedServices(prev => {
-          const next = new Map(prev);
-          next.delete(formulaId);
-          return next;
-        });
+    // Optimistic UI update so toggles feel instant.
+    setSelectedServices(prev => {
+      const next = new Map(prev);
+      if (categoryId === null) {
+        next.delete(formulaId);
+      } else {
+        next.set(formulaId, categoryId);
       }
-    } else {
-      // Add/update service
-      if (existing) {
+      return next;
+    });
+
+    try {
+      if (categoryId === null) {
+        if (!existing) {
+          queryClient.invalidateQueries({ queryKey: ["/api/directory/services"] });
+          return;
+        }
         await removeService.mutateAsync(existing.id);
+      } else {
+        await addService.mutateAsync({ formulaId, categoryId });
       }
-      await addService.mutateAsync({ formulaId, categoryId });
-      setSelectedServices(prev => new Map(prev).set(formulaId, categoryId));
+    } catch (error: any) {
+      setSelectedServices(previous);
+      toast({
+        title: "Failed to update service",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
     }
   };
 
@@ -579,7 +592,9 @@ export default function DirectorySetup() {
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={checked => {
-                              if (!checked) {
+                              if (checked && !isSelected && approvedCategories.length > 0) {
+                                handleServiceToggle(formula.id, approvedCategories[0].id);
+                              } else if (!checked && isSelected) {
                                 handleServiceToggle(formula.id, null);
                               }
                             }}

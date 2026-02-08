@@ -33,7 +33,7 @@ export default function LandingSplitTest() {
     {
       icon: Globe,
       title: "High-End Website Built to Convert",
-      description: "Professionally built website powered by Duda platform, hosting 30%+ of home-service websites. Fully optimized for SEO and lead generation."
+      description: "Professionally built website powered by our website platform, hosting 30%+ of home-service websites. Fully optimized for SEO and lead generation."
     },
     {
       icon: Search,

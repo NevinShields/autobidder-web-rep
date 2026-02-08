@@ -332,8 +332,8 @@ export default function Features() {
         },
         {
           icon: Building2,
-          title: "Duda Integration",
-          description: "Native integration with Duda website builder for seamless form submissions"
+          title: "Website Builder Integration",
+          description: "Native integration with our website builder for seamless form submissions"
         }
       ]
     },

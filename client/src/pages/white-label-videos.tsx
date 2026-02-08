@@ -325,18 +325,27 @@ export default function WhiteLabelVideosPage() {
 
   const uploadFileMutation = useMutation({
     mutationFn: async (file: File) => {
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', file);
-      const response = await fetch('/api/white-label-videos/upload', {
-        method: 'POST',
-        body: uploadFormData,
-        credentials: 'include',
+      const initResponse = await apiRequest("POST", "/api/white-label-videos/upload-url", {
+        originalName: file.name,
+        contentType: file.type || "application/octet-stream",
       });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-        throw new Error(errorData.message || 'Upload failed');
+      const { uploadUrl, fileUrl, fileName } = await initResponse.json();
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+        },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        const responseText = await uploadResponse.text().catch(() => "");
+        const message = responseText.slice(0, 300) || `Upload failed (${uploadResponse.status})`;
+        throw new Error(message);
       }
-      return response.json();
+
+      return { fileUrl, fileName };
     },
   });
 
@@ -353,8 +362,8 @@ export default function WhiteLabelVideosPage() {
     }
 
     const submitData = async () => {
-      let fileUrl = null;
-      let fileName = null;
+      let fileUrl = formData.fileUrl;
+      let fileName = formData.fileName;
 
       if (selectedFile) {
         try {

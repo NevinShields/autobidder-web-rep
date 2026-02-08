@@ -10,8 +10,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
-import { ChevronDown, ChevronUp, Map, Search, User, Mail, Phone, MapPin, X } from "lucide-react";
-import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead } from "@shared/schema";
+import { ChevronDown, ChevronUp, Map, Search, User, Mail, Phone, MapPin, X, Home, Loader2 } from "lucide-react";
+import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead, PropertyAttributes } from "@shared/schema";
 import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 import { injectCSSVariables } from "@shared/css-variables";
 
@@ -564,7 +564,13 @@ export default function StyledCalculator(props: any = {}) {
     warnings: string[];
     formulaName?: string;
   }>>([]);
-  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
+  const [currentStep, setCurrentStep] = useState<"selection" | "address" | "configuration" | "contact" | "pricing" | "scheduling">("selection");
+  const [propertyAddress, setPropertyAddress] = useState("");
+  const [propertyAttributes, setPropertyAttributes] = useState<PropertyAttributes>({});
+  const [propertySnapshotId, setPropertySnapshotId] = useState<number | null>(null);
+  const [isResolvingProperty, setIsResolvingProperty] = useState(false);
+  const [propertyAutofillSkipped, setPropertyAutofillSkipped] = useState(false);
+  const [prefilledFields, setPrefilledFields] = useState<Record<string, string>>({});
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   
@@ -787,10 +793,11 @@ export default function StyledCalculator(props: any = {}) {
     // Map step names to step numbers
     const stepMap: Record<string, number> = {
       selection: 1,
-      configuration: 2,
-      contact: 3,
-      pricing: 4,
-      scheduling: 5
+      address: 2,
+      configuration: 3,
+      contact: 4,
+      pricing: 5,
+      scheduling: 6
     };
 
     const stepNumber = stepMap[currentStep] || 1;
@@ -1090,7 +1097,10 @@ export default function StyledCalculator(props: any = {}) {
       setSelectedServices([serviceId]);
       setCartServiceIds([serviceId]);
       setExpandedServices(new Set([serviceId]));
-      setCurrentStep("configuration");
+      // Check if address step should show for this single service
+      const hasPropertyMappings = businessSettings?.styling?.enablePropertyAutofill &&
+        formulas[0].variables?.some((v: any) => v.prefillSourceKey);
+      setCurrentStep(hasPropertyMappings ? "address" : "configuration");
       setSingleServiceInitialized(true);
     }
   }, [isSingleServiceMode, formulas, singleServiceInitialized]);
@@ -1760,6 +1770,90 @@ export default function StyledCalculator(props: any = {}) {
     });
   };
 
+  // Determine if address step should be shown
+  const shouldShowAddressStep = useMemo(() => {
+    if (!businessSettings?.styling?.enablePropertyAutofill) return false;
+    return selectedServices.some(serviceId => {
+      const formula = formulas?.find((f: Formula) => f.id === serviceId);
+      return formula?.variables?.some((v: any) => v.prefillSourceKey);
+    });
+  }, [selectedServices, formulas, businessSettings]);
+
+  // Apply property data prefill to service variables
+  const applyPropertyPrefill = (attributes: PropertyAttributes) => {
+    const newPrefilledFields: Record<string, string> = {};
+
+    selectedServices.forEach(serviceId => {
+      const formula = formulas?.find((f: Formula) => f.id === serviceId);
+      if (!formula?.variables) return;
+
+      formula.variables.forEach((variable: any) => {
+        if (!variable.prefillSourceKey) return;
+        const attrValue = (attributes as any)[variable.prefillSourceKey];
+        if (attrValue === undefined || attrValue === null) return;
+
+        // Only prefill if user hasn't already entered a value
+        const existingValue = serviceVariables[serviceId]?.[variable.id];
+        if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) return;
+
+        // Type conversion based on variable type
+        let convertedValue: any = attrValue;
+        if (['number', 'slider', 'stepper'].includes(variable.type)) {
+          convertedValue = typeof attrValue === 'number' ? attrValue : parseFloat(attrValue);
+          if (isNaN(convertedValue)) return;
+        } else if (['select', 'dropdown'].includes(variable.type) && variable.options) {
+          const strValue = String(attrValue).toLowerCase();
+          const matchedOption = variable.options.find((opt: any) =>
+            String(opt.label).toLowerCase().includes(strValue) ||
+            String(opt.value).toLowerCase().includes(strValue) ||
+            strValue.includes(String(opt.label).toLowerCase())
+          );
+          if (matchedOption) {
+            convertedValue = matchedOption.value;
+          } else {
+            return;
+          }
+        }
+
+        handleServiceVariableChange(serviceId, variable.id, convertedValue);
+        newPrefilledFields[`${serviceId}_${variable.id}`] = variable.prefillSourceKey;
+      });
+    });
+
+    setPrefilledFields(newPrefilledFields);
+  };
+
+  // Resolve property data from address
+  const handlePropertyResolve = async () => {
+    if (!propertyAddress.trim()) return;
+
+    setIsResolvingProperty(true);
+    try {
+      const response = await fetch('/api/property/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: propertyAddress,
+          formulaIds: selectedServices,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to resolve property');
+
+      const data = await response.json();
+      setPropertyAttributes(data.attributes || {});
+      setPropertySnapshotId(data.snapshotId);
+
+      applyPropertyPrefill(data.attributes || {});
+      setCurrentStep('configuration');
+    } catch (error) {
+      console.error('Property resolve error:', error);
+      setCurrentStep('configuration');
+    } finally {
+      setIsResolvingProperty(false);
+    }
+  };
+
   // Check if a service has all required variables filled
   const isServiceComplete = (serviceId: number) => {
     const service = formulas?.find(f => f.id === serviceId);
@@ -1946,7 +2040,11 @@ export default function StyledCalculator(props: any = {}) {
       // Silently prevent progression - no toast for iframe embedding
       return;
     }
-    setCurrentStep("configuration");
+    if (shouldShowAddressStep && !propertyAutofillSkipped && Object.keys(propertyAttributes).length === 0) {
+      setCurrentStep("address");
+    } else {
+      setCurrentStep("configuration");
+    }
   };
 
   const proceedToContact = () => {
@@ -2546,6 +2644,81 @@ export default function StyledCalculator(props: any = {}) {
           </div>
         );
 
+      case "address":
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-4">
+              <h1
+                className="text-2xl font-bold mb-2 flex items-center justify-center gap-2"
+                style={{ color: styling.primaryColor || '#2563EB' }}
+              >
+                <Home className="w-6 h-6" />
+                Property Address
+              </h1>
+              <p className="text-gray-600 text-sm">
+                Enter the property address to automatically fill in measurements and details.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Label htmlFor="property-address" style={{ color: styling.primaryColor || '#2563EB' }}>
+                Property Address
+              </Label>
+              <Input
+                id="property-address"
+                type="text"
+                placeholder="e.g., 123 Main St, Springfield, IL 62701"
+                value={propertyAddress}
+                onChange={(e) => setPropertyAddress(e.target.value)}
+                className="w-full"
+                style={getInputStyles()}
+              />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={handlePropertyResolve}
+                disabled={!propertyAddress.trim() || isResolvingProperty}
+                className="ab-button ab-button-primary button w-full"
+                style={getButtonStyles('primary')}
+                onMouseEnter={applyButtonHoverStyles('primary')}
+                onMouseLeave={applyButtonNormalStyles('primary')}
+              >
+                {isResolvingProperty ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Looking up property...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4 mr-2" />
+                    Look Up Property Data
+                  </>
+                )}
+              </Button>
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={() => setCurrentStep("selection")}
+                  className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                  style={{ color: styling.primaryColor || '#2563EB' }}
+                >
+                  ← Back
+                </button>
+                <button
+                  onClick={() => {
+                    setPropertyAutofillSkipped(true);
+                    setCurrentStep("configuration");
+                  }}
+                  className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                  style={{ color: styling.primaryColor || '#2563EB' }}
+                >
+                  Skip this step →
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
       case "configuration":
         return (
           <div className="space-y-8">
@@ -2553,7 +2726,7 @@ export default function StyledCalculator(props: any = {}) {
             {(businessSettings?.styling?.showFormTitle !== false || businessSettings?.styling?.showFormSubtitle !== false) && (
               <div className="text-center mb-8">
                 {businessSettings?.styling?.showFormTitle !== false && businessSettings?.styling?.configurationTitle && businessSettings.styling.configurationTitle.trim() && (
-                  <h1 
+                  <h1
                     className="text-3xl font-bold mb-2"
                     style={{ color: styling.primaryColor || '#2563EB' }}
                   >
@@ -2795,6 +2968,7 @@ export default function StyledCalculator(props: any = {}) {
                           allVariables={service.variables}
                           currentValues={serviceVariables[serviceId] || {}}
                           hasCustomCSS={!!designSettings?.customCSS}
+                          prefillSource={prefilledFields[`${serviceId}_${variable.id}`]}
                         />
                       ))}
                     </Suspense>
@@ -3938,6 +4112,10 @@ export default function StyledCalculator(props: any = {}) {
                       setServiceVariables({});
                       setServiceCalculations({});
                       setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                      setPropertyAddress("");
+                      setPropertyAttributes({});
+                      setPropertyAutofillSkipped(false);
+                      setPrefilledFields({});
                       setCurrentStep("selection");
                     }
                   }}
@@ -3957,6 +4135,10 @@ export default function StyledCalculator(props: any = {}) {
                     setServiceVariables({});
                     setServiceCalculations({});
                     setLeadForm({ name: "", email: "", phone: "", address: "", notes: "" });
+                    setPropertyAddress("");
+                    setPropertyAttributes({});
+                    setPropertyAutofillSkipped(false);
+                    setPrefilledFields({});
                     setCurrentStep("selection");
                   }}
                   variant="outline"
@@ -4097,6 +4279,10 @@ export default function StyledCalculator(props: any = {}) {
                           setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
                           setSubmittedLeadId(null);
                           setBookingConfirmed(false);
+                          setPropertyAddress("");
+                          setPropertyAttributes({});
+                          setPropertyAutofillSkipped(false);
+                          setPrefilledFields({});
                           setCurrentStep("selection");
                         }
                       }}
@@ -4132,39 +4318,45 @@ export default function StyledCalculator(props: any = {}) {
 
   // Calculate progress bar percentage based on form completion
   const getFormProgress = () => {
+    const hasAddress = shouldShowAddressStep;
     switch (currentStep) {
       case "selection":
         // 0-25% during service selection - fills as services are selected
         const totalServices = formulas?.length || 1;
-        const selectionProgress = selectedServices.length > 0 
-          ? Math.min(25, (selectedServices.length / totalServices) * 25)
+        const selectionProgress = selectedServices.length > 0
+          ? Math.min(hasAddress ? 20 : 25, (selectedServices.length / totalServices) * (hasAddress ? 20 : 25))
           : 0;
         return selectionProgress;
+      case "address":
+        return 30;
       case "configuration":
-        return 50; // 50% when configuring services
+        return hasAddress ? 55 : 50;
       case "contact":
-        return 75; // 75% when entering contact info
+        return 75;
       case "pricing":
-        return 100; // 100% when viewing pricing
+        return 100;
       case "scheduling":
-        return 100; // 100% when scheduling
+        return 100;
       default:
         return 0;
     }
   };
 
   const getProgressLabel = () => {
+    const hasAddress = shouldShowAddressStep;
     switch (currentStep) {
       case "selection":
         return "Step 1: Select Services";
+      case "address":
+        return "Step 2: Property Address";
       case "configuration":
-        return "Step 2: Configure Services";
+        return hasAddress ? "Step 3: Configure Services" : "Step 2: Configure Services";
       case "contact":
-        return "Step 3: Contact Information";
+        return hasAddress ? "Step 4: Contact Information" : "Step 3: Contact Information";
       case "pricing":
-        return "Step 4: Review Quote";
+        return hasAddress ? "Step 5: Review Quote" : "Step 4: Review Quote";
       case "scheduling":
-        return "Step 4: Schedule Appointment";
+        return hasAddress ? "Step 5: Schedule Appointment" : "Step 4: Schedule Appointment";
       default:
         return "Getting Started";
     }

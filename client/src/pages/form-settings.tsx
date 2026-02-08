@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload, Tag, Plus, Trash2, Edit2, Video, Play, Filter, Share2 } from "lucide-react";
+import { Settings, Percent, Receipt, Users, Mail, ExternalLink, UserCheck, MapPin, MessageSquare, HeadphonesIcon, FileText, ImageIcon, Upload, Tag, Plus, Trash2, Edit2, Video, Play, Filter, Share2, Home } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -66,7 +66,7 @@ export default function FormSettings() {
     enableHowDidYouHear: false,
     requireHowDidYouHear: false,
     howDidYouHearOptions: ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
-    leadSourceOptions: ['Calculator', 'Duda', 'Custom Form', 'Manual'],
+    leadSourceOptions: ['Calculator', 'Website', 'Custom Form', 'Manual'],
     nameLabel: 'Full Name',
     emailLabel: 'Email Address',
     phoneLabel: 'Phone Number',
@@ -116,7 +116,10 @@ export default function FormSettings() {
     enableCustomButton: false,
     customButtonText: 'Get Another Quote',
     customButtonUrl: '',
-    
+
+    // Property data autofill
+    enablePropertyAutofill: false,
+
     // Custom form content
     selectionTitle: 'Select Your Services',
     selectionSubtitle: "Choose the services you'd like a quote for",
@@ -169,7 +172,7 @@ export default function FormSettings() {
         enableHowDidYouHear: businessSettings.styling.enableHowDidYouHear || false,
         requireHowDidYouHear: businessSettings.styling.requireHowDidYouHear || false,
         howDidYouHearOptions: businessSettings.styling.howDidYouHearOptions || ['Google Search', 'Social Media', 'Word of Mouth', 'Advertisement', 'Other'],
-        leadSourceOptions: businessSettings.styling.leadSourceOptions || ['Calculator', 'Duda', 'Custom Form', 'Manual'],
+        leadSourceOptions: businessSettings.styling.leadSourceOptions || ['Calculator', 'Website', 'Custom Form', 'Manual'],
         nameLabel: businessSettings.styling.nameLabel || 'Full Name',
         emailLabel: businessSettings.styling.emailLabel || 'Email Address',
         phoneLabel: businessSettings.styling.phoneLabel || 'Phone Number',
@@ -219,7 +222,10 @@ export default function FormSettings() {
         enableCustomButton: businessSettings.styling.enableCustomButton ?? false,
         customButtonText: businessSettings.styling.customButtonText || 'Get Another Quote',
         customButtonUrl: businessSettings.styling.customButtonUrl || '',
-        
+
+        // Property data autofill
+        enablePropertyAutofill: businessSettings.styling.enablePropertyAutofill ?? false,
+
         // Custom form content titles
         selectionTitle: businessSettings.styling.selectionTitle || 'Select Your Services',
         selectionSubtitle: businessSettings.styling.selectionSubtitle || "Choose the services you'd like a quote for",
@@ -288,7 +294,10 @@ export default function FormSettings() {
           enableCustomButton: updatedSettings.enableCustomButton,
           customButtonText: updatedSettings.customButtonText,
           customButtonUrl: updatedSettings.customButtonUrl,
-          
+
+          // Property data autofill
+          enablePropertyAutofill: updatedSettings.enablePropertyAutofill,
+
           // Custom form content titles
           selectionTitle: updatedSettings.selectionTitle,
           selectionSubtitle: updatedSettings.selectionSubtitle,
@@ -1517,6 +1526,41 @@ export default function FormSettings() {
                           Detailed instructions to help customers upload useful images
                         </p>
                       </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Property Data Autofill */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div className="space-y-1 flex-1">
+                      <Label className="text-base font-medium flex items-center gap-2">
+                        <Home className="w-4 h-4" />
+                        Property Data Autofill
+                      </Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Auto-fill form fields with property data (sqft, roof type, etc.) from the customer's address</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm text-gray-500">Enable</span>
+                      <MobileToggle
+                        checked={formSettings.enablePropertyAutofill}
+                        onCheckedChange={(checked) => handleSettingChange('enablePropertyAutofill', checked)}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                  {formSettings.enablePropertyAutofill && (
+                    <div className="pl-4 border-l-2 border-green-100 space-y-2">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        When enabled, customers will see an address step before configuring services. Property data is looked up automatically and mapped to questions you've tagged with "Prefill from Property Data" in the formula builder.
+                      </p>
+                      <Alert>
+                        <AlertDescription className="text-xs">
+                          To map questions, go to the Formula Builder and set the "Prefill from Property Data" attribute on each variable you want auto-filled.
+                        </AlertDescription>
+                      </Alert>
                     </div>
                   )}
                 </div>

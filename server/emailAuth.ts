@@ -12,6 +12,7 @@ import { db } from "./db";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
 import { sendAdminNewUserSignupNotification } from "./email-templates";
 import { addUserToGoogleSheet } from "./googleSheets";
+import { ensureDirectoryProfileFromBusinessInfo } from "./directory-onboarding";
 
 // Validation schemas
 export const signupSchema = z.object({
@@ -20,6 +21,8 @@ export const signupSchema = z.object({
   email: z.string().email("Valid email is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   businessName: z.string().optional(),
+  industry: z.string().optional(),
+  serviceLocation: z.string().optional(),
 });
 
 export const loginSchema = z.object({
@@ -332,7 +335,7 @@ export function setupEmailAuth(app: Express) {
   app.post("/api/auth/signup", async (req: Request, res: Response) => {
     try {
       const validatedData = signupSchema.parse(req.body);
-      const { firstName, lastName, email, password, businessName } = validatedData;
+      const { firstName, lastName, email, password, businessName, industry, serviceLocation } = validatedData;
       
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(email);
@@ -393,10 +396,14 @@ export function setupEmailAuth(app: Express) {
           canManageIntegrations: true,
           canCustomizeBranding: true,
         },
-        businessInfo: businessName ? { businessName } : undefined,
+        businessInfo: businessName || industry || serviceLocation
+          ? { businessName, industry, serviceLocation }
+          : undefined,
         onboardingCompleted: false,
         onboardingStep: 1,
       });
+
+      await ensureDirectoryProfileFromBusinessInfo(user.id, user.businessInfo);
       
       // Create onboarding progress
       await storage.createOnboardingProgress({

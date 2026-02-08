@@ -26,14 +26,20 @@ import {
   Zap,
   BrickWall,
 } from "lucide-react";
+import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 const Section = ({
   children,
   className = "",
+  ...props
 }: {
   children?: React.ReactNode;
   className?: string;
-}) => <section className={`py-24 px-6 md:px-12 max-w-7xl mx-auto ${className}`}>{children}</section>;
+} & React.HTMLAttributes<HTMLElement>) => (
+  <section className={`py-24 px-6 md:px-12 max-w-7xl mx-auto ${className}`} {...props}>
+    {children}
+  </section>
+);
 
 const Button = ({
   children,
@@ -116,6 +122,12 @@ export default function Landing() {
   const [activeStep, setActiveStep] = useState(0);
   const [showSticky, setShowSticky] = useState(false);
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+
+  const scrollToSection = (sectionId: string) => () => {
+    const el = document.getElementById(sectionId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -201,18 +213,16 @@ export default function Landing() {
 
       <nav className="fixed top-0 w-full z-50 px-6 py-6 flex justify-between items-center backdrop-blur-md bg-[#0a0a0a]/80 border-b border-white/5">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-            <Zap className="text-black w-5 h-5 fill-current" />
-          </div>
+          <img src={autobidderLogo} alt="Autobidder logo" className="w-8 h-8 rounded-lg object-cover" />
           <span className="text-xl font-bold tracking-tighter uppercase">Autobidder</span>
         </div>
         <div className="hidden md:flex gap-8 text-xs font-medium tracking-widest text-zinc-400 uppercase">
-          <a href="#pricing" className="hover:text-white transition-colors">
+          <button type="button" onClick={scrollToSection("pricing")} className="hover:text-white transition-colors">
             Pricing
-          </a>
-          <a href="#demos" className="hover:text-white transition-colors">
-            Case Studies
-          </a>
+          </button>
+          <button type="button" onClick={scrollToSection("demos")} className="hover:text-white transition-colors">
+            Demos
+          </button>
           <a href="/login" className="hover:text-white transition-colors">
             Log In
           </a>
@@ -582,6 +592,9 @@ export default function Landing() {
         <div className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] tracking-[0.2em] text-zinc-600 uppercase">
           <div>© 2024 Autobidder Inc.</div>
           <div className="flex gap-12">
+            <a href="/docs" className="hover:text-white transition-colors">
+              Docs
+            </a>
             <a href="/privacy" className="hover:text-white transition-colors">
               Privacy
             </a>

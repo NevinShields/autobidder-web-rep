@@ -1,17 +1,17 @@
 import { useState, useRef } from "react";
-import { Variable } from "@shared/schema";
+import { Variable, PROPERTY_ATTRIBUTE_LABELS, PROPERTY_ATTRIBUTE_GROUPS } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload,
   Zap, HelpCircle, ChevronDown, ChevronUp, Hash, Type, CheckSquare,
-  SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2, Link2
+  SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2, Link2, Home
 } from "lucide-react";
 import AIIconGeneratorModal from "./ai-icon-generator-modal";
 import { useToast } from "@/hooks/use-toast";
@@ -1254,6 +1254,51 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                 )}
               </div>
             )}
+          </div>
+
+          {/* Prefill from Property Data */}
+          <div className="space-y-1.5">
+            <Label className="text-xs text-gray-500 font-medium flex items-center gap-1">
+              <Home className="w-3 h-3" />
+              Prefill from Property Data
+            </Label>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+              {variable.prefillSourceKey ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800">
+                    {PROPERTY_ATTRIBUTE_LABELS[variable.prefillSourceKey] || variable.prefillSourceKey}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onUpdate?.(variable.id, { prefillSourceKey: null })}
+                    className="h-5 w-5 p-0 text-gray-400 hover:text-red-500"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  onValueChange={(value) => onUpdate?.(variable.id, { prefillSourceKey: value })}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select property attribute..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PROPERTY_ATTRIBUTE_GROUPS).map(([group, keys]) => (
+                      <SelectGroup key={group}>
+                        <SelectLabel className="text-xs font-semibold text-gray-500 dark:text-gray-400">{group}</SelectLabel>
+                        {keys.map((key) => (
+                          <SelectItem key={key} value={key} className="text-xs">
+                            {PROPERTY_ATTRIBUTE_LABELS[key]}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* Multiple Selection Toggle */}

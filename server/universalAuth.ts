@@ -37,11 +37,23 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       const trialEnd = new Date(user.trialEndDate);
       
       if (now > trialEnd) {
-        return res.status(402).json({ 
-          success: false, 
-          message: "Trial period has expired. Please upgrade your plan.",
-          trialExpired: true 
-        });
+        // Convert expired trial to free plan so users can continue with free-tier features
+        try {
+          await storage.updateUser(user.id, {
+            plan: "free",
+            subscriptionStatus: "inactive",
+          });
+
+          const updatedUser = { ...user, plan: "free", subscriptionStatus: "inactive" };
+          req.session.user = updatedUser as any;
+          (req as any).currentUser = { ...updatedUser, isImpersonating: (req.session as any).isImpersonating || false };
+        } catch (updateError) {
+          console.error("Error updating expired trial user in auth middleware:", updateError);
+          // Fall back to allowing access but treat as free plan in-memory
+          const updatedUser = { ...user, plan: "free", subscriptionStatus: "inactive" };
+          req.session.user = updatedUser as any;
+          (req as any).currentUser = { ...updatedUser, isImpersonating: (req.session as any).isImpersonating || false };
+        }
       }
     }
     

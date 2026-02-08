@@ -1139,7 +1139,7 @@ export default function AdminDashboard() {
                   size="sm"
                 >
                   <Globe className="h-4 w-4 mr-2" />
-                  <span className="hidden xs:inline">Duda </span>Templates
+                  <span className="hidden xs:inline">Website </span>Templates
                 </Button>
                 <Button 
                   onClick={() => window.location.href = '/admin/template-tags'}
@@ -1622,7 +1622,7 @@ export default function AdminDashboard() {
                     }`}
                   >
                     <Tags className="h-4 w-4 inline mr-2" />
-                    Duda Templates
+                    Website Templates
                   </button>
                 </div>
 
@@ -2060,9 +2060,9 @@ export default function AdminDashboard() {
                   </Card>
                 )}
 
-                {/* Duda Templates */}
+                {/* Website Templates */}
                 {activeSubTab === 'duda-templates' && (
-                  <DudaTemplatesSection />
+                  <WebsiteTemplatesSection />
                 )}
               </div>
             </TabsContent>
@@ -3948,8 +3948,8 @@ function SupportTicketsSection() {
   );
 }
 
-// Duda Templates Section Component
-function DudaTemplatesSection() {
+// Website Templates Section Component
+function WebsiteTemplatesSection() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('templates');
@@ -3980,7 +3980,7 @@ function DudaTemplatesSection() {
     onSuccess: (data: any) => {
       toast({
         title: "Templates Synced",
-        description: `Successfully synced ${data.templates?.length || 0} templates from Duda API`
+        description: `Successfully synced ${data.templates?.length || 0} templates from website API`
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/duda-templates'] });
       queryClient.invalidateQueries({ queryKey: ['/api/duda-templates-with-tags'] });
@@ -4138,8 +4138,8 @@ function DudaTemplatesSection() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Duda Template Management</h2>
-          <p className="text-gray-600">Manage Duda website templates and their tags</p>
+          <h2 className="text-2xl font-bold">Website Template Management</h2>
+          <p className="text-gray-600">Manage website templates and their tags</p>
         </div>
         <Button 
           onClick={() => syncTemplatesMutation.mutate()}
@@ -4216,7 +4216,7 @@ function DudaTemplatesSection() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Globe className="w-5 h-5" />
-                  Duda Templates ({(templatesWithTags as any[]).length})
+                  Website Templates ({(templatesWithTags as any[]).length})
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Checkbox

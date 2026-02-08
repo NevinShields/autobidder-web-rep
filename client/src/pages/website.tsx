@@ -209,10 +209,10 @@ export default function Website() {
       
       // Automatically open the activation link in a new tab for immediate access
       if (data.activation_link) {
-        console.log('Opening Duda activation link for immediate access:', data.activation_link);
+        console.log('Opening website activation link for immediate access:', data.activation_link);
         window.open(data.activation_link, '_blank', 'noopener,noreferrer');
       } else if (data.welcome_link) {
-        console.log('Opening Duda welcome link (fallback):', data.welcome_link);
+        console.log('Opening website welcome link (fallback):', data.welcome_link);
         window.open(data.welcome_link, '_blank', 'noopener,noreferrer');
       } else {
         console.log('No links found in response data');
@@ -534,18 +534,36 @@ export default function Website() {
             </Card>
           </div>
 
-          {/* Tabs for Websites and SEO Tracker */}
-          <Tabs defaultValue="websites" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 h-auto p-1 overflow-hidden rounded-lg">
-              <TabsTrigger value="websites" data-testid="tab-websites" className="text-xs sm:text-sm py-2 px-2 sm:px-4 rounded-md data-[state=active]:shadow-sm">
-                <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                <span>Websites</span>
-              </TabsTrigger>
-              <TabsTrigger value="seo" data-testid="tab-seo" className="text-xs sm:text-sm py-2 px-2 sm:px-4 rounded-md data-[state=active]:shadow-sm">
-                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 flex-shrink-0" />
-                <span>SEO Tracker</span>
-              </TabsTrigger>
-            </TabsList>
+          {/* Tabs for Websites, SEO Tracker, and Autoblogger */}
+          <Tabs defaultValue="websites" className="w-full space-y-6">
+            <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
+              <TabsList className="inline-flex w-auto min-w-fit rounded-full bg-slate-100/80 dark:bg-gray-800/70 p-1 shadow-sm ring-1 ring-slate-200/70 dark:ring-gray-700/70 backdrop-blur">
+                <TabsTrigger
+                  value="websites"
+                  data-testid="tab-websites"
+                  className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  Websites
+                </TabsTrigger>
+                <TabsTrigger
+                  value="seo"
+                  data-testid="tab-seo"
+                  className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  SEO Tracker
+                </TabsTrigger>
+                <TabsTrigger
+                  value="blog"
+                  data-testid="tab-blog"
+                  className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Autoblogger
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="websites" className="space-y-6">
               {/* Main Content - Show different content based on whether user has a website */}
@@ -665,7 +683,7 @@ export default function Website() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Website Templates Section */}
               <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-              {/* Duda Template Library Section */}
+              {/* Website Template Library Section */}
               <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -760,7 +778,7 @@ export default function Website() {
                         return 0;
                       }).slice(0, visibleTemplateCount).map((template: any) => {
                         const isCustom = (template.templateType || template.template_properties?.type) === 'custom';
-                        // Use desktop thumbnail for Duda templates (full screenshot), regular thumbnail for custom
+                        // Use desktop thumbnail for builder templates (full screenshot), regular thumbnail for custom
                         const thumbnailSrc = isCustom
                           ? (template.thumbnailUrl || template.thumbnail_url)
                           : (template.desktopThumbnailUrl || template.desktop_thumbnail_url || template.thumbnailUrl || template.thumbnail_url);
@@ -1267,9 +1285,16 @@ export default function Website() {
                                 <FileText className="w-5 h-5 text-blue-500" />
                                 Blog Posts
                               </CardTitle>
-                              <Badge>
-                                {getTaskCounts('blog').completed}/{getTaskCounts('blog').total}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge>
+                                  {getTaskCounts('blog').completed}/{getTaskCounts('blog').total}
+                                </Badge>
+                                <Link href="/blog-posts">
+                                  <Button size="sm" variant="ghost">
+                                    Open
+                                  </Button>
+                                </Link>
+                              </div>
                             </div>
                           </CardHeader>
                           <CardContent>
@@ -1697,6 +1722,26 @@ export default function Website() {
                   </Tabs>
                 </div>
               )}
+            </TabsContent>
+
+            {/* Autoblogger Tab */}
+            <TabsContent value="blog" className="space-y-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-500" />
+                    Autoblogger
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex items-center justify-between gap-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Create and manage SEO-optimized blog posts.
+                  </p>
+                  <Link href="/blog-posts">
+                    <Button size="sm">Open Blog</Button>
+                  </Link>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>

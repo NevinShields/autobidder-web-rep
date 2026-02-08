@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,6 @@ import {
   FileText,
   Search,
   MoreVertical,
-  Eye,
   Edit,
   Trash2,
   Plus,
@@ -53,8 +52,14 @@ import {
   BookOpen,
   TrendingUp,
   Clock,
-  CheckCircle
+  CheckCircle,
+  CalendarDays,
+  MapPin,
+  FilterX,
+  Sparkles,
+  Video
 } from "lucide-react";
+import { FaFacebookF, FaGoogle } from "react-icons/fa6";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BlogPost } from "@shared/schema";
@@ -107,14 +112,14 @@ export default function BlogPostsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
       toast({
-        title: "Synced to Duda",
+        title: "Synced to Website",
         description: "Blog post has been synced to your website.",
       });
     },
     onError: (error: any) => {
       toast({
         title: "Sync Failed",
-        description: error.message || "Failed to sync blog post to Duda",
+        description: error.message || "Failed to sync blog post to website",
         variant: "destructive",
       });
     },
@@ -174,216 +179,408 @@ export default function BlogPostsPage() {
     ? Math.round(posts.reduce((acc, p) => acc + (p.seoScore || 0), 0) / posts.length)
     : 0;
 
+  const hasActiveFilters =
+    searchTerm.trim().length > 0 || statusFilter !== "all" || typeFilter !== "all";
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setTypeFilter("all");
+  };
+
+  const getSeoColorClass = (score?: number | null) => {
+    if (score === null || score === undefined) return "bg-slate-300";
+    if (score >= 80) return "bg-emerald-500";
+    if (score >= 60) return "bg-amber-500";
+    return "bg-rose-500";
+  };
+
+  const renderEnhancementIcons = (post: BlogPost) => {
+    const hasFacebook = Boolean(post.facebookPostUrl);
+    const hasGmb = Boolean(post.gmbPostUrl);
+    const hasVideo = Boolean(post.videoUrl);
+    if (!hasFacebook && !hasGmb && !hasVideo) return null;
+
+    return (
+      <div className="inline-flex items-center gap-1.5">
+        {hasFacebook && (
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700"
+            title="Facebook post linked"
+          >
+            <FaFacebookF className="h-2.5 w-2.5" />
+          </span>
+        )}
+        {hasGmb && (
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-700"
+            title="Google Business Profile post linked"
+          >
+            <FaGoogle className="h-2.5 w-2.5" />
+          </span>
+        )}
+        {hasVideo && (
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700"
+            title="Video linked"
+          >
+            <Video className="h-2.5 w-2.5" />
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Blog Posts</h1>
-          <p className="text-sm text-gray-500 mt-1">Create SEO-optimized blog content for your website</p>
-        </div>
-
-        {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalPosts}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Published</CardTitle>
-            <Globe className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{publishedPosts}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Drafts</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{draftPosts}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg SEO Score</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{avgSeoScore}%</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Content Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-1 gap-2">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search posts..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {BLOG_TYPES.map(type => (
-                    <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-5 sm:space-y-6">
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 sm:p-6 text-white shadow-lg">
+          <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-cyan-400/30 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-14 -left-10 h-36 w-36 rounded-full bg-emerald-400/20 blur-2xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 text-xs font-medium tracking-wide text-cyan-200 uppercase">
+                <Sparkles className="h-3.5 w-3.5" />
+                Content Hub
+              </p>
+              <h1 className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight">Blog Posts</h1>
+              <p className="mt-2 text-sm text-slate-200/90 max-w-xl">
+                Create, optimize, and publish high-intent local SEO content designed to convert.
+              </p>
             </div>
-            <Button onClick={() => navigate("/blog-posts/new")}>
+            <Button
+              onClick={() => navigate("/blog-posts/new")}
+              className="bg-white text-slate-900 hover:bg-slate-100 w-full sm:w-auto"
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Blog Post
             </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </section>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="border-slate-200/80 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Total Posts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{totalPosts}</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-slate-100 text-slate-600">
+                  <BookOpen className="h-4 w-4" />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200/80 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Published</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{publishedPosts}</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-emerald-100 text-emerald-700">
+                  <CheckCircle className="h-4 w-4" />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200/80 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Drafts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{draftPosts}</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-amber-100 text-amber-700">
+                  <Clock className="h-4 w-4" />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200/80 shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">Avg SEO Score</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl sm:text-3xl font-semibold text-slate-900">{avgSeoScore}%</p>
+                <span className="grid place-items-center h-8 w-8 rounded-full bg-blue-100 text-blue-700">
+                  <TrendingUp className="h-4 w-4" />
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="overflow-hidden border-slate-200/90 shadow-sm">
+          <CardHeader className="bg-slate-50/80 border-b border-slate-200/80 pb-4">
+            <div className="space-y-3">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="relative w-full lg:max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <Input
+                    placeholder="Search by title or city..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 w-full lg:w-auto">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="bg-white min-w-[130px]">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="published">Published</SelectItem>
+                      <SelectItem value="scheduled">Scheduled</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="bg-white min-w-[150px]">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {BLOG_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <p className="text-xs sm:text-sm text-slate-600">
+                  Showing <span className="font-medium text-slate-900">{filteredPosts.length}</span> of{" "}
+                  <span className="font-medium text-slate-900">{posts.length}</span> posts
+                </p>
+                {hasActiveFilters && (
+                  <Button variant="outline" size="sm" onClick={clearFilters}>
+                    <FilterX className="h-4 w-4 mr-2" />
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
-          ) : filteredPosts.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No blog posts</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || statusFilter !== "all" || typeFilter !== "all"
-                  ? "No posts match your filters"
-                  : "Get started by creating your first blog post"}
-              </p>
-              {!searchTerm && statusFilter === "all" && typeFilter === "all" && (
-                <Button className="mt-4" onClick={() => navigate("/blog-posts/new")}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Blog Post
-                </Button>
-              )}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>SEO Score</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPosts.map((post) => (
-                  <TableRow key={post.id}>
-                    <TableCell className="font-medium">
-                      <div className="max-w-xs truncate">{post.title}</div>
-                    </TableCell>
-                    <TableCell>{getBlogTypeBadge(post.blogType)}</TableCell>
-                    <TableCell>{post.targetCity || "-"}</TableCell>
-                    <TableCell>{getStatusBadge(post.status, post.dudaStatus)}</TableCell>
-                    <TableCell>
-                      {post.seoScore !== null && post.seoScore !== undefined ? (
-                        <div className="flex items-center gap-2">
-                          <div className={`w-16 h-2 rounded-full bg-gray-200 overflow-hidden`}>
-                            <div
-                              className={`h-full ${
-                                post.seoScore >= 80 ? 'bg-green-500' :
-                                post.seoScore >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${post.seoScore}%` }}
-                            />
+          </CardHeader>
+
+          <CardContent className="p-0 sm:p-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : filteredPosts.length === 0 ? (
+              <div className="text-center py-14 px-4">
+                <FileText className="mx-auto h-12 w-12 text-slate-400" />
+                <h3 className="mt-3 text-sm font-medium text-slate-900">No blog posts found</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  {hasActiveFilters
+                    ? "No posts match the current filters."
+                    : "Get started by creating your first blog post."}
+                </p>
+                {!hasActiveFilters && (
+                  <Button className="mt-4" onClick={() => navigate("/blog-posts/new")}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Blog Post
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3 p-3 sm:hidden">
+                  {filteredPosts.map((post) => (
+                    <article key={post.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold text-slate-900 truncate">{post.title}</h3>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            {getBlogTypeBadge(post.blogType)}
+                            {getStatusBadge(post.status, post.dudaStatus)}
+                            {renderEnhancementIcons(post)}
                           </div>
-                          <span className="text-sm">{post.seoScore}%</span>
                         </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {post.createdAt ? format(new Date(post.createdAt), "MMM d, yyyy") : "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
+                        <div className="inline-flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span>{post.targetCity || "No location"}</span>
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 justify-end">
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          <span>{post.createdAt ? format(new Date(post.createdAt), "MMM d, yyyy") : "-"}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+                          <span>SEO Score</span>
+                          <span className="font-medium text-slate-800">
+                            {post.seoScore !== null && post.seoScore !== undefined ? `${post.seoScore}%` : "-"}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                          <div
+                            className={`h-full ${getSeoColorClass(post.seoScore)}`}
+                            style={{ width: `${post.seoScore || 0}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/blog-posts/${post.id}/edit`)}>
+                          <Edit className="h-4 w-4 mr-1.5" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => syncMutation.mutate(post.id)}
+                          disabled={syncMutation.isPending}
+                        >
+                          <RefreshCw className={`h-4 w-4 mr-1.5 ${syncMutation.isPending ? "animate-spin" : ""}`} />
+                          Sync
+                        </Button>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {post.dudaStatus === "synced" && post.status !== "published" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => publishMutation.mutate(post.id)}
+                            disabled={publishMutation.isPending}
+                          >
+                            <Globe className="h-4 w-4 mr-1.5" />
+                            Publish
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/blog-posts/${post.id}/edit`)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => syncMutation.mutate(post.id)}
-                            disabled={syncMutation.isPending}
+                        )}
+                        {post.dudaLiveUrl && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(post.dudaLiveUrl!, "_blank")}
                           >
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Sync to Duda
-                          </DropdownMenuItem>
-                          {post.dudaStatus === "synced" && post.status !== "published" && (
-                            <DropdownMenuItem
-                              onClick={() => publishMutation.mutate(post.id)}
-                              disabled={publishMutation.isPending}
-                            >
-                              <Globe className="h-4 w-4 mr-2" />
-                              Publish
-                            </DropdownMenuItem>
-                          )}
-                          {post.dudaLiveUrl && (
-                            <DropdownMenuItem
-                              onClick={() => window.open(post.dudaLiveUrl!, "_blank")}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              View Live
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => setDeletePost(post)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                            <ExternalLink className="h-4 w-4 mr-1.5" />
+                            Live
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                          onClick={() => setDeletePost(post)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1.5" />
+                          Delete
+                        </Button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="hidden sm:block rounded-xl border border-slate-200 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/80">
+                        <TableHead>Title</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>SEO Score</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPosts.map((post) => (
+                        <TableRow key={post.id}>
+                          <TableCell className="font-medium">
+                            <div className="max-w-[320px] truncate">{post.title}</div>
+                            <div className="mt-1">{renderEnhancementIcons(post)}</div>
+                          </TableCell>
+                          <TableCell>{getBlogTypeBadge(post.blogType)}</TableCell>
+                          <TableCell>{post.targetCity || "-"}</TableCell>
+                          <TableCell>{getStatusBadge(post.status, post.dudaStatus)}</TableCell>
+                          <TableCell>
+                            {post.seoScore !== null && post.seoScore !== undefined ? (
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 h-2 rounded-full bg-slate-200 overflow-hidden">
+                                  <div
+                                    className={`h-full ${getSeoColorClass(post.seoScore)}`}
+                                    style={{ width: `${post.seoScore}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm">{post.seoScore}%</span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {post.createdAt ? format(new Date(post.createdAt), "MMM d, yyyy") : "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/blog-posts/${post.id}/edit`)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => syncMutation.mutate(post.id)}
+                                  disabled={syncMutation.isPending}
+                                >
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  Sync to Website
+                                </DropdownMenuItem>
+                                {post.dudaStatus === "synced" && post.status !== "published" && (
+                                  <DropdownMenuItem
+                                    onClick={() => publishMutation.mutate(post.id)}
+                                    disabled={publishMutation.isPending}
+                                  >
+                                    <Globe className="h-4 w-4 mr-2" />
+                                    Publish
+                                  </DropdownMenuItem>
+                                )}
+                                {post.dudaLiveUrl && (
+                                  <DropdownMenuItem onClick={() => window.open(post.dudaLiveUrl!, "_blank")}>
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    View Live
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600" onClick={() => setDeletePost(post)}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deletePost} onOpenChange={(open) => !open && setDeletePost(null)}>
@@ -394,7 +591,7 @@ export default function BlogPostsPage() {
               Are you sure you want to delete "{deletePost?.title}"? This action cannot be undone.
               {deletePost?.dudaStatus === "published" && (
                 <span className="block mt-2 text-orange-600">
-                  Note: This will also remove the post from your Duda website.
+                  Note: This will also remove the post from your website.
                 </span>
               )}
             </AlertDialogDescription>

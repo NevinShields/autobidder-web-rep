@@ -239,7 +239,7 @@ export default function AdminWebsiteTemplates() {
                         id="templateId"
                         value={formData.templateId}
                         onChange={(e) => setFormData({ ...formData, templateId: e.target.value })}
-                        placeholder="Enter Duda template ID"
+                        placeholder="Enter website template ID"
                         required
                       />
                     </div>

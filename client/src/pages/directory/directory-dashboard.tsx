@@ -61,7 +61,7 @@ export default function DirectoryDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: profile, isLoading: profileLoading } = useQuery<DirectoryProfile | null>({
+  const { data: profile, isLoading: profileLoading, isError, error, refetch } = useQuery<DirectoryProfile | null>({
     queryKey: ["/api/directory/profile"],
   });
 
@@ -102,6 +102,27 @@ export default function DirectoryDashboard() {
           <Skeleton className="h-48 rounded-lg mb-6" />
           <Skeleton className="h-64 rounded-lg" />
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardContent className="py-12 text-center">
+            <AlertCircle className="h-12 w-12 text-red-300 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Unable to load directory profile
+            </h2>
+            <p className="text-gray-500 mb-6">
+              {(error as any)?.message || "Something went wrong. Please try again."}
+            </p>
+            <Button size="lg" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

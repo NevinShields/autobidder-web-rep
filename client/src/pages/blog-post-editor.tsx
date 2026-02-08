@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -55,8 +56,13 @@ import {
   Target,
   Briefcase,
   PenTool,
-  Settings
+  Video as VideoIcon,
+  Settings,
+  Upload,
+  Trash2,
+  Loader2
 } from "lucide-react";
+import { FaFacebookF, FaGoogle } from "react-icons/fa6";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BlogPost, BlogContentSection, Formula, WorkOrder, BlogLayoutTemplate } from "@shared/schema";
@@ -82,9 +88,7 @@ const TONES = [
 
 const WIZARD_STEPS = [
   { id: "type", label: "Type", icon: FileText },
-  { id: "targeting", label: "Targeting", icon: Target },
-  { id: "source", label: "Content", icon: Briefcase },
-  { id: "layout", label: "Layout", icon: Layout },
+  { id: "strategy", label: "Strategy", icon: Target },
   { id: "editor", label: "Editor", icon: PenTool },
   { id: "seo", label: "SEO Review", icon: Search },
   { id: "publish", label: "Publish", icon: Globe }
@@ -114,6 +118,7 @@ export default function BlogPostEditorPage() {
   const [primaryServiceId, setPrimaryServiceId] = useState<number | null>(null);
   const [targetCity, setTargetCity] = useState("");
   const [targetNeighborhood, setTargetNeighborhood] = useState("");
+  const [targetKeyword, setTargetKeyword] = useState("");
   const [goal, setGoal] = useState("rank_seo");
   const [tonePreference, setTonePreference] = useState("professional");
   const [workOrderId, setWorkOrderId] = useState<number | null>(null);
@@ -137,13 +142,37 @@ export default function BlogPostEditorPage() {
   const [category, setCategory] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [featuredImageUrl, setFeaturedImageUrl] = useState("");
+  const [internalLinks, setInternalLinks] = useState<Array<{ anchorText: string; url: string }>>([{ anchorText: "", url: "" }]);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [facebookPostUrl, setFacebookPostUrl] = useState("");
+  const [gmbPostUrl, setGmbPostUrl] = useState("");
+  const [useGlobalCtaSettings, setUseGlobalCtaSettings] = useState(true);
+  const [postCtaButtonEnabled, setPostCtaButtonEnabled] = useState(true);
+  const [postCtaButtonUrl, setPostCtaButtonUrl] = useState("");
+  const [globalCtaEnabled, setGlobalCtaEnabled] = useState(true);
+  const [globalCtaUrl, setGlobalCtaUrl] = useState("");
+
+  // Uploaded images state
+  const [uploadedImages, setUploadedImages] = useState<{
+    id?: number;
+    preview: string;
+    url?: string;
+    imageType: string;
+    imageStyle: "default" | "rounded" | "rounded_shadow";
+    caption: string;
+    uploading: boolean;
+  }[]>([]);
 
   // UI state
-  const [isGenerating, setIsGenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [featuredImageUploading, setFeaturedImageUploading] = useState(false);
+  const [suggestedTalkingPoints, setSuggestedTalkingPoints] = useState<string[]>([]);
+  const [suggestedAngles, setSuggestedAngles] = useState<string[]>([]);
+  const [suggestedContext, setSuggestedContext] = useState("");
+  const lastSuggestionKeyRef = useRef("");
 
   // Fetch existing post if editing
-  const { data: existingPost, isLoading: isLoadingPost } = useQuery<BlogPost & { sectionLocks: any[] }>({
+  const { data: existingPost, isLoading: isLoadingPost } = useQuery<BlogPost & { sectionLocks: any[]; images?: any[] }>({
     queryKey: [`/api/blog-posts/${id}`],
     enabled: !!id,
   });
@@ -163,6 +192,10 @@ export default function BlogPostEditorPage() {
     queryKey: ["/api/blog-layout-templates"],
   });
 
+  const { data: businessSettings } = useQuery<any>({
+    queryKey: ["/api/business-settings"],
+  });
+
   // Load existing post data
   useEffect(() => {
     if (existingPost) {
@@ -170,6 +203,7 @@ export default function BlogPostEditorPage() {
       setPrimaryServiceId(existingPost.primaryServiceId);
       setTargetCity(existingPost.targetCity || "");
       setTargetNeighborhood(existingPost.targetNeighborhood || "");
+      setTargetKeyword(existingPost.targetKeyword || "");
       setGoal(existingPost.goal || "rank_seo");
       setTonePreference(existingPost.tonePreference || "professional");
       setWorkOrderId(existingPost.workOrderId);
@@ -187,21 +221,132 @@ export default function BlogPostEditorPage() {
       setCategory(existingPost.category || "");
       setTags(existingPost.tags as string[] || []);
       setFeaturedImageUrl(existingPost.featuredImageUrl || "");
+      setInternalLinks((existingPost.internalLinks as Array<{ anchorText: string; url: string }> || []).length > 0
+        ? existingPost.internalLinks as Array<{ anchorText: string; url: string }>
+        : [{ anchorText: "", url: "" }]);
+      setVideoUrl(existingPost.videoUrl || "");
+      setFacebookPostUrl(existingPost.facebookPostUrl || "");
+      setGmbPostUrl(existingPost.gmbPostUrl || "");
+      const hasPerPostCtaOverride = existingPost.ctaButtonEnabled !== null || !!existingPost.ctaButtonUrl;
+      setUseGlobalCtaSettings(!hasPerPostCtaOverride);
+      setPostCtaButtonEnabled(existingPost.ctaButtonEnabled ?? true);
+      setPostCtaButtonUrl(existingPost.ctaButtonUrl || "");
       setLockedSections(new Set(existingPost.sectionLocks?.map((l: any) => l.sectionId) || []));
+      setUploadedImages(
+        (existingPost.images || []).map((img: any) => ({
+          id: img.id,
+          preview: img.processedUrl || img.originalUrl,
+          url: img.processedUrl || img.originalUrl,
+          imageType: img.imageType || "hero",
+          imageStyle: (img.imageStyle || "default") as "default" | "rounded" | "rounded_shadow",
+          caption: img.caption || "",
+          uploading: false,
+        }))
+      );
       // Skip to editor step if editing
-      setCurrentStep(4);
+      setCurrentStep(2);
     }
   }, [existingPost]);
+
+  useEffect(() => {
+    if (!businessSettings) return;
+    setGlobalCtaEnabled(businessSettings.blogCtaEnabled ?? true);
+    setGlobalCtaUrl(businessSettings.blogCtaUrl || "");
+  }, [businessSettings]);
+
+  useEffect(() => {
+    if (layoutTemplates.length === 0) return;
+
+    if (layoutTemplateId) {
+      const matchedTemplate = layoutTemplates.find(t => t.id === layoutTemplateId);
+      if (matchedTemplate) {
+        setSelectedTemplate(matchedTemplate);
+        return;
+      }
+    }
+
+    if (!selectedTemplate && blogType) {
+      const fallbackTemplate = layoutTemplates.find(t => !t.blogType || t.blogType === blogType);
+      if (fallbackTemplate) {
+        setSelectedTemplate(fallbackTemplate);
+        if (!layoutTemplateId) {
+          setLayoutTemplateId(fallbackTemplate.id > 0 ? fallbackTemplate.id : null);
+        }
+      }
+    }
+  }, [layoutTemplates, layoutTemplateId, selectedTemplate, blogType]);
+
+  useEffect(() => {
+    if (targetKeyword.trim() || !primaryServiceId) return;
+    const fallbackKeyword = formulas.find(f => f.id === primaryServiceId)?.name;
+    if (fallbackKeyword) {
+      setTargetKeyword(fallbackKeyword);
+    }
+  }, [formulas, primaryServiceId, targetKeyword]);
+
+  const suggestContextMutation = useMutation({
+    mutationFn: async () => {
+      const selectedService = formulas.find(f => f.id === primaryServiceId);
+      const response = await apiRequest("POST", "/api/blog-posts/suggest-keyword-context", {
+        targetKeyword: targetKeyword.trim(),
+        targetCity: targetCity.trim() || undefined,
+        blogType,
+        tonePreference,
+        serviceName: selectedService?.name || undefined,
+      });
+      return await response.json() as {
+        talkingPoints?: string[];
+        contextSummary?: string;
+        angleIdeas?: string[];
+      };
+    },
+    onSuccess: (data) => {
+      const nextTalkingPoints = (data.talkingPoints || []).filter(Boolean);
+      setSuggestedTalkingPoints(nextTalkingPoints);
+      setSuggestedAngles((data.angleIdeas || []).filter(Boolean));
+      setSuggestedContext(data.contextSummary || "");
+
+      setTalkingPoints((prev) => {
+        const hasManualPoints = prev.some((point) => point.trim().length > 0);
+        if (hasManualPoints || nextTalkingPoints.length === 0) return prev;
+        return nextTalkingPoints;
+      });
+
+      setJobNotes((prev) => {
+        if (prev.trim().length > 0 || !data.contextSummary) return prev;
+        return data.contextSummary;
+      });
+    },
+    onError: () => {
+      lastSuggestionKeyRef.current = "";
+    },
+  });
+
+  useEffect(() => {
+    const keyword = targetKeyword.trim();
+    if (keyword.length < 3 || !blogType) return;
+
+    const suggestionKey = `${blogType}|${keyword.toLowerCase()}|${targetCity.trim().toLowerCase()}|${tonePreference}`;
+    if (lastSuggestionKeyRef.current === suggestionKey) return;
+
+    const timer = setTimeout(() => {
+      lastSuggestionKeyRef.current = suggestionKey;
+      suggestContextMutation.mutate();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [targetKeyword, targetCity, blogType, tonePreference]);
 
   // Generate content mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const serviceName = formulas.find(f => f.id === primaryServiceId)?.name || "service";
+      const serviceName = formulas.find(f => f.id === primaryServiceId)?.name || targetKeyword.trim();
       const selectedWorkOrder = workOrders.find(w => w.id === workOrderId);
 
       const input = {
         blogType,
         primaryServiceId,
+        targetKeyword: targetKeyword.trim(),
         serviceName,
         serviceDescription: formulas.find(f => f.id === primaryServiceId)?.description,
         targetCity,
@@ -219,13 +364,24 @@ export default function BlogPostEditorPage() {
           completedDate: selectedWorkOrder.completedDate ? format(new Date(selectedWorkOrder.completedDate), "MMMM d, yyyy") : "",
           notes: selectedWorkOrder.instructions || jobNotes,
           images: []
-        } : undefined
+        } : undefined,
+        images: uploadedImages
+          .filter(img => img.url && !img.uploading)
+          .map(img => ({ url: img.url!, imageType: img.imageType, imageStyle: img.imageStyle, caption: img.caption })),
+        internalLinks: internalLinks
+          .map(link => ({ anchorText: link.anchorText.trim(), url: link.url.trim() }))
+          .filter(link => link.url),
+        videoUrl: videoUrl.trim() || undefined,
+        facebookPostUrl: facebookPostUrl.trim() || undefined,
+        gmbPostUrl: gmbPostUrl.trim() || undefined,
+        ctaButtonEnabled: useGlobalCtaSettings ? null : postCtaButtonEnabled,
+        ctaButtonUrl: useGlobalCtaSettings ? null : (postCtaButtonUrl.trim() || null),
       };
 
       const response = await apiRequest("POST", "/api/blog-posts/generate-content", input);
       return await response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       setTitle(data.title);
       setSlug(data.slug);
       setMetaTitle(data.metaTitle || "");
@@ -234,11 +390,26 @@ export default function BlogPostEditorPage() {
       setContent(data.content || []);
       setSeoScore(data.seoScore ?? null);
       setSeoChecklist(data.seoChecklist || []);
-      setCurrentStep(4); // Move to editor step
+      setCurrentStep(2); // Move to editor step
       if (data.id) {
         setPostId(String(data.id));
         if (!isEditing) {
           navigate(`/blog-posts/${data.id}/edit`);
+        }
+        // Link uploaded images to the newly created post
+        for (const img of uploadedImages) {
+          if (img.id) {
+            try {
+              await apiRequest("PATCH", `/api/blog-images/${img.id}`, {
+                blogPostId: data.id,
+                imageType: img.imageType,
+                imageStyle: img.imageStyle,
+                caption: img.caption,
+              });
+            } catch (e) {
+              console.error('Failed to link image to post:', e);
+            }
+          }
         }
       }
       toast({
@@ -263,6 +434,7 @@ export default function BlogPostEditorPage() {
         primaryServiceId,
         targetCity,
         targetNeighborhood: targetNeighborhood || null,
+        targetKeyword: targetKeyword.trim() || null,
         goal,
         tonePreference,
         workOrderId,
@@ -280,6 +452,14 @@ export default function BlogPostEditorPage() {
         category: category || null,
         tags,
         featuredImageUrl: featuredImageUrl || null,
+        internalLinks: internalLinks
+          .map(link => ({ anchorText: link.anchorText.trim(), url: link.url.trim() }))
+          .filter(link => link.url),
+        videoUrl: videoUrl.trim() || null,
+        facebookPostUrl: facebookPostUrl.trim() || null,
+        gmbPostUrl: gmbPostUrl.trim() || null,
+        ctaButtonEnabled: useGlobalCtaSettings ? null : postCtaButtonEnabled,
+        ctaButtonUrl: useGlobalCtaSettings ? null : (postCtaButtonUrl.trim() || null),
         status: publish ? "published" : "draft"
       };
 
@@ -291,17 +471,30 @@ export default function BlogPostEditorPage() {
         return await response.json();
       }
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
       if (data.id) {
         setPostId(String(data.id));
+        for (const img of uploadedImages) {
+          if (!img.id) continue;
+          try {
+            await apiRequest("PATCH", `/api/blog-images/${img.id}`, {
+              blogPostId: data.id,
+              imageType: img.imageType,
+              imageStyle: img.imageStyle,
+              caption: img.caption,
+            });
+          } catch (e) {
+            console.error("Failed to persist image metadata:", e);
+          }
+        }
       }
       toast({
         title: "Saved",
         description: "Blog post saved successfully.",
       });
       if (!isEditing) {
-        navigate(`/blog-posts/${data.id}/edit`);
+        navigate("/blog-posts");
       }
     },
     onError: (error: any) => {
@@ -313,8 +506,8 @@ export default function BlogPostEditorPage() {
     }
   });
 
-  // Sync to Duda mutation
-  const syncToDudaMutation = useMutation({
+  // Sync to website mutation
+  const syncToWebsiteMutation = useMutation({
     mutationFn: async (blogPostId: string) => {
       const response = await apiRequest("POST", `/api/blog-posts/${blogPostId}/sync-to-duda`);
       return await response.json();
@@ -322,14 +515,14 @@ export default function BlogPostEditorPage() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
       toast({
-        title: "Synced to Duda",
-        description: `Blog post synced successfully. Duda post ID: ${data.dudaPostId}`,
+        title: "Synced to Website",
+        description: `Blog post synced successfully. Website post ID: ${data.dudaPostId}`,
       });
     },
     onError: (error: any) => {
       toast({
         title: "Sync Failed",
-        description: error.message || "Failed to sync blog post to Duda",
+        description: error.message || "Failed to sync blog post to website",
         variant: "destructive",
       });
     }
@@ -361,8 +554,34 @@ export default function BlogPostEditorPage() {
     }
   });
 
+  const saveGlobalCtaMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("PATCH", "/api/business-settings", {
+        blogCtaEnabled: globalCtaEnabled,
+        blogCtaUrl: globalCtaUrl.trim() || null,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      toast({
+        title: "Global CTA Saved",
+        description: "Default CTA settings will be used for posts using global defaults.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to Save Global CTA",
+        description: error?.message || "Could not save global CTA settings.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const effectiveCtaEnabled = useGlobalCtaSettings ? globalCtaEnabled : postCtaButtonEnabled;
+  const effectiveCtaUrl = (useGlobalCtaSettings ? globalCtaUrl : postCtaButtonUrl).trim();
+
   const handleGenerate = () => {
-    setIsGenerating(true);
     generateMutation.mutate();
   };
 
@@ -371,12 +590,13 @@ export default function BlogPostEditorPage() {
   };
 
   const handleSaveAndSync = async () => {
-    // Save the post first (as draft), then sync to Duda
+    // Save the post first (as draft), then sync to website
     const data = {
       blogType,
       primaryServiceId,
       targetCity,
       targetNeighborhood: targetNeighborhood || null,
+      targetKeyword: targetKeyword.trim() || null,
       goal,
       tonePreference,
       workOrderId,
@@ -394,6 +614,14 @@ export default function BlogPostEditorPage() {
       category: category || null,
       tags,
       featuredImageUrl: featuredImageUrl || null,
+      internalLinks: internalLinks
+        .map(link => ({ anchorText: link.anchorText.trim(), url: link.url.trim() }))
+        .filter(link => link.url),
+      videoUrl: videoUrl.trim() || null,
+      facebookPostUrl: facebookPostUrl.trim() || null,
+      gmbPostUrl: gmbPostUrl.trim() || null,
+      ctaButtonEnabled: useGlobalCtaSettings ? null : postCtaButtonEnabled,
+      ctaButtonUrl: useGlobalCtaSettings ? null : (postCtaButtonUrl.trim() || null),
       status: "draft"
     };
 
@@ -410,15 +638,28 @@ export default function BlogPostEditorPage() {
       const savedId = savedPost.id ? String(savedPost.id) : id;
       if (savedId) {
         setPostId(savedId);
+        for (const img of uploadedImages) {
+          if (!img.id) continue;
+          try {
+            await apiRequest("PATCH", `/api/blog-images/${img.id}`, {
+              blogPostId: Number(savedId),
+              imageType: img.imageType,
+              imageStyle: img.imageStyle,
+              caption: img.caption,
+            });
+          } catch (e) {
+            console.error("Failed to persist image metadata before sync:", e);
+          }
+        }
         if (!isEditing) {
           navigate(`/blog-posts/${savedId}/edit`);
         }
         queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
         toast({
           title: "Saved",
-          description: "Blog post saved. Syncing to Duda...",
+          description: "Blog post saved. Syncing to website...",
         });
-        syncToDudaMutation.mutate(savedId);
+        syncToWebsiteMutation.mutate(savedId);
       }
     } catch (error: any) {
       toast({
@@ -427,6 +668,136 @@ export default function BlogPostEditorPage() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files) return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const preview = URL.createObjectURL(file);
+      const currentLength = uploadedImages.length + i;
+
+      setUploadedImages(prev => [...prev, {
+        preview,
+        imageType: 'hero',
+        imageStyle: "default",
+        caption: '',
+        uploading: true,
+      }]);
+
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('imageType', 'hero');
+      formData.append('imageStyle', 'default');
+      formData.append('caption', '');
+      if (postId) {
+        formData.append('blogPostId', postId);
+      }
+
+      try {
+        const response = await fetch("/api/blog-images/upload", {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+        });
+        if (!response.ok) throw new Error('Upload failed');
+        const result = await response.json();
+        setUploadedImages(prev => prev.map((img, idx) =>
+          idx === currentLength
+            ? {
+                ...img,
+                id: result.id,
+                url: result.processedUrl || result.originalUrl,
+                preview: result.processedUrl || result.originalUrl || img.preview,
+                imageStyle: (result.imageStyle || img.imageStyle || "default") as "default" | "rounded" | "rounded_shadow",
+                uploading: false
+              }
+            : img
+        ));
+      } catch (err) {
+        setUploadedImages(prev => prev.filter((_, idx) => idx !== currentLength));
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload image",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const removeUploadedImage = (index: number) => {
+    setUploadedImages(prev => {
+      const img = prev[index];
+      if (img?.preview) URL.revokeObjectURL(img.preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleFeaturedImageUpload = async (file: File | null) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("imageType", "hero");
+    formData.append("imageStyle", "default");
+    formData.append("caption", "Featured image");
+    if (postId) {
+      formData.append("blogPostId", postId);
+    }
+
+    setFeaturedImageUploading(true);
+    try {
+      const response = await fetch("/api/blog-images/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Upload failed");
+
+      const result = await response.json();
+      setFeaturedImageUrl(result.processedUrl || result.originalUrl || "");
+      toast({
+        title: "Featured image uploaded",
+        description: "The featured image is ready for publish/sync.",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload featured image.",
+        variant: "destructive",
+      });
+    } finally {
+      setFeaturedImageUploading(false);
+    }
+  };
+
+  const updateImageMeta = (index: number, field: 'imageType' | 'caption', value: string) => {
+    setUploadedImages(prev => prev.map((img, i) =>
+      i === index ? { ...img, [field]: value } : img
+    ));
+  };
+
+  const updateImageStyle = (index: number, value: "default" | "rounded" | "rounded_shadow") => {
+    setUploadedImages(prev => prev.map((img, i) =>
+      i === index ? { ...img, imageStyle: value } : img
+    ));
+  };
+
+  const updateInternalLink = (index: number, field: "anchorText" | "url", value: string) => {
+    setInternalLinks(prev => prev.map((link, i) =>
+      i === index ? { ...link, [field]: value } : link
+    ));
+  };
+
+  const addInternalLink = () => {
+    setInternalLinks(prev => [...prev, { anchorText: "", url: "" }]);
+  };
+
+  const removeInternalLink = (index: number) => {
+    setInternalLinks(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      return next.length > 0 ? next : [{ anchorText: "", url: "" }];
+    });
   };
 
   const handleTalkingPointChange = (index: number, value: string) => {
@@ -462,19 +833,17 @@ export default function BlogPostEditorPage() {
   const canProceed = () => {
     switch (currentStep) {
       case 0: return !!blogType;
-      case 1: return !!primaryServiceId && !!targetCity && !!goal;
-      case 2: return true; // Optional step
-      case 3: return !!selectedTemplate;
-      case 4: return !!title && content.length > 0;
-      case 5: return true;
-      case 6: return true;
+      case 1: return !!targetKeyword.trim() && !!targetCity.trim() && !!goal && !!selectedTemplate;
+      case 2: return !!title && content.length > 0;
+      case 3: return true;
+      case 4: return true;
       default: return false;
     }
   };
 
   const goNext = () => {
     if (currentStep < WIZARD_STEPS.length - 1 && canProceed()) {
-      if (currentStep === 3 && content.length === 0) {
+      if (currentStep === 1 && content.length === 0) {
         // Generate content before going to editor
         handleGenerate();
       } else {
@@ -529,29 +898,55 @@ export default function BlogPostEditorPage() {
           </div>
         );
 
-      case 1: // Targeting
+      case 1: // Strategy (targeting + content + layout)
         return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Target your content</h2>
-
-            <div className="space-y-4">
-              <div>
-                <Label>Primary Service</Label>
-                <Select value={primaryServiceId?.toString() || ""} onValueChange={v => setPrimaryServiceId(parseInt(v))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formulas.map(formula => (
-                      <SelectItem key={formula.id} value={formula.id.toString()}>
-                        {formula.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div className="space-y-8">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold">Blog Strategy</h2>
+                  <p className="text-sm text-gray-500">Choose any target keyword, then let AI suggest talking points and context.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => suggestContextMutation.mutate()}
+                  disabled={!targetKeyword.trim() || suggestContextMutation.isPending}
+                >
+                  {suggestContextMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-2" />
+                  )}
+                  Refresh AI Ideas
+                </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <Label>Target Keyword</Label>
+                  <Input
+                    value={targetKeyword}
+                    onChange={e => setTargetKeyword(e.target.value)}
+                    placeholder="e.g., roof cleaning cost philadelphia"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Use any keyword phrase, not just a service in your account.</p>
+                </div>
+                <div>
+                  <Label>Related Service (Optional)</Label>
+                  <Select value={primaryServiceId?.toString() || "none"} onValueChange={v => setPrimaryServiceId(v === "none" ? null : parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a service" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No linked service</SelectItem>
+                      {formulas.map(formula => (
+                        <SelectItem key={formula.id} value={formula.id.toString()}>
+                          {formula.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <Label>Target City</Label>
                   <Input
@@ -567,6 +962,19 @@ export default function BlogPostEditorPage() {
                     onChange={e => setTargetNeighborhood(e.target.value)}
                     placeholder="e.g., Center City"
                   />
+                </div>
+                <div>
+                  <Label>Tone Preference</Label>
+                  <Select value={tonePreference} onValueChange={setTonePreference}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TONES.map(tone => (
+                        <SelectItem key={tone.value} value={tone.value}>{tone.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -590,131 +998,336 @@ export default function BlogPostEditorPage() {
                 </RadioGroup>
               </div>
 
-              <div>
-                <Label>Tone Preference</Label>
-                <Select value={tonePreference} onValueChange={setTonePreference}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TONES.map(tone => (
-                      <SelectItem key={tone.value} value={tone.value}>{tone.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2: // Content source
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Content Source</h2>
-            <p className="text-gray-500">Select a completed job or add your own notes for content inspiration.</p>
-
-            {blogType === "job_showcase" && workOrders.length > 0 && (
-              <div>
-                <Label className="mb-2 block">Select a Completed Job (Optional)</Label>
-                <Select value={workOrderId?.toString() || "none"} onValueChange={v => setWorkOrderId(v === "none" ? null : parseInt(v))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a work order" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No job selected - use notes below</SelectItem>
-                    {workOrders.map(wo => (
-                      <SelectItem key={wo.id} value={wo.id.toString()}>
-                        {wo.title} - {wo.customerAddress}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div>
-              <Label>Job Notes / Context</Label>
-              <Textarea
-                value={jobNotes}
-                onChange={e => setJobNotes(e.target.value)}
-                placeholder="Add any notes or context about the job, project details, challenges overcome, etc."
-                rows={4}
-              />
-            </div>
-
-            <div>
-              <Label className="mb-2 block">Key Talking Points</Label>
-              <div className="space-y-2">
-                {talkingPoints.map((point, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      value={point}
-                      onChange={e => handleTalkingPointChange(index, e.target.value)}
-                      placeholder={`Talking point ${index + 1}`}
-                    />
-                    {talkingPoints.length > 1 && (
-                      <Button variant="ghost" size="icon" onClick={() => removeTalkingPoint(index)}>
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={addTalkingPoint}>
-                  Add Talking Point
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3: // Layout selection
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Choose a Layout Template</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {layoutTemplates.filter(t => !t.blogType || t.blogType === blogType).map(template => (
-                <Card
-                  key={template.id}
-                  className={`cursor-pointer transition-all ${
-                    selectedTemplate?.id === template.id
-                      ? 'ring-2 ring-blue-600 border-blue-600'
-                      : 'hover:border-gray-300'
-                  }`}
-                  onClick={() => {
-                    setSelectedTemplate(template);
-                    setLayoutTemplateId(template.id > 0 ? template.id : null);
-                  }}
-                >
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      {selectedTemplate?.id === template.id && (
-                        <CheckCircle className="h-5 w-5 text-blue-600" />
-                      )}
-                      {template.name}
-                    </CardTitle>
-                    {template.description && (
-                      <CardDescription>{template.description}</CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-1">
-                      {(template.sections as any[])?.map((section, i) => (
-                        <div key={i} className="text-sm flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${section.required ? 'bg-blue-600' : 'bg-gray-300'}`} />
-                          <span>{section.label}</span>
-                          {section.required && <Badge variant="outline" className="text-xs">Required</Badge>}
-                        </div>
-                      ))}
+              {(suggestedTalkingPoints.length > 0 || suggestedAngles.length > 0 || suggestedContext) && (
+                <Card className="bg-blue-50 border-blue-100">
+                  <CardContent className="pt-5 space-y-4">
+                    <div className="flex items-center gap-2 text-blue-700">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="font-medium text-sm">AI Suggestions</span>
                     </div>
+
+                    {suggestedTalkingPoints.length > 0 && (
+                      <div>
+                        <Label className="text-xs uppercase tracking-wide text-gray-600">Suggested Talking Points</Label>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {suggestedTalkingPoints.map((point, idx) => (
+                            <Button
+                              key={`${point}-${idx}`}
+                              variant="outline"
+                              size="sm"
+                              className="h-auto py-1 px-2 text-left whitespace-normal"
+                              onClick={() => {
+                                setTalkingPoints(prev => {
+                                  const next = prev.filter(p => p.trim().length > 0);
+                                  if (next.includes(point)) return next;
+                                  return [...next, point];
+                                });
+                              }}
+                            >
+                              + {point}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {suggestedContext && (
+                      <div>
+                        <Label className="text-xs uppercase tracking-wide text-gray-600">Suggested Context</Label>
+                        <p className="text-sm text-gray-700 mt-1">{suggestedContext}</p>
+                      </div>
+                    )}
+
+                    {suggestedAngles.length > 0 && (
+                      <div>
+                        <Label className="text-xs uppercase tracking-wide text-gray-600">Suggested Angles</Label>
+                        <ul className="mt-1 space-y-1 text-sm text-gray-700">
+                          {suggestedAngles.map((angle, idx) => (
+                            <li key={`${angle}-${idx}`}>• {angle}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
-              ))}
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold">Content Inputs</h3>
+              <p className="text-sm text-gray-500">Add context that helps the model produce stronger sections with less editing.</p>
+
+              {blogType === "job_showcase" && workOrders.length > 0 && (
+                <div>
+                  <Label className="mb-2 block">Select a Completed Job (Optional)</Label>
+                  <Select value={workOrderId?.toString() || "none"} onValueChange={v => setWorkOrderId(v === "none" ? null : parseInt(v))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a work order" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No job selected - use notes below</SelectItem>
+                      {workOrders.map(wo => (
+                        <SelectItem key={wo.id} value={wo.id.toString()}>
+                          {wo.title} - {wo.customerAddress}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label>Job Notes / Context</Label>
+                <Textarea
+                  value={jobNotes}
+                  onChange={e => setJobNotes(e.target.value)}
+                  placeholder="Add notes, constraints, customer concerns, results, or other context."
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <Label className="mb-2 block">Key Talking Points</Label>
+                <div className="space-y-2">
+                  {talkingPoints.map((point, index) => (
+                    <div key={index} className="flex gap-2">
+                      <Input
+                        value={point}
+                        onChange={e => handleTalkingPointChange(index, e.target.value)}
+                        placeholder={`Talking point ${index + 1}`}
+                      />
+                      {talkingPoints.length > 1 && (
+                        <Button variant="ghost" size="icon" onClick={() => removeTalkingPoint(index)}>
+                          <XCircle className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={addTalkingPoint}>
+                    Add Talking Point
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <Label className="mb-2 block">Upload Images for AI Placement</Label>
+                <p className="text-sm text-gray-500 mb-3">
+                  Upload images and tag them so the AI can place them in the right sections of your blog post.
+                </p>
+
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                  onClick={() => document.getElementById('blog-image-upload')?.click()}
+                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleImageUpload(e.dataTransfer.files);
+                  }}
+                >
+                  <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600">Drag & drop images here, or click to browse</p>
+                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP (max 5MB each)</p>
+                  <input
+                    id="blog-image-upload"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    multiple
+                    className="hidden"
+                    onChange={e => handleImageUpload(e.target.files)}
+                  />
+                </div>
+
+                {uploadedImages.length > 0 && (
+                  <div className="space-y-3 mt-4">
+                    {uploadedImages.map((img, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 border rounded-lg bg-gray-50">
+                        <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-gray-200">
+                          {img.uploading ? (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                            </div>
+                          ) : (
+                            <img src={img.preview} alt="" className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <Select
+                            value={img.imageType}
+                            onValueChange={v => updateImageMeta(index, 'imageType', v)}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hero">Hero / Featured</SelectItem>
+                              <SelectItem value="before">Before</SelectItem>
+                              <SelectItem value="after">After</SelectItem>
+                              <SelectItem value="process">Process / In-Progress</SelectItem>
+                              <SelectItem value="equipment">Equipment</SelectItem>
+                              <SelectItem value="team">Team</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={img.imageStyle}
+                            onValueChange={(v) => updateImageStyle(index, v as "default" | "rounded" | "rounded_shadow")}
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="default">Style: Default</SelectItem>
+                              <SelectItem value="rounded">Style: Rounded Corners</SelectItem>
+                              <SelectItem value="rounded_shadow">Style: Rounded + Shadow</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            value={img.caption}
+                            onChange={e => updateImageMeta(index, 'caption', e.target.value)}
+                            placeholder="Caption / description for AI context"
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="flex-shrink-0 h-8 w-8"
+                          onClick={() => removeUploadedImage(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-base font-semibold">SEO Linking and Media</h4>
+                <p className="text-sm text-gray-500">
+                  Add internal links and supporting media so the blog can reinforce topical authority and on-site SEO.
+                </p>
+
+                <div className="space-y-2">
+                  <Label className="mb-2 block">Internal Links</Label>
+                  {internalLinks.map((link, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_auto] gap-2 items-center">
+                      <Input
+                        value={link.anchorText}
+                        onChange={e => updateInternalLink(index, "anchorText", e.target.value)}
+                        placeholder="Anchor text (e.g., House Washing Services)"
+                      />
+                      <Input
+                        value={link.url}
+                        onChange={e => updateInternalLink(index, "url", e.target.value)}
+                        placeholder="https://yourdomain.com/service-page or /service-page"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeInternalLink(index)}
+                        disabled={internalLinks.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={addInternalLink}>
+                    Add Internal Link
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+                        <VideoIcon className="h-3 w-3" />
+                      </span>
+                      Video URL (Optional)
+                    </Label>
+                    <Input
+                      value={videoUrl}
+                      onChange={e => setVideoUrl(e.target.value)}
+                      placeholder="YouTube or Vimeo URL"
+                    />
+                  </div>
+                  <div>
+                    <Label className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                        <FaFacebookF className="h-2.5 w-2.5" />
+                      </span>
+                      Facebook Post URL (Optional)
+                    </Label>
+                    <Input
+                      value={facebookPostUrl}
+                      onChange={e => setFacebookPostUrl(e.target.value)}
+                      placeholder="https://facebook.com/..."
+                    />
+                  </div>
+                  <div>
+                    <Label className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                        <FaGoogle className="h-2.5 w-2.5" />
+                      </span>
+                      Google Business Post URL (Optional)
+                    </Label>
+                    <Input
+                      value={gmbPostUrl}
+                      onChange={e => setGmbPostUrl(e.target.value)}
+                      placeholder="Google post URL"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold">Layout Template</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {layoutTemplates.filter(t => !t.blogType || t.blogType === blogType).map(template => (
+                  <Card
+                    key={template.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedTemplate?.id === template.id
+                        ? 'ring-2 ring-blue-600 border-blue-600'
+                        : 'hover:border-gray-300'
+                    }`}
+                    onClick={() => {
+                      setSelectedTemplate(template);
+                      setLayoutTemplateId(template.id > 0 ? template.id : null);
+                    }}
+                  >
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {selectedTemplate?.id === template.id && (
+                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                        )}
+                        {template.name}
+                      </CardTitle>
+                      {template.description && (
+                        <CardDescription>{template.description}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-1">
+                        {(template.sections as any[])?.map((section, i) => (
+                          <div key={i} className="text-sm flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${section.required ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                            <span>{section.label}</span>
+                            {section.required && <Badge variant="outline" className="text-xs">Required</Badge>}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           </div>
         );
 
-      case 4: // Editor
+      case 2: // Editor
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -848,7 +1461,7 @@ export default function BlogPostEditorPage() {
           </div>
         );
 
-      case 5: // SEO Review
+      case 3: // SEO Review
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">SEO Review</h2>
@@ -903,7 +1516,7 @@ export default function BlogPostEditorPage() {
           </div>
         );
 
-      case 6: // Publish
+      case 4: // Publish
         return (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">Publish Settings</h2>
@@ -928,12 +1541,205 @@ export default function BlogPostEditorPage() {
               </div>
 
               <div>
-                <Label>Featured Image URL</Label>
-                <Input
-                  value={featuredImageUrl}
-                  onChange={e => setFeaturedImageUrl(e.target.value)}
-                  placeholder="https://..."
-                />
+                <Label className="mb-2 block">Featured Image</Label>
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                  onClick={() => document.getElementById("featured-image-upload")?.click()}
+                >
+                  {featuredImageUploading ? (
+                    <Loader2 className="h-8 w-8 mx-auto text-gray-400 mb-2 animate-spin" />
+                  ) : (
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  )}
+                  <p className="text-sm text-gray-600">
+                    {featuredImageUploading ? "Uploading..." : "Click to upload a featured image"}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP (max 5MB)</p>
+                  <input
+                    id="featured-image-upload"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    className="hidden"
+                    onChange={e => handleFeaturedImageUpload(e.target.files?.[0] || null)}
+                  />
+                </div>
+
+                {featuredImageUrl && (
+                  <div className="mt-3 border rounded-lg p-3 bg-gray-50 flex items-center gap-3">
+                    <img
+                      src={featuredImageUrl}
+                      alt="Featured preview"
+                      className="w-20 h-20 object-cover rounded border bg-white"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Featured image selected</p>
+                      <p className="text-xs text-gray-500 truncate">{featuredImageUrl}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setFeaturedImageUrl("")}
+                      disabled={featuredImageUploading}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4 pt-2 border-t">
+                <h3 className="text-base font-semibold">CTA Controls</h3>
+                <p className="text-sm text-gray-500">
+                  Configure a global CTA destination and optionally override it for this post.
+                </p>
+
+                <div className="rounded-lg border p-4 bg-gray-50 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium">Global CTA Enabled</p>
+                      <p className="text-xs text-gray-500">Used by posts that keep global defaults enabled.</p>
+                    </div>
+                    <Switch
+                      checked={globalCtaEnabled}
+                      onCheckedChange={setGlobalCtaEnabled}
+                    />
+                  </div>
+                  <div>
+                    <Label>Global CTA URL</Label>
+                    <Input
+                      value={globalCtaUrl}
+                      onChange={(e) => setGlobalCtaUrl(e.target.value)}
+                      placeholder="https://yourdomain.com/contact"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => saveGlobalCtaMutation.mutate()}
+                      disabled={saveGlobalCtaMutation.isPending}
+                    >
+                      {saveGlobalCtaMutation.isPending ? "Saving..." : "Save Global CTA"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium">Use Global CTA Settings</p>
+                      <p className="text-xs text-gray-500">Turn off to override CTA behavior for this post only.</p>
+                    </div>
+                    <Switch
+                      checked={useGlobalCtaSettings}
+                      onCheckedChange={setUseGlobalCtaSettings}
+                    />
+                  </div>
+
+                  {!useGlobalCtaSettings && (
+                    <>
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium">Show CTA Button on This Post</p>
+                        </div>
+                        <Switch
+                          checked={postCtaButtonEnabled}
+                          onCheckedChange={setPostCtaButtonEnabled}
+                        />
+                      </div>
+                      <div>
+                        <Label>CTA URL (Per Post)</Label>
+                        <Input
+                          value={postCtaButtonUrl}
+                          onChange={(e) => setPostCtaButtonUrl(e.target.value)}
+                          placeholder="https://yourdomain.com/contact"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <p className="text-xs text-gray-500">
+                    Effective CTA: {effectiveCtaEnabled ? "Enabled" : "Disabled"}{effectiveCtaEnabled ? ` (${effectiveCtaUrl || "Uses section/default URL"})` : ""}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-2 border-t">
+                <h3 className="text-base font-semibold">SEO Enhancements</h3>
+                <p className="text-sm text-gray-500">
+                  Add internal links and external proof assets to strengthen on-page SEO and user trust.
+                </p>
+
+                <div className="space-y-2">
+                  <Label className="mb-2 block">Internal Links</Label>
+                  {internalLinks.map((link, index) => (
+                    <div key={`publish-link-${index}`} className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_auto] gap-2 items-center">
+                      <Input
+                        value={link.anchorText}
+                        onChange={e => updateInternalLink(index, "anchorText", e.target.value)}
+                        placeholder="Anchor text"
+                      />
+                      <Input
+                        value={link.url}
+                        onChange={e => updateInternalLink(index, "url", e.target.value)}
+                        placeholder="https://yourdomain.com/page or /page"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeInternalLink(index)}
+                        disabled={internalLinks.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button variant="outline" size="sm" onClick={addInternalLink}>
+                    Add Internal Link
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+                        <VideoIcon className="h-3 w-3" />
+                      </span>
+                      Video URL (Optional)
+                    </Label>
+                    <Input
+                      value={videoUrl}
+                      onChange={e => setVideoUrl(e.target.value)}
+                      placeholder="YouTube or Vimeo URL"
+                    />
+                  </div>
+                  <div>
+                    <Label className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                        <FaFacebookF className="h-2.5 w-2.5" />
+                      </span>
+                      Facebook Post URL (Optional)
+                    </Label>
+                    <Input
+                      value={facebookPostUrl}
+                      onChange={e => setFacebookPostUrl(e.target.value)}
+                      placeholder="https://facebook.com/..."
+                    />
+                  </div>
+                  <div>
+                    <Label className="inline-flex items-center gap-2">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                        <FaGoogle className="h-2.5 w-2.5" />
+                      </span>
+                      Google Business Post URL (Optional)
+                    </Label>
+                    <Input
+                      value={gmbPostUrl}
+                      onChange={e => setGmbPostUrl(e.target.value)}
+                      placeholder="Google post URL"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -951,15 +1757,15 @@ export default function BlogPostEditorPage() {
                   </Button>
                   <Button
                     onClick={handleSaveAndSync}
-                    disabled={saveMutation.isPending || syncToDudaMutation.isPending}
+                    disabled={saveMutation.isPending || syncToWebsiteMutation.isPending}
                     className="flex-1"
                   >
-                    {syncToDudaMutation.isPending ? (
+                    {syncToWebsiteMutation.isPending ? (
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Globe className="h-4 w-4 mr-2" />
                     )}
-                    {syncToDudaMutation.isPending ? "Syncing to Duda..." : "Save & Sync to Duda"}
+                    {syncToWebsiteMutation.isPending ? "Syncing to website..." : "Save & Sync to Website"}
                   </Button>
                 </div>
               </CardContent>
@@ -1066,9 +1872,12 @@ export default function BlogPostEditorPage() {
         );
 
       case "faq":
+        const faqQuestions = (Array.isArray(section.content?.questions) && section.content.questions.length > 0)
+          ? section.content.questions
+          : Array.from({ length: 4 }, () => ({ question: "", answer: "" }));
         return (
           <div className="space-y-4">
-            {(section.content?.questions || []).map((q: any, i: number) => (
+            {faqQuestions.map((q: any, i: number) => (
               <div key={i} className="border rounded p-3 space-y-2">
                 <div>
                   <Label>Question {i + 1}</Label>
@@ -1156,13 +1965,18 @@ export default function BlogPostEditorPage() {
     <DashboardLayout>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            {isEditing ? "Edit Blog Post" : "Create Blog Post"}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {isEditing ? title : "Generate SEO-optimized content for your website"}
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isEditing ? "Edit Blog Post" : "Create Blog Post"}
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {isEditing ? title : "Generate SEO-optimized content for your website"}
+            </p>
+          </div>
+          <Button variant="ghost" onClick={() => navigate("/blog-posts")}>
+            Back to Blog Posts
+          </Button>
         </div>
 
         {/* Progress indicator */}
@@ -1223,7 +2037,7 @@ export default function BlogPostEditorPage() {
           </Button>
           {currentStep < WIZARD_STEPS.length - 1 && (
             <Button onClick={goNext} disabled={!canProceed()}>
-              {currentStep === 3 && content.length === 0 ? (
+              {currentStep === 1 && content.length === 0 ? (
                 <>
                   <Sparkles className="h-4 w-4 mr-2" />
                   Generate Content

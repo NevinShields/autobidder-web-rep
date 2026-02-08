@@ -180,9 +180,16 @@ import {
   whiteLabelVideos,
   whiteLabelVideoDownloads,
   type WhiteLabelVideo,
-  type InsertWhiteLabelVideo
+  type InsertWhiteLabelVideo,
+  landingPages,
+  type LandingPage,
+  type InsertLandingPage,
+  propertySnapshots,
+  type PropertySnapshot,
+  type InsertPropertySnapshot,
 } from "@shared/schema";
 import { nanoid } from "nanoid";
+import { slugifyLandingPage } from "./landing-page-utils";
 import { createHash } from "crypto";
 import { db } from "./db";
 import { eq, and, gte, lte, count, desc, sql, lt, inArray, or, isNotNull, isNull } from "drizzle-orm";
@@ -222,6 +229,23 @@ const PERMISSION_LIMITS = [
   "maxWebsites",
   "maxTeamMembers",
 ];
+
+async function generateUniqueLandingSlug(base: string): Promise<string> {
+  const slugBase = slugifyLandingPage(base);
+  let slug = slugBase;
+  let attempt = 0;
+  while (attempt < 5) {
+    const [existing] = await db
+      .select({ id: landingPages.id })
+      .from(landingPages)
+      .where(eq(landingPages.slug, slug))
+      .limit(1);
+    if (!existing) return slug;
+    slug = `${slugBase}-${nanoid(6)}`;
+    attempt += 1;
+  }
+  return `${slugBase}-${nanoid(8)}`;
+}
 
 function normalizePermissions(input: Record<string, any> | null | undefined) {
   if (!input) return undefined;
@@ -721,6 +745,11 @@ export interface IStorage {
   // Lead Activity operations
   getLeadActivities(leadId: number, isMultiService: boolean): Promise<LeadActivity[]>;
   createLeadActivity(activity: InsertLeadActivity): Promise<LeadActivity>;
+
+  // Property Snapshot operations
+  getPropertySnapshot(id: number): Promise<PropertySnapshot | undefined>;
+  getPropertySnapshotByAddress(normalizedAddress: string): Promise<PropertySnapshot | undefined>;
+  createPropertySnapshot(snapshot: InsertPropertySnapshot): Promise<PropertySnapshot>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1909,7 +1938,58 @@ export class DatabaseStorage implements IStorage {
         permissions: normalizePermissions(permissions),
       })
       .returning();
+    await this.ensureLandingPageForUser(user);
     return user;
+  }
+
+  async ensureLandingPageForUser(user: User): Promise<LandingPage | null> {
+    if (user.userType !== "owner") {
+      return null;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(landingPages)
+      .where(eq(landingPages.userId, user.id))
+      .limit(1);
+
+    if (existing) {
+      return existing;
+    }
+
+    const businessName =
+      user.businessInfo?.businessName ||
+      user.organizationName ||
+      [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+      "Your Business";
+
+    const slug = await generateUniqueLandingSlug(businessName);
+    const defaultTrustChips = [
+      { label: "Licensed & Insured", enabled: true },
+      { label: "Same-Day Quotes", enabled: true },
+      { label: "Top-Rated Service", enabled: true },
+    ];
+    const defaultHowItWorks = [
+      { title: "Tell us about your project", body: "Answer a few quick questions so we can tailor your quote." },
+      { title: "Get instant pricing", body: "Use our calculator to see transparent, upfront estimates." },
+      { title: "Schedule your service", body: "Pick a time that works best for you and we’ll take it from there." },
+    ];
+
+    const [created] = await db
+      .insert(landingPages)
+      .values({
+        userId: user.id,
+        slug,
+        status: "draft",
+        businessName,
+        trustChips: defaultTrustChips,
+        howItWorks: defaultHowItWorks,
+        faqs: [],
+        services: [],
+      })
+      .returning();
+
+    return created || null;
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -5064,6 +5144,33 @@ export class DatabaseStorage implements IStorage {
       .values(activity)
       .returning();
     return newActivity;
+  }
+
+  // Property Snapshot operations
+  async getPropertySnapshot(id: number): Promise<PropertySnapshot | undefined> {
+    const [snapshot] = await db
+      .select()
+      .from(propertySnapshots)
+      .where(eq(propertySnapshots.id, id));
+    return snapshot;
+  }
+
+  async getPropertySnapshotByAddress(normalizedAddress: string): Promise<PropertySnapshot | undefined> {
+    const [snapshot] = await db
+      .select()
+      .from(propertySnapshots)
+      .where(eq(propertySnapshots.addressNormalized, normalizedAddress))
+      .orderBy(desc(propertySnapshots.retrievedAt))
+      .limit(1);
+    return snapshot;
+  }
+
+  async createPropertySnapshot(snapshot: InsertPropertySnapshot): Promise<PropertySnapshot> {
+    const [newSnapshot] = await db
+      .insert(propertySnapshots)
+      .values(snapshot)
+      .returning();
+    return newSnapshot;
   }
 }
 

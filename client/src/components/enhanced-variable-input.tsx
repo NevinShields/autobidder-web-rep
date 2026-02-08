@@ -1,6 +1,7 @@
 import { Variable } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
@@ -18,29 +19,41 @@ interface EnhancedVariableInputProps {
   allVariables?: Variable[];
   currentValues?: Record<string, any>;
   hasCustomCSS?: boolean;
+  prefillSource?: string;
 }
 
-function VariableLabelWithTooltip({ variable, style }: { variable: Variable; style?: React.CSSProperties }) {
+function VariableLabelWithTooltip({ variable, style, prefillSource }: { variable: Variable; style?: React.CSSProperties; prefillSource?: string }) {
+  const prefillBadge = prefillSource ? (
+    <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200">
+      Prefilled from property data
+    </Badge>
+  ) : null;
+
   if (!variable.tooltip) {
-    return <Label htmlFor={variable.id} className="ab-label ab-question-label" style={style}>{variable.name}</Label>;
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Label htmlFor={variable.id} className="ab-label ab-question-label" style={style}>{variable.name}</Label>
+        {prefillBadge}
+      </div>
+    );
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1.5 flex-wrap">
       <Label htmlFor={variable.id} className="ab-label ab-question-label" style={style}>{variable.name}</Label>
       <TooltipProvider delayDuration={200}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="inline-flex items-center justify-center"
               data-testid={`tooltip-trigger-${variable.id}`}
             >
               <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
             </button>
           </TooltipTrigger>
-          <TooltipContent 
-            side="right" 
+          <TooltipContent
+            side="right"
             className="max-w-xs text-sm"
             data-testid={`tooltip-content-${variable.id}`}
           >
@@ -48,19 +61,21 @@ function VariableLabelWithTooltip({ variable, style }: { variable: Variable; sty
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+      {prefillBadge}
     </div>
   );
 }
 
-export default function EnhancedVariableInput({ 
-  variable, 
-  value, 
-  onChange, 
+export default function EnhancedVariableInput({
+  variable,
+  value,
+  onChange,
   styling,
   componentStyles,
   allVariables = [],
   currentValues = {},
-  hasCustomCSS = false
+  hasCustomCSS = false,
+  prefillSource
 }: EnhancedVariableInputProps) {
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
@@ -353,7 +368,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <div className="relative">
               <Input
                 id={variable.id}
@@ -431,7 +446,7 @@ export default function EnhancedVariableInput({
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+              <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
               <div
                 className="inline-flex items-center overflow-hidden border border-gray-200 rounded-md"
                 style={stepperContainerStyle}
@@ -489,7 +504,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <Input
               id={variable.id}
               value={value || ''}
@@ -513,7 +528,7 @@ export default function EnhancedVariableInput({
               onCheckedChange={(checked) => onChange(checked === true)}
               className="ab-checkbox flex-shrink-0"
             />
-            <VariableLabelWithTooltip variable={variable} style={{...labelStyle, flex: 1}} />
+            <VariableLabelWithTooltip variable={variable} style={{...labelStyle, flex: 1}} prefillSource={prefillSource} />
           </div>
         </div>
       );
@@ -555,7 +570,7 @@ export default function EnhancedVariableInput({
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+              <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
               <div className="flex items-center gap-2">
                 <span className="ab-slider-value text-sm font-medium text-gray-700" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
                   {sliderValue[0]}
@@ -588,7 +603,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full" data-testid={`select-${variable.id}`} data-variable-id={variable.id}>
                 <SelectValue placeholder="Select an option" />
@@ -656,9 +671,10 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2" data-variable-id={variable.id}>
-            <VariableLabelWithTooltip 
-              variable={variable} 
-              style={hasCustomCSS ? {} : { ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }} 
+            <VariableLabelWithTooltip
+              variable={variable}
+              style={hasCustomCSS ? {} : { ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }}
+              prefillSource={prefillSource}
             />
           {variable.allowMultipleSelection && (
             <p className="text-xs text-gray-500">Multiple selections allowed</p>
@@ -770,7 +786,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full">
                 <SelectValue placeholder="Select an option" />
@@ -791,7 +807,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <VariableLabelWithTooltip variable={variable} style={labelStyle} />
+            <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <div className="ab-error text-sm text-gray-500">
               Unsupported variable type: {variable.type}
             </div>

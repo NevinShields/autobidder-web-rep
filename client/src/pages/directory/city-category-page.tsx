@@ -46,23 +46,6 @@ export default function DirectoryCityCategoryPage() {
   const displayCity = data?.city || citySlug?.split('-').slice(0, -1).join(' ').replace(/\b\w/g, l => l.toUpperCase()) || '';
   const displayState = data?.state || citySlug?.split('-').pop()?.toUpperCase() || '';
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Page Not Found</h1>
-          <p className="text-gray-600 mb-4">This location or category doesn't exist.</p>
-          <Link href="/directory">
-            <Button>
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Back to Directory
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const listingCount = data?.listings?.length || 0;
 
   // SEO: Set page title and meta description with price/cost/calculator keywords
@@ -82,8 +65,36 @@ export default function DirectoryCityCategoryPage() {
         tag.content = desc;
         document.head.appendChild(tag);
       }
+      if (data.isIndexable === false) {
+        const robots = document.querySelector('meta[name="robots"]');
+        if (robots) {
+          robots.setAttribute("content", "noindex, nofollow");
+        } else {
+          const tag = document.createElement("meta");
+          tag.name = "robots";
+          tag.content = "noindex, nofollow";
+          document.head.appendChild(tag);
+        }
+      }
     }
   }, [data?.category, data?.city, data?.state, listingCount]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Page Not Found</h1>
+          <p className="text-gray-600 mb-4">This location or category doesn't exist.</p>
+          <Link href="/directory">
+            <Button>
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Back to Directory
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

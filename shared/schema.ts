@@ -229,6 +229,9 @@ export const businessSettings = pgTable("business_settings", {
   fbTestEventCode: text("fb_test_event_code"),
   fbBusinessUrl: text("fb_business_url"),
   enableFacebookTracking: boolean("enable_facebook_tracking").notNull().default(false),
+  // Blog CTA defaults
+  blogCtaEnabled: boolean("blog_cta_enabled").notNull().default(true),
+  blogCtaUrl: text("blog_cta_url"),
   // Stripe configuration
   stripeConfig: jsonb("stripe_config").$type<{
     standard: {
@@ -1413,6 +1416,7 @@ export interface BusinessInfo {
   businessName?: string;
   businessType?: string;
   industry?: string;
+  serviceLocation?: string;
   website?: string;
   phone?: string;
   address?: string;
@@ -1490,6 +1494,7 @@ export const variableSchema = z.object({
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   allowMultipleSelection: z.boolean().optional(), // For multiple-choice type
   connectionKey: z.string().optional(), // Key to identify shared variables across services (e.g., "house_sqft", "property_height")
+  prefillSourceKey: z.string().nullable().optional(), // Key mapping to a canonical property attribute for autofill (e.g., "building_area_sqft")
   // Slider specific properties
   min: z.number().optional(), // Minimum value for slider
   max: z.number().optional(), // Maximum value for slider
@@ -1710,6 +1715,9 @@ export const stylingOptionsSchema = z.object({
   enableCustomButton: z.boolean().default(false),
   customButtonText: z.string().default('Get Another Quote'),
   customButtonUrl: z.string().default(''),
+
+  // Property data autofill
+  enablePropertyAutofill: z.boolean().default(false),
 });
 
 export const insertFormulaSchema = createInsertSchema(formulas).omit({
@@ -1849,6 +1857,59 @@ export const estimateServiceSchema = z.object({
   price: z.number(),
   category: z.string().optional(),
 });
+
+// Property Autofill Canonical Attributes
+export interface PropertyAttributes {
+  building_area_sqft?: number;
+  stories?: number;
+  year_built?: number;
+  lot_area_sqft?: number;
+  exterior_wall_material?: string;
+  roof_material?: string;
+  // Surface dimensions (parsed from ATTOM dimensions strings)
+  "surface.driveway.area_sqft"?: number;
+  "surface.driveway.dimensions_raw"?: string;
+  "surface.patio.area_sqft"?: number;
+  "surface.patio.dimensions_raw"?: string;
+  "surface.deck.area_sqft"?: number;
+  "surface.deck.dimensions_raw"?: string;
+  "surface.pool.area_sqft"?: number;
+  "surface.pool.dimensions_raw"?: string;
+  "surface.garage.area_sqft"?: number;
+  "surface.garage.dimensions_raw"?: string;
+  "surface.fence.linear_ft"?: number;
+}
+
+export const PROPERTY_ATTRIBUTE_LABELS: Record<string, string> = {
+  building_area_sqft: "Building Area (sqft)",
+  stories: "Number of Stories",
+  year_built: "Year Built",
+  lot_area_sqft: "Lot Area (sqft)",
+  exterior_wall_material: "Exterior Wall Material",
+  roof_material: "Roof Material",
+  "surface.driveway.area_sqft": "Driveway Area (sqft)",
+  "surface.driveway.dimensions_raw": "Driveway Dimensions",
+  "surface.patio.area_sqft": "Patio Area (sqft)",
+  "surface.patio.dimensions_raw": "Patio Dimensions",
+  "surface.deck.area_sqft": "Deck Area (sqft)",
+  "surface.deck.dimensions_raw": "Deck Dimensions",
+  "surface.pool.area_sqft": "Pool Area (sqft)",
+  "surface.pool.dimensions_raw": "Pool Dimensions",
+  "surface.garage.area_sqft": "Garage Area (sqft)",
+  "surface.garage.dimensions_raw": "Garage Dimensions",
+  "surface.fence.linear_ft": "Fence Length (linear ft)",
+};
+
+export const PROPERTY_ATTRIBUTE_GROUPS: Record<string, string[]> = {
+  "Home": ["building_area_sqft", "stories", "year_built", "lot_area_sqft"],
+  "Materials": ["exterior_wall_material", "roof_material"],
+  "Driveway": ["surface.driveway.area_sqft", "surface.driveway.dimensions_raw"],
+  "Patio": ["surface.patio.area_sqft", "surface.patio.dimensions_raw"],
+  "Deck": ["surface.deck.area_sqft", "surface.deck.dimensions_raw"],
+  "Pool": ["surface.pool.area_sqft", "surface.pool.dimensions_raw"],
+  "Garage": ["surface.garage.area_sqft", "surface.garage.dimensions_raw"],
+  "Fence": ["surface.fence.linear_ft"],
+};
 
 export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
@@ -2917,6 +2978,8 @@ export const directoryProfiles = pgTable("directory_profiles", {
   longitude: text("longitude"),
   isActive: boolean("is_active").notNull().default(true),
   showOnDirectory: boolean("show_on_directory").notNull().default(true),
+  status: varchar("status", { enum: ["approved", "pending", "rejected"] }).notNull().default("approved"),
+  landingPageSlug: text("landing_page_slug"),
   showAllServices: boolean("show_all_services").notNull().default(false),
   metaDescription: text("meta_description"),
   totalServices: integer("total_services").notNull().default(0),
@@ -2932,6 +2995,52 @@ export const insertDirectoryProfileSchema = createInsertSchema(directoryProfiles
 
 export type DirectoryProfile = typeof directoryProfiles.$inferSelect;
 export type InsertDirectoryProfile = z.infer<typeof insertDirectoryProfileSchema>;
+
+// ==================== Landing Pages ====================
+
+export const landingPages = pgTable("landing_pages", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id).unique(),
+  slug: text("slug").notNull().unique(),
+  status: varchar("status", { enum: ["draft", "published"] }).notNull().default("draft"),
+  publishedAt: timestamp("published_at"),
+  businessName: text("business_name"),
+  logoUrl: text("logo_url"),
+  tagline: text("tagline"),
+  ctaLabel: text("cta_label").notNull().default("Get Instant Quote"),
+  trustChips: jsonb("trust_chips").$type<Array<{ label: string; enabled: boolean; icon?: string }>>(),
+  services: jsonb("services").$type<Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number }>>(),
+  primaryServiceId: integer("primary_service_id"),
+  enableMultiService: boolean("enable_multi_service").notNull().default(false),
+  howItWorks: jsonb("how_it_works").$type<Array<{ title: string; body: string }>>(),
+  faqs: jsonb("faqs").$type<Array<{ question: string; answer: string }>>(),
+  phone: text("phone"),
+  email: text("email"),
+  serviceAreaText: text("service_area_text"),
+  seoTitle: text("seo_title"),
+  seoDescription: text("seo_description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertLandingPageSchema = createInsertSchema(landingPages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type LandingPage = typeof landingPages.$inferSelect;
+export type InsertLandingPage = z.infer<typeof insertLandingPageSchema>;
+
+export const landingPageEvents = pgTable("landing_page_events", {
+  id: serial("id").primaryKey(),
+  landingPageId: integer("landing_page_id").notNull().references(() => landingPages.id, { onDelete: "cascade" }),
+  type: varchar("type", { enum: ["view", "lead_submit", "callback_request"] }).notNull(),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type LandingPageEvent = typeof landingPageEvents.$inferSelect;
 
 // Directory Service Listings - Links formulas to directory categories
 export const directoryServiceListings = pgTable("directory_service_listings", {
@@ -3081,6 +3190,11 @@ export interface BlogLayoutSection {
   required: boolean;
 }
 
+export interface BlogInternalLink {
+  url: string;
+  anchorText: string;
+}
+
 // Blog Posts - Core blog entity
 export const blogPosts = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
@@ -3091,6 +3205,7 @@ export const blogPosts = pgTable("blog_posts", {
   primaryServiceId: integer("primary_service_id").references(() => formulas.id),
   targetCity: text("target_city"),
   targetNeighborhood: text("target_neighborhood"),
+  targetKeyword: text("target_keyword"),
   goal: text("goal"), // "rank_seo", "educate", "convert"
 
   // Content Source
@@ -3115,6 +3230,12 @@ export const blogPosts = pgTable("blog_posts", {
   // SEO
   seoScore: integer("seo_score"),
   seoChecklist: jsonb("seo_checklist").$type<SeoChecklistItem[]>(),
+  internalLinks: jsonb("internal_links").$type<BlogInternalLink[]>(),
+  videoUrl: text("video_url"),
+  facebookPostUrl: text("facebook_post_url"),
+  gmbPostUrl: text("gmb_post_url"),
+  ctaButtonEnabled: boolean("cta_button_enabled"),
+  ctaButtonUrl: text("cta_button_url"),
 
   // Publishing
   featuredImageUrl: text("featured_image_url"),
@@ -3158,6 +3279,7 @@ export const blogImages = pgTable("blog_images", {
   thumbnailUrl: text("thumbnail_url"),
 
   imageType: text("image_type").notNull(), // "hero", "before", "after", "process", "equipment", "team"
+  imageStyle: text("image_style").notNull().default("default"), // "default", "rounded", "rounded_shadow"
   altText: text("alt_text"),
   caption: text("caption"),
 
@@ -3272,3 +3394,26 @@ export const blogSectionLockRelations = relations(blogSectionLocks, ({ one }) =>
     references: [blogPosts.id],
   }),
 }));
+
+// Property Snapshots - cached property data from ATTOM API
+export const propertySnapshots = pgTable("property_snapshots", {
+  id: serial("id").primaryKey(),
+  addressNormalized: text("address_normalized").notNull(),
+  addressInput: text("address_input").notNull(),
+  attributesJson: jsonb("attributes_json").notNull().$type<PropertyAttributes>(),
+  source: text("source").notNull().default("attom"),
+  retrievedAt: timestamp("retrieved_at").notNull().defaultNow(),
+  rawPayloadJson: jsonb("raw_payload_json"),
+  confidenceJson: jsonb("confidence_json"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("property_snapshots_address_idx").on(table.addressNormalized),
+]);
+
+export const insertPropertySnapshotSchema = createInsertSchema(propertySnapshots).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type PropertySnapshot = typeof propertySnapshots.$inferSelect;
+export type InsertPropertySnapshot = z.infer<typeof insertPropertySnapshotSchema>;

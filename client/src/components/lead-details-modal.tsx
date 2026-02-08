@@ -1228,7 +1228,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {((businessSettings as any)?.styling?.leadSourceOptions || ['Calculator', 'Duda', 'Custom Form', 'Manual']).map((option: string) => (
+                          {((businessSettings as any)?.styling?.leadSourceOptions || ['Calculator', 'Website', 'Custom Form', 'Manual']).map((option: string) => (
                             <SelectItem key={option} value={option.toLowerCase().replace(/\s+/g, '_')}>
                               {option}
                             </SelectItem>

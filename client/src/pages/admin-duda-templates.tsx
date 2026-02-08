@@ -28,7 +28,7 @@ import {
   Save
 } from 'lucide-react';
 
-interface DudaTemplateTag {
+interface WebsiteTemplateTag {
   id: number;
   name: string;
   displayName: string;
@@ -40,7 +40,7 @@ interface DudaTemplateTag {
   updatedAt: string;
 }
 
-interface DudaTemplateMetadata {
+interface WebsiteTemplateMetadata {
   id: number;
   templateId: string;
   templateName: string;
@@ -56,15 +56,15 @@ interface DudaTemplateMetadata {
   updatedAt: string;
 }
 
-interface TemplateWithTags extends DudaTemplateMetadata {
-  tags: DudaTemplateTag[];
+interface TemplateWithTags extends WebsiteTemplateMetadata {
+  tags: WebsiteTemplateTag[];
 }
 
-export default function AdminDudaTemplates() {
+export default function AdminWebsiteTemplates() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('templates');
-  const [selectedTemplate, setSelectedTemplate] = useState<DudaTemplateMetadata | null>(null);
-  const [selectedTag, setSelectedTag] = useState<DudaTemplateTag | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<WebsiteTemplateMetadata | null>(null);
+  const [selectedTag, setSelectedTag] = useState<WebsiteTemplateTag | null>(null);
   const [isTagDialogOpen, setIsTagDialogOpen] = useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [newTagData, setNewTagData] = useState({
@@ -81,12 +81,12 @@ export default function AdminDudaTemplates() {
   });
 
   // Fetch all templates (admin view)
-  const { data: allTemplates = [], isLoading: allTemplatesLoading } = useQuery<DudaTemplateMetadata[]>({
+  const { data: allTemplates = [], isLoading: allTemplatesLoading } = useQuery<WebsiteTemplateMetadata[]>({
     queryKey: ['/api/admin/duda-templates']
   });
 
   // Fetch all tags
-  const { data: allTags = [], isLoading: tagsLoading, refetch: refetchTags } = useQuery<DudaTemplateTag[]>({
+  const { data: allTags = [], isLoading: tagsLoading, refetch: refetchTags } = useQuery<WebsiteTemplateTag[]>({
     queryKey: ['/api/admin/duda-template-tags']
   });
 
@@ -96,7 +96,7 @@ export default function AdminDudaTemplates() {
     onSuccess: (data: any) => {
       toast({
         title: "Templates Synced",
-        description: `Successfully synced ${data.templates?.length || 0} templates from Duda API`
+        description: `Successfully synced ${data.templates?.length || 0} templates from website API`
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/duda-templates'] });
       queryClient.invalidateQueries({ queryKey: ['/api/duda-templates-with-tags'] });
@@ -250,14 +250,14 @@ export default function AdminDudaTemplates() {
     createTagMutation.mutate(newTagData);
   };
 
-  const handleToggleTagActive = (tag: DudaTemplateTag) => {
+  const handleToggleTagActive = (tag: WebsiteTemplateTag) => {
     updateTagMutation.mutate({
       id: tag.id,
       data: { isActive: !tag.isActive }
     });
   };
 
-  const handleToggleTemplateVisible = (template: DudaTemplateMetadata) => {
+  const handleToggleTemplateVisible = (template: WebsiteTemplateMetadata) => {
     updateTemplateMutation.mutate({
       templateId: template.templateId,
       data: { isVisible: !template.isVisible }
@@ -279,7 +279,7 @@ export default function AdminDudaTemplates() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Duda Template Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Website Template Management</h1>
               <p className="text-gray-600 mt-1">Manage template tags, visibility, and organization</p>
             </div>
             <div className="flex gap-2">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,13 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Calculator, ShoppingCart, ArrowRight, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon } from "lucide-react";
+import { CheckCircle, Calculator, ShoppingCart, ArrowRight, User, Mail, Phone, Receipt, Percent, MapPin, MessageSquare, HeadphonesIcon, Home, Loader2, Search } from "lucide-react";
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import ServiceCardDisplay from "@/components/service-card-display";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Formula, ServiceCalculation, BusinessSettings } from "@shared/schema";
+import type { Formula, ServiceCalculation, BusinessSettings, PropertyAttributes } from "@shared/schema";
 
 
 
@@ -38,13 +38,20 @@ export default function ServiceSelector() {
     notes: "",
     howDidYouHear: ""
   });
-  const [currentStep, setCurrentStep] = useState<"selection" | "configuration" | "contact" | "pricing">("selection");
+  const [currentStep, setCurrentStep] = useState<"selection" | "address" | "configuration" | "contact" | "pricing">("selection");
+  const [propertyAddress, setPropertyAddress] = useState("");
+  const [propertyAttributes, setPropertyAttributes] = useState<PropertyAttributes>({});
+  const [propertySnapshotId, setPropertySnapshotId] = useState<number | null>(null);
+  const [isResolvingProperty, setIsResolvingProperty] = useState(false);
+  const [propertyAutofillSkipped, setPropertyAutofillSkipped] = useState(false);
+  const [prefilledFields, setPrefilledFields] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const search = useSearch();
 
   // Get user ID from URL parameters (for public forms)
   const urlParams = new URLSearchParams(search);
   const userId = urlParams.get('userId');
+  const landingPageId = urlParams.get('landingPageId');
 
   const { data: formulas, isLoading: formulasLoading } = useQuery({
     queryKey: userId ? ["/api/public/formulas", userId] : ["/api/formulas"],
@@ -79,6 +86,103 @@ export default function ServiceSelector() {
       }
     }
   });
+
+  // Determine if address step should be shown
+  const shouldShowAddressStep = useMemo(() => {
+    if (!(businessSettings as any)?.styling?.enablePropertyAutofill) return false;
+    return selectedServices.some(serviceId => {
+      const formula = (formulas as Formula[] | undefined)?.find(f => f.id === serviceId);
+      return formula?.variables?.some((v: any) => v.prefillSourceKey);
+    });
+  }, [selectedServices, formulas, businessSettings]);
+
+  // Apply property data prefill to service variables
+  const applyPropertyPrefill = (attributes: PropertyAttributes) => {
+    const newPrefilledFields: Record<string, string> = {};
+
+    selectedServices.forEach(serviceId => {
+      const formula = (formulas as Formula[] | undefined)?.find(f => f.id === serviceId);
+      if (!formula?.variables) return;
+
+      formula.variables.forEach((variable: any) => {
+        if (!variable.prefillSourceKey) return;
+        const attrValue = (attributes as any)[variable.prefillSourceKey];
+        if (attrValue === undefined || attrValue === null) return;
+
+        // Only prefill if user hasn't already entered a value
+        const existingValue = serviceVariables[serviceId]?.[variable.id];
+        if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) return;
+
+        // Type conversion based on variable type
+        let convertedValue: any = attrValue;
+        if (['number', 'slider', 'stepper'].includes(variable.type)) {
+          convertedValue = typeof attrValue === 'number' ? attrValue : parseFloat(attrValue);
+          if (isNaN(convertedValue)) return;
+        } else if (['select', 'dropdown'].includes(variable.type) && variable.options) {
+          // Try to match attribute value to an option
+          const strValue = String(attrValue).toLowerCase();
+          const matchedOption = variable.options.find((opt: any) =>
+            String(opt.label).toLowerCase().includes(strValue) ||
+            String(opt.value).toLowerCase().includes(strValue) ||
+            strValue.includes(String(opt.label).toLowerCase())
+          );
+          if (matchedOption) {
+            convertedValue = matchedOption.value;
+          } else {
+            return; // No matching option found
+          }
+        }
+
+        handleVariableChange(serviceId, variable.id, convertedValue);
+        newPrefilledFields[`${serviceId}_${variable.id}`] = variable.prefillSourceKey;
+      });
+    });
+
+    setPrefilledFields(newPrefilledFields);
+  };
+
+  // Resolve property data from address
+  const handlePropertyResolve = async () => {
+    if (!propertyAddress.trim()) return;
+
+    setIsResolvingProperty(true);
+    try {
+      const response = await fetch('/api/property/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: propertyAddress,
+          formulaIds: selectedServices,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to resolve property');
+
+      const data = await response.json();
+      setPropertyAttributes(data.attributes || {});
+      setPropertySnapshotId(data.snapshotId);
+
+      // Apply prefill
+      applyPropertyPrefill(data.attributes || {});
+
+      toast({
+        title: "Property data loaded",
+        description: "Form fields have been pre-filled with property information.",
+      });
+
+      setCurrentStep('configuration');
+    } catch (error) {
+      console.error('Property resolve error:', error);
+      toast({
+        title: "Could not load property data",
+        description: "You can still fill in the details manually.",
+        variant: "destructive",
+      });
+      setCurrentStep('configuration');
+    } finally {
+      setIsResolvingProperty(false);
+    }
+  };
 
   // Handle URL parameter for preselecting a formula
   useEffect(() => {
@@ -118,6 +222,13 @@ export default function ServiceSelector() {
         title: "Quote request submitted successfully!",
         description: "We'll get back to you with detailed pricing soon.",
       });
+      if (landingPageId) {
+        apiRequest("POST", "/api/landing-page/events", {
+          landingPageId: Number(landingPageId),
+          type: "lead_submit",
+          metadata: { source: "multi_service" }
+        }).catch(() => {});
+      }
       // Reset form
       setSelectedServices([]);
       setServiceVariables({});
@@ -463,41 +574,36 @@ export default function ServiceSelector() {
               </div>
 
               {/* Progress Steps - Mobile Optimized */}
-              <div className="flex items-center justify-center mb-6 sm:mb-8 space-x-2 sm:space-x-4 overflow-x-auto pb-2">
-                <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'selection' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
-                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'selection' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                    1
-                  </div>
-                  <span className="text-xs whitespace-nowrap">Select</span>
-                </div>
-                
-                {/* Standard flow: Services -> Configure -> Contact -> Quote */}
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-50 flex-shrink-0" />
-                <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'configuration' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
-                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'configuration' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                    2
-                  </div>
-                  <span className="text-xs whitespace-nowrap">Configure</span>
-                </div>
-                {settings.enableLeadCapture && (
-                  <>
-                    <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-50 flex-shrink-0" />
-                    <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'contact' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
-                      <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'contact' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                        3
+              {(() => {
+                let stepNum = 1;
+                const steps: { key: string; label: string; num: number }[] = [
+                  { key: 'selection', label: 'Select', num: stepNum++ },
+                ];
+                if (shouldShowAddressStep) {
+                  steps.push({ key: 'address', label: 'Address', num: stepNum++ });
+                }
+                steps.push({ key: 'configuration', label: 'Configure', num: stepNum++ });
+                if (settings.enableLeadCapture) {
+                  steps.push({ key: 'contact', label: 'Contact', num: stepNum++ });
+                }
+                steps.push({ key: 'pricing', label: 'Quote', num: stepNum++ });
+
+                return (
+                  <div className="flex items-center justify-center mb-6 sm:mb-8 space-x-2 sm:space-x-4 overflow-x-auto pb-2">
+                    {steps.map((step, i) => (
+                      <div key={step.key} className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+                        {i > 0 && <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-50 flex-shrink-0" />}
+                        <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === step.key ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
+                          <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === step.key ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
+                            {step.num}
+                          </div>
+                          <span className="text-xs whitespace-nowrap">{step.label}</span>
+                        </div>
                       </div>
-                      <span className="text-xs whitespace-nowrap">Contact</span>
-                    </div>
-                  </>
-                )}
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 opacity-50 flex-shrink-0" />
-                <div className={`flex items-center space-x-1 sm:space-x-2 ${currentStep === 'pricing' ? 'text-current' : 'opacity-50'} flex-shrink-0`}>
-                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-medium ${currentStep === 'pricing' ? 'bg-current text-white' : 'bg-gray-200 text-gray-600'}`}>
-                    {settings.enableLeadCapture ? '4' : '3'}
+                    ))}
                   </div>
-                  <span className="text-xs whitespace-nowrap">Quote</span>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Step Content */}
               <div className="flex-1">
@@ -506,7 +612,7 @@ export default function ServiceSelector() {
                     formulas={availableFormulas}
                     selectedServices={selectedServices}
                     onServiceToggle={handleServiceToggle}
-                    onContinue={() => setCurrentStep('configuration')}
+                    onContinue={() => setCurrentStep(shouldShowAddressStep ? 'address' : 'configuration')}
                     styling={{
                       containerBorderRadius: styling.containerBorderRadius,
                       containerShadow: styling.containerShadow,
@@ -537,12 +643,75 @@ export default function ServiceSelector() {
                   />
                 )}
 
+                {currentStep === 'address' && (
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                        <Home className="w-5 h-5" />
+                        Property Address
+                      </h2>
+                      <button
+                        onClick={() => setCurrentStep('selection')}
+                        className="text-xs sm:text-sm opacity-70 hover:opacity-100 transition-opacity"
+                      >
+                        ← Back
+                      </button>
+                    </div>
+
+                    <p className="text-sm opacity-80">
+                      Enter the property address to automatically fill in measurements and details.
+                    </p>
+
+                    <div className="space-y-3">
+                      <Label htmlFor="property-address">Property Address</Label>
+                      <Input
+                        id="property-address"
+                        type="text"
+                        placeholder="e.g., 123 Main St, Springfield, IL 62701"
+                        value={propertyAddress}
+                        onChange={(e) => setPropertyAddress(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button
+                        onClick={handlePropertyResolve}
+                        disabled={!propertyAddress.trim() || isResolvingProperty}
+                        className="flex-1"
+                      >
+                        {isResolvingProperty ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Looking up property...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-4 h-4 mr-2" />
+                            Look Up Property Data
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setPropertyAutofillSkipped(true);
+                          setCurrentStep('configuration');
+                        }}
+                        className="text-sm"
+                      >
+                        Skip this step
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {currentStep === 'configuration' && (
                   <div className="space-y-4 sm:space-y-6">
                     <div className="flex items-center justify-between">
                       <h2 className="text-base sm:text-lg font-semibold">Configure Your Services</h2>
                       <button
-                        onClick={() => setCurrentStep('selection')}
+                        onClick={() => setCurrentStep(shouldShowAddressStep ? 'address' : 'selection')}
                         className="text-xs sm:text-sm opacity-70 hover:opacity-100 transition-opacity"
                       >
                         ← Back
@@ -592,6 +761,7 @@ export default function ServiceSelector() {
                                     multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor,
                                     multiChoiceLayout: styling.multiChoiceLayout,
                                   }}
+                                  prefillSource={prefilledFields[`${serviceId}_${variable.id}`]}
                                 />
                               </div>
                             ))}

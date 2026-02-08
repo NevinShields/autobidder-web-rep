@@ -7,8 +7,8 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, type BlogContentSection } from "@shared/schema";
-import { eq, desc, and, gte, sql } from "drizzle-orm";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection } from "@shared/schema";
+import { eq, desc, and, gte, sql, inArray } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
@@ -50,6 +50,9 @@ import { generateFormula as generateFormulaOpenAI, refineObjectDescription as re
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
+import { attomApi } from "./attom-api";
+import { resolvePropertyData } from "./property-resolver";
+import { PROPERTY_ATTRIBUTE_LABELS, PROPERTY_ATTRIBUTE_GROUPS } from "@shared/schema";
 import { DudaFormMapper } from "./duda-form-mapper";
 import { calculateDistance, geocodeAddress } from "./location-utils";
 import { ZapierIntegrationService } from "./zapier-integration";
@@ -86,16 +89,20 @@ import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
 import { trackCompleteRegistration, trackStartTrial, sendUserLeadEvent } from './facebook-capi';
 import webpush from 'web-push';
+import { validateLandingPageBasics } from "./landing-page-utils";
 import {
   generateBlogContent,
   regenerateSection,
   generateAltText,
+  suggestKeywordContext,
   checkCompliance,
   calculateSeoScore,
   blogContentToHtml,
   DEFAULT_LAYOUT_TEMPLATES,
-  type BlogGenerationInput
+  type BlogGenerationInput,
+  type BlogHtmlEnhancements
 } from './blog-content-generator';
+import { ensureDirectoryProfileFromBusinessInfo } from "./directory-onboarding";
 
 function getBaseUrl(): string {
   if (process.env.DOMAIN) {
@@ -105,6 +112,38 @@ function getBaseUrl(): string {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
   return "http://localhost:5000";
+}
+
+function getRequestBaseUrl(req: any): string {
+  const xfProto = (req.headers?.["x-forwarded-proto"] as string | undefined)?.split(",")[0]?.trim();
+  const proto = xfProto || req.protocol || "http";
+  const host = req.get?.("host") || req.headers?.host || "localhost";
+  return `${proto}://${host}`;
+}
+
+const SITEMAP_URL_LIMIT = 25000;
+const SITEMAP_CACHE_TTL_MS = 10 * 60 * 1000;
+const sitemapCache = new Map<string, { xml: string; expiresAt: number }>();
+
+function getCachedSitemap(key: string): string | null {
+  const entry = sitemapCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    sitemapCache.delete(key);
+    return null;
+  }
+  return entry.xml;
+}
+
+function setCachedSitemap(key: string, xml: string): void {
+  sitemapCache.set(key, { xml, expiresAt: Date.now() + SITEMAP_CACHE_TTL_MS });
+}
+
+function formatLastMod(date?: Date | string | null): string | null {
+  if (!date) return null;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 const recentMultiServiceSubmissions = new Map<string, { leadId: number; createdAt: number }>();
@@ -2284,6 +2323,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Prepopulate templates by industry/category
+  async function syncDirectoryServicesFromIndustry(userId: string, industry: string) {
+    const normalizedIndustry = (industry || "").trim();
+    if (!normalizedIndustry || normalizedIndustry === "Other") {
+      return { syncedCount: 0, message: "No sync for 'Other' category" };
+    }
+
+    const [profile] = await db
+      .select()
+      .from(directoryProfiles)
+      .where(eq(directoryProfiles.userId, userId))
+      .limit(1);
+
+    if (!profile) {
+      return { syncedCount: 0, message: "Directory profile not found" };
+    }
+
+    const approvedCategories = await db
+      .select()
+      .from(directoryCategories)
+      .where(eq(directoryCategories.status, "approved"));
+
+    const industrySlug = generateSlug(normalizedIndustry);
+    const lowerIndustry = normalizedIndustry.toLowerCase();
+    const matchedCategory =
+      approvedCategories.find((c) => c.slug === industrySlug) ||
+      approvedCategories.find((c) => c.name.toLowerCase() === lowerIndustry) ||
+      approvedCategories.find((c) => c.name.toLowerCase().includes(lowerIndustry));
+
+    if (!matchedCategory) {
+      return { syncedCount: 0, message: "No approved directory category matches selected industry" };
+    }
+
+    const userFormulas = await db
+      .select({ id: formulas.id, name: formulas.name, isActive: formulas.isActive })
+      .from(formulas)
+      .where(eq(formulas.userId, userId));
+
+    const activeFormulas = userFormulas.filter((f) => f.isActive);
+    if (activeFormulas.length === 0) {
+      return { syncedCount: 0, message: "No active formulas to sync" };
+    }
+
+    const existingListings = await db
+      .select()
+      .from(directoryServiceListings)
+      .where(eq(directoryServiceListings.directoryProfileId, profile.id));
+
+    const existingByFormulaId = new Set(existingListings.map((l) => l.formulaId));
+    let nextDisplayOrder = existingListings.reduce((max, l) => Math.max(max, l.displayOrder), -1) + 1;
+
+    let syncedCount = 0;
+    for (const formula of activeFormulas) {
+      if (existingByFormulaId.has(formula.id)) continue;
+
+      await db
+        .insert(directoryServiceListings)
+        .values({
+          directoryProfileId: profile.id,
+          formulaId: formula.id,
+          categoryId: matchedCategory.id,
+          displayOrder: nextDisplayOrder,
+          customDisplayName: formula.name,
+        });
+      nextDisplayOrder += 1;
+      syncedCount += 1;
+    }
+
+    if (syncedCount > 0) {
+      const [totalServices] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(directoryServiceListings)
+        .where(and(
+          eq(directoryServiceListings.directoryProfileId, profile.id),
+          eq(directoryServiceListings.isActive, true)
+        ));
+
+      await db
+        .update(directoryProfiles)
+        .set({ totalServices: totalServices?.count || 0, updatedAt: new Date() })
+        .where(eq(directoryProfiles.id, profile.id));
+
+      const uniqueProviders = await db
+        .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
+        .from(directoryServiceListings)
+        .where(and(
+          eq(directoryServiceListings.categoryId, matchedCategory.id),
+          eq(directoryServiceListings.isActive, true)
+        ));
+
+      await db
+        .update(directoryCategories)
+        .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
+        .where(eq(directoryCategories.id, matchedCategory.id));
+    }
+
+    const [existingArea] = await db
+      .select({ id: directoryServiceAreas.id })
+      .from(directoryServiceAreas)
+      .where(and(
+        eq(directoryServiceAreas.directoryProfileId, profile.id),
+        eq(directoryServiceAreas.isActive, true)
+      ))
+      .limit(1);
+
+    if (!existingArea) {
+      await db
+        .insert(directoryServiceAreas)
+        .values({
+          directoryProfileId: profile.id,
+          areaType: "radius",
+          radiusMiles: 25,
+          centerLatitude: profile.latitude || null,
+          centerLongitude: profile.longitude || null,
+        });
+    }
+
+    await updateDirectoryIndexCache(profile.id);
+    return { syncedCount, categoryId: matchedCategory.id };
+  }
+
   app.post("/api/prepopulate-templates", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).currentUser.id;
@@ -2296,10 +2455,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get all active templates for this category
       const templates = await storage.getFormulaTemplatesByCategory(industry);
-      
-      if (templates.length === 0) {
-        return res.json({ message: "No templates found for this industry", count: 0 });
-      }
 
       // Check if user already has formulas (idempotency check)
       const existingFormulas = await storage.getFormulasByUserId(userId);
@@ -2308,10 +2463,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingNames = new Set(existingFormulas.map(f => f.name));
       const templatesToCreate = templates.filter(t => !existingNames.has(t.name));
       
-      if (templatesToCreate.length === 0) {
-        return res.json({ message: "Templates already prepopulated", count: 0 });
-      }
-
       // Create formulas from each template that doesn't already exist
       const createdFormulas = [];
       for (const template of templatesToCreate) {
@@ -2365,10 +2516,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.incrementTemplateUsage(template.id);
       }
 
+      const syncResult = await syncDirectoryServicesFromIndustry(userId, industry);
+
       res.status(201).json({ 
-        message: `Successfully created ${createdFormulas.length} formulas from templates`, 
+        message: templatesToCreate.length > 0
+          ? `Successfully created ${createdFormulas.length} formulas from templates`
+          : "Templates already prepopulated",
         count: createdFormulas.length,
-        formulas: createdFormulas 
+        formulas: createdFormulas,
+        directorySyncedCount: syncResult.syncedCount || 0,
       });
     } catch (error) {
       console.error('Error prepopulating templates:', error);
@@ -5378,7 +5534,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           distancePricingRate: 0,
           discounts: [],
           allowDiscountStacking: false,
-          guideVideos: {}
+          guideVideos: {},
+          blogCtaEnabled: true,
+          blogCtaUrl: ''
         };
         
         settings = await storage.createBusinessSettings(defaultSettings);
@@ -5493,7 +5651,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           distancePricingRate: 0,
           discounts: [],
           allowDiscountStacking: false,
-          guideVideos: {}
+          guideVideos: {},
+          blogCtaEnabled: true,
+          blogCtaUrl: ''
         };
         
         existingSettings = await storage.createBusinessSettings(defaultSettings);
@@ -5510,6 +5670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
+        'blogCtaEnabled', 'blogCtaUrl',
         // Facebook Conversion Tracking fields
         'fbPixelId', 'fbAccessToken', 'fbTestEventCode', 'fbBusinessUrl', 'enableFacebookTracking'
       ];
@@ -5561,6 +5722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
+        'blogCtaEnabled', 'blogCtaUrl',
         // Facebook Conversion Tracking fields
         'fbPixelId', 'fbAccessToken', 'fbTestEventCode', 'fbBusinessUrl', 'enableFacebookTracking'
       ];
@@ -7363,14 +7525,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
-          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+          message: "Website API not configured. Please provide integration credentials." 
         });
       }
 
       // Get websites from our database for this user
       const localWebsites = await storage.getWebsitesByUserId(userId);
       
-      // For each local website, get updated info from Duda API
+      // For each local website, get updated info from the website API
       const websitesWithUpdates = [];
       for (const localSite of localWebsites) {
         try {
@@ -7389,7 +7551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             canonical_url: dudaData.canonical_url
           });
         } catch (error) {
-          // If we can't get data from Duda, just use local data
+          // If we can't get data from the website platform, just use local data
           websitesWithUpdates.push({
             site_name: localSite.siteName,
             account_name: localSite.accountName,
@@ -7656,7 +7818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
-          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+          message: "Website API not configured. Please provide integration credentials." 
         });
       }
 
@@ -7678,7 +7840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lastName = user.lastName || 'Owner';
       const websiteName = user.organizationName || 'Your Business Website';
 
-      // 1. Create website in Duda
+      // 1. Create website in the website platform
       const createWebsiteData = {
         name: websiteName,
         description: validatedData.description,
@@ -7686,7 +7848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       const dudaWebsite = await dudaApi.createWebsite(createWebsiteData);
 
-      // 2. Create Duda user account
+      // 2. Create website-platform user account
       const dudaAccount = await dudaApi.createAccount({
         first_name: firstName,
         last_name: lastName,
@@ -7878,10 +8040,10 @@ The Autobidder Team`;
       }
       
       if (!dudaApi.isConfigured()) {
-        return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
+        return res.status(400).json({ message: "Website API not configured. Please provide API credentials." });
       }
       
-      // Generate SSO editor link using the Duda account name
+      // Generate SSO editor link using the website account name
       const editorLink = await dudaApi.generateSSOEditorLink(website.dudaAccountName!, website.siteName);
       console.log('SSO editor link generated successfully:', editorLink);
       
@@ -7914,10 +8076,10 @@ The Autobidder Team`;
       }
       
       if (!dudaApi.isConfigured()) {
-        return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
+        return res.status(400).json({ message: "Website API not configured. Please provide API credentials." });
       }
       
-      // Initiate password reset with Duda using user's email as account_name
+      // Initiate password reset with website platform using user's email as account_name
       await dudaApi.resetAccountPassword(user.email);
       console.log('Password reset initiated successfully for account:', user.email);
       
@@ -7936,7 +8098,7 @@ The Autobidder Team`;
     }
   });
 
-  // Improved Duda Welcome Link + Email via Resend
+  // Improved website welcome link + email via Resend
   app.post('/api/duda/welcome-link-email', requireAuth, requirePermission("canManageWebsites"), async (req, res) => {
     try {
       const { accountEmail, toEmail, toName } = req.body || {};
@@ -7948,7 +8110,7 @@ The Autobidder Team`;
       const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
       if (!dudaApi.isConfigured()) {
-        return res.status(500).json({ error: "Duda API not configured" });
+        return res.status(500).json({ error: "Website API not configured" });
       }
 
       if (!RESEND_API_KEY || !FROM_EMAIL) {
@@ -7958,13 +8120,13 @@ The Autobidder Team`;
       // Initialize Resend
       const resend = new Resend(RESEND_API_KEY);
 
-      // 1) Create Welcome Link via Duda API service
+      // 1) Create welcome link via website API service
       console.log(`Creating welcome link for account: ${accountEmail}`);
       const welcomeResponse = await dudaApi.createWelcomeLink(accountEmail);
       const { welcome_url, expiration } = welcomeResponse;
 
       if (!welcome_url) {
-        return res.status(502).json({ error: "Duda response missing welcome_url" });
+        return res.status(502).json({ error: "Provider response missing welcome_url" });
       }
 
       console.log('Welcome link created successfully:', welcome_url);
@@ -8062,11 +8224,11 @@ The Autobidder Team`;
     });
   };
 
-  // Get templates from Duda API
+  // Get templates from website API
   app.get('/api/templates', async (req, res) => {
     try {
       if (!dudaApi.isConfigured()) {
-        return res.status(400).json({ message: "Duda API not configured. Please provide API credentials." });
+        return res.status(400).json({ message: "Website API not configured. Please provide API credentials." });
       }
 
       const templates = await dudaApi.getTemplates();
@@ -8132,7 +8294,7 @@ The Autobidder Team`;
     }
   });
 
-  // Duda Template Management System API Routes
+  // Website Template Management API routes
   
   // Template Tags Routes
   app.get('/api/duda-template-tags', async (req, res) => {
@@ -8285,7 +8447,7 @@ The Autobidder Team`;
       const sortedTemplates = sortTemplatesByType(templates);
       res.json(sortedTemplates);
     } catch (error) {
-      console.error('Error fetching Duda templates:', error);
+      console.error('Error fetching website templates:', error);
       res.status(500).json({ message: "Failed to fetch templates" });
     }
   });
@@ -8309,7 +8471,7 @@ The Autobidder Team`;
       const sortedTemplates = sortTemplatesByType(templates);
       res.json(sortedTemplates);
     } catch (error) {
-      console.error('Error fetching all Duda templates:', error);
+      console.error('Error fetching all website templates:', error);
       res.status(500).json({ message: "Failed to fetch all templates" });
     }
   });
@@ -8317,10 +8479,10 @@ The Autobidder Team`;
   app.post('/api/admin/duda-templates/sync', requireSuperAdmin, async (req, res) => {
     try {
       if (!dudaApi.isConfigured()) {
-        return res.status(400).json({ message: "Duda API not configured" });
+        return res.status(400).json({ message: "Website API not configured" });
       }
 
-      // Fetch templates from Duda API
+      // Fetch templates from website API
       const dudaTemplates = await dudaApi.getTemplates();
       const syncedTemplates = [];
 
@@ -8352,7 +8514,7 @@ The Autobidder Team`;
         templates: syncedTemplates 
       });
     } catch (error) {
-      console.error('Error syncing Duda templates:', error);
+      console.error('Error syncing website templates:', error);
       res.status(500).json({ message: "Failed to sync templates" });
     }
   });
@@ -8495,7 +8657,7 @@ The Autobidder Team`;
       
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
-          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+          message: "Website API not configured. Please provide integration credentials." 
         });
       }
 
@@ -8505,11 +8667,11 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Website not found" });
       }
 
-      // Delete from Duda
+      // Delete from website platform
       try {
         await dudaApi.deleteWebsite(siteName);
       } catch (dudaError) {
-        console.warn('Failed to delete from Duda, continuing with local deletion:', dudaError);
+        console.warn('Failed to delete from website platform, continuing with local deletion:', dudaError);
       }
 
       // Delete from our database
@@ -8549,7 +8711,7 @@ The Autobidder Team`;
       
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
-          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+          message: "Website API not configured. Please provide integration credentials." 
         });
       }
 
@@ -8559,7 +8721,7 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Website not found" });
       }
 
-      // Publish via Duda API
+      // Publish via website API
       try {
         await dudaApi.publishWebsite(siteName);
         
@@ -8579,7 +8741,7 @@ The Autobidder Team`;
           status: 'published'
         });
       } catch (dudaError) {
-        console.error('Failed to publish with Duda:', dudaError);
+        console.error('Failed to publish with website platform:', dudaError);
         res.status(500).json({ 
           message: "Failed to publish website. Please try again or contact support." 
         });
@@ -8590,7 +8752,7 @@ The Autobidder Team`;
     }
   });
 
-  // Sync Duda form submissions to leads
+  // Sync website form submissions to leads
   app.post("/api/websites/:siteName/sync-leads", requireAuth, requirePermission("canManageWebsites"), async (req: any, res) => {
     try {
       const { siteName } = req.params;
@@ -8600,7 +8762,7 @@ The Autobidder Team`;
       
       if (!dudaApi.isConfigured()) {
         return res.status(400).json({ 
-          message: "Duda API not configured. Please provide DUDA_API_KEY and DUDA_API_PASSWORD." 
+          message: "Website API not configured. Please provide integration credentials." 
         });
       }
 
@@ -8610,15 +8772,15 @@ The Autobidder Team`;
         return res.status(404).json({ message: "Website not found" });
       }
 
-      // Fetch form submissions from Duda
+      // Fetch form submissions from website platform
       let formSubmissions;
       try {
         formSubmissions = await dudaApi.getFormSubmissions(siteName);
-        console.log(`📋 Retrieved ${formSubmissions.length} form submissions from Duda`);
+        console.log(`📋 Retrieved ${formSubmissions.length} form submissions from website platform`);
       } catch (dudaError: any) {
-        console.error('Failed to fetch form submissions from Duda:', dudaError);
+        console.error('Failed to fetch form submissions from website platform:', dudaError);
         return res.status(500).json({ 
-          message: "Failed to fetch form submissions from Duda",
+          message: "Failed to fetch form submissions from website platform",
           error: dudaError.message
         });
       }
@@ -8669,13 +8831,13 @@ The Autobidder Team`;
           // Create lead in database
           const leadData = {
             userId,
-            formulaId: null, // Duda leads don't have formulas
+            formulaId: null, // Website-form leads don't have formulas
             name: mappedData.name!,
             email: mappedData.email!,
             phone: mappedData.phone || null,
             address: mappedData.address || null,
             notes: mappedData.notes || null,
-            calculatedPrice: 0, // No price calculation for Duda forms
+            calculatedPrice: 0, // No price calculation for website form submissions
             variables: {},
             source: 'duda',
             dudaSiteId: siteName,
@@ -8692,7 +8854,7 @@ The Autobidder Team`;
           };
 
           await storage.createLead(leadData as any);
-          console.log(`✅ Created lead from Duda submission: ${mappedData.name} (${mappedData.email})`);
+          console.log(`✅ Created lead from website submission: ${mappedData.name} (${mappedData.email})`);
           results.imported++;
 
           // Send notification email to business owner
@@ -8719,7 +8881,7 @@ The Autobidder Team`;
         errors: results.errors
       });
     } catch (error: any) {
-      console.error('Error syncing Duda form submissions:', error);
+      console.error('Error syncing website form submissions:', error);
       res.status(500).json({ 
         message: "Failed to sync form submissions",
         error: error.message
@@ -8817,6 +8979,10 @@ The Autobidder Team`;
       const user = await storage.updateUserOnboardingStep(userId, step, businessInfo);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+
+      if (businessInfo) {
+        await ensureDirectoryProfileFromBusinessInfo(userId, businessInfo);
       }
       
       res.json(user);
@@ -16868,94 +17034,157 @@ This booking was created on ${new Date().toLocaleString()}.
   });
 
   // Upload white label video file (admin only)
+  function resolveWhiteLabelVideoStorageTarget() {
+    const privateDir = process.env.PRIVATE_OBJECT_DIR || '';
+    let bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || process.env.REPLIT_OBJECT_STORE_ID || '';
+    if (!bucketId && privateDir.startsWith('/')) {
+      bucketId = privateDir.split('/')[1] || '';
+    }
+    const folderPath = privateDir.includes('/')
+      ? privateDir.split('/').slice(2).join('/') || '.private'
+      : '.private';
+    return { bucketId, privateDir, folderPath };
+  }
+
+  app.post("/api/white-label-videos/upload-url", requireSuperAdmin, async (req, res) => {
+    try {
+      const { originalName, contentType } = req.body || {};
+      if (!originalName || typeof originalName !== "string") {
+        return res.status(400).json({ message: "originalName is required" });
+      }
+
+      const { bucketId, folderPath } = resolveWhiteLabelVideoStorageTarget();
+      if (!bucketId) {
+        return res.status(500).json({ message: "Object storage not configured. Please set up object storage first." });
+      }
+
+      const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, '');
+      const fileName = `white-label-video-${Date.now()}-${sanitizedName}`;
+      const objectPath = `${folderPath}/${fileName}`;
+
+      const signedUrlResponse = await fetch("http://127.0.0.1:1106/object-storage/signed-object-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bucket_name: bucketId,
+          object_name: objectPath,
+          method: "PUT",
+          expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+          content_type: contentType || "video/mp4",
+        }),
+      });
+
+      if (!signedUrlResponse.ok) {
+        const body = await signedUrlResponse.text().catch(() => "");
+        return res.status(500).json({
+          message: "Failed to generate upload URL",
+          error: body || `status ${signedUrlResponse.status}`,
+        });
+      }
+
+      const { signed_url: uploadUrl } = await signedUrlResponse.json();
+      return res.json({
+        uploadUrl,
+        fileName,
+        fileUrl: `/api/white-label-videos/stream/${fileName}`,
+      });
+    } catch (error: any) {
+      console.error("Error generating white-label upload URL:", error?.message || error);
+      return res.status(500).json({ message: "Failed to initialize upload" });
+    }
+  });
+
+  const allowedVideoExtensions = new Set([
+    ".mp4",
+    ".mov",
+    ".m4v",
+    ".webm",
+    ".avi",
+    ".mkv",
+  ]);
   const uploadVideoFile = multer({ 
     storage: multer.memoryStorage(),
     fileFilter: (req, file, cb) => {
-      if (file.mimetype.startsWith('video/')) {
+      const ext = path.extname(file.originalname || "").toLowerCase();
+      const isVideoMime = file.mimetype.startsWith('video/');
+      const isKnownVideoExt = allowedVideoExtensions.has(ext);
+      if (isVideoMime || isKnownVideoExt) {
         cb(null, true);
       } else {
-        cb(new Error('Only video files are allowed!') as any, false);
+        cb(new Error('Only video files are allowed (mp4, mov, m4v, webm, avi, mkv).') as any, false);
       }
     },
     limits: { fileSize: 500 * 1024 * 1024 } // 500MB limit
   });
 
-  app.post("/api/white-label-videos/upload", requireSuperAdmin, uploadVideoFile.single('file'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No file provided" });
+  app.post("/api/white-label-videos/upload", requireSuperAdmin, (req, res) => {
+    uploadVideoFile.single('file')(req, res, async (err: any) => {
+      if (err) {
+        if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+          return res.status(400).json({ message: "Video file exceeds 500MB limit." });
+        }
+        return res.status(400).json({ message: err.message || "Invalid video upload request." });
       }
 
-      const sanitizedName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '');
-      const fileName = `white-label-video-${Date.now()}-${sanitizedName}`;
-      
-      // Get bucket ID from env - strip the leading slash if present from PRIVATE_OBJECT_DIR
-      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || process.env.REPLIT_OBJECT_STORE_ID || '';
-      const privateDir = process.env.PRIVATE_OBJECT_DIR || '';
-      
-      if (!bucketId) {
-        console.error("Object storage not configured: DEFAULT_OBJECT_STORAGE_BUCKET_ID is not set");
-        return res.status(500).json({ message: "Object storage not configured. Please set up object storage first." });
-      }
-
-      // Extract just the folder path from PRIVATE_OBJECT_DIR (e.g., ".private" from "/bucket-id/.private")
-      // The PRIVATE_OBJECT_DIR format is: /bucket-id/.private
-      const folderPath = privateDir.includes('/') 
-        ? privateDir.split('/').slice(2).join('/') || '.private'
-        : '.private';
-      
-      const objectPath = `${folderPath}/${fileName}`;
-
-      console.log(`Uploading video to bucket: ${bucketId}, path: ${objectPath}`);
-
-      // Store file in object storage using Replit's configured object storage client
       try {
-        const { objectStorageClient } = await import('./objectStorage');
-        const bucket = objectStorageClient.bucket(bucketId);
-        const file = bucket.file(objectPath);
+        if (!req.file) {
+          return res.status(400).json({ message: "No file provided" });
+        }
 
-        await file.save(req.file.buffer, {
-          metadata: {
-            contentType: req.file.mimetype
-          }
-        });
+        const sanitizedName = req.file.originalname.replace(/[^a-zA-Z0-9.-]/g, '');
+        const fileName = `white-label-video-${Date.now()}-${sanitizedName}`;
 
-        console.log(`Video uploaded successfully: ${objectPath}`);
+        const { bucketId, privateDir, folderPath } = resolveWhiteLabelVideoStorageTarget();
 
-        // Return a URL that can be used to serve the file
-        const fileUrl = `/api/white-label-videos/stream/${fileName}`;
-        
-        res.json({
-          fileUrl,
-          fileName: req.file.originalname
-        });
-      } catch (storageError: any) {
-        console.error("Object storage error:", storageError?.message || storageError);
-        return res.status(500).json({ 
-          message: "Failed to upload to storage",
-          error: storageError?.message || "Unknown storage error"
-        });
+        if (!bucketId) {
+          console.error("Object storage not configured: missing bucket ID envs and PRIVATE_OBJECT_DIR bucket");
+          return res.status(500).json({ message: "Object storage not configured. Please set up object storage first." });
+        }
+
+        const objectPath = `${folderPath}/${fileName}`;
+        console.log(`Uploading video to bucket: ${bucketId}, path: ${objectPath}`);
+
+        try {
+          const { objectStorageClient } = await import('./objectStorage');
+          const bucket = objectStorageClient.bucket(bucketId);
+          const file = bucket.file(objectPath);
+
+          await file.save(req.file.buffer, {
+            metadata: {
+              contentType: req.file.mimetype || "video/mp4"
+            }
+          });
+
+          console.log(`Video uploaded successfully: ${objectPath}`);
+          const fileUrl = `/api/white-label-videos/stream/${fileName}`;
+
+          res.json({
+            fileUrl,
+            fileName: req.file.originalname
+          });
+        } catch (storageError: any) {
+          console.error("Object storage error:", storageError?.message || storageError);
+          return res.status(500).json({
+            message: "Failed to upload to storage",
+            error: storageError?.message || "Unknown storage error"
+          });
+        }
+      } catch (error: any) {
+        console.error("Error uploading video file:", error?.message || error);
+        res.status(500).json({ message: "Failed to upload video file" });
       }
-    } catch (error: any) {
-      console.error("Error uploading video file:", error?.message || error);
-      res.status(500).json({ message: "Failed to upload video file" });
-    }
+    });
   });
 
   // Stream white label video file
   app.get("/api/white-label-videos/stream/:fileName", async (req, res) => {
     try {
       const { fileName } = req.params;
-      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID || process.env.REPLIT_OBJECT_STORE_ID || '';
-      const privateDir = process.env.PRIVATE_OBJECT_DIR || '';
+      const { bucketId, folderPath } = resolveWhiteLabelVideoStorageTarget();
       
       if (!bucketId) {
         return res.status(500).json({ message: "Object storage not configured" });
       }
-
-      const folderPath = privateDir.includes('/') 
-        ? privateDir.split('/').slice(2).join('/') || '.private'
-        : '.private';
       
       const objectPath = `${folderPath}/${fileName}`;
 
@@ -17731,7 +17960,8 @@ This booking was created on ${new Date().toLocaleString()}.
         .from(directoryProfiles)
         .where(and(
           eq(directoryProfiles.isActive, true),
-          eq(directoryProfiles.showOnDirectory, true)
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved")
         ));
 
       const serviceAreas = await db
@@ -17874,7 +18104,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .from(directoryIndexCache)
         .where(and(
           eq(directoryIndexCache.categoryId, category.id),
-          eq(directoryIndexCache.isIndexable, true)
+          sql`${directoryIndexCache.profileCount} > 0`
         ))
         .orderBy(desc(directoryIndexCache.profileCount));
 
@@ -17917,8 +18147,11 @@ This booking was created on ${new Date().toLocaleString()}.
       let resultCity = cacheEntry?.city || slugCity;
       let resultState = cacheEntry?.state || slugState;
 
-      if (cacheEntry && cacheEntry.profileCount > 0) {
-        const profileIds = cacheEntry.profileIds as number[];
+      const profileIds = Array.isArray(cacheEntry?.profileIds)
+        ? (cacheEntry?.profileIds as number[])
+        : [];
+
+      if (cacheEntry && cacheEntry.profileCount > 0 && profileIds.length > 0) {
         const profiles = await db
           .select({
             id: directoryProfiles.id,
@@ -17933,12 +18166,18 @@ This booking was created on ${new Date().toLocaleString()}.
           .from(directoryProfiles)
           .where(and(
             eq(directoryProfiles.isActive, true),
-            eq(directoryProfiles.showOnDirectory, true)
+            eq(directoryProfiles.showOnDirectory, true),
+            eq(directoryProfiles.status, "approved")
           ));
 
         resultProfiles = profiles.filter(p => profileIds.includes(p.id));
         resultCity = cacheEntry.city;
         resultState = cacheEntry.state;
+      } else if (cacheEntry && cacheEntry.profileCount > 0 && profileIds.length === 0) {
+        console.warn(
+          "[Directory] Cache entry has profileCount but empty profileIds",
+          { categorySlug, citySlug, cacheId: cacheEntry.id }
+        );
       }
 
       // Also find nearby businesses via radius-based service areas
@@ -17963,7 +18202,8 @@ This booking was created on ${new Date().toLocaleString()}.
               .from(directoryProfiles)
               .where(and(
                 eq(directoryProfiles.isActive, true),
-                eq(directoryProfiles.showOnDirectory, true)
+                eq(directoryProfiles.showOnDirectory, true),
+                eq(directoryProfiles.status, "approved")
               ));
 
             const areas = await db
@@ -18033,13 +18273,32 @@ This booking was created on ${new Date().toLocaleString()}.
         .from(directoryProfiles)
         .where(and(
           eq(directoryProfiles.companySlug, companySlug),
-          eq(directoryProfiles.isActive, true)
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved")
         ))
         .limit(1);
 
       if (!profile) {
         return res.status(404).json({ message: "Company not found" });
       }
+
+      const [landingInfo] = await db
+        .select({
+          slug: landingPages.slug,
+          status: landingPages.status,
+          plan: users.plan,
+        })
+        .from(landingPages)
+        .innerJoin(users, eq(users.id, landingPages.userId))
+        .where(eq(landingPages.userId, profile.userId))
+        .limit(1);
+
+      const landingPagePublished = landingInfo?.status === "published";
+      const landingPageUrl = landingPagePublished && landingInfo?.slug
+        ? `${getRequestBaseUrl(req)}/l/${landingInfo.slug}`
+        : null;
+      const isFreePlan = (landingInfo?.plan || "free") === "free";
 
       // Get directory service listings with formula and category info
       const services = await db
@@ -18110,7 +18369,10 @@ This booking was created on ${new Date().toLocaleString()}.
       res.json({
         profile,
         services: [...services, ...allServices],
-        isIndexable: profile.showOnDirectory
+        isIndexable: profile.showOnDirectory,
+        landingPageUrl,
+        landingPagePublished,
+        isFreePlan
       });
     } catch (error) {
       console.error("[Directory] Error fetching company:", error);
@@ -18141,7 +18403,7 @@ This booking was created on ${new Date().toLocaleString()}.
     try {
       const userId = getEffectiveOwnerId((req as any).currentUser);
 
-      // Check if profile already exists
+      // Check if profile already exists — upsert if so
       const [existing] = await db
         .select()
         .from(directoryProfiles)
@@ -18149,7 +18411,33 @@ This booking was created on ${new Date().toLocaleString()}.
         .limit(1);
 
       if (existing) {
-        return res.status(400).json({ message: "Profile already exists" });
+        // Profile exists — update it instead of failing
+        const { userId: _, companySlug: __, ...updateData } = req.body;
+
+        // Re-geocode if city or state changed
+        const newCity = updateData.city || existing.city;
+        const newState = updateData.state || existing.state;
+        if (updateData.city || updateData.state) {
+          try {
+            const geo = await geocodeAddress(`${newCity}, ${newState}`);
+            if (geo) {
+              updateData.latitude = geo.latitude.toString();
+              updateData.longitude = geo.longitude.toString();
+            }
+          } catch (e) {
+            console.log("[Directory] Geocoding failed during upsert update");
+          }
+        }
+
+        const [updated] = await db
+          .update(directoryProfiles)
+          .set({ ...updateData, updatedAt: new Date() })
+          .where(eq(directoryProfiles.id, existing.id))
+          .returning();
+
+        await updateDirectoryIndexCache(updated.id);
+
+        return res.json(updated);
       }
 
       const validatedData = insertDirectoryProfileSchema.parse({
@@ -18189,8 +18477,11 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const [profile] = await db
         .insert(directoryProfiles)
-        .values({ ...validatedData, companySlug: slug, latitude, longitude })
+        .values({ ...validatedData, companySlug: slug, latitude, longitude, status: "approved" })
         .returning();
+
+      // Trigger cache update (may no-op if services/areas not ready yet)
+      await updateDirectoryIndexCache(profile.id);
 
       res.status(201).json(profile);
     } catch (error) {
@@ -18237,6 +18528,8 @@ This booking was created on ${new Date().toLocaleString()}.
         .set({ ...updateData, updatedAt: new Date() })
         .where(eq(directoryProfiles.id, existing.id))
         .returning();
+
+      await updateDirectoryIndexCache(updated.id);
 
       res.json(updated);
     } catch (error) {
@@ -18334,6 +18627,9 @@ This booking was created on ${new Date().toLocaleString()}.
             .set({ categoryId, customDisplayName })
             .where(eq(directoryServiceListings.id, existingListing.id))
             .returning();
+          updateDirectoryIndexCache(profile.id).catch((err) => {
+            console.error("[Directory] Async cache update failed after service category update:", err);
+          });
           return res.json(updated);
         }
         return res.json(existingListing);
@@ -18376,6 +18672,10 @@ This booking was created on ${new Date().toLocaleString()}.
         .update(directoryCategories)
         .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
         .where(eq(directoryCategories.id, categoryId));
+
+      updateDirectoryIndexCache(profile.id).catch((err) => {
+        console.error("[Directory] Async cache update failed after service add:", err);
+      });
 
       res.status(201).json(listing);
     } catch (error) {
@@ -18434,6 +18734,10 @@ This booking was created on ${new Date().toLocaleString()}.
         .update(directoryCategories)
         .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
         .where(eq(directoryCategories.id, listing.categoryId));
+
+      updateDirectoryIndexCache(profile.id).catch((err) => {
+        console.error("[Directory] Async cache update failed after service removal:", err);
+      });
 
       res.json({ message: "Service removed" });
     } catch (error) {
@@ -18627,6 +18931,22 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Category not found" });
       }
 
+      if (updateData.status && updateData.status !== "approved") {
+        await removeCategoryFromIndexCache(id);
+      }
+      if (updateData.status === "approved") {
+        const profilesInCategory = await db
+          .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
+          .from(directoryServiceListings)
+          .where(and(
+            eq(directoryServiceListings.categoryId, id),
+            eq(directoryServiceListings.isActive, true)
+          ));
+        for (const p of profilesInCategory) {
+          await updateDirectoryIndexCache(p.profileId);
+        }
+      }
+
       res.json(updated);
     } catch (error) {
       console.error("[Directory] Error updating category:", error);
@@ -18655,6 +18975,17 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Category not found" });
       }
 
+      const profilesInCategory = await db
+        .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
+        .from(directoryServiceListings)
+        .where(and(
+          eq(directoryServiceListings.categoryId, id),
+          eq(directoryServiceListings.isActive, true)
+        ));
+      for (const p of profilesInCategory) {
+        await updateDirectoryIndexCache(p.profileId);
+      }
+
       res.json(updated);
     } catch (error) {
       console.error("[Directory] Error approving category:", error);
@@ -18663,8 +18994,52 @@ This booking was created on ${new Date().toLocaleString()}.
   });
 
   // Helper function to update the directory index cache for a profile
+  async function removeProfileFromIndexCache(profileId: number) {
+    try {
+      const entries = await db
+        .select()
+        .from(directoryIndexCache)
+        .where(sql`${directoryIndexCache.profileIds} @> ${JSON.stringify([profileId])}::jsonb`);
+
+      for (const entry of entries) {
+        const currentIds = (entry.profileIds as number[]) || [];
+        const newIds = currentIds.filter(id => id !== profileId);
+        if (newIds.length === 0) {
+          await db
+            .delete(directoryIndexCache)
+            .where(eq(directoryIndexCache.id, entry.id));
+        } else {
+          await db
+            .update(directoryIndexCache)
+            .set({
+              profileIds: newIds,
+              profileCount: newIds.length,
+              isIndexable: newIds.length >= 1,
+              lastUpdatedAt: new Date(),
+            })
+            .where(eq(directoryIndexCache.id, entry.id));
+        }
+      }
+    } catch (error) {
+      console.error("[Directory] Error removing profile from index cache:", error);
+    }
+  }
+
+  async function removeCategoryFromIndexCache(categoryId: number) {
+    try {
+      await db
+        .delete(directoryIndexCache)
+        .where(eq(directoryIndexCache.categoryId, categoryId));
+    } catch (error) {
+      console.error("[Directory] Error removing category from index cache:", error);
+    }
+  }
+
   async function updateDirectoryIndexCache(profileId: number) {
     try {
+      // Always remove existing entries first to prevent stale city/category mappings
+      await removeProfileFromIndexCache(profileId);
+
       // Get profile
       const [profile] = await db
         .select()
@@ -18672,9 +19047,16 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(directoryProfiles.id, profileId))
         .limit(1);
 
-      if (!profile || !profile.isActive || !profile.showOnDirectory) {
+      if (!profile || !profile.isActive || !profile.showOnDirectory || profile.status !== "approved") {
         return;
       }
+
+      const [landingPage] = await db
+        .select({ status: landingPages.status })
+        .from(landingPages)
+        .where(eq(landingPages.userId, profile.userId))
+        .limit(1);
+      const profileIndexable = landingPage?.status === "published";
 
       // Get service listings with categories
       const services = await db
@@ -18689,6 +19071,9 @@ This booking was created on ${new Date().toLocaleString()}.
           eq(directoryServiceListings.isActive, true),
           eq(directoryCategories.status, "approved")
         ));
+      if (services.length === 0) {
+        return;
+      }
 
       // Get service areas
       const [area] = await db
@@ -18740,6 +19125,7 @@ This booking was created on ${new Date().toLocaleString()}.
             .where(and(
               eq(directoryProfiles.isActive, true),
               eq(directoryProfiles.showOnDirectory, true),
+              eq(directoryProfiles.status, "approved"),
             ));
 
           for (const other of allProfiles) {
@@ -18807,12 +19193,23 @@ This booking was created on ${new Date().toLocaleString()}.
             const currentIds = (existing.profileIds as number[]) || [];
             if (!currentIds.includes(profileId)) {
               const newIds = [...currentIds, profileId];
+              const indexableProfiles = await db
+                .select({ id: directoryProfiles.id })
+                .from(directoryProfiles)
+                .innerJoin(landingPages, eq(landingPages.userId, directoryProfiles.userId))
+                .where(and(
+                  inArray(directoryProfiles.id, newIds),
+                  eq(directoryProfiles.isActive, true),
+                  eq(directoryProfiles.showOnDirectory, true),
+                  eq(directoryProfiles.status, "approved"),
+                  eq(landingPages.status, "published")
+                ));
               await db
                 .update(directoryIndexCache)
                 .set({
                   profileIds: newIds,
                   profileCount: newIds.length,
-                  isIndexable: newIds.length >= 1,
+                  isIndexable: indexableProfiles.length >= 1,
                   lastUpdatedAt: new Date(),
                 })
                 .where(eq(directoryIndexCache.id, existing.id));
@@ -18829,7 +19226,7 @@ This booking was created on ${new Date().toLocaleString()}.
                 citySlug: cityInfo.citySlug,
                 profileIds: [profileId],
                 profileCount: 1,
-                isIndexable: true,
+                isIndexable: profileIndexable,
               });
           }
         }
@@ -18846,6 +19243,60 @@ This booking was created on ${new Date().toLocaleString()}.
     if (!user) return false;
     const allowedPlans = ['trial', 'standard', 'plus', 'plus_seo'];
     return allowedPlans.includes(user.plan) || user.isBetaTester || user.userType === 'super_admin';
+  }
+
+  async function buildBlogHtmlEnhancements(
+    userId: string,
+    input: {
+      internalLinks?: unknown;
+      videoUrl?: string | null;
+      facebookPostUrl?: string | null;
+      gmbPostUrl?: string | null;
+      ctaButtonEnabled?: boolean | null;
+      ctaButtonUrl?: string | null;
+      targetCity?: string | null;
+    }
+  ): Promise<BlogHtmlEnhancements> {
+    const [settings] = await db
+      .select({
+        businessName: businessSettings.businessName,
+        businessPhone: businessSettings.businessPhone,
+        businessEmail: businessSettings.businessEmail,
+        businessAddress: businessSettings.businessAddress,
+        blogCtaEnabled: businessSettings.blogCtaEnabled,
+        blogCtaUrl: businessSettings.blogCtaUrl,
+      })
+      .from(businessSettings)
+      .where(eq(businessSettings.userId, userId))
+      .limit(1);
+
+    const localBusiness = settings ? {
+      businessName: settings.businessName || undefined,
+      businessPhone: settings.businessPhone || undefined,
+      businessEmail: settings.businessEmail || undefined,
+      businessAddress: settings.businessAddress || undefined,
+      targetCity: input.targetCity || undefined,
+    } : undefined;
+
+    const effectiveCtaButtonEnabled =
+      input.ctaButtonEnabled === null || input.ctaButtonEnabled === undefined
+        ? (settings?.blogCtaEnabled ?? true)
+        : input.ctaButtonEnabled;
+
+    const effectiveCtaButtonUrl =
+      input.ctaButtonUrl === null || input.ctaButtonUrl === undefined || !String(input.ctaButtonUrl).trim()
+        ? (settings?.blogCtaUrl || undefined)
+        : String(input.ctaButtonUrl).trim();
+
+    return {
+      internalLinks: input.internalLinks as any,
+      videoUrl: input.videoUrl || undefined,
+      facebookPostUrl: input.facebookPostUrl || undefined,
+      gmbPostUrl: input.gmbPostUrl || undefined,
+      ctaButtonEnabled: effectiveCtaButtonEnabled,
+      ctaButtonUrl: effectiveCtaButtonUrl,
+      localBusiness,
+    };
   }
 
   // List all blog posts for a user
@@ -18951,7 +19402,20 @@ This booking was created on ${new Date().toLocaleString()}.
       // Calculate word count
       const contentText = JSON.stringify(validation.data.content || []);
       const wordCount = contentText.split(/\s+/).length;
-      const contentHtml = blogContentToHtml(validation.data.content as BlogContentSection[]);
+      const contentEnhancements = await buildBlogHtmlEnhancements(effectiveOwnerId, {
+        internalLinks: validation.data.internalLinks,
+        videoUrl: validation.data.videoUrl,
+        facebookPostUrl: validation.data.facebookPostUrl,
+        gmbPostUrl: validation.data.gmbPostUrl,
+        ctaButtonEnabled: validation.data.ctaButtonEnabled,
+        ctaButtonUrl: validation.data.ctaButtonUrl,
+        targetCity: validation.data.targetCity,
+      });
+      const contentHtml = blogContentToHtml(
+        validation.data.content as BlogContentSection[],
+        undefined,
+        contentEnhancements
+      );
 
       const insertData = {
         ...validation.data,
@@ -18962,10 +19426,33 @@ This booking was created on ${new Date().toLocaleString()}.
         updatedAt: new Date()
       } as typeof blogPosts.$inferInsert;
 
-      const [post] = await db
-        .insert(blogPosts)
-        .values(insertData)
-        .returning();
+      let post: typeof blogPosts.$inferSelect | undefined;
+      try {
+        [post] = await db
+          .insert(blogPosts)
+          .values(insertData)
+          .returning();
+      } catch (dbError: any) {
+        const isMissingTargetKeywordColumn =
+          dbError?.code === "42703" &&
+          typeof dbError?.message === "string" &&
+          dbError.message.includes("target_keyword");
+
+        if (!isMissingTargetKeywordColumn) {
+          throw dbError;
+        }
+
+        console.warn("[Blog] target_keyword column missing; retrying create without it. Run latest DB migration.");
+        const { targetKeyword: _ignoredTargetKeyword, ...legacyInsertData } = insertData;
+        [post] = await db
+          .insert(blogPosts)
+          .values(legacyInsertData)
+          .returning();
+      }
+
+      if (!post) {
+        throw new Error("Failed to create blog post");
+      }
 
       res.status(201).json(post);
     } catch (error) {
@@ -19008,20 +19495,70 @@ This booking was created on ${new Date().toLocaleString()}.
       delete updates.userId;
       delete updates.createdAt;
 
-      // Recalculate word count if content changed
-      if (updates.content) {
+      const hasContentUpdate = updates.content !== undefined;
+      const hasHtmlEnhancementUpdate = [
+        "internalLinks",
+        "videoUrl",
+        "facebookPostUrl",
+        "gmbPostUrl",
+        "ctaButtonEnabled",
+        "ctaButtonUrl",
+        "targetCity",
+      ].some((key) => key in updates);
+
+      if (hasContentUpdate) {
         const contentText = JSON.stringify(updates.content);
         updates.wordCount = contentText.split(/\s+/).length;
-        updates.contentHtml = blogContentToHtml(updates.content as BlogContentSection[]);
+      }
+
+      if (hasContentUpdate || hasHtmlEnhancementUpdate) {
+        const contentEnhancements = await buildBlogHtmlEnhancements(effectiveOwnerId, {
+          internalLinks: (updates.internalLinks ?? existing.internalLinks) as any,
+          videoUrl: (updates.videoUrl ?? existing.videoUrl) || undefined,
+          facebookPostUrl: (updates.facebookPostUrl ?? existing.facebookPostUrl) || undefined,
+          gmbPostUrl: (updates.gmbPostUrl ?? existing.gmbPostUrl) || undefined,
+          ctaButtonEnabled: (updates.ctaButtonEnabled ?? existing.ctaButtonEnabled) as boolean | null | undefined,
+          ctaButtonUrl: (updates.ctaButtonUrl ?? existing.ctaButtonUrl) as string | null | undefined,
+          targetCity: (updates.targetCity ?? existing.targetCity) || undefined,
+        });
+        updates.contentHtml = blogContentToHtml(
+          (updates.content ?? existing.content) as BlogContentSection[],
+          undefined,
+          contentEnhancements
+        );
       }
 
       updates.updatedAt = new Date();
 
-      const [updated] = await db
-        .update(blogPosts)
-        .set(updates)
-        .where(eq(blogPosts.id, postId))
-        .returning();
+      let updated: typeof blogPosts.$inferSelect | undefined;
+      try {
+        [updated] = await db
+          .update(blogPosts)
+          .set(updates)
+          .where(eq(blogPosts.id, postId))
+          .returning();
+      } catch (dbError: any) {
+        const isMissingTargetKeywordColumn =
+          dbError?.code === "42703" &&
+          typeof dbError?.message === "string" &&
+          dbError.message.includes("target_keyword");
+
+        if (!isMissingTargetKeywordColumn) {
+          throw dbError;
+        }
+
+        console.warn("[Blog] target_keyword column missing; retrying update without it. Run latest DB migration.");
+        const { targetKeyword: _ignoredTargetKeyword, ...legacyUpdates } = updates;
+        [updated] = await db
+          .update(blogPosts)
+          .set(legacyUpdates)
+          .where(eq(blogPosts.id, postId))
+          .returning();
+      }
+
+      if (!updated) {
+        throw new Error("Failed to update blog post");
+      }
 
       res.json(updated);
     } catch (error) {
@@ -19068,6 +19605,35 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // Suggest talking points/context from target keyword
+  app.post("/api/blog-posts/suggest-keyword-context", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const { targetKeyword, targetCity, blogType, tonePreference, serviceName } = req.body || {};
+      if (!targetKeyword || typeof targetKeyword !== "string") {
+        return res.status(400).json({ message: "targetKeyword is required" });
+      }
+
+      const suggestions = await suggestKeywordContext({
+        targetKeyword,
+        targetCity,
+        blogType,
+        tonePreference,
+        serviceName
+      });
+
+      res.json(suggestions);
+    } catch (error) {
+      console.error("[Blog] Error suggesting keyword context:", error);
+      res.status(500).json({ message: "Failed to suggest keyword context" });
+    }
+  });
+
   // Generate blog content with AI
   app.post("/api/blog-posts/generate-content", requireAuth, async (req, res) => {
     try {
@@ -19079,8 +19645,12 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const input: BlogGenerationInput = req.body;
 
+      const normalizedKeyword = (input.targetKeyword || input.serviceName || "").trim();
+      input.targetKeyword = normalizedKeyword;
+      input.serviceName = (input.serviceName || normalizedKeyword).trim();
+
       // Validate required fields
-      if (!input.blogType || !input.serviceName || !input.targetCity || !input.goal || !input.tonePreference) {
+      if (!input.blogType || !input.serviceName || !input.targetCity || !input.goal || !input.tonePreference || !input.targetKeyword) {
         return res.status(400).json({ message: "Missing required fields for content generation" });
       }
 
@@ -19096,22 +19666,44 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const result = await generateBlogContent(input);
 
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const contentEnhancements = await buildBlogHtmlEnhancements(effectiveOwnerId, {
+        internalLinks: input.internalLinks as any,
+        videoUrl: input.videoUrl,
+        facebookPostUrl: input.facebookPostUrl,
+        gmbPostUrl: input.gmbPostUrl,
+        ctaButtonEnabled: input.ctaButtonEnabled,
+        ctaButtonUrl: input.ctaButtonUrl,
+        targetCity: input.targetCity,
+      });
+
       // Auto-create draft blog post with generated content + HTML
-      const contentHtml = blogContentToHtml(result.content);
+      const contentHtml = blogContentToHtml(
+        result.content,
+        input.images,
+        contentEnhancements
+      );
       const contentText = JSON.stringify(result.content || []);
       const wordCount = contentText.split(/\s+/).length;
 
       const insertData = {
-        userId: getEffectiveOwnerId(currentUser),
+        userId: effectiveOwnerId,
         blogType: input.blogType,
         primaryServiceId: input.primaryServiceId ?? null,
         targetCity: input.targetCity,
         targetNeighborhood: input.targetNeighborhood ?? null,
+        targetKeyword: input.targetKeyword,
         goal: input.goal,
         workOrderId: input.workOrderId ?? null,
         jobNotes: input.jobNotes ?? null,
         talkingPoints: input.talkingPoints || [],
         tonePreference: input.tonePreference,
+        internalLinks: input.internalLinks || [],
+        videoUrl: input.videoUrl ?? null,
+        facebookPostUrl: input.facebookPostUrl ?? null,
+        gmbPostUrl: input.gmbPostUrl ?? null,
+        ctaButtonEnabled: input.ctaButtonEnabled ?? null,
+        ctaButtonUrl: input.ctaButtonUrl ?? null,
         title: result.title,
         slug: result.suggestedSlug,
         metaTitle: result.metaTitle,
@@ -19131,14 +19723,41 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(400).json({ message: "Invalid generated blog post data", errors: validation.error.errors });
       }
 
-      const [post] = await db
-        .insert(blogPosts)
-        .values({
-          ...(validation.data as typeof blogPosts.$inferInsert),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .returning();
+      const insertValues = {
+        ...(validation.data as typeof blogPosts.$inferInsert),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      let post: typeof blogPosts.$inferSelect | undefined;
+      try {
+        [post] = await db
+          .insert(blogPosts)
+          .values(insertValues)
+          .returning();
+      } catch (dbError: any) {
+        const isMissingTargetKeywordColumn =
+          dbError?.code === "42703" &&
+          typeof dbError?.message === "string" &&
+          dbError.message.includes("target_keyword");
+
+        if (!isMissingTargetKeywordColumn) {
+          throw dbError;
+        }
+
+        // Backward compatibility for environments that have not applied the
+        // target_keyword migration yet.
+        console.warn("[Blog] target_keyword column missing; retrying insert without it. Run latest DB migration.");
+        const { targetKeyword: _ignoredTargetKeyword, ...legacyInsertValues } = insertValues;
+        [post] = await db
+          .insert(blogPosts)
+          .values(legacyInsertValues)
+          .returning();
+      }
+
+      if (!post) {
+        throw new Error("Failed to create generated blog post");
+      }
 
       res.json(post);
     } catch (error) {
@@ -19310,6 +19929,109 @@ This booking was created on ${new Date().toLocaleString()}.
       console.error("[Blog] Error unlocking section:", error);
       res.status(500).json({ message: "Failed to unlock section" });
     }
+  });
+
+  // Upload blog image (file upload with metadata, blogPostId optional)
+  app.post("/api/blog-images/upload", requireAuth, (req, res) => {
+    uploadFormImage.single('image')(req, res, async (err: any) => {
+      if (err) {
+        console.error('[Blog] Image upload error:', err);
+        return res.status(400).json({ message: err.message || 'Upload failed' });
+      }
+
+      try {
+        const currentUser = (req as any).currentUser;
+        const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+        const file = req.file;
+
+        if (!file) {
+          return res.status(400).json({ message: 'No image file provided' });
+        }
+
+        const imageType = req.body.imageType || 'hero';
+        const rawImageStyle = (req.body.imageStyle || "default").toString().trim().toLowerCase().replace(/[\s-]+/g, "_");
+        const imageStyle = ["default", "rounded", "rounded_shadow"].includes(rawImageStyle)
+          ? rawImageStyle
+          : "default";
+        const caption = req.body.caption || '';
+        const blogPostIdRaw = req.body.blogPostId;
+        let linkedBlogPostId: number | null = null;
+
+        if (blogPostIdRaw !== undefined && blogPostIdRaw !== null && String(blogPostIdRaw).trim() !== "") {
+          const parsedPostId = parseInt(String(blogPostIdRaw), 10);
+          if (!isNaN(parsedPostId)) {
+            const [ownedPost] = await db
+              .select({ id: blogPosts.id })
+              .from(blogPosts)
+              .where(and(
+                eq(blogPosts.id, parsedPostId),
+                eq(blogPosts.userId, effectiveOwnerId)
+              ))
+              .limit(1);
+
+            if (ownedPost) {
+              linkedBlogPostId = parsedPostId;
+            }
+          }
+        }
+
+        let originalUrl = `/uploads/form-images/${file.filename}`;
+        let processedUrl: string | null = null;
+
+        // Prefer persistent object storage for blog media so the website platform can always fetch stable URLs.
+        if (file.path && fs.existsSync(file.path)) {
+          try {
+            const buffer = fs.readFileSync(file.path);
+            const objectPath = await uploadImageBufferToObjectStorage({
+              file: {
+                ...file,
+                buffer,
+                size: buffer.length,
+              } as Express.Multer.File,
+              ownerId: effectiveOwnerId,
+            });
+            originalUrl = objectPath;
+            processedUrl = objectPath;
+
+            fs.unlink(file.path, (unlinkErr) => {
+              if (unlinkErr) {
+                console.warn("[Blog] Uploaded image to object storage but failed to delete local temp file:", unlinkErr);
+              }
+            });
+          } catch (objectStorageErr) {
+            console.warn("[Blog] Object storage upload failed for blog image; falling back to local upload path:", objectStorageErr);
+          }
+        }
+
+        const [image] = await db
+          .insert(blogImages)
+          .values({
+            userId: effectiveOwnerId,
+            blogPostId: linkedBlogPostId,
+            originalUrl,
+            processedUrl,
+            imageType,
+            imageStyle,
+            caption,
+            altText: caption,
+            sourceType: 'upload',
+          })
+          .returning();
+
+        res.status(201).json({
+          id: image.id,
+          originalUrl: image.originalUrl,
+          processedUrl: image.processedUrl,
+          blogPostId: image.blogPostId,
+          imageType: image.imageType,
+          imageStyle: image.imageStyle,
+          caption: image.caption,
+        });
+      } catch (error) {
+        console.error('[Blog] Error saving blog image record:', error);
+        res.status(500).json({ message: 'Failed to save image' });
+      }
+    });
   });
 
   // List blog images
@@ -19546,6 +20268,7 @@ This booking was created on ${new Date().toLocaleString()}.
         },
         {
           blogType: post.blogType,
+          targetKeyword: post.targetKeyword || serviceName,
           serviceName,
           targetCity: post.targetCity || "",
           goal: post.goal || "rank_seo",
@@ -19613,7 +20336,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  // Sync blog post to Duda
+  // Sync blog post to website platform
   app.post("/api/blog-posts/:id/sync-to-duda", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
@@ -19649,56 +20372,286 @@ This booking was created on ${new Date().toLocaleString()}.
       }
 
       if (!dudaApi.isConfigured()) {
-        return res.status(500).json({ message: "Duda API is not configured" });
+        return res.status(500).json({ message: "Website API is not configured" });
       }
 
-      // Convert content to HTML (use stored HTML when available)
-      const htmlContent = post.contentHtml || blogContentToHtml(post.content as any[]);
+      const normalizeBaseUrl = (value?: string | null): string | null => {
+        if (!value) return null;
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+        return withProtocol.replace(/\/+$/, '');
+      };
+
+      const requestBaseUrl = normalizeBaseUrl(
+        req.get("host") ? `${req.protocol}://${req.get("host")}` : null
+      );
+
+      const candidateAssetBaseUrls = Array.from(
+        new Set(
+          [
+            requestBaseUrl,
+            normalizeBaseUrl(process.env.PUBLIC_ASSET_BASE_URL || null),
+            process.env.REPLIT_DEV_DOMAIN ? normalizeBaseUrl(`https://${process.env.REPLIT_DEV_DOMAIN}`) : null,
+            normalizeBaseUrl(process.env.APP_URL || null),
+            normalizeBaseUrl(process.env.DOMAIN || null),
+          ].filter((value): value is string => !!value)
+        )
+      );
+
+      const toAbsoluteAssetUrl = (value: string, baseUrl: string): string => {
+        if (/^https?:\/\//i.test(value)) return value;
+        if (value.startsWith("//")) return `https:${value}`;
+        if (value.startsWith("/")) return `${baseUrl}${value}`;
+        return `${baseUrl}/${value.replace(/^\/+/, "")}`;
+      };
+
+      const resolveReachableAssetBaseUrl = async (samplePath?: string): Promise<string | null> => {
+        if (!samplePath || candidateAssetBaseUrls.length === 0) {
+          return candidateAssetBaseUrls[0] || null;
+        }
+
+        for (const candidate of candidateAssetBaseUrls) {
+          const probeUrl = toAbsoluteAssetUrl(samplePath, candidate);
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 3500);
+          try {
+            const response = await fetch(probeUrl, { method: "HEAD", signal: controller.signal });
+            const contentType = (response.headers.get("content-type") || "").toLowerCase();
+            if (response.ok && (contentType.startsWith("image/") || contentType.includes("octet-stream"))) {
+              return candidate;
+            }
+          } catch {
+            // Try next candidate
+          } finally {
+            clearTimeout(timeout);
+          }
+        }
+
+        return candidateAssetBaseUrls[0] || null;
+      };
+
+      // Load blog images first so we can render HTML with image placeholders resolved.
+      const postImages = await db
+        .select()
+        .from(blogImages)
+        .where(eq(blogImages.blogPostId, postId));
+
+      // Migrate legacy local blog images to object storage so the website platform can fetch a stable public URL.
+      const resolvedPostImages = await Promise.all(
+        postImages.map(async (img) => {
+          let resolvedUrl = img.processedUrl || img.originalUrl || null;
+
+          if (resolvedUrl && resolvedUrl.startsWith("/uploads/form-images/")) {
+            const localFilePath = path.resolve(process.cwd(), resolvedUrl.replace(/^\//, ""));
+            if (fs.existsSync(localFilePath)) {
+              const mimeType = getMimeTypeFromFilename(localFilePath);
+              if (mimeType) {
+                try {
+                  const fileBuffer = fs.readFileSync(localFilePath);
+                  const migratedObjectPath = await uploadImageBufferToObjectStorage({
+                    file: {
+                      buffer: fileBuffer,
+                      originalname: path.basename(localFilePath),
+                      mimetype: mimeType,
+                      size: fileBuffer.length,
+                    } as Express.Multer.File,
+                    ownerId: effectiveOwnerId,
+                  });
+
+                  resolvedUrl = migratedObjectPath;
+                  await db
+                    .update(blogImages)
+                    .set({ processedUrl: migratedObjectPath })
+                    .where(eq(blogImages.id, img.id));
+
+                  console.log(`[Blog] Migrated blog image ${img.id} to object storage: ${migratedObjectPath}`);
+                } catch (migrationErr) {
+                  console.warn(`[Blog] Failed to migrate blog image ${img.id} to object storage:`, migrationErr);
+                }
+              }
+            }
+          }
+
+          return {
+            ...img,
+            resolvedUrl,
+          };
+        })
+      );
+
+      const htmlImages = resolvedPostImages
+        .filter((img) => !!img.resolvedUrl)
+        .map((img) => ({
+          url: img.resolvedUrl as string,
+          imageType: img.imageType || "hero",
+          imageStyle: img.imageStyle || "default",
+          caption: img.caption || img.altText || undefined
+        }));
+
+      // Always regenerate from structured content so renderer/style fixes apply on every sync.
+      const contentEnhancements = await buildBlogHtmlEnhancements(effectiveOwnerId, {
+        internalLinks: post.internalLinks as any,
+        videoUrl: post.videoUrl || undefined,
+        facebookPostUrl: post.facebookPostUrl || undefined,
+        gmbPostUrl: post.gmbPostUrl || undefined,
+        ctaButtonEnabled: post.ctaButtonEnabled,
+        ctaButtonUrl: post.ctaButtonUrl,
+        targetCity: post.targetCity || undefined,
+      });
+      let htmlContent = blogContentToHtml(
+        post.content as any[],
+        htmlImages,
+        contentEnhancements
+      );
+
+      // Upload blog images to website CDN. Always convert local URLs to absolute public URLs first.
+      let resolvedAssetBaseUrl = candidateAssetBaseUrls[0] || null;
+      if (postImages.length > 0) {
+        const imageLocalUrls = htmlImages
+          .map((img) => img.url)
+          .filter((url) => !!url && !/^https?:\/\//i.test(url) && !url.startsWith("//"));
+
+        const inlineLocalUrls = Array.from(
+          htmlContent.matchAll(/<img[^>]*src=["']([^"']+)["']/gi),
+          (match) => match[1]
+        ).filter((src) => !!src && !/^https?:\/\//i.test(src) && !src.startsWith("//"));
+
+        const localUrls = Array.from(new Set([...imageLocalUrls, ...inlineLocalUrls]));
+
+        if (localUrls.length > 0) {
+          resolvedAssetBaseUrl = await resolveReachableAssetBaseUrl(localUrls[0]);
+          if (!resolvedAssetBaseUrl) {
+            console.warn("[Blog] No public asset base URL available; image URLs may remain local.");
+          } else {
+            const localToPublicMap = new Map<string, string>();
+            for (const localUrl of localUrls) {
+              const publicUrl = toAbsoluteAssetUrl(localUrl, resolvedAssetBaseUrl);
+              localToPublicMap.set(localUrl, publicUrl);
+              htmlContent = htmlContent.split(localUrl).join(publicUrl);
+            }
+
+            const publicUrls = Array.from(new Set(localToPublicMap.values()));
+            try {
+              console.log(`[Blog] Uploading ${publicUrls.length} image(s) to website CDN...`);
+              const dudaResources = await dudaApi.uploadResources(website.siteName, publicUrls);
+
+              for (const resource of dudaResources) {
+                if (resource?.src && resource?.url) {
+                  htmlContent = htmlContent.split(resource.src).join(resource.url);
+                }
+              }
+
+              // Fallback replacement by index for APIs that omit source echo fields.
+              for (let i = 0; i < publicUrls.length; i++) {
+                const dudaUrl = dudaResources[i]?.url;
+                if (dudaUrl) {
+                  htmlContent = htmlContent.split(publicUrls[i]).join(dudaUrl);
+                }
+              }
+              console.log(`[Blog] Replaced image URLs with website CDN URLs`);
+            } catch (uploadErr) {
+              console.warn("[Blog] Failed to upload images to website CDN, proceeding with public image URLs:", uploadErr);
+            }
+          }
+        }
+      }
+
+      let featuredImageForSync: string | undefined = post.featuredImageUrl || undefined;
+      if (featuredImageForSync && !/^https?:\/\//i.test(featuredImageForSync)) {
+        const fallbackBaseForFeatured = resolvedAssetBaseUrl || requestBaseUrl;
+        const publicFeaturedUrl = fallbackBaseForFeatured
+          ? toAbsoluteAssetUrl(featuredImageForSync, fallbackBaseForFeatured)
+          : featuredImageForSync;
+        try {
+          const featuredResources = await dudaApi.uploadResources(website.siteName, [publicFeaturedUrl]);
+          const uploadedFeaturedUrl = featuredResources[0]?.url;
+          if (uploadedFeaturedUrl) {
+            featuredImageForSync = uploadedFeaturedUrl;
+          } else {
+            featuredImageForSync = publicFeaturedUrl;
+          }
+        } catch (featuredUploadErr) {
+          console.warn('[Blog] Failed to upload featured image to website CDN, using public URL:', featuredUploadErr);
+          featuredImageForSync = publicFeaturedUrl;
+        }
+      }
 
       let dudaPostId: string | undefined = post.dudaBlogPostId || undefined;
+      const buildImportData = () => ({
+        title: post.title,
+        description: post.metaDescription || undefined,
+        content: htmlContent,
+        ...(featuredImageForSync ? {
+          main_image: { url: featuredImageForSync },
+          thumbnail: { url: featuredImageForSync }
+        } : {})
+      });
+      const buildMetadataUpdate = () => {
+        const updateData: Record<string, any> = {};
+        if (post.metaTitle) updateData.meta_title = post.metaTitle;
+        if (post.slug) updateData.path = post.slug;
+        if ((post.tags as string[])?.length) updateData.tags = post.tags as string[];
+        return updateData;
+      };
+      const importToWebsite = async () => {
+        const importData = buildImportData();
+        console.log(`[Blog] Importing new blog post to website site ${website.siteName}:`, JSON.stringify(importData).substring(0, 500));
+        const importResponse = await dudaApi.createBlogPost(website.siteName, importData as any);
+        const importedId = importResponse.id || undefined;
+        console.log(`[Blog] Import succeeded, website post ID: ${importedId}`);
+
+        if (importedId) {
+          const metadataUpdate = buildMetadataUpdate();
+          if (Object.keys(metadataUpdate).length > 0) {
+            await dudaApi.updateBlogPost(website.siteName, importedId, metadataUpdate);
+          }
+        }
+
+        return importedId;
+      };
 
       if (dudaPostId) {
-        // Update existing post with Duda Update fields
-        console.log(`[Blog] Updating existing Duda post ${dudaPostId} on site ${website.siteName}`);
+        // Update existing post. If the provider forbids content updates, fallback to re-import.
+        console.log(`[Blog] Updating existing website post ${dudaPostId} on site ${website.siteName}`);
         const updateData: Record<string, any> = {
           title: post.title,
+          content: htmlContent,
           description: post.metaDescription || undefined,
           meta_title: post.metaTitle || undefined,
           path: post.slug || undefined,
           tags: (post.tags as string[])?.length ? post.tags as string[] : undefined,
         };
-        await dudaApi.updateBlogPost(website.siteName, dudaPostId, updateData);
-      } else {
-        // Step 1: Import new post with Duda Import fields
-        const importData = {
-          title: post.title,
-          description: post.metaDescription || undefined,
-          content: htmlContent,
-          ...(post.featuredImageUrl ? {
-            main_image: { url: post.featuredImageUrl },
-            thumbnail: { url: post.featuredImageUrl }
-          } : {})
-        };
-        console.log(`[Blog] Importing new blog post to Duda site ${website.siteName}:`, JSON.stringify(importData).substring(0, 500));
-        await dudaApi.createBlogPost(website.siteName, importData as any);
+        try {
+          await dudaApi.updateBlogPost(website.siteName, dudaPostId, updateData);
+        } catch (updateError: any) {
+          const updateMessage = String(updateError?.message || "");
+          const isForbiddenUpdate =
+            updateMessage.includes("API error updating blog post: 403") ||
+            (updateMessage.includes("updating blog post") && updateMessage.includes("403"));
+          if (!isForbiddenUpdate) {
+            throw updateError;
+          }
 
-        // Import response doesn't return an id — list posts to find the newly created one
-        console.log(`[Blog] Import succeeded, listing posts to find new post ID...`);
-        const listResponse = await dudaApi.listBlogPosts(website.siteName, { limit: 10, offset: 0 });
-        const matchedPost = listResponse.results?.find((p: any) => p.title === post.title);
-        dudaPostId = matchedPost?.id;
-        console.log(`[Blog] Found Duda post ID: ${dudaPostId}`);
+          console.warn(`[Blog] Website platform rejected update for post ${dudaPostId} (403). Falling back to re-import.`);
+          const previousPostId = dudaPostId;
+          const importedId = await importToWebsite();
+          if (!importedId) {
+            throw new Error("Re-import fallback succeeded but returned no post ID");
+          }
+          dudaPostId = importedId;
 
-        // Step 2: Update with metadata fields not supported by import
-        if (dudaPostId) {
-          const updateData: Record<string, any> = {};
-          if (post.metaTitle) updateData.meta_title = post.metaTitle;
-          if (post.slug) updateData.path = post.slug;
-          if ((post.tags as string[])?.length) updateData.tags = post.tags as string[];
-          if (Object.keys(updateData).length > 0) {
-            await dudaApi.updateBlogPost(website.siteName, dudaPostId, updateData);
+          // Best effort cleanup for non-published replaced drafts.
+          if (post.dudaStatus !== "published") {
+            try {
+              await dudaApi.deleteBlogPost(website.siteName, previousPostId);
+            } catch (deleteErr) {
+              console.warn(`[Blog] Could not delete replaced website post ${previousPostId}:`, deleteErr);
+            }
           }
         }
+      } else {
+        dudaPostId = await importToWebsite();
       }
 
       // Update local record
@@ -19714,11 +20667,11 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(blogPosts.id, postId));
 
       res.json({
-        message: "Blog synced to Duda",
+        message: "Blog synced to website",
         dudaPostId: dudaPostId
       });
     } catch (error: any) {
-      console.error("[Blog] Error syncing to Duda:", error);
+      console.error("[Blog] Error syncing to website platform:", error);
 
       // Update status to error
       try {
@@ -19733,12 +20686,12 @@ This booking was created on ${new Date().toLocaleString()}.
         console.error("[Blog] Failed to update error status:", dbErr);
       }
 
-      const errMsg = error?.message || "Failed to sync blog to Duda";
+      const errMsg = error?.message || "Failed to sync blog to website";
       res.status(500).json({ message: errMsg });
     }
   });
 
-  // Publish blog to Duda
+  // Publish blog to website platform
   app.post("/api/blog-posts/:id/publish-to-duda", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
@@ -19763,7 +20716,7 @@ This booking was created on ${new Date().toLocaleString()}.
       }
 
       if (!post.dudaSiteId || !post.dudaBlogPostId) {
-        return res.status(400).json({ message: "Blog must be synced to Duda first" });
+        return res.status(400).json({ message: "Blog must be synced to website first" });
       }
 
       await dudaApi.publishBlogPost(post.dudaSiteId, post.dudaBlogPostId);
@@ -19783,16 +20736,16 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(blogPosts.id, postId));
 
       res.json({
-        message: "Blog published to Duda",
+        message: "Blog published to website",
         liveUrl: dudaPost.url
       });
     } catch (error) {
-      console.error("[Blog] Error publishing to Duda:", error);
-      res.status(500).json({ message: "Failed to publish blog to Duda" });
+      console.error("[Blog] Error publishing to website platform:", error);
+      res.status(500).json({ message: "Failed to publish blog to website" });
     }
   });
 
-  // Unpublish blog from Duda
+  // Unpublish blog from website platform
   app.post("/api/blog-posts/:id/unpublish-from-duda", requireAuth, async (req, res) => {
     try {
       const currentUser = (req as any).currentUser;
@@ -19817,7 +20770,7 @@ This booking was created on ${new Date().toLocaleString()}.
       }
 
       if (!post.dudaSiteId || !post.dudaBlogPostId) {
-        return res.status(400).json({ message: "Blog is not published to Duda" });
+        return res.status(400).json({ message: "Blog is not published to website" });
       }
 
       await dudaApi.unpublishBlogPost(post.dudaSiteId, post.dudaBlogPostId);
@@ -19832,10 +20785,10 @@ This booking was created on ${new Date().toLocaleString()}.
         })
         .where(eq(blogPosts.id, postId));
 
-      res.json({ message: "Blog unpublished from Duda" });
+      res.json({ message: "Blog unpublished from website" });
     } catch (error) {
-      console.error("[Blog] Error unpublishing from Duda:", error);
-      res.status(500).json({ message: "Failed to unpublish blog from Duda" });
+      console.error("[Blog] Error unpublishing from website platform:", error);
+      res.status(500).json({ message: "Failed to unpublish blog from website" });
     }
   });
 
@@ -19940,6 +20893,567 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // ==================== Landing Pages ====================
+  const sanitizeLandingPageUpdate = (payload: any) => {
+    const allowed = [
+      "businessName",
+      "logoUrl",
+      "tagline",
+      "ctaLabel",
+      "trustChips",
+      "services",
+      "primaryServiceId",
+      "enableMultiService",
+      "howItWorks",
+      "faqs",
+      "phone",
+      "email",
+      "serviceAreaText",
+      "seoTitle",
+      "seoDescription",
+    ];
+    const update: Record<string, any> = {};
+    for (const key of allowed) {
+      if (key in payload) {
+        update[key] = payload[key];
+      }
+    }
+    if (Array.isArray(update.trustChips)) {
+      update.trustChips = update.trustChips.slice(0, 3);
+    }
+    if (Array.isArray(update.howItWorks)) {
+      update.howItWorks = update.howItWorks.slice(0, 3);
+    }
+    if (Array.isArray(update.faqs)) {
+      update.faqs = update.faqs.slice(0, 6);
+    }
+    return update;
+  };
+
+  app.get("/api/landing-page/me", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+      let [page] = await db
+        .select()
+        .from(landingPages)
+        .where(eq(landingPages.userId, userId))
+        .limit(1);
+
+      if (!page) {
+        const user = await storage.getUserById(userId);
+        if (user) {
+          page = await storage.ensureLandingPageForUser(user);
+        }
+      }
+
+      if (!page) {
+        return res.status(404).json({ message: "Landing page not found" });
+      }
+
+      res.json(page);
+    } catch (error) {
+      console.error("[LandingPage] Error fetching landing page:", error);
+      res.status(500).json({ message: "Failed to fetch landing page" });
+    }
+  });
+
+  app.patch("/api/landing-page/me", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+      const updateData = sanitizeLandingPageUpdate(req.body);
+
+      const [updated] = await db
+        .update(landingPages)
+        .set({ ...updateData, updatedAt: new Date() })
+        .where(eq(landingPages.userId, userId))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ message: "Landing page not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[LandingPage] Error updating landing page:", error);
+      res.status(500).json({ message: "Failed to update landing page" });
+    }
+  });
+
+  app.post("/api/landing-page/me/publish", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+      const [page] = await db
+        .select()
+        .from(landingPages)
+        .where(eq(landingPages.userId, userId))
+        .limit(1);
+
+      if (!page) {
+        return res.status(404).json({ message: "Landing page not found" });
+      }
+
+      const basicErrors = validateLandingPageBasics(page);
+      if (basicErrors.length > 0) {
+        return res.status(400).json({ message: basicErrors[0], errors: basicErrors });
+      }
+
+      const [primaryFormula] = await db
+        .select({ id: formulas.id, embedId: formulas.embedId, isActive: formulas.isActive })
+        .from(formulas)
+        .where(and(
+          eq(formulas.id, page.primaryServiceId),
+          eq(formulas.userId, userId)
+        ))
+        .limit(1);
+
+      if (!primaryFormula || !primaryFormula.embedId || !primaryFormula.isActive) {
+        return res.status(400).json({ message: "Primary calculator is not connected or inactive." });
+      }
+
+      const [updated] = await db
+        .update(landingPages)
+        .set({ status: "published", publishedAt: new Date(), updatedAt: new Date() })
+        .where(eq(landingPages.userId, userId))
+        .returning();
+
+      await db
+        .update(directoryProfiles)
+        .set({ landingPageSlug: page.slug, updatedAt: new Date() })
+        .where(eq(directoryProfiles.userId, userId));
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+      if (profile) {
+        await updateDirectoryIndexCache(profile.id);
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[LandingPage] Error publishing landing page:", error);
+      res.status(500).json({ message: "Failed to publish landing page" });
+    }
+  });
+
+  app.post("/api/landing-page/me/unpublish", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+      const [updated] = await db
+        .update(landingPages)
+        .set({ status: "draft", publishedAt: null, updatedAt: new Date() })
+        .where(eq(landingPages.userId, userId))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ message: "Landing page not found" });
+      }
+
+      await db
+        .update(directoryProfiles)
+        .set({ landingPageSlug: null, updatedAt: new Date() })
+        .where(eq(directoryProfiles.userId, userId));
+
+      const [profile] = await db
+        .select()
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+      if (profile) {
+        await updateDirectoryIndexCache(profile.id);
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("[LandingPage] Error unpublishing landing page:", error);
+      res.status(500).json({ message: "Failed to unpublish landing page" });
+    }
+  });
+
+  app.get("/api/landing-page/public", async (req, res) => {
+    try {
+      const slug = typeof req.query.slug === "string" ? req.query.slug : "";
+      if (!slug) {
+        return res.status(400).json({ message: "Slug is required" });
+      }
+
+      const [page] = await db
+        .select({
+          id: landingPages.id,
+          userId: landingPages.userId,
+          slug: landingPages.slug,
+          status: landingPages.status,
+          publishedAt: landingPages.publishedAt,
+          businessName: landingPages.businessName,
+          logoUrl: landingPages.logoUrl,
+          tagline: landingPages.tagline,
+          ctaLabel: landingPages.ctaLabel,
+          trustChips: landingPages.trustChips,
+          services: landingPages.services,
+          primaryServiceId: landingPages.primaryServiceId,
+          enableMultiService: landingPages.enableMultiService,
+          howItWorks: landingPages.howItWorks,
+          faqs: landingPages.faqs,
+          phone: landingPages.phone,
+          email: landingPages.email,
+          serviceAreaText: landingPages.serviceAreaText,
+          seoTitle: landingPages.seoTitle,
+          seoDescription: landingPages.seoDescription,
+          plan: users.plan,
+        })
+        .from(landingPages)
+        .innerJoin(users, eq(landingPages.userId, users.id))
+        .where(eq(landingPages.slug, slug))
+        .limit(1);
+
+      if (!page || page.status !== "published") {
+        return res.status(404).json({ message: "Landing page not found" });
+      }
+
+      const [primaryFormula] = page.primaryServiceId
+        ? await db
+            .select({ embedId: formulas.embedId })
+            .from(formulas)
+            .where(and(
+              eq(formulas.id, page.primaryServiceId),
+              eq(formulas.userId, page.userId),
+              eq(formulas.isActive, true)
+            ))
+            .limit(1)
+        : [undefined];
+
+      const leadLimitCheck = await checkMonthlyLeadLimit(page.userId);
+      const baseUrl = getRequestBaseUrl(req);
+
+      res.json({
+        ...page,
+        primaryServiceEmbedId: primaryFormula?.embedId || null,
+        landingPageUrl: `${baseUrl}/l/${page.slug}`,
+        leadCapReached: !leadLimitCheck.allowed,
+        leadLimit: leadLimitCheck.limit,
+        leadCount: leadLimitCheck.currentCount,
+        autobidderBrandingRequired: (page.plan || "free") === "free",
+      });
+    } catch (error) {
+      console.error("[LandingPage] Error fetching public landing page:", error);
+      res.status(500).json({ message: "Failed to fetch landing page" });
+    }
+  });
+
+  app.post("/api/landing-page/events", async (req, res) => {
+    try {
+      const { landingPageId, type, metadata } = req.body || {};
+      if (!landingPageId || !type) {
+        return res.status(400).json({ message: "landingPageId and type are required" });
+      }
+      const allowedTypes = ["view", "lead_submit", "callback_request"];
+      if (!allowedTypes.includes(type)) {
+        return res.status(400).json({ message: "Invalid event type" });
+      }
+
+      const [created] = await db
+        .insert(landingPageEvents)
+        .values({
+          landingPageId,
+          type,
+          metadata: metadata || null,
+        })
+        .returning();
+
+      res.json(created);
+    } catch (error) {
+      console.error("[LandingPage] Error recording event:", error);
+      res.status(500).json({ message: "Failed to record landing page event" });
+    }
+  });
+
+  // Sitemap index + child sitemaps for directory pages
+  app.get("/sitemap.xml", async (req, res) => {
+    const baseUrl = getRequestBaseUrl(req);
+    const cacheKey = `${baseUrl}|/sitemap.xml`;
+    const cached = getCachedSitemap(cacheKey);
+    if (cached) {
+      res.header("Content-Type", "application/xml");
+      return res.send(cached);
+    }
+
+    try {
+      const categories = await db
+        .select({
+          id: directoryCategories.id,
+          slug: directoryCategories.slug,
+          updatedAt: directoryCategories.updatedAt,
+          cacheUpdatedAt: sql<Date>`max(${directoryIndexCache.lastUpdatedAt})`.as("cacheUpdatedAt"),
+        })
+        .from(directoryCategories)
+        .innerJoin(directoryIndexCache, eq(directoryIndexCache.categoryId, directoryCategories.id))
+        .where(and(
+          eq(directoryCategories.status, "approved"),
+          eq(directoryIndexCache.isIndexable, true),
+          sql`${directoryIndexCache.profileCount} > 0`
+        ))
+        .groupBy(directoryCategories.id, directoryCategories.slug, directoryCategories.updatedAt);
+
+      const cityPages = await db
+        .select({
+          lastUpdatedAt: directoryIndexCache.lastUpdatedAt,
+        })
+        .from(directoryIndexCache)
+        .innerJoin(directoryCategories, eq(directoryIndexCache.categoryId, directoryCategories.id))
+        .where(and(
+          eq(directoryCategories.status, "approved"),
+          eq(directoryIndexCache.isIndexable, true),
+          sql`${directoryIndexCache.profileCount} > 0`
+        ));
+
+      const companies = await db
+        .select({
+          updatedAt: directoryProfiles.updatedAt,
+        })
+        .from(directoryProfiles)
+        .innerJoin(landingPages, eq(landingPages.userId, directoryProfiles.userId))
+        .where(and(
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved"),
+          eq(landingPages.status, "published")
+        ));
+
+      const categoryLastmod = categories.reduce<Date | null>((acc, c) => {
+        const dt = c.cacheUpdatedAt || c.updatedAt;
+        if (!dt) return acc;
+        if (!acc || new Date(dt) > acc) return new Date(dt);
+        return acc;
+      }, null);
+
+      const cityLastmod = cityPages.reduce<Date | null>((acc, c) => {
+        if (!c.lastUpdatedAt) return acc;
+        if (!acc || new Date(c.lastUpdatedAt) > acc) return new Date(c.lastUpdatedAt);
+        return acc;
+      }, null);
+
+      const companyLastmod = companies.reduce<Date | null>((acc, c) => {
+        if (!c.updatedAt) return acc;
+        if (!acc || new Date(c.updatedAt) > acc) return new Date(c.updatedAt);
+        return acc;
+      }, null);
+
+      const allLastmods = [categoryLastmod, cityLastmod, companyLastmod].filter(Boolean) as Date[];
+      const homeLastmod = allLastmods.length > 0
+        ? allLastmods.reduce((a, b) => (a > b ? a : b))
+        : new Date();
+
+      const categorySitemapLastmod = formatLastMod(categoryLastmod || homeLastmod);
+      const citySitemapLastmod = formatLastMod(cityLastmod || homeLastmod);
+      const companySitemapLastmod = formatLastMod(companyLastmod || homeLastmod);
+
+      const cityPagesCount = cityPages.length;
+      const companyPagesCount = companies.length;
+      const citySitemapPages = Math.max(1, Math.ceil(cityPagesCount / SITEMAP_URL_LIMIT));
+      const companySitemapPages = Math.max(1, Math.ceil(companyPagesCount / SITEMAP_URL_LIMIT));
+
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+      xml += `  <sitemap>\n    <loc>${baseUrl}/sitemaps/directory/categories.xml</loc>\n    <lastmod>${categorySitemapLastmod}</lastmod>\n  </sitemap>\n`;
+
+      for (let i = 1; i <= citySitemapPages; i++) {
+        xml += `  <sitemap>\n    <loc>${baseUrl}/sitemaps/directory/cities-${i}.xml</loc>\n    <lastmod>${citySitemapLastmod}</lastmod>\n  </sitemap>\n`;
+      }
+
+      for (let i = 1; i <= companySitemapPages; i++) {
+        xml += `  <sitemap>\n    <loc>${baseUrl}/sitemaps/directory/companies-${i}.xml</loc>\n    <lastmod>${companySitemapLastmod}</lastmod>\n  </sitemap>\n`;
+      }
+
+      xml += '</sitemapindex>';
+
+      setCachedSitemap(cacheKey, xml);
+      res.header("Content-Type", "application/xml");
+      res.send(xml);
+    } catch (error) {
+      console.error("[Directory] Error generating sitemap index:", error);
+      res.status(500).send("Error generating sitemap index");
+    }
+  });
+
+  app.get("/sitemaps/directory/categories.xml", async (req, res) => {
+    const baseUrl = getRequestBaseUrl(req);
+    const cacheKey = `${baseUrl}|/sitemaps/directory/categories.xml`;
+    const cached = getCachedSitemap(cacheKey);
+    if (cached) {
+      res.header("Content-Type", "application/xml");
+      return res.send(cached);
+    }
+
+    try {
+      const categories = await db
+        .select({
+          id: directoryCategories.id,
+          slug: directoryCategories.slug,
+          updatedAt: directoryCategories.updatedAt,
+          cacheUpdatedAt: sql<Date>`max(${directoryIndexCache.lastUpdatedAt})`.as("cacheUpdatedAt"),
+        })
+        .from(directoryCategories)
+        .innerJoin(directoryIndexCache, eq(directoryIndexCache.categoryId, directoryCategories.id))
+        .where(and(
+          eq(directoryCategories.status, "approved"),
+          eq(directoryIndexCache.isIndexable, true),
+          sql`${directoryIndexCache.profileCount} > 0`
+        ))
+        .groupBy(directoryCategories.id, directoryCategories.slug, directoryCategories.updatedAt)
+        .orderBy(directoryCategories.slug);
+
+      const categoryLastmod = categories.reduce<Date | null>((acc, c) => {
+        const dt = c.cacheUpdatedAt || c.updatedAt;
+        if (!dt) return acc;
+        if (!acc || new Date(dt) > acc) return new Date(dt);
+        return acc;
+      }, null);
+
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+      xml += `  <url>\n    <loc>${baseUrl}/directory</loc>\n    <lastmod>${formatLastMod(categoryLastmod || new Date())}</lastmod>\n  </url>\n`;
+
+      for (const cat of categories) {
+        const lastmod = formatLastMod(cat.cacheUpdatedAt || cat.updatedAt || new Date());
+        xml += `  <url>\n    <loc>${baseUrl}/prices/${cat.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>\n`;
+      }
+
+      xml += '</urlset>';
+
+      setCachedSitemap(cacheKey, xml);
+      res.header("Content-Type", "application/xml");
+      res.send(xml);
+    } catch (error) {
+      console.error("[Directory] Error generating category sitemap:", error);
+      res.status(500).send("Error generating category sitemap");
+    }
+  });
+
+  app.get("/sitemaps/directory/cities-:page.xml", async (req, res) => {
+    const baseUrl = getRequestBaseUrl(req);
+    const page = parseInt(req.params.page, 10);
+    if (isNaN(page) || page < 1) {
+      return res.status(400).send("Invalid sitemap page");
+    }
+
+    const cacheKey = `${baseUrl}|/sitemaps/directory/cities-${page}.xml`;
+    const cached = getCachedSitemap(cacheKey);
+    if (cached) {
+      res.header("Content-Type", "application/xml");
+      return res.send(cached);
+    }
+
+    try {
+      const cityRows = await db
+        .select({
+          categorySlug: directoryIndexCache.categorySlug,
+          citySlug: directoryIndexCache.citySlug,
+          lastUpdatedAt: directoryIndexCache.lastUpdatedAt,
+        })
+        .from(directoryIndexCache)
+        .innerJoin(directoryCategories, eq(directoryIndexCache.categoryId, directoryCategories.id))
+        .where(and(
+          eq(directoryCategories.status, "approved"),
+          eq(directoryIndexCache.isIndexable, true),
+          sql`${directoryIndexCache.profileCount} > 0`
+        ))
+        .orderBy(directoryIndexCache.categorySlug, directoryIndexCache.citySlug);
+
+      const totalPages = Math.max(1, Math.ceil(cityRows.length / SITEMAP_URL_LIMIT));
+      if (page > totalPages) {
+        return res.status(404).send("Sitemap page not found");
+      }
+
+      const start = (page - 1) * SITEMAP_URL_LIMIT;
+      const chunk = cityRows.slice(start, start + SITEMAP_URL_LIMIT);
+
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+      for (const row of chunk) {
+        const lastmod = formatLastMod(row.lastUpdatedAt || new Date());
+        xml += `  <url>\n    <loc>${baseUrl}/prices/${row.categorySlug}/${row.citySlug}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>\n`;
+      }
+
+      xml += '</urlset>';
+
+      setCachedSitemap(cacheKey, xml);
+      res.header("Content-Type", "application/xml");
+      res.send(xml);
+    } catch (error) {
+      console.error("[Directory] Error generating city sitemap:", error);
+      res.status(500).send("Error generating city sitemap");
+    }
+  });
+
+  app.get("/sitemaps/directory/companies-:page.xml", async (req, res) => {
+    const baseUrl = getRequestBaseUrl(req);
+    const page = parseInt(req.params.page, 10);
+    if (isNaN(page) || page < 1) {
+      return res.status(400).send("Invalid sitemap page");
+    }
+
+    const cacheKey = `${baseUrl}|/sitemaps/directory/companies-${page}.xml`;
+    const cached = getCachedSitemap(cacheKey);
+    if (cached) {
+      res.header("Content-Type", "application/xml");
+      return res.send(cached);
+    }
+
+    try {
+      const companies = await db
+        .select({
+          companySlug: directoryProfiles.companySlug,
+          updatedAt: directoryProfiles.updatedAt,
+        })
+        .from(directoryProfiles)
+        .innerJoin(landingPages, eq(landingPages.userId, directoryProfiles.userId))
+        .where(and(
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved"),
+          eq(landingPages.status, "published")
+        ))
+        .orderBy(directoryProfiles.companySlug);
+
+      const totalPages = Math.max(1, Math.ceil(companies.length / SITEMAP_URL_LIMIT));
+      if (page > totalPages) {
+        return res.status(404).send("Sitemap page not found");
+      }
+
+      const start = (page - 1) * SITEMAP_URL_LIMIT;
+      const chunk = companies.slice(start, start + SITEMAP_URL_LIMIT);
+
+      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+
+      for (const row of chunk) {
+        const lastmod = formatLastMod(row.updatedAt || new Date());
+        xml += `  <url>\n    <loc>${baseUrl}/directory/company/${row.companySlug}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>\n`;
+      }
+
+      xml += '</urlset>';
+
+      setCachedSitemap(cacheKey, xml);
+      res.header("Content-Type", "application/xml");
+      res.send(xml);
+    } catch (error) {
+      console.error("[Directory] Error generating company sitemap:", error);
+      res.status(500).send("Error generating company sitemap");
+    }
+  });
+
+  // robots.txt with sitemap discovery
+  app.get("/robots.txt", (req, res) => {
+    const baseUrl = getRequestBaseUrl(req);
+    res.header("Content-Type", "text/plain");
+    res.send(`User-agent: *\nSitemap: ${baseUrl}/sitemap.xml\n`);
+  });
+
+  // Deprecated: use /sitemap.xml + child sitemaps instead
   // Sitemap endpoint for directory pages
   app.get("/sitemap-directory.xml", async (req, res) => {
     try {
@@ -19961,9 +21475,12 @@ This booking was created on ${new Date().toLocaleString()}.
       const profiles = await db
         .select({ companySlug: directoryProfiles.companySlug })
         .from(directoryProfiles)
+        .innerJoin(landingPages, eq(landingPages.userId, directoryProfiles.userId))
         .where(and(
           eq(directoryProfiles.isActive, true),
-          eq(directoryProfiles.showOnDirectory, true)
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved"),
+          eq(landingPages.status, "published")
         ));
 
       let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -19994,6 +21511,83 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("[Directory] Error generating sitemap:", error);
       res.status(500).send('Error generating sitemap');
+    }
+  });
+
+  // ====== Property Data Autofill Endpoints ======
+
+  // POST /api/property/resolve - Resolve property data from address (public, used by customer form)
+  app.post("/api/property/resolve", optionalAuth, async (req, res) => {
+    try {
+      const schema = z.object({
+        address: z.string().min(5).max(500),
+        formulaIds: z.array(z.number()).optional(),
+      });
+
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
+      }
+
+      const { address, formulaIds } = parsed.data;
+
+      const { snapshot, attributes } = await resolvePropertyData(address);
+
+      // If formulaIds provided, filter attributes to only those with matching prefillSourceKey mappings
+      let filteredAttributes = attributes;
+      if (formulaIds && formulaIds.length > 0) {
+        const relevantKeys = new Set<string>();
+        for (const formulaId of formulaIds) {
+          const formula = await storage.getFormula(formulaId);
+          if (formula?.variables) {
+            const variables = formula.variables as any[];
+            for (const v of variables) {
+              if (v.prefillSourceKey) {
+                relevantKeys.add(v.prefillSourceKey);
+              }
+            }
+          }
+        }
+
+        if (relevantKeys.size > 0) {
+          filteredAttributes = {} as any;
+          for (const key of relevantKeys) {
+            if ((attributes as any)[key] !== undefined) {
+              (filteredAttributes as any)[key] = (attributes as any)[key];
+            }
+          }
+        }
+      }
+
+      res.json({
+        snapshotId: snapshot?.id || null,
+        attributes: filteredAttributes,
+        source: snapshot ? snapshot.source : 'error',
+        addressNormalized: snapshot?.addressNormalized || null,
+      });
+    } catch (error) {
+      console.error("[PropertyResolve] Error:", error);
+      // Don't block the form - return empty attributes
+      res.json({
+        snapshotId: null,
+        attributes: {},
+        source: 'error',
+        addressNormalized: null,
+      });
+    }
+  });
+
+  // GET /api/property/attributes - Get available property attributes (form builder UI)
+  app.get("/api/property/attributes", requireAuth, async (req, res) => {
+    try {
+      res.json({
+        attributes: PROPERTY_ATTRIBUTE_LABELS,
+        groups: PROPERTY_ATTRIBUTE_GROUPS,
+        configured: attomApi.isConfigured(),
+      });
+    } catch (error) {
+      console.error("[PropertyAttributes] Error:", error);
+      res.status(500).json({ error: "Failed to get property attributes" });
     }
   });
 

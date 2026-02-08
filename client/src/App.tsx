@@ -95,6 +95,8 @@ const LeadCapture = lazy(() => import("@/pages/Crm/LeadCapture"));
 const TryCalculator = lazy(() => import("@/pages/try-calculator"));
 const IconGeneratorPage = lazy(() => import("@/pages/icon-generator"));
 const SetupStepByStepPage = lazy(() => import("@/pages/setup-step-by-step"));
+const LandingPagePublic = lazy(() => import("@/pages/landing-page-public"));
+const LandingPageEditor = lazy(() => import("@/pages/landing-page-editor"));
 
 // Blog pages
 const BlogPostsPage = lazy(() => import("@/pages/blog-posts"));
@@ -200,6 +202,7 @@ function Router() {
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/custom-form/:embedId" component={LazyStyledCalculator} />
         <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
+        <Route path="/l/:slug" component={LandingPagePublic} />
 
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
@@ -221,6 +224,7 @@ function Router() {
         <Route path="/prices/:categorySlug/:citySlug" component={DirectoryCityCategoryPage} />
         <Route path="/prices/:categorySlug" component={DirectoryCategoryPage} />
         <Route path="/directory/company/:companySlug" component={DirectoryCompanyPage} />
+        <Route path="/l/:slug" component={LandingPagePublic} />
         <Route component={Landing} />
       </Switch>
       </Suspense>
@@ -337,6 +341,7 @@ function Router() {
         <Route path="/directory/company/:companySlug" component={DirectoryCompanyPage} />
         <Route path="/directory-setup" component={DirectorySetup} />
         <Route path="/directory-dashboard" component={DirectoryDashboard} />
+        <Route path="/dashboard/landing-page" component={LandingPageEditor} />
         <Route component={NotFound} />
       </Switch>
       </Suspense>

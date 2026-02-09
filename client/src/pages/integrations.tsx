@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/use-theme";
 
 // Plans that have access to Zapier integration
 const ZAPIER_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
@@ -34,6 +35,8 @@ export default function IntegrationsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const zapierTheme = theme === "dark" ? "dark" : "light";
 
   // Check if user has access to Zapier
   const userPlan = user?.plan || 'free';
@@ -520,6 +523,7 @@ export default function IntegrationsPage() {
             </CardHeader>
             <CardContent>
               <div 
+                key={zapierTheme}
                 dangerouslySetInnerHTML={{
                   __html: `
                     <zapier-workflow
@@ -527,7 +531,7 @@ export default function IntegrationsPage() {
                       sign-up-first-name="${user.firstName || ''}"
                       sign-up-last-name="${user.lastName || ''}"
                       client-id="8Ua95Vw6WpfvB75NIP7XhuMfFzra060hX5RYGxi5"
-                      theme="light"
+                      theme="${zapierTheme}"
                       intro-copy-display="hide"
                       manage-zaps-display="hide"
                       guess-zap-display="show"

@@ -8,7 +8,6 @@ import {
   MapPin,
   Globe,
   Phone,
-  Mail,
   Building2,
   Calculator,
   ExternalLink,
@@ -216,15 +215,6 @@ export default function DirectoryCompanyPage() {
                     >
                       <Phone className="h-3.5 w-3.5" />
                       {profile.phoneNumber}
-                    </a>
-                  )}
-                  {profile?.email && (
-                    <a
-                      href={`mailto:${profile.email}`}
-                      className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full px-4 py-2 transition-colors"
-                    >
-                      <Mail className="h-3.5 w-3.5" />
-                      {profile.email}
                     </a>
                   )}
                 </div>

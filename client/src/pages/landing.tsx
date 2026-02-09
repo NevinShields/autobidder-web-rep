@@ -27,6 +27,7 @@ import {
   BrickWall,
   type LucideIcon,
 } from "lucide-react";
+import LiquidEther from "@/components/LiquidEther";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 const Section = ({
@@ -318,41 +319,62 @@ export default function Landing() {
         </Button>
       </nav>
 
-      <Section className="min-h-screen flex flex-col items-center justify-center text-center pt-32">
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-          <h1 className="text-5xl md:text-8xl font-bold tracking-tight mb-8 max-w-4xl mx-auto leading-[1.1]">
-            Stop Chasing Quotes.
-            <br />
-            <span className="text-zinc-500 italic">Let Customers Price & Book Instantly.</span>
-          </h1>
-          <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
-            Autobidder turns your services into an instant pricing and booking system — so leads convert while
-            you’re busy working.
-          </p>
-          <div className="flex flex-col md:flex-row gap-4 justify-center">
-            <Button className="w-full md:w-auto" onClick={() => (window.location.href = "/onboarding")}>
-              Start Free
-            </Button>
-            <Button variant="ghost" className="w-full md:w-auto">
-              See How It Works <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+      <section className="relative min-h-screen overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <LiquidEther
+            className="h-full w-full"
+            colors={["#1D4ED8", "#4F46E5", "#22D3EE"]}
+            resolution={0.4}
+            autoDemo
+            autoSpeed={0.45}
+            autoIntensity={2}
+            cursorSize={90}
+            mouseForce={18}
+            style={{ opacity: 0.7 }}
+          />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(0,0,0,0.12),rgba(0,0,0,0.72)_72%)]" />
         </div>
 
-        <div className="mt-20 w-full max-w-5xl aspect-video rounded-3xl bg-gradient-to-b from-zinc-800 to-transparent p-[1px] opacity-80 group">
-          <div className="bg-[#0f0f0f] w-full h-full rounded-[calc(1.5rem-1px)] overflow-hidden relative">
-            <div className="absolute top-0 left-0 w-full h-8 bg-zinc-900 border-b border-white/5 flex items-center px-4 gap-2">
-              <div className="w-2 h-2 rounded-full bg-zinc-700" />
-              <div className="w-2 h-2 rounded-full bg-zinc-700" />
-              <div className="w-2 h-2 rounded-full bg-zinc-700" />
-            </div>
-            <div className="flex items-center justify-center h-full flex-col gap-4">
-              <div className="w-48 h-4 bg-zinc-800 rounded animate-pulse" />
-              <div className="w-64 h-4 bg-zinc-800/50 rounded animate-pulse" />
+        <Section className="relative z-10 min-h-screen flex flex-col items-center justify-center text-center pt-32">
+          <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <h1 className="text-5xl md:text-8xl font-bold tracking-tight mb-8 max-w-4xl mx-auto leading-[1.1]">
+              Stop Chasing Quotes.
+              <br />
+              <span className="text-zinc-500 italic">Let Customers Price & Book Instantly.</span>
+            </h1>
+            <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
+              Autobidder turns your services into an instant pricing and booking system — so leads convert while
+              you’re busy working.
+            </p>
+            <div className="flex flex-col md:flex-row gap-4 justify-center">
+              <Button className="w-full md:w-auto" onClick={() => (window.location.href = "/onboarding")}>
+                Start Free
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full md:w-auto"
+                onClick={scrollToSection("how-it-works-video")}
+              >
+                See How It Works <ChevronRight className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-        </div>
-      </Section>
+
+          <div className="mt-20 w-full max-w-5xl aspect-video rounded-3xl bg-gradient-to-b from-zinc-800 to-transparent p-[1px] opacity-80 group">
+            <div className="bg-[#0f0f0f] w-full h-full rounded-[calc(1.5rem-1px)] overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-8 bg-zinc-900 border-b border-white/5 flex items-center px-4 gap-2">
+                <div className="w-2 h-2 rounded-full bg-zinc-700" />
+                <div className="w-2 h-2 rounded-full bg-zinc-700" />
+                <div className="w-2 h-2 rounded-full bg-zinc-700" />
+              </div>
+              <div className="flex items-center justify-center h-full flex-col gap-4">
+                <div className="w-48 h-4 bg-zinc-800 rounded animate-pulse" />
+                <div className="w-64 h-4 bg-zinc-800/50 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </Section>
+      </section>
 
       <section className="bg-white text-black py-32 overflow-hidden">
         <div className="max-w-4xl mx-auto px-6">
@@ -380,7 +402,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <Section className="py-32">
+      <Section id="how-it-works-video" className="py-32">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 italic">
             One minute to automate your growth.
@@ -784,7 +806,13 @@ export default function Landing() {
         </div>
         <div className="mt-24 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8 text-[10px] tracking-[0.2em] text-zinc-600 uppercase">
           <div>© 2024 Autobidder Inc.</div>
-          <div className="flex gap-12">
+          <div className="flex flex-wrap justify-center gap-x-8 gap-y-3">
+            <a href="/directory" className="hover:text-white transition-colors">
+              Directory
+            </a>
+            <a href="/setup-step-by-step" className="hover:text-white transition-colors">
+              Step-by-Step Setup
+            </a>
             <a href="/docs" className="hover:text-white transition-colors">
               Docs
             </a>

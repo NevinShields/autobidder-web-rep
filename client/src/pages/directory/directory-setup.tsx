@@ -378,7 +378,7 @@ export default function DirectorySetup() {
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="max-w-3xl mx-auto">
           <Skeleton className="h-64 rounded-lg" />
         </div>
@@ -387,9 +387,9 @@ export default function DirectorySetup() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-background border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <Link href="/dashboard">
             <Button variant="ghost" size="sm">
@@ -397,17 +397,17 @@ export default function DirectorySetup() {
               Back to Dashboard
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-4">
+          <h1 className="text-2xl font-bold mt-4">
             {existingProfile ? "Manage Directory Listing" : "List Your Business"}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Get found by homeowners looking for your services
           </p>
         </div>
       </div>
 
       {/* Progress Steps */}
-      <div className="bg-white border-b">
+      <div className="bg-background border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {STEPS.map((step, index) => (
@@ -417,18 +417,18 @@ export default function DirectorySetup() {
                   disabled={!existingProfile && step.id > 1}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                     currentStep === step.id
-                      ? "bg-blue-100 text-blue-700"
+                      ? "bg-primary/10 text-primary"
                       : currentStep > step.id
-                      ? "text-green-600"
-                      : "text-gray-400"
-                  } ${existingProfile ? "cursor-pointer hover:bg-gray-100" : ""}`}
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-muted-foreground"
+                  } ${existingProfile ? "cursor-pointer hover:bg-muted" : ""}`}
                 >
                   <step.icon className="h-5 w-5" />
                   <span className="hidden sm:inline font-medium">{step.name}</span>
                   {currentStep > step.id && <Check className="h-4 w-4" />}
                 </button>
                 {index < STEPS.length - 1 && (
-                  <ChevronRight className="h-4 w-4 text-gray-300 mx-2" />
+                  <ChevronRight className="h-4 w-4 text-border mx-2" />
                 )}
               </div>
             ))}
@@ -569,7 +569,7 @@ export default function DirectorySetup() {
               {formulasLoading ? (
                 <Skeleton className="h-32" />
               ) : activeFormulas.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <p>You haven't created any pricing calculators yet.</p>
                   <Link href="/formula-builder">
                     <Button className="mt-4">Create Your First Calculator</Button>
@@ -585,7 +585,7 @@ export default function DirectorySetup() {
                       <div
                         key={formula.id}
                         className={`border rounded-lg p-4 transition-colors ${
-                          isSelected ? "border-blue-300 bg-blue-50" : ""
+                          isSelected ? "border-primary/40 bg-primary/10" : ""
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -691,7 +691,7 @@ export default function DirectorySetup() {
             <CardContent className="space-y-6">
               <div>
                 <Label>Service Radius</Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Customers within this radius of {profileForm.city || "your location"} will find your business automatically.
                 </p>
                 <div className="flex items-center gap-4 mt-2">
@@ -703,13 +703,13 @@ export default function DirectorySetup() {
                     max={500}
                     className="w-24"
                   />
-                  <span className="text-gray-500">miles from {profileForm.city || "your location"}</span>
+                  <span className="text-muted-foreground">miles from {profileForm.city || "your location"}</span>
                 </div>
               </div>
 
               <div>
                 <Label>Additional Target Cities (Optional)</Label>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Add specific cities you want to appear in, even if they're outside your radius.
                 </p>
                 <div className="flex gap-2 mt-2">
@@ -781,22 +781,22 @@ export default function DirectorySetup() {
               <CardContent className="space-y-6">
                 {/* Profile Summary */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Business Profile</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-medium mb-2">Business Profile</h3>
+                  <div className="bg-muted/50 rounded-lg p-4">
                     <p className="font-semibold text-lg">{profileForm.companyName}</p>
-                    <p className="text-gray-500">{profileForm.city}, {profileForm.state} {profileForm.zipCode}</p>
+                    <p className="text-muted-foreground">{profileForm.city}, {profileForm.state} {profileForm.zipCode}</p>
                     {profileForm.websiteUrl && (
-                      <p className="text-blue-600 text-sm mt-1">{profileForm.websiteUrl}</p>
+                      <p className="text-primary text-sm mt-1">{profileForm.websiteUrl}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Services Summary */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Services Listed</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-medium mb-2">Services Listed</h3>
+                  <div className="bg-muted/50 rounded-lg p-4">
                     {selectedServices.size === 0 ? (
-                      <p className="text-gray-500">No services selected</p>
+                      <p className="text-muted-foreground">No services selected</p>
                     ) : (
                       <div className="space-y-2">
                         {Array.from(selectedServices.entries()).map(([formulaId, categoryId]) => {
@@ -816,11 +816,11 @@ export default function DirectorySetup() {
 
                 {/* Service Area Summary */}
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-2">Service Area</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <h3 className="font-medium mb-2">Service Area</h3>
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-1">
                     <p>{radiusMiles} mile radius from {profileForm.city}</p>
                     {selectedCities.length > 0 && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         + {selectedCities.length} additional {selectedCities.length === 1 ? "city" : "cities"}: {selectedCities.map(c => `${c.city}, ${c.state}`).join("; ")}
                       </p>
                     )}
@@ -831,8 +831,8 @@ export default function DirectorySetup() {
                 <div className="border-t pt-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-gray-900">Show All Services</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-medium">Show All Services</h3>
+                      <p className="text-sm text-muted-foreground">
                         {existingProfile?.showAllServices
                           ? "All your active services are visible on your company page"
                           : "Only services you selected above are shown"}
@@ -858,8 +858,8 @@ export default function DirectorySetup() {
                 <div className="border-t pt-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-gray-900">Show on Directory</h3>
-                      <p className="text-sm text-gray-500">
+                      <h3 className="font-medium">Show on Directory</h3>
+                      <p className="text-sm text-muted-foreground">
                         {existingProfile?.showOnDirectory
                           ? "Your listing is visible to customers"
                           : "Your listing is hidden from customers"}

@@ -18,6 +18,7 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
+import LiquidEther from "@/components/LiquidEther";
 
 type OnboardingData = {
   services: string[];
@@ -565,12 +566,28 @@ const Hero = ({ onApply }: { onApply: () => void }) => {
   return (
     <motion.div
       style={{ scale, opacity }}
-      className="h-screen flex flex-col items-center justify-center text-center px-6 sticky top-0 z-10"
+      className="relative h-screen flex flex-col items-center justify-center text-center px-6 sticky top-0 z-10 overflow-hidden"
     >
+      <div className="absolute inset-0 z-0">
+        <LiquidEther
+          className="h-full w-full"
+          colors={["#1D4ED8", "#4F46E5", "#22D3EE"]}
+          resolution={0.4}
+          autoDemo
+          autoSpeed={0.45}
+          autoIntensity={2}
+          cursorSize={90}
+          mouseForce={18}
+          style={{ opacity: 0.7 }}
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(0,0,0,0.12),rgba(0,0,0,0.72)_72%)]" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
+        className="relative z-10"
       >
         <span className="text-xs font-medium tracking-[0.2em] uppercase text-indigo-400 mb-4 block">
           Now Accepting Partners

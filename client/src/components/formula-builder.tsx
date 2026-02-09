@@ -748,26 +748,26 @@ export default function FormulaBuilderComponent({
               </div>
 
               {/* Service Name */}
-              <div className="sm:col-span-1 lg:col-span-1">
+              <div className="sm:col-span-1 lg:col-span-1 min-w-0">
                 <Label htmlFor="formula-name" className="text-xs text-gray-500 mb-1 block">Service Name *</Label>
                 <Input
                   id="formula-name"
                   value={formula.name}
                   onChange={(e) => onUpdate({ name: e.target.value })}
                   placeholder="Kitchen Remodel"
-                  className="h-9"
+                  className="h-9 w-full"
                 />
               </div>
 
               {/* Calculator Title */}
-              <div className="sm:col-span-2 lg:col-span-2">
+              <div className="sm:col-span-2 lg:col-span-2 min-w-0">
                 <Label htmlFor="formula-title" className="text-xs text-gray-500 mb-1 block">Calculator Title</Label>
                 <Input
                   id="formula-title"
                   value={formula.title}
                   onChange={(e) => onUpdate({ title: e.target.value })}
                   placeholder="Get Your Kitchen Remodel Quote"
-                  className="h-9"
+                  className="h-9 w-full"
                 />
               </div>
             </div>

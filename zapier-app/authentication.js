@@ -12,7 +12,7 @@ const testAuth = async (z, bundle) => {
       throw new Error('Server URL must use http:// or https:// protocol');
     }
   } catch (error) {
-    throw new Error('Invalid server URL format. Please enter a valid URL (e.g., https://your-app.replit.app)');
+    throw new Error('Invalid server URL format. Please enter a valid URL (e.g., https://rep.autobidder.org)');
   }
 
   // Test the API key by making a request to the auth endpoint
@@ -39,8 +39,8 @@ module.exports = {
       required: true,
       label: 'Server URL',
       type: 'string',
-      helpText: 'The URL of your Autobidder instance. Find this in your Autobidder dashboard under Settings > Zapier Integration. Must include https:// (e.g., https://your-app.replit.app)',
-      placeholder: 'https://your-app.replit.app',
+      helpText: 'The URL of your Autobidder instance. Must include https:// (e.g., https://rep.autobidder.org)',
+      placeholder: 'https://rep.autobidder.org',
       helpLink: 'https://help.autobidder.com/zapier-setup#server-url',
       altersDynamicFields: false,
     },

@@ -33,7 +33,7 @@ In Zapier's web interface, configure authentication as follows:
   - Label: "Server URL"
   - Type: String
   - Required: Yes
-  - Help Text: "Your Autobidder app URL (e.g., https://your-app.replit.app)"
+  - Help Text: "Your Autobidder app URL (e.g., https://rep.autobidder.org)"
   - Default: `https://{{bundle.authData.server_url}}`
 
 ### Step 2: Authentication Test Request
@@ -117,7 +117,7 @@ For the "New Lead" trigger:
 1. **Manual Test**: Use curl to test the auth endpoint:
 ```bash
 curl -H "Authorization: Bearer your-api-key" \
-     https://your-app.replit.app/api/zapier/auth/test
+     https://rep.autobidder.org/api/zapier/auth/test
 ```
 
 2. **Expected Response**:

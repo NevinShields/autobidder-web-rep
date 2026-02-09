@@ -21531,7 +21531,9 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const { address, formulaIds } = parsed.data;
 
+      console.log('[PropertyResolve] Resolving address:', address, 'formulaIds:', formulaIds);
       const { snapshot, attributes } = await resolvePropertyData(address);
+      console.log('[PropertyResolve] Raw attributes from ATTOM:', JSON.stringify(attributes));
 
       // If formulaIds provided, filter attributes to only those with matching prefillSourceKey mappings
       let filteredAttributes = attributes;
@@ -21544,10 +21546,15 @@ This booking was created on ${new Date().toLocaleString()}.
             for (const v of variables) {
               if (v.prefillSourceKey) {
                 relevantKeys.add(v.prefillSourceKey);
+                console.log(`[PropertyResolve] Formula ${formulaId}, variable "${v.name}" (${v.id}, type=${v.type}): prefillSourceKey="${v.prefillSourceKey}"`);
+              } else {
+                console.log(`[PropertyResolve] Formula ${formulaId}, variable "${v.name}" (${v.id}, type=${v.type}): NO prefillSourceKey. connectionKey=${v.connectionKey || 'none'}`);
               }
             }
           }
         }
+
+        console.log('[PropertyResolve] Relevant prefillSourceKeys:', Array.from(relevantKeys));
 
         if (relevantKeys.size > 0) {
           filteredAttributes = {} as any;
@@ -21558,6 +21565,7 @@ This booking was created on ${new Date().toLocaleString()}.
           }
         }
       }
+      console.log('[PropertyResolve] Filtered attributes sent to client:', JSON.stringify(filteredAttributes));
 
       res.json({
         snapshotId: snapshot?.id || null,

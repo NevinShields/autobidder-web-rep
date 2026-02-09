@@ -1218,7 +1218,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             {isEditingConnectionKey ? (
               <div className="space-y-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                 <p className="text-xs text-blue-700 dark:text-blue-300">
-                  Variables with the same connection key sync their values across services.
+                  Variables with the same connection key sync their values across services. <strong>Note:</strong> To auto-fill from property data (address lookup), use "Prefill from Property Data" below instead.
                 </p>
                 <div>
                   <Label className="text-xs text-blue-600 dark:text-blue-400 mb-1 block">Connection Key</Label>
@@ -1262,6 +1262,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               <Home className="w-3 h-3" />
               Prefill from Property Data
             </Label>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 -mt-0.5">
+              Auto-fill this field when a customer enters their address
+            </p>
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
               {variable.prefillSourceKey ? (
                 <div className="flex items-center gap-2">

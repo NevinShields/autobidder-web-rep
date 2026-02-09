@@ -100,18 +100,27 @@ export default function ServiceSelector() {
   const applyPropertyPrefill = (attributes: PropertyAttributes) => {
     const newPrefilledFields: Record<string, string> = {};
 
+    console.log('[PropertyPrefill] Received attributes:', JSON.stringify(attributes));
+    console.log('[PropertyPrefill] Selected services:', selectedServices);
+
+    // Collect all prefill values first, then apply in a single state update
+    const prefillUpdates: Array<{ serviceId: number; variableId: string; value: any; connectionKey?: string }> = [];
+
     selectedServices.forEach(serviceId => {
       const formula = (formulas as Formula[] | undefined)?.find(f => f.id === serviceId);
-      if (!formula?.variables) return;
+      if (!formula?.variables) {
+        console.log(`[PropertyPrefill] Service ${serviceId}: no formula or variables found`);
+        return;
+      }
 
       formula.variables.forEach((variable: any) => {
-        if (!variable.prefillSourceKey) return;
+        if (!variable.prefillSourceKey) {
+          console.log(`[PropertyPrefill] Variable "${variable.name}" (${variable.id}, type=${variable.type}): no prefillSourceKey set, skipping. connectionKey=${variable.connectionKey || 'none'}`);
+          return;
+        }
         const attrValue = (attributes as any)[variable.prefillSourceKey];
+        console.log(`[PropertyPrefill] Variable "${variable.name}" (${variable.id}, type=${variable.type}): prefillSourceKey="${variable.prefillSourceKey}", attrValue=${attrValue}, connectionKey=${variable.connectionKey || 'none'}`);
         if (attrValue === undefined || attrValue === null) return;
-
-        // Only prefill if user hasn't already entered a value
-        const existingValue = serviceVariables[serviceId]?.[variable.id];
-        if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) return;
 
         // Type conversion based on variable type
         let convertedValue: any = attrValue;
@@ -119,7 +128,6 @@ export default function ServiceSelector() {
           convertedValue = typeof attrValue === 'number' ? attrValue : parseFloat(attrValue);
           if (isNaN(convertedValue)) return;
         } else if (['select', 'dropdown'].includes(variable.type) && variable.options) {
-          // Try to match attribute value to an option
           const strValue = String(attrValue).toLowerCase();
           const matchedOption = variable.options.find((opt: any) =>
             String(opt.label).toLowerCase().includes(strValue) ||
@@ -129,14 +137,67 @@ export default function ServiceSelector() {
           if (matchedOption) {
             convertedValue = matchedOption.value;
           } else {
-            return; // No matching option found
+            return;
           }
         }
 
-        handleVariableChange(serviceId, variable.id, convertedValue);
+        prefillUpdates.push({
+          serviceId,
+          variableId: variable.id,
+          value: convertedValue,
+          connectionKey: variable.connectionKey,
+        });
         newPrefilledFields[`${serviceId}_${variable.id}`] = variable.prefillSourceKey;
       });
     });
+
+    // Apply all prefill values in a single state update
+    console.log('[PropertyPrefill] Total prefill updates to apply:', prefillUpdates.length, prefillUpdates.map(u => `${u.variableId}=${u.value}`));
+    if (prefillUpdates.length > 0) {
+      setServiceVariables(prev => {
+        const updated = { ...prev };
+
+        for (const { serviceId, variableId, value, connectionKey } of prefillUpdates) {
+          // Only prefill if user hasn't already entered a value
+          const existingValue = updated[serviceId]?.[variableId];
+          if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) {
+            console.log(`[PropertyPrefill] Skipping ${variableId}: existing value "${existingValue}" found`);
+            continue;
+          }
+
+          console.log(`[PropertyPrefill] Setting ${variableId} = ${value} (type: ${typeof value})`);
+          updated[serviceId] = {
+            ...updated[serviceId],
+            [variableId]: value,
+          };
+
+          // Propagate via connectionKey to other services
+          if (connectionKey) {
+            selectedServices.forEach(svcId => {
+              const svc = (formulas as Formula[] | undefined)?.find(f => f.id === svcId);
+              svc?.variables?.forEach((v: any) => {
+                if (v.connectionKey === connectionKey && !(svcId === serviceId && v.id === variableId)) {
+                  const connExisting = updated[svcId]?.[v.id];
+                  if (connExisting === undefined || connExisting === '' || connExisting === 0) {
+                    console.log(`[PropertyPrefill] ConnectionKey propagation: setting ${v.id} in service ${svcId} = ${value}`);
+                    updated[svcId] = {
+                      ...updated[svcId],
+                      [v.id]: value,
+                    };
+                    newPrefilledFields[`${svcId}_${v.id}`] = connectionKey;
+                  }
+                }
+              });
+            });
+          }
+        }
+
+        console.log('[PropertyPrefill] Final serviceVariables after prefill:', JSON.stringify(updated));
+        return updated;
+      });
+    } else {
+      console.log('[PropertyPrefill] No prefill updates to apply. Check that variables have "Prefill from Property Data" configured (not just Connection Key).');
+    }
 
     setPrefilledFields(newPrefilledFields);
   };
@@ -163,12 +224,22 @@ export default function ServiceSelector() {
       setPropertySnapshotId(data.snapshotId);
 
       // Apply prefill
-      applyPropertyPrefill(data.attributes || {});
+      const attrs = data.attributes || {};
+      const attrCount = Object.keys(attrs).length;
+      applyPropertyPrefill(attrs);
 
-      toast({
-        title: "Property data loaded",
-        description: "Form fields have been pre-filled with property information.",
-      });
+      if (attrCount > 0) {
+        toast({
+          title: "Property data loaded",
+          description: `Found ${attrCount} property attribute${attrCount !== 1 ? 's' : ''}. Check browser console for details.`,
+        });
+      } else {
+        toast({
+          title: "No property data found",
+          description: "No measurement data available for this address. You can fill in the details manually.",
+          variant: "destructive",
+        });
+      }
 
       setCurrentStep('configuration');
     } catch (error) {
@@ -268,13 +339,37 @@ export default function ServiceSelector() {
   };
 
   const handleVariableChange = (formulaId: number, variableId: string, value: any) => {
-    setServiceVariables(prev => ({
-      ...prev,
-      [formulaId]: {
-        ...prev[formulaId],
-        [variableId]: value
+    // Find the connectionKey for this variable
+    const formula = (formulas as Formula[] | undefined)?.find(f => f.id === formulaId);
+    const variable = formula?.variables?.find((v: any) => v.id === variableId);
+    const connKey = (variable as any)?.connectionKey;
+
+    setServiceVariables(prev => {
+      const updated = {
+        ...prev,
+        [formulaId]: {
+          ...prev[formulaId],
+          [variableId]: value
+        }
+      };
+
+      // If variable has a connectionKey, sync to all other services with matching key
+      if (connKey) {
+        selectedServices.forEach(svcId => {
+          const svc = (formulas as Formula[] | undefined)?.find(f => f.id === svcId);
+          svc?.variables?.forEach((v: any) => {
+            if (v.connectionKey === connKey && !(svcId === formulaId && v.id === variableId)) {
+              updated[svcId] = {
+                ...updated[svcId],
+                [v.id]: value
+              };
+            }
+          });
+        });
       }
-    }));
+
+      return updated;
+    });
   };
 
   const calculateServicePrice = (formula: Formula) => {
@@ -738,7 +833,7 @@ export default function ServiceSelector() {
                               <div key={variable.id}>
                                 <EnhancedVariableInput
                                   variable={variable}
-                                  value={serviceVariables[serviceId]?.[variable.id] || ''}
+                                  value={serviceVariables[serviceId]?.[variable.id]}
                                   onChange={(value) => handleVariableChange(serviceId, variable.id, value)}
                                   styling={{
                                     inputBorderRadius: styling.inputBorderRadius,

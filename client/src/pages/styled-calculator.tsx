@@ -1783,18 +1783,28 @@ export default function StyledCalculator(props: any = {}) {
   const applyPropertyPrefill = (attributes: PropertyAttributes) => {
     const newPrefilledFields: Record<string, string> = {};
 
+    console.log('[PropertyPrefill] Received attributes:', JSON.stringify(attributes));
+    console.log('[PropertyPrefill] Selected services:', selectedServices);
+
+    // Collect all prefill values first, then apply in a single state update
+    // to avoid stale closure issues when reading serviceVariables
+    const prefillUpdates: Array<{ serviceId: number; variableId: string; value: any; connectionKey?: string }> = [];
+
     selectedServices.forEach(serviceId => {
       const formula = formulas?.find((f: Formula) => f.id === serviceId);
-      if (!formula?.variables) return;
+      if (!formula?.variables) {
+        console.log(`[PropertyPrefill] Service ${serviceId}: no formula or variables found`);
+        return;
+      }
 
       formula.variables.forEach((variable: any) => {
-        if (!variable.prefillSourceKey) return;
+        if (!variable.prefillSourceKey) {
+          console.log(`[PropertyPrefill] Variable "${variable.name}" (${variable.id}, type=${variable.type}): no prefillSourceKey set, skipping. connectionKey=${variable.connectionKey || 'none'}`);
+          return;
+        }
         const attrValue = (attributes as any)[variable.prefillSourceKey];
+        console.log(`[PropertyPrefill] Variable "${variable.name}" (${variable.id}, type=${variable.type}): prefillSourceKey="${variable.prefillSourceKey}", attrValue=${attrValue}, connectionKey=${variable.connectionKey || 'none'}`);
         if (attrValue === undefined || attrValue === null) return;
-
-        // Only prefill if user hasn't already entered a value
-        const existingValue = serviceVariables[serviceId]?.[variable.id];
-        if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) return;
 
         // Type conversion based on variable type
         let convertedValue: any = attrValue;
@@ -1815,10 +1825,64 @@ export default function StyledCalculator(props: any = {}) {
           }
         }
 
-        handleServiceVariableChange(serviceId, variable.id, convertedValue);
+        prefillUpdates.push({
+          serviceId,
+          variableId: variable.id,
+          value: convertedValue,
+          connectionKey: variable.connectionKey,
+        });
         newPrefilledFields[`${serviceId}_${variable.id}`] = variable.prefillSourceKey;
       });
     });
+
+    // Apply all prefill values in a single state update
+    console.log('[PropertyPrefill] Total prefill updates to apply:', prefillUpdates.length, prefillUpdates.map(u => `${u.variableId}=${u.value}`));
+    if (prefillUpdates.length > 0) {
+      setServiceVariables(prev => {
+        const updated = { ...prev };
+
+        for (const { serviceId, variableId, value, connectionKey } of prefillUpdates) {
+          // Only prefill if user hasn't already entered a value
+          const existingValue = updated[serviceId]?.[variableId];
+          if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) {
+            console.log(`[PropertyPrefill] Skipping ${variableId}: existing value "${existingValue}" found`);
+            continue;
+          }
+
+          console.log(`[PropertyPrefill] Setting ${variableId} = ${value} (type: ${typeof value})`);
+          updated[serviceId] = {
+            ...updated[serviceId],
+            [variableId]: value,
+          };
+
+          // Propagate via connectionKey to other services
+          if (connectionKey) {
+            selectedServices.forEach(svcId => {
+              const svc = formulas?.find((f: Formula) => f.id === svcId);
+              svc?.variables?.forEach((v: any) => {
+                if (v.connectionKey === connectionKey && !(svcId === serviceId && v.id === variableId)) {
+                  const connExisting = updated[svcId]?.[v.id];
+                  if (connExisting === undefined || connExisting === '' || connExisting === 0) {
+                    console.log(`[PropertyPrefill] ConnectionKey propagation: setting ${v.id} in service ${svcId} = ${value}`);
+                    updated[svcId] = {
+                      ...updated[svcId],
+                      [v.id]: value,
+                    };
+                    // Also mark connected variables as prefilled
+                    newPrefilledFields[`${svcId}_${v.id}`] = connectionKey;
+                  }
+                }
+              });
+            });
+          }
+        }
+
+        console.log('[PropertyPrefill] Final serviceVariables after prefill:', JSON.stringify(updated));
+        return updated;
+      });
+    } else {
+      console.log('[PropertyPrefill] No prefill updates to apply. Check that variables have "Prefill from Property Data" configured (not just Connection Key).');
+    }
 
     setPrefilledFields(newPrefilledFields);
   };
@@ -1841,10 +1905,13 @@ export default function StyledCalculator(props: any = {}) {
       if (!response.ok) throw new Error('Failed to resolve property');
 
       const data = await response.json();
-      setPropertyAttributes(data.attributes || {});
+      const attrs = data.attributes || {};
+      const attrCount = Object.keys(attrs).length;
+      console.log('[PropertyPrefill] API response - source:', data.source, ', attributes count:', attrCount, ', attributes:', JSON.stringify(attrs));
+      setPropertyAttributes(attrs);
       setPropertySnapshotId(data.snapshotId);
 
-      applyPropertyPrefill(data.attributes || {});
+      applyPropertyPrefill(attrs);
       setCurrentStep('configuration');
     } catch (error) {
       console.error('Property resolve error:', error);

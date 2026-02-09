@@ -51,7 +51,12 @@
       "WebFetch(domain:www.duda.co)",
       "Bash(journalctl:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "Bash(ZAPIER_DEPLOY_KEY=8426518e6ee48e2d47b8b5467f2c6ed0 npx zapier push:*)",
+      "Bash(npx skills:*)",
+      "Bash(git clone:*)",
+      "Bash(GIT_TERMINAL_PROMPT=0 git clone:*)",
+      "Bash(gh api:*)"
     ]
   }
 }

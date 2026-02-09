@@ -24,7 +24,7 @@ Autobidder is an AI-powered contractor platform that helps service professionals
 2. Navigate to Settings > Zapier Integration
 3. Click "New API Key" and give it a name
 4. Copy your API key (save it securely - it won't be shown again)
-5. Note your Autobidder app URL (e.g., https://your-app.replit.app)
+5. Note your Autobidder app URL (e.g., https://rep.autobidder.org)
 
 ### 2. Connect to Zapier
 

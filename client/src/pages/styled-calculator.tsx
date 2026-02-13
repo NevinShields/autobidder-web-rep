@@ -1873,7 +1873,8 @@ export default function StyledCalculator(props: any = {}) {
           if (variable.allowMultipleSelection) {
             convertedValue = matchedOptions.map((opt: any) => opt.value.toString());
           } else {
-            convertedValue = matchedOptions[0].value.toString();
+            // Keep value shape consistent with EnhancedVariableInput (always string[] for multiple-choice)
+            convertedValue = [matchedOptions[0].value.toString()];
           }
         }
 
@@ -2108,6 +2109,10 @@ export default function StyledCalculator(props: any = {}) {
                 const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
                 return total + (option?.numericValue || 0);
               }, 0);
+            } else if (value !== undefined && value !== null && value !== '') {
+              // Defensive fallback: handle scalar values (e.g. legacy/state-preloaded data)
+              const option = variable.options.find(opt => opt.value.toString() === value.toString());
+              value = option?.numericValue || Number(value) || 0;
             } else {
               value = 0;
             }

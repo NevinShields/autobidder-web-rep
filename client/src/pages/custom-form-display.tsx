@@ -1411,6 +1411,10 @@ export default function CustomFormDisplay() {
                 const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
                 return total + (option?.numericValue || 0);
               }, 0);
+            } else if (value !== undefined && value !== null && value !== '') {
+              // Defensive fallback: handle scalar values (e.g. legacy/state-preloaded data)
+              const option = variable.options.find(opt => opt.value.toString() === value.toString());
+              value = option?.numericValue || Number(value) || 0;
             } else {
               value = 0;
             }

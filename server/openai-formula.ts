@@ -100,130 +100,65 @@ Refine this into a precise, AI-optimized prompt for measuring ${measurementType}
 export async function editCustomCSS(currentCSS: string, editDescription: string): Promise<string> {
   try {
     const client = getOpenAI();
-    
-    const systemPrompt = `You are an expert CSS designer specializing in modern web form styling. Edit existing CSS based on user's change requests for an interactive pricing calculator form.
+    const targetSelector = extractTargetSelector(editDescription);
+    const isTargetedEdit = Boolean(targetSelector);
 
-AVAILABLE CSS CLASSES TO TARGET:
+    const systemPrompt = isTargetedEdit
+      ? `You are an expert CSS editor.
 
-FORM & CONTAINER CLASSES:
-- .ab-form-container - Main form wrapper (use compound selector: #autobidder-form.ab-form-container)
-- .ab-question-card - Individual question containers (wraps each input field)
+You are editing ONE target selector in an existing stylesheet.
 
-SERVICE & PRICING CARDS:
-- .ab-service-card - Service selection cards (can have .selected state)
-- .ab-service-title - Service card titles/names
-- .ab-service-accordion - Collapsible service header buttons (for multiple services)
-- .ab-pricing-card - Pricing summary cards on results page (outer wrapper)
-- .ab-pricing-card-price - Price badge on pricing card
-- .ab-pricing-card-icon - Service icon on pricing card
-- .ab-pricing-card-title - Service title on pricing card
-- .ab-pricing-card-description - Service description on pricing card
-- .ab-pricing-card-bullet-icon - Bullet point icons (circular backgrounds, supports different icon types: checkmark, star, circle, arrow, plus, diamond, heart)
-- .ab-pricing-card-bullet-text - Bullet point text on pricing card
+RULES:
+1. Only edit the target selector and direct state variants of it:
+   :hover, :focus, :focus-visible, :active, :disabled, .selected, ::before, ::after.
+2. Do not output unrelated selectors.
+3. Preserve existing declarations unless the request asks to change them.
+4. Add a missing state block only when needed to satisfy the request.
+5. Do not include #autobidder-form prefix.
+6. Return ONLY CSS code. No markdown, no explanation.
+7. Keep accessible contrast when changing backgrounds.`
+      : `You are an expert CSS editor for an interactive pricing calculator stylesheet.
 
-DISCOUNTS & MESSAGES:
-- .ab-discount-section - Discount selection wrapper
-- .ab-discount-title - Discount section title
-- .ab-discount-subtitle - Discount helper text
-- .ab-discount-grid - Discount grid
-- .ab-discount-card - Discount card
-- .ab-discount-name - Discount name
-- .ab-discount-description - Discount description
-- .ab-discount-percent - Discount percent text
-- .ab-discount-applied - Applied badge
-- .ab-discount-savings - Discount savings panel
-- .ab-discount-savings-title - Savings title
-- .ab-discount-savings-row - Savings row
-- .ab-discount-savings-total - Savings total
-- .ab-discount-line - Discount line item (pricing summary)
-- .ab-discount-line-label - Discount line label
-- .ab-discount-line-value - Discount line value
-- .ab-pricing-disclaimer - Pricing disclaimer wrapper
-- .ab-pricing-disclaimer-text - Pricing disclaimer text
-- .ab-pricing-disclaimer-label - Pricing disclaimer label
-- .ab-customer-summary - Customer summary wrapper
-- .ab-customer-summary-title - Customer summary title
-- .ab-customer-summary-line - Customer summary line
+RULES:
+1. Make surgical edits only for the user's request.
+2. Keep unrelated selectors, declarations, and structure intact.
+3. Do not re-theme or rewrite the whole stylesheet.
+4. Do not add new selector blocks unless explicitly needed by the request.
+5. Return the complete updated CSS.
+6. Do not include #autobidder-form prefix.
+7. Return ONLY CSS code. No markdown, no explanation.
+8. Keep accessible contrast when changing backgrounds.`;
 
-INPUT CLASSES:
-- .ab-input - All input fields (base class for all inputs)
-- .ab-number-input - Number input fields specifically
-- .ab-text-input - Text input fields specifically
-- .ab-textarea - Textarea elements (notes, comments, multiline text)
-- .ab-select - Dropdown select trigger elements
-- .ab-select-content - Dropdown menu content container
-- .ab-checkbox - Checkbox inputs
-- .ab-address-input - Address autocomplete inputs
-- .ab-file-input - File upload inputs
+    const scopedSourceCSS = targetSelector
+      ? (extractRelevantTargetCSS(currentCSS, targetSelector) || `${targetSelector} {\n  /* target styles */\n}`)
+      : currentCSS;
 
-SLIDER CLASSES (all slider-related elements):
-- .ab-slider - Range slider input
-- .ab-slider-value - Current value display (e.g., "150")
-- .ab-slider-unit - Unit label (e.g., "sq ft")
-- .ab-slider-min - Minimum value label
-- .ab-slider-max - Maximum value label
+    const userPrompt = targetSelector
+      ? `Target selector:
+${targetSelector}
 
-LABEL & TEXT CLASSES:
-- .ab-question-label - Question/field labels (primary label for each question)
-- .ab-label - All labels (generic, including multiple choice option labels)
+Existing CSS for this selector:
+${scopedSourceCSS}
 
-BUTTON CLASSES:
-- .ab-button - All buttons (can have .ab-button-primary class)
+Change requested:
+${editDescription}
 
-MULTIPLE CHOICE:
-- .ab-multiple-choice - Multiple choice option cards (can have .selected state)
-
-BOOKING CALENDAR CLASSES:
-- .ab-calendar-nav - Calendar navigation buttons (prev/next month)
-- .ab-calendar-nav-prev - Previous month button
-- .ab-calendar-nav-next - Next month button
-- .ab-calendar-month-title - Month and year title display
-- .ab-calendar-day-header - Day name headers (Sun, Mon, Tue, etc.)
-- .ab-calendar-date - Individual date buttons (can have .selected state)
-- .ab-time-slot - Available time slot buttons
-
-STATE & UTILITY CLASSES:
-- .selected - Selected state (for cards, calendar dates, multiple choice)
-- .disabled - Disabled state
-- .ab-error - Error messages and validation feedback
-
-IMPORTANT STRUCTURAL NOTES:
-- Service containers (outer wrappers) are transparent by default
-- Question card styles (.ab-question-card) apply to individual input field containers only
-- When custom CSS is active, inline styles are removed to give CSS full control
-
-IMPORTANT RULES:
-1. Preserve the existing CSS structure and only modify what the user requests
-2. Keep all existing selectors and properties unless specifically asked to remove them
-3. When asked to change a property (e.g., color, size), update the relevant CSS rules
-4. When asked to add new styles, append them to existing rules or create new ones as appropriate
-5. Return the complete, updated CSS - not just the changes
-6. Do not include #autobidder-form prefix (it's added automatically)
-7. Return ONLY the CSS code - no explanations or markdown formatting
-8. Maintain accessible contrast (WCAG AA). If you set a background color, also set a readable text color for that element.
-9. Never use text colors that are too close to their backgrounds, especially on inputs and pricing cards.
-10. Keep comprehensive coverage: ensure the final CSS contains explicit blocks for most core selectors (buttons, inputs, dropdowns, checkboxes, service cards, multiple choice, pricing cards, labels, calendar, form container, question cards, discounts, disclaimers, customer summary). If a selector is missing, add a minimal block consistent with the current style.
-
-EXAMPLE:
-User asks: "Make buttons bigger and change cards to red"
-Current CSS: .ab-button { padding: 8px; } .ab-service-card { background: blue; }
-Output: .ab-button { padding: 16px; font-size: 1.2rem; } .ab-service-card { background: #DC2626; }`;
-
-    const userPrompt = `Current CSS:
+Return only CSS rules for ${targetSelector} and direct state variants.`
+      : `Current CSS:
 ${currentCSS}
 
-Change requested: ${editDescription}
+Change requested:
+${editDescription}
 
 Please update the CSS to reflect this change while preserving all other existing styles.`;
 
     const completion = await client.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-5",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      temperature: 0.7,
-      max_tokens: 2500
+      max_completion_tokens: 2500
     });
 
     const editedCSS = completion.choices[0]?.message?.content?.trim();
@@ -240,11 +175,19 @@ Please update the CSS to reflect this change while preserving all other existing
       cleanCSS = cleanCSS.replace(/```\n?/g, '');
     }
 
-    const enforcedCSS = enforceReadableContrast(cleanCSS.trim());
-    const normalizedEnforced = normalizeCSS(enforcedCSS);
     const normalizedCurrent = normalizeCSS(currentCSS);
 
-    if (normalizedEnforced === normalizedCurrent) {
+    if (targetSelector) {
+      const enforcedPatchCSS = enforceReadableContrast(cleanCSS.trim());
+      const mergedTargetedCSS = mergeTargetedPatchIntoCSS(currentCSS, enforcedPatchCSS, targetSelector);
+      if (normalizeCSS(mergedTargetedCSS) === normalizedCurrent) {
+        return applyEditHeuristics(currentCSS, editDescription);
+      }
+      return mergedTargetedCSS;
+    }
+
+    const enforcedCSS = enforceReadableContrast(cleanCSS.trim());
+    if (normalizeCSS(enforcedCSS) === normalizedCurrent) {
       return enforceReadableContrast(applyEditHeuristics(currentCSS, editDescription));
     }
 
@@ -331,6 +274,7 @@ BUTTON CLASSES:
 
 MULTIPLE CHOICE:
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
+- .ab-multiple-choice-label - Multiple choice option text inside cards
 
 BOOKING CALENDAR CLASSES:
 - .ab-calendar-nav - Calendar navigation buttons (prev/next month)
@@ -689,6 +633,289 @@ function enforceReadableContrast(css: string): string {
 
 function normalizeCSS(css: string): string {
   return css.replace(/\s+/g, ' ').trim();
+}
+
+type ParsedCSSRule = {
+  selector: string;
+  body: string;
+  start: number;
+  end: number;
+  isAtRule: boolean;
+};
+
+function parseTopLevelCSSRules(css: string): ParsedCSSRule[] {
+  const rules: ParsedCSSRule[] = [];
+  let index = 0;
+
+  const skipWhitespaceAndComments = () => {
+    while (index < css.length) {
+      if (/\s/.test(css[index])) {
+        index++;
+        continue;
+      }
+      if (css[index] === '/' && css[index + 1] === '*') {
+        index += 2;
+        while (index < css.length && !(css[index] === '*' && css[index + 1] === '/')) {
+          index++;
+        }
+        if (index < css.length) {
+          index += 2;
+        }
+        continue;
+      }
+      break;
+    }
+  };
+
+  while (index < css.length) {
+    skipWhitespaceAndComments();
+    if (index >= css.length) break;
+
+    const selectorStart = index;
+    let selectorEnd = -1;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inComment = false;
+
+    for (; index < css.length; index++) {
+      const char = css[index];
+      const next = css[index + 1];
+
+      if (inComment) {
+        if (char === '*' && next === '/') {
+          inComment = false;
+          index++;
+        }
+        continue;
+      }
+
+      if (inSingleQuote) {
+        if (char === '\\') {
+          index++;
+          continue;
+        }
+        if (char === "'") {
+          inSingleQuote = false;
+        }
+        continue;
+      }
+
+      if (inDoubleQuote) {
+        if (char === '\\') {
+          index++;
+          continue;
+        }
+        if (char === '"') {
+          inDoubleQuote = false;
+        }
+        continue;
+      }
+
+      if (char === '/' && next === '*') {
+        inComment = true;
+        index++;
+        continue;
+      }
+
+      if (char === "'") {
+        inSingleQuote = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inDoubleQuote = true;
+        continue;
+      }
+
+      if (char === '{') {
+        selectorEnd = index;
+        break;
+      }
+    }
+
+    if (selectorEnd === -1) break;
+
+    const selector = css.slice(selectorStart, selectorEnd).trim();
+    index = selectorEnd + 1;
+    const bodyStart = index;
+    let depth = 1;
+    inSingleQuote = false;
+    inDoubleQuote = false;
+    inComment = false;
+
+    for (; index < css.length; index++) {
+      const char = css[index];
+      const next = css[index + 1];
+
+      if (inComment) {
+        if (char === '*' && next === '/') {
+          inComment = false;
+          index++;
+        }
+        continue;
+      }
+
+      if (inSingleQuote) {
+        if (char === '\\') {
+          index++;
+          continue;
+        }
+        if (char === "'") {
+          inSingleQuote = false;
+        }
+        continue;
+      }
+
+      if (inDoubleQuote) {
+        if (char === '\\') {
+          index++;
+          continue;
+        }
+        if (char === '"') {
+          inDoubleQuote = false;
+        }
+        continue;
+      }
+
+      if (char === '/' && next === '*') {
+        inComment = true;
+        index++;
+        continue;
+      }
+
+      if (char === "'") {
+        inSingleQuote = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inDoubleQuote = true;
+        continue;
+      }
+
+      if (char === '{') {
+        depth++;
+      } else if (char === '}') {
+        depth--;
+        if (depth === 0) {
+          break;
+        }
+      }
+    }
+
+    if (depth !== 0) break;
+
+    const ruleEnd = index + 1;
+    const body = css.slice(bodyStart, index).trim();
+
+    if (selector) {
+      rules.push({
+        selector,
+        body,
+        start: selectorStart,
+        end: ruleEnd,
+        isAtRule: selector.startsWith('@'),
+      });
+    }
+
+    index = ruleEnd;
+  }
+
+  return rules;
+}
+
+function normalizeSelector(selector: string): string {
+  return selector.replace(/\s+/g, ' ').trim();
+}
+
+function splitSelectorList(selectorText: string): string[] {
+  return selectorText
+    .split(',')
+    .map(selector => normalizeSelector(selector))
+    .filter(Boolean);
+}
+
+function extractTargetSelector(description: string): string | null {
+  const explicitMatch = description.match(/^\s*Target selector:\s*([^\n]+)\s*$/im);
+  if (explicitMatch?.[1]?.trim()) {
+    return explicitMatch[1].trim();
+  }
+
+  // Fallback: if the user references a specific `.ab-*` selector inline, treat it as targeted.
+  const inlineSelectorMatch = description.match(/(^|[\s,(])(\.ab-[a-z0-9_-]+)/i);
+  return inlineSelectorMatch?.[2]?.trim() || null;
+}
+
+function selectorStartsWithTarget(selector: string, targetSelector: string): boolean {
+  const normalizedSelector = normalizeSelector(selector);
+  const normalizedTarget = normalizeSelector(targetSelector);
+  if (!normalizedSelector || !normalizedTarget) return false;
+
+  const prefixedTarget = normalizeSelector(`#autobidder-form ${normalizedTarget}`);
+  const candidates = [normalizedTarget, prefixedTarget];
+  const boundaryChars = [' ', ':', '.', '[', '>', '+', '~'];
+
+  return candidates.some(candidate => {
+    if (!normalizedSelector.startsWith(candidate)) {
+      return false;
+    }
+    const nextChar = normalizedSelector.charAt(candidate.length);
+    return nextChar === '' || boundaryChars.includes(nextChar);
+  });
+}
+
+function ruleIsAllowedForTarget(selectorText: string, targetSelector: string): boolean {
+  const selectors = splitSelectorList(selectorText);
+  if (!selectors.length) return false;
+  return selectors.every(selector => selectorStartsWithTarget(selector, targetSelector));
+}
+
+function extractRelevantTargetCSS(css: string, targetSelector: string): string {
+  if (!css.trim()) return '';
+
+  const relevantRules = parseTopLevelCSSRules(css).filter(
+    rule => !rule.isAtRule && ruleIsAllowedForTarget(rule.selector, targetSelector)
+  );
+
+  if (!relevantRules.length) return '';
+
+  return relevantRules.map(rule => `${rule.selector}{${rule.body}}`).join('\n\n');
+}
+
+function upsertTopLevelRule(css: string, selector: string, body: string): string {
+  const normalizedSelector = normalizeSelector(selector);
+  const rules = parseTopLevelCSSRules(css);
+  const existingRule = rules.find(
+    rule => !rule.isAtRule && normalizeSelector(rule.selector) === normalizedSelector
+  );
+  const replacement = `${selector}{${body}}`;
+
+  if (existingRule) {
+    return `${css.slice(0, existingRule.start)}${replacement}${css.slice(existingRule.end)}`;
+  }
+
+  return css.trim()
+    ? `${css.trimEnd()}\n\n${replacement}`
+    : replacement;
+}
+
+function mergeTargetedPatchIntoCSS(currentCSS: string, patchCSS: string, targetSelector: string): string {
+  if (!patchCSS.trim()) return currentCSS;
+
+  const allowedRules = parseTopLevelCSSRules(patchCSS).filter(
+    rule => !rule.isAtRule && ruleIsAllowedForTarget(rule.selector, targetSelector)
+  );
+
+  if (!allowedRules.length) {
+    return currentCSS;
+  }
+
+  let mergedCSS = currentCSS;
+  for (const rule of allowedRules) {
+    mergedCSS = upsertTopLevelRule(mergedCSS, rule.selector, rule.body);
+  }
+
+  return mergedCSS;
 }
 
 function applyEditHeuristics(css: string, description: string): string {

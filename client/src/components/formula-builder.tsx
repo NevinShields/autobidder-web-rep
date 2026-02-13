@@ -680,7 +680,7 @@ export default function FormulaBuilderComponent({
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Icon */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className="flex-shrink-0">
                   {formula.iconUrl ? (
                     <div className="relative group">
@@ -698,7 +698,7 @@ export default function FormulaBuilderComponent({
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col gap-1.5 min-w-[140px] lg:min-w-[180px]">
+                <div className="flex flex-col gap-1.5 min-w-0">
                   <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold ml-1">Icon Source</Label>
                   <div className="flex items-center p-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
                     <IconSelector
@@ -1050,64 +1050,75 @@ export default function FormulaBuilderComponent({
                   {(formula.upsellItems || []).length > 0 && (
                     <div className="mt-2 space-y-2">
                       {(formula.upsellItems || []).map((upsell, index) => (
-                        <div key={upsell.id} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 rounded-lg p-2">
-                          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <Input
-                              value={upsell.name}
-                              onChange={(e) => {
-                                const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, name: e.target.value } : u);
-                                onUpdate({ upsellItems: updated });
-                              }}
-                              placeholder="Name"
-                              className="h-8 text-xs"
-                            />
-                            <Input
-                              type="number"
-                              value={upsell.percentageOfMain}
-                              onChange={(e) => {
-                                const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u);
-                                onUpdate({ upsellItems: updated });
-                              }}
-                              placeholder="%"
-                              className="h-8 text-xs"
-                            />
-                            <Select
-                              value={upsell.category}
-                              onValueChange={(value) => {
-                                const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, category: value } : u);
-                                onUpdate({ upsellItems: updated });
-                              }}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="protection">Protection</SelectItem>
-                                <SelectItem value="addon">Add-on</SelectItem>
-                                <SelectItem value="upgrade">Upgrade</SelectItem>
-                                <SelectItem value="maintenance">Maintenance</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <div className="flex items-center gap-1">
-                              <Switch
-                                checked={upsell.isPopular || false}
-                                onCheckedChange={(checked) => {
-                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, isPopular: checked } : u);
+                        <div key={upsell.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <Input
+                                value={upsell.name}
+                                onChange={(e) => {
+                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, name: e.target.value } : u);
                                   onUpdate({ upsellItems: updated });
                                 }}
+                                placeholder="Name"
+                                className="h-8 text-xs"
                               />
-                              <span className="text-xs text-gray-500">Popular</span>
+                              <Input
+                                type="number"
+                                value={upsell.percentageOfMain}
+                                onChange={(e) => {
+                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u);
+                                  onUpdate({ upsellItems: updated });
+                                }}
+                                placeholder="%"
+                                className="h-8 text-xs"
+                              />
+                              <Select
+                                value={upsell.category}
+                                onValueChange={(value) => {
+                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, category: value } : u);
+                                  onUpdate({ upsellItems: updated });
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="protection">Protection</SelectItem>
+                                  <SelectItem value="addon">Add-on</SelectItem>
+                                  <SelectItem value="upgrade">Upgrade</SelectItem>
+                                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <div className="flex items-center gap-1">
+                                <Switch
+                                  checked={upsell.isPopular || false}
+                                  onCheckedChange={(checked) => {
+                                    const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, isPopular: checked } : u);
+                                    onUpdate({ upsellItems: updated });
+                                  }}
+                                />
+                                <span className="text-xs text-gray-500">Popular</span>
+                              </div>
                             </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onUpdate({ upsellItems: (formula.upsellItems || []).filter(u => u.id !== upsell.id) })}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onUpdate({ upsellItems: (formula.upsellItems || []).filter(u => u.id !== upsell.id) })}
-                            className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                          <Input
+                            value={upsell.description}
+                            onChange={(e) => {
+                              const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, description: e.target.value } : u);
+                              onUpdate({ upsellItems: updated });
+                            }}
+                            placeholder="Description"
+                            className="h-8 text-xs"
+                          />
                         </div>
                       ))}
                     </div>

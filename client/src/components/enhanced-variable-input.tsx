@@ -761,11 +761,11 @@ export default function EnhancedVariableInput({
                     
                     <div className="text-center">
                       <div 
-                        className={`font-medium ${
+                        className={`ab-multiple-choice-label font-medium ${
                           styling?.multiChoiceLayout === 'grid' ? 'text-xs sm:text-sm' : 'text-sm'
                         } line-clamp-2`}
-                        style={{ 
-                          color: isSelected 
+                        style={hasCustomCSS ? {} : {
+                          color: isSelected
                             ? 'white'
                             : (styling?.textColor || '#1F2937')
                         }}

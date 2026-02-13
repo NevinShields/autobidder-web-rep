@@ -142,7 +142,10 @@ import { eq, desc, and, gte, sql } from "drizzle-orm"; // Added sql
 | GET | `/api/public/directory/cities/:categorySlug` | Get cities with listings for a category |
 | GET | `/api/public/directory/listings/:categorySlug/:citySlug` | Get business listings for category + city |
 | GET | `/api/public/directory/company/:companySlug` | Get company profile with services |
-| GET | `/sitemap-directory.xml` | SEO sitemap for directory pages |
+| GET | `/sitemap.xml` | Sitemap index for directory pages (categories, cities, companies) |
+| GET | `/sitemaps/directory/categories.xml` | Category sitemap for directory pages |
+| GET | `/sitemaps/directory/cities-:page.xml` | City sitemap pages for directory pages |
+| GET | `/sitemaps/directory/companies-:page.xml` | Company sitemap pages for directory pages |
 
 **Authenticated Routes (business owner):**
 

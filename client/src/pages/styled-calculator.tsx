@@ -311,10 +311,26 @@ function renderPricingCardLayout(
                   color: styling.textColor || '#1F2937'
                 }}
               >
-                <svg className="w-3 h-3" viewBox="0 0 24 24" style={{ color: styling.primaryColor || '#3B82F6' }}>
-                  {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
-                </svg>
-                {point.length > 30 ? point.substring(0, 30) + '...' : point}
+                <span
+                  className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+                  style={hasCustomCSS ? {} : {
+                    backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+                    width: '14px',
+                    height: '14px'
+                  }}
+                >
+                  <svg
+                    className="text-white"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ width: '9px', height: '9px' }}
+                  >
+                    {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
+                  </svg>
+                </span>
+                <span className="ab-pricing-card-bullet-text">
+                  {point.length > 30 ? point.substring(0, 30) + '...' : point}
+                </span>
               </span>
             ))}
           </div>
@@ -1439,6 +1455,10 @@ export default function StyledCalculator(props: any = {}) {
           font-weight: var(--ab-service-title-font-weight, 900);
           font-size: var(--ab-service-title-font-size, 0.875rem);
         }
+
+        #autobidder-form .ab-service-accordion-text {
+          color: var(--ab-service-accordion-text-color, inherit);
+        }
         
         /* Pricing card styles */
         #autobidder-form .ab-pricing-card {
@@ -1823,6 +1843,38 @@ export default function StyledCalculator(props: any = {}) {
           } else {
             return;
           }
+        } else if (variable.type === 'multiple-choice' && variable.options) {
+          // ATTOM strings are often free-form (e.g. "BRICK", "brick veneer", "brick;vinyl").
+          // Match against option labels/values and set the multiple-choice value shape expected by the UI.
+          const raw = String(attrValue || '').trim().toLowerCase();
+          if (!raw) return;
+
+          const tokens = raw
+            .split(/[;,/|]+/)
+            .map((t: string) => t.trim())
+            .filter(Boolean);
+          const candidates = tokens.length > 0 ? tokens : [raw];
+
+          const matchedOptions = variable.options.filter((opt: any) => {
+            const label = String(opt.label || '').toLowerCase();
+            const value = String(opt.value || '').toLowerCase();
+            return candidates.some((candidate: string) =>
+              label === candidate ||
+              value === candidate ||
+              label.includes(candidate) ||
+              value.includes(candidate) ||
+              candidate.includes(label) ||
+              candidate.includes(value)
+            );
+          });
+
+          if (matchedOptions.length === 0) return;
+
+          if (variable.allowMultipleSelection) {
+            convertedValue = matchedOptions.map((opt: any) => opt.value.toString());
+          } else {
+            convertedValue = matchedOptions[0].value.toString();
+          }
         }
 
         prefillUpdates.push({
@@ -2115,6 +2167,15 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   const proceedToContact = () => {
+    // If property address was collected earlier, use it to prefill the contact address field
+    // (while preserving any existing contact address value).
+    if (businessSettings?.styling?.enableAddress && propertyAddress.trim()) {
+      setLeadForm(prev => {
+        if (prev.address && prev.address.trim()) return prev;
+        return { ...prev, address: propertyAddress.trim() };
+      });
+    }
+
     // Check if all visible variables for selected services are answered
     const allMissingVariables: string[] = [];
 
@@ -2731,15 +2792,19 @@ export default function StyledCalculator(props: any = {}) {
               <Label htmlFor="property-address" style={{ color: styling.primaryColor || '#2563EB' }}>
                 Property Address
               </Label>
-              <Input
-                id="property-address"
-                type="text"
-                placeholder="e.g., 123 Main St, Springfield, IL 62701"
-                value={propertyAddress}
-                onChange={(e) => setPropertyAddress(e.target.value)}
-                className="w-full"
-                style={getInputStyles()}
-              />
+              <Suspense fallback={<Skeleton className="h-10 w-full" />}>
+                <GoogleMapsLoader>
+                  <GooglePlacesAutocomplete
+                    value={propertyAddress}
+                    onChange={(newAddress) => setPropertyAddress(newAddress)}
+                    placeholder="e.g., 123 Main St, Springfield, IL 62701"
+                    className="w-full"
+                    styling={styling}
+                    componentStyles={componentStyles}
+                    hasCustomCSS={!!designSettings?.customCSS}
+                  />
+                </GoogleMapsLoader>
+              </Suspense>
             </div>
 
             <div className="flex flex-col gap-3">
@@ -2834,7 +2899,7 @@ export default function StyledCalculator(props: any = {}) {
                     <button
                       onClick={() => toggleServiceExpansion(serviceId)}
                       className="ab-service-accordion w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                      style={{
+                      style={designSettings?.customCSS ? {} : {
                         backgroundColor: isExpanded ? 'transparent' : '#F9FAFB',
                         borderBottom: isExpanded ? '1px solid #E5E7EB' : 'none',
                       }}
@@ -2842,8 +2907,8 @@ export default function StyledCalculator(props: any = {}) {
                     >
                       <div className="text-left flex-1">
                         <h3 
-                          className="text-xl font-semibold"
-                          style={{ color: styling.textColor || '#1F2937' }}
+                          className="ab-service-accordion-text text-xl font-semibold"
+                          style={designSettings?.customCSS ? {} : { color: styling.textColor || '#1F2937' }}
                         >
                           {service.name}
                         </h3>
@@ -2876,7 +2941,7 @@ export default function StyledCalculator(props: any = {}) {
                       
                       {/* Description for multiple services (with collapsible header) */}
                       {showCollapsible && service.description && (
-                        <p className="text-sm text-gray-600 mb-4 leading-relaxed">{service.description}</p>
+                        <p className="ab-service-accordion-text text-sm text-gray-600 mb-4 leading-relaxed">{service.description}</p>
                       )}
 
                   {/* Show service image if enabled */}
@@ -4015,14 +4080,14 @@ export default function StyledCalculator(props: any = {}) {
                 }, [] as any[]);
                 
                 return allUpsells.length > 0 && (
-                  <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
-                    <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                  <div className="ab-upsell-section mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
+                    <h3 className="ab-upsell-heading text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
                       ⭐ Recommended Add-Ons
                     </h3>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="ab-upsell-subtitle text-sm text-gray-600 mb-4">
                       Enhance your services with these popular add-ons
                     </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="ab-upsell-grid grid grid-cols-1 md:grid-cols-2 gap-4">
                       {allUpsells.map((upsell) => {
                       const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
                       const isSelected = selectedUpsells.includes(upsell.id);
@@ -4037,15 +4102,15 @@ export default function StyledCalculator(props: any = {}) {
                               setSelectedUpsells(prev => [...prev, upsell.id]);
                             }
                           }}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${
+                          className={`ab-upsell-card p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${
                             isSelected
-                              ? 'border-orange-500 bg-orange-50'
+                              ? 'ab-upsell-card-selected border-orange-500 bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                           }`}
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="ab-upsell-content flex items-start gap-3">
                             {/* Icon/Image */}
-                            <div className="flex-shrink-0">
+                            <div className="ab-upsell-icon flex-shrink-0">
                               {upsell.iconUrl ? (
                                 <img 
                                   src={upsell.iconUrl} 
@@ -4059,37 +4124,37 @@ export default function StyledCalculator(props: any = {}) {
                                   className="w-8 h-8 object-cover rounded"
                                 />
                               ) : (
-                                <div className="w-8 h-8 bg-orange-200 rounded flex items-center justify-center">
+                                <div className="ab-upsell-icon-fallback w-8 h-8 bg-orange-200 rounded flex items-center justify-center">
                                   <span className="text-orange-600 text-sm font-semibold">+</span>
                                 </div>
                               )}
                             </div>
                             
                             {/* Content */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                            <div className="ab-upsell-main flex-1 min-w-0">
+                              <div className="ab-upsell-header flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <h4 className="font-medium text-gray-900 break-words">{upsell.name}</h4>
+                                  <div className="ab-upsell-title-row flex items-center gap-2 flex-wrap">
+                                    <h4 className="ab-upsell-title font-medium text-gray-900 break-words">{upsell.name}</h4>
                                     {upsell.isPopular && (
-                                      <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                      <span className="ab-upsell-popular-badge bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
                                         Popular
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
+                                  <p className="ab-upsell-description text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
                                   {upsell.category && (
-                                    <span className="inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded break-words">
+                                    <span className="ab-upsell-category inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded break-words">
                                       {upsell.category}
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-right flex-shrink-0 sm:ml-3">
-                                  <div className="text-lg font-bold text-orange-600 whitespace-nowrap">
+                                <div className="ab-upsell-price-wrap text-right flex-shrink-0 sm:ml-3">
+                                  <div className="ab-upsell-price text-lg font-bold text-orange-600 whitespace-nowrap">
                                     +${upsellPrice.toLocaleString()}
                                   </div>
                                   {isSelected && (
-                                    <div className="text-sm text-orange-600 font-medium mt-1 whitespace-nowrap">
+                                    <div className="ab-upsell-added text-sm text-orange-600 font-medium mt-1 whitespace-nowrap">
                                       ✓ Added
                                     </div>
                                   )}
@@ -4097,7 +4162,7 @@ export default function StyledCalculator(props: any = {}) {
                               </div>
                               
                               {upsell.tooltip && (
-                                <div className="mt-2 text-xs text-gray-500 italic break-words leading-relaxed">
+                                <div className="ab-upsell-tooltip mt-2 text-xs text-gray-500 italic break-words leading-relaxed">
                                   💡 {upsell.tooltip}
                                 </div>
                               )}
@@ -4110,20 +4175,20 @@ export default function StyledCalculator(props: any = {}) {
                   
                     {/* Show selected upsells total */}
                     {selectedUpsells.length > 0 && (
-                      <div className="mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
-                        <div className="text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
+                      <div className="ab-upsell-selected-summary mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
+                        <div className="ab-upsell-selected-title text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
                         {allUpsells.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
                           const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
                           return (
-                            <div key={upsell.id} className="flex justify-between items-center text-sm">
-                              <span className="text-orange-700">{upsell.name} ({upsell.serviceName}):</span>
-                              <span className="font-medium text-orange-600">
+                            <div key={upsell.id} className="ab-upsell-selected-row flex justify-between items-center text-sm">
+                              <span className="ab-upsell-selected-name text-orange-700">{upsell.name} ({upsell.serviceName}):</span>
+                              <span className="ab-upsell-selected-price font-medium text-orange-600">
                                 +${upsellPrice.toLocaleString()}
                               </span>
                             </div>
                           );
                         })}
-                        <div className="text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
+                        <div className="ab-upsell-selected-total text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
                           Total Add-ons: +${allUpsells.filter(u => selectedUpsells.includes(u.id))
                             .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
                             .toLocaleString()}

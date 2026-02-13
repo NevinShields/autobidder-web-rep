@@ -160,7 +160,7 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
         <Input
           type="number"
           placeholder="Price value"
-          value={option.numericValue || ''}
+          value={option.numericValue ?? ''}
           onChange={(e) => {
             const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
             onUpdate(index, { numericValue: value });

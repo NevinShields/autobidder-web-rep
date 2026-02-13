@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Eye, 
   Settings, 
@@ -47,20 +48,19 @@ const highlightCSS = (value: string) => {
     { regex: /#[0-9a-fA-F]{3,8}\b/g, className: "css-token-color" },
     { regex: /@\w[\w-]*/g, className: "css-token-atrule" },
     { regex: /\b\d+(\.\d+)?(px|rem|em|%|vh|vw|deg|s|ms)?\b/g, className: "css-token-number" },
-    { regex: /(^|\n|\s)([a-zA-Z-]+)(?=\s*:)/g, className: "css-token-property" },
-    { regex: /(^|\n)\s*([^{\n]+)(?=\s*\{)/g, className: "css-token-selector" },
+    // Keep indentation/newlines untouched so the highlight layer stays line-aligned with textarea text.
+    { regex: /(^|\n)([ \t]*)([a-zA-Z-]+)(?=\s*:)/g, className: "css-token-property" },
+    { regex: /(^|\n)([ \t]*)([^{\n]+)(?=\s*\{)/g, className: "css-token-selector" },
   ];
 
   let highlighted = escaped;
   patterns.forEach(({ regex, className }) => {
-    highlighted = highlighted.replace(regex, (match, prefix) => {
-      if (className === "css-token-property" && typeof prefix === "string") {
-        const property = match.replace(prefix, "");
-        return `${prefix}<span class="${className}">${property}</span>`;
+    highlighted = highlighted.replace(regex, (match, prefix, indentation, token) => {
+      if (className === "css-token-property" && typeof prefix === "string" && typeof token === "string") {
+        return `${prefix}${indentation || ""}<span class="${className}">${token}</span>`;
       }
-      if (className === "css-token-selector" && typeof prefix === "string") {
-        const selector = match.replace(prefix, "");
-        return `${prefix}<span class="${className}">${selector.trim()}</span>`;
+      if (className === "css-token-selector" && typeof prefix === "string" && typeof token === "string") {
+        return `${prefix}${indentation || ""}<span class="${className}">${token}</span>`;
       }
       return `<span class="${className}">${match}</span>`;
     });
@@ -170,6 +170,11 @@ const previewScaffoldCSS = `
   transition: all 160ms ease;
 }
 
+#design-css-preview #autobidder-form .ab-service-card.service-selector {
+  min-height: 130px;
+  cursor: pointer;
+}
+
 #design-css-preview #autobidder-form .ab-service-card.selected {
   background-color: var(--ab-service-selector-active-bg, #EFF6FF);
   border-color: var(--ab-service-selector-active-border-color, #3B82F6);
@@ -209,6 +214,35 @@ const previewScaffoldCSS = `
   outline: none;
 }
 
+#design-css-preview #autobidder-form .ab-select.ab-dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#design-css-preview #autobidder-form .ab-select-content {
+  border-radius: 0.75rem;
+  border: 1px solid var(--ab-input-border-color, #D1D5DB);
+  background: var(--ab-input-bg, #FFFFFF);
+  box-shadow: 0 10px 20px -10px rgb(15 23 42 / 0.28);
+}
+
+#design-css-preview #autobidder-form .ab-select-content .preview-select-item {
+  border-radius: 0.5rem;
+  padding: 7px 9px;
+  color: var(--ab-input-text-color, #1F2937);
+}
+
+#design-css-preview #autobidder-form .ab-select-content .preview-select-item + .preview-select-item {
+  margin-top: 3px;
+}
+
+#design-css-preview #autobidder-form .ab-select-content .preview-select-item.active {
+  background: rgb(59 130 246 / 0.12);
+  color: var(--ab-primary-color, #2563EB);
+}
+
 #design-css-preview #autobidder-form .ab-checkbox {
   width: 16px;
   height: 16px;
@@ -237,6 +271,11 @@ const previewScaffoldCSS = `
 #design-css-preview #autobidder-form .ab-multiple-choice:hover:not(.selected) {
   background-color: var(--ab-multiple-choice-hover-bg, #F3F4F6);
   border-color: var(--ab-multiple-choice-hover-border-color, #D1D5DB);
+}
+
+#design-css-preview #autobidder-form .ab-multiple-choice.multiple-choice {
+  min-height: 120px;
+  cursor: pointer;
 }
 
 /* Question card styles */
@@ -277,6 +316,74 @@ const previewScaffoldCSS = `
   font-family: var(--ab-service-title-font-family, 'Inter, sans-serif');
   font-weight: var(--ab-service-title-font-weight, 900);
   font-size: var(--ab-service-title-font-size, 0.875rem);
+}
+
+#design-css-preview #autobidder-form .ab-service-accordion {
+  width: 100%;
+  border: 1px solid rgb(203 213 225 / 0.85);
+  border-radius: 0.75rem;
+  background: rgb(248 250 252 / 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+#design-css-preview #autobidder-form .ab-service-accordion-text {
+  color: var(--ab-service-accordion-text-color, var(--ab-text-color, #1F2937));
+}
+
+#design-css-preview .preview-service-icon {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ab-primary-color, #2563EB);
+  background: rgb(59 130 246 / 0.14);
+  border: 1px solid rgb(59 130 246 / 0.28);
+}
+
+#design-css-preview #autobidder-form .ab-service-card.selected .preview-service-icon {
+  color: #ffffff;
+  background: var(--ab-primary-color, #2563EB);
+  border-color: var(--ab-primary-color, #2563EB);
+}
+
+#design-css-preview .preview-service-description {
+  color: rgb(100 116 139);
+}
+
+.dark #design-css-preview .preview-service-description {
+  color: rgb(203 213 225);
+}
+
+#design-css-preview .preview-choice-icon {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: rgb(71 85 105);
+  background: rgb(148 163 184 / 0.24);
+}
+
+#design-css-preview #autobidder-form .ab-multiple-choice.selected .preview-choice-icon {
+  color: #ffffff;
+  background: rgb(255 255 255 / 0.2);
+}
+
+#design-css-preview .preview-choice-helper {
+  font-size: 0.73rem;
+  opacity: 0.84;
 }
 
 /* Pricing card styles */
@@ -381,15 +488,143 @@ const previewScaffoldCSS = `
   padding-top: 6px;
 }
 
+/* Upsell styles */
+#design-css-preview #autobidder-form .ab-upsell-section {
+  border-radius: 0.85rem;
+  border: 1px solid rgb(251 191 36 / 0.4);
+  background: rgb(255 247 237);
+  padding: 0.9rem;
+}
+
+.dark #design-css-preview #autobidder-form .ab-upsell-section {
+  border-color: rgb(217 119 6 / 0.55);
+  background: rgb(67 20 7 / 0.28);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-subtitle {
+  color: rgb(120 53 15);
+}
+
+.dark #design-css-preview #autobidder-form .ab-upsell-subtitle {
+  color: rgb(253 230 138);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.7rem;
+}
+
+#design-css-preview #autobidder-form .ab-upsell-card {
+  border: 2px solid rgb(229 231 235);
+  border-radius: 0.75rem;
+  background: rgb(255 255 255);
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.dark #design-css-preview #autobidder-form .ab-upsell-card {
+  border-color: rgb(71 85 105 / 0.8);
+  background: rgb(15 23 42 / 0.7);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-card:hover {
+  transform: translateY(-1px);
+  border-color: rgb(251 146 60);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-card-selected {
+  border-color: rgb(249 115 22);
+  background: rgb(255 237 213);
+}
+
+.dark #design-css-preview #autobidder-form .ab-upsell-card-selected {
+  background: rgb(124 45 18 / 0.42);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-icon-fallback {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(254 215 170);
+  color: rgb(194 65 12);
+  font-weight: 700;
+}
+
+#design-css-preview #autobidder-form .ab-upsell-title {
+  color: var(--ab-text-color, #1F2937);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-popular-badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  background: rgb(255 237 213);
+  color: rgb(194 65 12);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+#design-css-preview #autobidder-form .ab-upsell-description {
+  color: rgb(82 82 91);
+}
+
+.dark #design-css-preview #autobidder-form .ab-upsell-description {
+  color: rgb(203 213 225);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-price {
+  color: rgb(234 88 12);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-added {
+  color: rgb(194 65 12);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-tooltip {
+  color: rgb(120 53 15);
+}
+
+#design-css-preview #autobidder-form .ab-upsell-selected-summary {
+  border-radius: 0.65rem;
+  border: 1px solid rgb(253 186 116 / 0.8);
+  background: rgb(255 237 213 / 0.65);
+  padding: 0.6rem;
+}
+
+#design-css-preview #autobidder-form .ab-upsell-selected-row,
+#design-css-preview #autobidder-form .ab-upsell-selected-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+#design-css-preview #autobidder-form .ab-upsell-selected-total {
+  border-top: 1px dashed rgb(251 146 60 / 0.7);
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  font-weight: 700;
+}
+
 #design-css-preview #autobidder-form .ab-calendar-nav,
 #design-css-preview #autobidder-form .ab-calendar-date,
 #design-css-preview #autobidder-form .ab-time-slot {
-  border: 1px solid rgb(148 163 184 / 0.45);
+  border: 1px solid rgb(226 232 240);
 }
 
 #design-css-preview #autobidder-form .ab-calendar-nav {
-  border-radius: 8px;
-  padding: 4px 8px;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
 }
 
 #design-css-preview #autobidder-form .ab-calendar-month-title {
@@ -398,19 +633,31 @@ const previewScaffoldCSS = `
 
 #design-css-preview #autobidder-form .ab-calendar-day-header {
   text-align: center;
-  font-size: 0.78rem;
-  color: rgb(100 116 139);
+  font-size: 0.75rem;
+  color: rgb(107 114 128);
+  font-weight: 500;
+  padding: 0.5rem 0;
 }
 
 #design-css-preview #autobidder-form .ab-calendar-date {
-  border-radius: 8px;
-  padding: 6px;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.5rem;
   text-align: center;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+#design-css-preview #autobidder-form .ab-calendar-date.disabled {
+  background: rgb(243 244 246);
+  color: rgb(156 163 175);
+  cursor: not-allowed;
 }
 
 #design-css-preview #autobidder-form .ab-time-slot {
-  border-radius: 8px;
-  padding: 8px;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background: #fff;
+  transition: all 0.2s ease;
 }
 
 #design-css-preview #autobidder-form .ab-calendar-date.selected,
@@ -847,6 +1094,47 @@ const camelToKebabCase = (str: string): string => {
   return str.replace(/([A-Z])/g, '-$1').toLowerCase();
 };
 
+const sanitizeCommentValue = (value: string): string => value.replace(/\*\//g, '').trim();
+
+const cssHasSelectorBlock = (css: string, selector: string): boolean => {
+  if (!css.trim() || !selector.trim()) return false;
+  const normalizedSelector = selector.trim();
+  const cssWithoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const selectorBlockRegex = /(^|})\s*([^{]+)\{/g;
+  let match: RegExpExecArray | null = selectorBlockRegex.exec(cssWithoutComments);
+
+  while (match) {
+    const selectors = match[2]
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (selectors.includes(normalizedSelector)) {
+      return true;
+    }
+    match = selectorBlockRegex.exec(cssWithoutComments);
+  }
+
+  return false;
+};
+
+const ensureSelectorBlockInCSS = (css: string, selector: string, label: string): { css: string; added: boolean } => {
+  if (cssHasSelectorBlock(css, selector)) {
+    return { css, added: false };
+  }
+
+  const safeLabel = sanitizeCommentValue(label || selector);
+  const starterBlock = `${selector} {\n  /* ${safeLabel} */\n}\n`;
+  const cssWithSeedBlock = css.trim() ? `${css.trimEnd()}\n\n${starterBlock}` : starterBlock;
+  return { css: cssWithSeedBlock, added: true };
+};
+
+type EditCSSOptions = {
+  sourceCSS?: string;
+  clearInput?: boolean;
+  successTitle?: string;
+  successDescription?: string;
+};
+
 const mergeComponentStyles = (styles: any) => {
   let parsed = styles;
   if (typeof styles === 'string') {
@@ -885,7 +1173,9 @@ export default function DesignDashboard() {
   const [isGeneratingCSS, setIsGeneratingCSS] = useState(false);
   const [aiCSSError, setAiCSSError] = useState('');
   const [isPreviewLabOpen, setIsPreviewLabOpen] = useState(false);
+  const [isTargetedEditModalOpen, setIsTargetedEditModalOpen] = useState(false);
   const [hoveredPreviewTarget, setHoveredPreviewTarget] = useState<PreviewTarget | null>(null);
+  const [previewTooltipPosition, setPreviewTooltipPosition] = useState<{ x: number; y: number } | null>(null);
   const [selectedPreviewTarget, setSelectedPreviewTarget] = useState<PreviewTarget | null>(null);
   const [targetedEditPrompt, setTargetedEditPrompt] = useState('');
   const previewSurfaceRef = useRef<HTMLDivElement | null>(null);
@@ -912,6 +1202,11 @@ ${generateCSSVariables(styling)}
       return '';
     }
   }, [customCSS]);
+
+  const selectedTargetHasCustomBlock = useMemo(() => {
+    if (!selectedPreviewTarget) return false;
+    return cssHasSelectorBlock(customCSS, selectedPreviewTarget.selector);
+  }, [customCSS, selectedPreviewTarget]);
 
   // Fetch design settings from new API
   const { data: designSettings, isLoading } = useQuery<DesignSettings>({
@@ -1144,13 +1439,20 @@ ${generateCSSVariables(styling)}
   }, [toast]);
 
   // Handle AI CSS editing
-  const handleEditCSS = useCallback(async (editDescription: string) => {
+  const handleEditCSS = useCallback(async (editDescription: string, options: EditCSSOptions = {}): Promise<boolean> => {
+    const {
+      sourceCSS,
+      clearInput = true,
+      successTitle = "CSS Edited!",
+      successDescription = "AI has updated your CSS based on your request.",
+    } = options;
+
     setIsGeneratingCSS(true);
     setAiCSSError('');
     
     try {
       const response = await apiRequest("POST", "/api/design-settings/edit-css", {
-        currentCSS: customCSS,
+        currentCSS: sourceCSS ?? customCSS,
         editDescription
       });
       const data = await response.json();
@@ -1159,13 +1461,16 @@ ${generateCSSVariables(styling)}
         setCustomCSS(formatCustomCSS(data.css));
         setHasUnsavedChanges(true);
         toast({
-          title: "CSS Edited!",
-          description: "AI has updated your CSS based on your request.",
+          title: successTitle,
+          description: successDescription,
         });
-        // Clear the input field
-        const input = document.querySelector('[data-testid="input-ai-css-edit"]') as HTMLInputElement;
-        if (input) input.value = '';
+        if (clearInput) {
+          const input = document.querySelector('[data-testid="input-ai-css-edit"]') as HTMLInputElement;
+          if (input) input.value = '';
+        }
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('CSS editing error:', error);
       setAiCSSError(error instanceof Error ? error.message : 'Failed to edit CSS. Please try again.');
@@ -1174,6 +1479,7 @@ ${generateCSSVariables(styling)}
         description: error instanceof Error ? error.message : "Failed to edit CSS. Please try again.",
         variant: "destructive",
       });
+      return false;
     } finally {
       setIsGeneratingCSS(false);
     }
@@ -1183,14 +1489,27 @@ ${generateCSSVariables(styling)}
     const hoverTarget = (event.target as HTMLElement).closest<HTMLElement>('[data-css-target]');
     if (!hoverTarget || !previewSurfaceRef.current?.contains(hoverTarget)) {
       setHoveredPreviewTarget(null);
+      setPreviewTooltipPosition(null);
       return;
     }
 
     const selector = hoverTarget.dataset.cssTarget;
     if (!selector) {
       setHoveredPreviewTarget(null);
+      setPreviewTooltipPosition(null);
       return;
     }
+
+    const viewportPadding = 16;
+    const tooltipOffset = 16;
+    const tooltipWidth = 260;
+    const tooltipHeight = 92;
+    const maxX = window.innerWidth - tooltipWidth - viewportPadding;
+    const maxY = window.innerHeight - tooltipHeight - viewportPadding;
+    setPreviewTooltipPosition({
+      x: Math.min(event.clientX + tooltipOffset, Math.max(viewportPadding, maxX)),
+      y: Math.min(event.clientY + tooltipOffset, Math.max(viewportPadding, maxY)),
+    });
 
     const label = hoverTarget.dataset.cssLabel || selector;
     setHoveredPreviewTarget((previous) => {
@@ -1211,44 +1530,57 @@ ${generateCSSVariables(styling)}
     const selector = selectedElement.dataset.cssTarget;
     if (!selector) return;
 
-    setSelectedPreviewTarget({
+    const nextTarget = {
       selector,
       label: selectedElement.dataset.cssLabel || selector,
-    });
+    };
+    setSelectedPreviewTarget(nextTarget);
+    setAiCSSError('');
+    setTargetedEditPrompt('');
+    setIsTargetedEditModalOpen(true);
   }, []);
 
   const handleTargetedEdit = useCallback(async () => {
     if (!selectedPreviewTarget || !targetedEditPrompt.trim() || isGeneratingCSS) return;
 
-    if (customCSS.trim()) {
-      const scopedEditPrompt = [
-        `Target selector: ${selectedPreviewTarget.selector}`,
-        `Element description: ${selectedPreviewTarget.label}`,
-        `Request: ${targetedEditPrompt.trim()}`,
-        `Only add or change CSS rules for ${selectedPreviewTarget.selector}.`,
-        'Keep all unrelated existing CSS untouched.',
-      ].join('\n');
-      await handleEditCSS(scopedEditPrompt);
-    } else {
-      const scopedGeneratePrompt = [
-        `Create initial custom CSS for ${selectedPreviewTarget.selector}.`,
-        `Element description: ${selectedPreviewTarget.label}`,
-        `Request: ${targetedEditPrompt.trim()}`,
-        `Only generate selectors and styles for ${selectedPreviewTarget.selector}.`,
-      ].join('\n');
-      await handleGenerateCSS(scopedGeneratePrompt);
-    }
+    const { css: seededCSS, added } = ensureSelectorBlockInCSS(
+      customCSS,
+      selectedPreviewTarget.selector,
+      selectedPreviewTarget.label
+    );
+    const scopedEditPrompt = [
+      `Target selector: ${selectedPreviewTarget.selector}`,
+      `Element description: ${selectedPreviewTarget.label}`,
+      `Request: ${targetedEditPrompt.trim()}`,
+      `Only add or change CSS rules for ${selectedPreviewTarget.selector} and direct state variants of it (for example :hover or :focus).`,
+      'Keep all unrelated existing CSS untouched.',
+      'Return complete CSS.',
+    ].join('\n');
 
-    setTargetedEditPrompt('');
-  }, [selectedPreviewTarget, targetedEditPrompt, isGeneratingCSS, customCSS, handleEditCSS, handleGenerateCSS]);
+    const didApply = await handleEditCSS(scopedEditPrompt, {
+      sourceCSS: seededCSS,
+      clearInput: false,
+      successTitle: "Element Updated",
+      successDescription: added
+        ? `${selectedPreviewTarget.selector} was added and updated with your request.`
+        : `${selectedPreviewTarget.selector} was updated with your request.`,
+    });
+
+    if (didApply) {
+      setTargetedEditPrompt('');
+      setIsTargetedEditModalOpen(false);
+    }
+  }, [selectedPreviewTarget, targetedEditPrompt, isGeneratingCSS, customCSS, handleEditCSS]);
 
   const handleTogglePreviewLab = useCallback(() => {
     const nextState = !isPreviewLabOpen;
     setIsPreviewLabOpen(nextState);
     if (!nextState) {
       setHoveredPreviewTarget(null);
+      setPreviewTooltipPosition(null);
       setSelectedPreviewTarget(null);
       setTargetedEditPrompt('');
+      setIsTargetedEditModalOpen(false);
     }
   }, [isPreviewLabOpen]);
 
@@ -1260,14 +1592,203 @@ ${generateCSSVariables(styling)}
     setCustomCSSError('');
     setIsPreviewLabOpen(false);
     setHoveredPreviewTarget(null);
+    setPreviewTooltipPosition(null);
     setSelectedPreviewTarget(null);
     setTargetedEditPrompt('');
+    setIsTargetedEditModalOpen(false);
     setHasUnsavedChanges(true);
     toast({
       title: "Design Reset",
       description: "All design settings have been reset to defaults.",
     });
   }, [toast]);
+
+  const previewPricingCardLayout = (((styling as any).pricingCardLayout || 'classic') as 'classic' | 'modern' | 'minimal' | 'compact');
+  const previewPricingBullets = [
+    'HEPA vacuum + allergen wipe down',
+    'Kitchen appliance detail',
+    'Bathroom polish + sanitizing',
+  ];
+
+  const renderPreviewPricingBullets = (compact = false) => (
+    <ul className={compact ? "space-y-1.5" : "space-y-1 text-sm"}>
+      {previewPricingBullets.slice(0, compact ? 2 : 3).map((bullet) => (
+        <li key={bullet} className="flex items-center gap-2">
+          <span
+            className="ab-pricing-card-bullet-icon"
+            {...previewTargetAttributes('.ab-pricing-card-bullet-icon', 'Pricing bullet icon')}
+          >
+            •
+          </span>
+          <span
+            className="ab-pricing-card-bullet-text"
+            {...previewTargetAttributes('.ab-pricing-card-bullet-text', 'Pricing bullet text')}
+          >
+            {bullet}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+
+  const renderPreviewPricingCard = () => {
+    switch (previewPricingCardLayout) {
+      case 'modern':
+        return (
+          <div
+            className="ab-pricing-card text-center space-y-3"
+            {...previewTargetAttributes('.ab-pricing-card', 'Pricing card')}
+          >
+            <div
+              className="ab-pricing-card-price text-3xl font-bold"
+              {...previewTargetAttributes('.ab-pricing-card-price', 'Pricing badge')}
+            >
+              $499
+            </div>
+            <p
+              className="ab-pricing-card-icon text-xs font-semibold"
+              {...previewTargetAttributes('.ab-pricing-card-icon', 'Pricing icon')}
+            >
+              Premium Tier
+            </p>
+            <h4
+              className="ab-pricing-card-title text-lg font-semibold"
+              {...previewTargetAttributes('.ab-pricing-card-title', 'Pricing title')}
+            >
+              Whole Home Detail
+            </h4>
+            <p
+              className="ab-pricing-card-description text-sm"
+              {...previewTargetAttributes('.ab-pricing-card-description', 'Pricing description')}
+            >
+              4 bedrooms · 3 bathrooms · 2,100 sq ft
+            </p>
+            <div className="text-left">
+              {renderPreviewPricingBullets()}
+            </div>
+          </div>
+        );
+
+      case 'minimal':
+        return (
+          <div
+            className="ab-pricing-card space-y-3"
+            {...previewTargetAttributes('.ab-pricing-card', 'Pricing card')}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h4
+                  className="ab-pricing-card-title text-base font-semibold"
+                  {...previewTargetAttributes('.ab-pricing-card-title', 'Pricing title')}
+                >
+                  Whole Home Detail
+                </h4>
+                <p
+                  className="ab-pricing-card-description text-sm"
+                  {...previewTargetAttributes('.ab-pricing-card-description', 'Pricing description')}
+                >
+                  4 bedrooms · 3 bathrooms · 2,100 sq ft
+                </p>
+              </div>
+              <span
+                className="ab-pricing-card-price text-sm font-semibold px-3 py-1 rounded-full"
+                {...previewTargetAttributes('.ab-pricing-card-price', 'Pricing badge')}
+              >
+                $499
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {previewPricingBullets.map((bullet) => (
+                <span key={bullet} className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs">
+                  <span
+                    className="ab-pricing-card-bullet-icon"
+                    {...previewTargetAttributes('.ab-pricing-card-bullet-icon', 'Pricing bullet icon')}
+                  >
+                    •
+                  </span>
+                  <span
+                    className="ab-pricing-card-bullet-text"
+                    {...previewTargetAttributes('.ab-pricing-card-bullet-text', 'Pricing bullet text')}
+                  >
+                    {bullet}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'compact':
+        return (
+          <div
+            className="ab-pricing-card space-y-2"
+            {...previewTargetAttributes('.ab-pricing-card', 'Pricing card')}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <h4
+                  className="ab-pricing-card-title text-sm font-semibold"
+                  {...previewTargetAttributes('.ab-pricing-card-title', 'Pricing title')}
+                >
+                  Whole Home Detail
+                </h4>
+                <p
+                  className="ab-pricing-card-description text-xs"
+                  {...previewTargetAttributes('.ab-pricing-card-description', 'Pricing description')}
+                >
+                  2,100 sq ft · biweekly
+                </p>
+              </div>
+              <span
+                className="ab-pricing-card-price text-sm font-semibold"
+                {...previewTargetAttributes('.ab-pricing-card-price', 'Pricing badge')}
+              >
+                $499
+              </span>
+            </div>
+            {renderPreviewPricingBullets(true)}
+          </div>
+        );
+
+      default:
+        return (
+          <div
+            className="ab-pricing-card space-y-3"
+            {...previewTargetAttributes('.ab-pricing-card', 'Pricing card')}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p
+                  className="ab-pricing-card-icon text-xs font-semibold"
+                  {...previewTargetAttributes('.ab-pricing-card-icon', 'Pricing icon')}
+                >
+                  Premium Tier
+                </p>
+                <h4
+                  className="ab-pricing-card-title text-base font-semibold"
+                  {...previewTargetAttributes('.ab-pricing-card-title', 'Pricing title')}
+                >
+                  Whole Home Detail
+                </h4>
+                <p
+                  className="ab-pricing-card-description text-sm"
+                  {...previewTargetAttributes('.ab-pricing-card-description', 'Pricing description')}
+                >
+                  4 bedrooms · 3 bathrooms · 2,100 sq ft
+                </p>
+              </div>
+              <span
+                className="ab-pricing-card-price"
+                {...previewTargetAttributes('.ab-pricing-card-price', 'Pricing badge')}
+              >
+                $499
+              </span>
+            </div>
+            {renderPreviewPricingBullets()}
+          </div>
+        );
+    }
+  };
 
 
   if (isLoading) {
@@ -1535,7 +2056,7 @@ ${generateCSSVariables(styling)}
                           <div className="flex flex-col gap-1">
                             <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Interactive Preview Lab</h4>
                             <p className="text-xs text-gray-600 dark:text-gray-400">
-                              Full demo form with all stages visible. Hover to inspect a class, then click an element to target AI edits for that selector.
+                              Full demo form with all stages visible. Hover to inspect a class, then click an element to open AI edit modal for that selector.
                             </p>
                           </div>
                           <Button type="button" variant="outline" size="sm" onClick={handleTogglePreviewLab} className="self-start">
@@ -1564,7 +2085,10 @@ ${generateCSSVariables(styling)}
                                 <div
                                   ref={previewSurfaceRef}
                                   onMouseMove={handlePreviewPointerMove}
-                                  onMouseLeave={() => setHoveredPreviewTarget(null)}
+                                  onMouseLeave={() => {
+                                    setHoveredPreviewTarget(null);
+                                    setPreviewTooltipPosition(null);
+                                  }}
                                   onClick={handlePreviewElementSelect}
                                 >
                                   <div
@@ -1577,52 +2101,80 @@ ${generateCSSVariables(styling)}
                                       <div className="grid gap-3 md:grid-cols-3">
                                         <button
                                           type="button"
-                                          className="ab-service-card selected"
+                                          className="ab-service-card service-selector selected cursor-pointer transition-all duration-200 hover:scale-105 relative border"
                                           {...previewTargetAttributes('.ab-service-card', 'Service card')}
                                         >
-                                          <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Most booked</p>
-                                          <h4
-                                            className="ab-service-title mt-1"
-                                            {...previewTargetAttributes('.ab-service-title', 'Service card title')}
-                                          >
-                                            Whole Home Cleaning
-                                          </h4>
-                                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Great for quarterly deep resets.</p>
+                                          <div className="flex flex-col items-center text-center h-full pt-1 pb-2 px-2">
+                                            <div className="preview-service-icon">WH</div>
+                                            <h4
+                                              className="ab-service-title font-black leading-tight mt-2"
+                                              {...previewTargetAttributes('.ab-service-title', 'Service card title')}
+                                            >
+                                              Whole Home Cleaning
+                                            </h4>
+                                            <p className="preview-service-description mt-2 text-xs leading-snug">
+                                              Great for quarterly deep resets.
+                                            </p>
+                                          </div>
                                         </button>
                                         <button
                                           type="button"
-                                          className="ab-service-card"
+                                          className="ab-service-card service-selector cursor-pointer transition-all duration-200 hover:scale-105 relative border"
                                           {...previewTargetAttributes('.ab-service-card', 'Service card')}
                                         >
-                                          <h4
-                                            className="ab-service-title"
-                                            {...previewTargetAttributes('.ab-service-title', 'Service card title')}
-                                          >
-                                            Move-Out Detail
-                                          </h4>
-                                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Top-to-bottom prep before handoff.</p>
+                                          <div className="flex flex-col items-center text-center h-full pt-1 pb-2 px-2">
+                                            <div className="preview-service-icon">MO</div>
+                                            <h4
+                                              className="ab-service-title font-black leading-tight mt-2"
+                                              {...previewTargetAttributes('.ab-service-title', 'Service card title')}
+                                            >
+                                              Move-Out Detail
+                                            </h4>
+                                            <p className="preview-service-description mt-2 text-xs leading-snug">
+                                              Top-to-bottom prep before handoff.
+                                            </p>
+                                          </div>
                                         </button>
                                         <button
                                           type="button"
-                                          className="ab-service-card"
+                                          className="ab-service-card service-selector cursor-pointer transition-all duration-200 hover:scale-105 relative border"
                                           {...previewTargetAttributes('.ab-service-card', 'Service card')}
                                         >
-                                          <h4
-                                            className="ab-service-title"
-                                            {...previewTargetAttributes('.ab-service-title', 'Service card title')}
-                                          >
-                                            Office Refresh
-                                          </h4>
-                                          <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">Evening service for teams and studios.</p>
+                                          <div className="flex flex-col items-center text-center h-full pt-1 pb-2 px-2">
+                                            <div className="preview-service-icon">OF</div>
+                                            <h4
+                                              className="ab-service-title font-black leading-tight mt-2"
+                                              {...previewTargetAttributes('.ab-service-title', 'Service card title')}
+                                            >
+                                              Office Refresh
+                                            </h4>
+                                            <p className="preview-service-description mt-2 text-xs leading-snug">
+                                              Evening service for teams and studios.
+                                            </p>
+                                          </div>
                                         </button>
                                       </div>
-                                      <button
-                                        type="button"
-                                        className="ab-service-accordion mt-3 text-sm"
-                                        {...previewTargetAttributes('.ab-service-accordion', 'Service accordion header')}
-                                      >
-                                        What is included in each package?
-                                      </button>
+                                      <div className="mt-3 space-y-2">
+                                        <button
+                                          type="button"
+                                          className="ab-service-accordion text-sm"
+                                          {...previewTargetAttributes('.ab-service-accordion', 'Service accordion header')}
+                                        >
+                                          <span
+                                            className="ab-service-accordion-text font-medium"
+                                            {...previewTargetAttributes('.ab-service-accordion-text', 'Accordion text')}
+                                          >
+                                            What is included in each package?
+                                          </span>
+                                          <ChevronDown className="h-4 w-4 shrink-0" />
+                                        </button>
+                                        <p
+                                          className="ab-service-accordion-text text-sm leading-relaxed px-4"
+                                          {...previewTargetAttributes('.ab-service-accordion-text', 'Accordion text')}
+                                        >
+                                          Every package includes insured pros, a detailed checklist, and quality-control follow-up after service.
+                                        </p>
+                                      </div>
                                     </div>
 
                                     <div className="preview-stage">
@@ -1674,16 +2226,39 @@ ${generateCSSVariables(styling)}
                                           <label className="ab-question-label text-xs font-medium">Property Type</label>
                                           <button
                                             type="button"
-                                            className="ab-select text-left"
+                                            className="ab-select ab-dropdown dropdown text-left"
                                             {...previewTargetAttributes('.ab-select', 'Dropdown trigger')}
                                           >
-                                            Residential · Single Family
+                                            <span>Residential · Single Family</span>
+                                            <span className="text-xs opacity-70">▼</span>
                                           </button>
                                           <div
                                             className="ab-select-content mt-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-xs"
                                             {...previewTargetAttributes('.ab-select-content', 'Dropdown menu content')}
                                           >
-                                            Residential · Condo
+                                            <div className="preview-select-item active">Residential · Condo</div>
+                                            <div className="preview-select-item">Townhome</div>
+                                            <div className="preview-select-item">Commercial Office</div>
+                                          </div>
+                                        </div>
+
+                                        <div className="space-y-1">
+                                          <label className="ab-question-label text-xs font-medium">Cleaning Frequency</label>
+                                          <button
+                                            type="button"
+                                            className="ab-select ab-dropdown dropdown text-left"
+                                            {...previewTargetAttributes('.ab-select', 'Dropdown trigger')}
+                                          >
+                                            <span>Every 2 weeks</span>
+                                            <span className="text-xs opacity-70">▼</span>
+                                          </button>
+                                          <div
+                                            className="ab-select-content mt-2 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 text-xs"
+                                            {...previewTargetAttributes('.ab-select-content', 'Dropdown menu content')}
+                                          >
+                                            <div className="preview-select-item">One time</div>
+                                            <div className="preview-select-item active">Weekly</div>
+                                            <div className="preview-select-item">Biweekly</div>
                                           </div>
                                         </div>
 
@@ -1775,31 +2350,67 @@ ${generateCSSVariables(styling)}
                                         <div className="grid gap-2 sm:grid-cols-2">
                                           <button
                                             type="button"
-                                            className="ab-multiple-choice ab-multichoice-card selected"
+                                            className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm selected p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multiple-choice', 'Multiple choice card')}
                                           >
-                                            Inside Fridge Cleaning
+                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
+                                              <span className="preview-choice-icon">FR</span>
+                                              <span
+                                                className="ab-multiple-choice-label font-medium text-sm"
+                                                {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
+                                              >
+                                                Inside Fridge Cleaning
+                                              </span>
+                                              <span className="preview-choice-helper">+15 min</span>
+                                            </div>
                                           </button>
                                           <button
                                             type="button"
-                                            className="ab-multiple-choice ab-multichoice-card"
+                                            className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multichoice-card', 'Multiple choice card (alt selector)')}
                                           >
-                                            Garage Sweep + Organize
+                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
+                                              <span className="preview-choice-icon">GA</span>
+                                              <span
+                                                className="ab-multiple-choice-label font-medium text-sm"
+                                                {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
+                                              >
+                                                Garage Sweep + Organize
+                                              </span>
+                                              <span className="preview-choice-helper">+30 min</span>
+                                            </div>
                                           </button>
                                           <button
                                             type="button"
-                                            className="ab-multiple-choice ab-multichoice-card"
+                                            className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multiple-choice', 'Multiple choice card')}
                                           >
-                                            Pet Hair Extra Pass
+                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
+                                              <span className="preview-choice-icon">PH</span>
+                                              <span
+                                                className="ab-multiple-choice-label font-medium text-sm"
+                                                {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
+                                              >
+                                                Pet Hair Extra Pass
+                                              </span>
+                                              <span className="preview-choice-helper">+10 min</span>
+                                            </div>
                                           </button>
                                           <button
                                             type="button"
-                                            className="ab-multiple-choice ab-multichoice-card"
+                                            className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multichoice-card', 'Multiple choice card (alt selector)')}
                                           >
-                                            Eco Product Upgrade
+                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
+                                              <span className="preview-choice-icon">EC</span>
+                                              <span
+                                                className="ab-multiple-choice-label font-medium text-sm"
+                                                {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
+                                              >
+                                                Eco Product Upgrade
+                                              </span>
+                                              <span className="preview-choice-helper">+$18</span>
+                                            </div>
                                           </button>
                                         </div>
                                       </div>
@@ -1807,64 +2418,7 @@ ${generateCSSVariables(styling)}
 
                                     <div className="preview-stage">
                                       <p className="preview-stage-title">Stage 4 · Pricing + Summary</p>
-                                      <div
-                                        className="ab-pricing-card space-y-3"
-                                        {...previewTargetAttributes('.ab-pricing-card', 'Pricing card')}
-                                      >
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="space-y-1">
-                                            <p
-                                              className="ab-pricing-card-icon text-xs font-semibold"
-                                              {...previewTargetAttributes('.ab-pricing-card-icon', 'Pricing icon')}
-                                            >
-                                              Premium Tier
-                                            </p>
-                                            <h4
-                                              className="ab-pricing-card-title text-base font-semibold"
-                                              {...previewTargetAttributes('.ab-pricing-card-title', 'Pricing title')}
-                                            >
-                                              Whole Home Detail
-                                            </h4>
-                                            <p
-                                              className="ab-pricing-card-description text-sm"
-                                              {...previewTargetAttributes('.ab-pricing-card-description', 'Pricing description')}
-                                            >
-                                              4 bedrooms · 3 bathrooms · 2,100 sq ft
-                                            </p>
-                                          </div>
-                                          <span
-                                            className="ab-pricing-card-price"
-                                            {...previewTargetAttributes('.ab-pricing-card-price', 'Pricing badge')}
-                                          >
-                                            $499
-                                          </span>
-                                        </div>
-
-                                        <ul className="space-y-1 text-sm">
-                                          <li className="flex items-center gap-2">
-                                            <span
-                                              className="ab-pricing-card-bullet-icon"
-                                              {...previewTargetAttributes('.ab-pricing-card-bullet-icon', 'Pricing bullet icon')}
-                                            >
-                                              •
-                                            </span>
-                                            <span
-                                              className="ab-pricing-card-bullet-text"
-                                              {...previewTargetAttributes('.ab-pricing-card-bullet-text', 'Pricing bullet text')}
-                                            >
-                                              HEPA vacuum + allergen wipe down
-                                            </span>
-                                          </li>
-                                          <li className="flex items-center gap-2">
-                                            <span className="ab-pricing-card-bullet-icon">•</span>
-                                            <span className="ab-pricing-card-bullet-text">Kitchen appliance detail</span>
-                                          </li>
-                                          <li className="flex items-center gap-2">
-                                            <span className="ab-pricing-card-bullet-icon">•</span>
-                                            <span className="ab-pricing-card-bullet-text">Bathroom polish + sanitizing</span>
-                                          </li>
-                                        </ul>
-                                      </div>
+                                      {renderPreviewPricingCard()}
 
                                       <div
                                         className="ab-discount-section mt-3 space-y-2"
@@ -2015,87 +2569,272 @@ ${generateCSSVariables(styling)}
                                     </div>
 
                                     <div className="preview-stage">
-                                      <p className="preview-stage-title">Stage 5 · Booking + Final CTA</p>
-                                      <div className="ab-question-card space-y-3">
+                                      <p className="preview-stage-title">Stage 5 · Upsell Add-Ons</p>
+                                      <div
+                                        className="ab-upsell-section space-y-3"
+                                        {...previewTargetAttributes('.ab-upsell-section', 'Upsell section')}
+                                      >
+                                        <h4
+                                          className="ab-upsell-heading text-sm font-semibold"
+                                          {...previewTargetAttributes('.ab-upsell-heading', 'Upsell heading')}
+                                        >
+                                          ⭐ Recommended Add-Ons
+                                        </h4>
+                                        <p
+                                          className="ab-upsell-subtitle text-xs"
+                                          {...previewTargetAttributes('.ab-upsell-subtitle', 'Upsell subtitle')}
+                                        >
+                                          Enhance your services with these popular add-ons
+                                        </p>
+                                        <div
+                                          className="ab-upsell-grid"
+                                          {...previewTargetAttributes('.ab-upsell-grid', 'Upsell grid')}
+                                        >
+                                          <button
+                                            type="button"
+                                            className="ab-upsell-card ab-upsell-card-selected text-left"
+                                            {...previewTargetAttributes('.ab-upsell-card-selected', 'Upsell card (selected)')}
+                                          >
+                                            <div className="ab-upsell-content flex items-start gap-3">
+                                              <div
+                                                className="ab-upsell-icon"
+                                                {...previewTargetAttributes('.ab-upsell-icon', 'Upsell icon wrapper')}
+                                              >
+                                                <div
+                                                  className="ab-upsell-icon-fallback"
+                                                  {...previewTargetAttributes('.ab-upsell-icon-fallback', 'Upsell fallback icon')}
+                                                >
+                                                  +
+                                                </div>
+                                              </div>
+                                              <div className="ab-upsell-main flex-1 min-w-0">
+                                                <div className="ab-upsell-header flex items-start justify-between gap-2">
+                                                  <div className="flex-1 min-w-0">
+                                                    <div
+                                                      className="ab-upsell-title-row flex items-center gap-2 flex-wrap"
+                                                      {...previewTargetAttributes('.ab-upsell-title-row', 'Upsell title row')}
+                                                    >
+                                                      <h5
+                                                        className="ab-upsell-title text-sm font-medium"
+                                                        {...previewTargetAttributes('.ab-upsell-title', 'Upsell title')}
+                                                      >
+                                                        Window Track Detail
+                                                      </h5>
+                                                      <span
+                                                        className="ab-upsell-popular-badge"
+                                                        {...previewTargetAttributes('.ab-upsell-popular-badge', 'Upsell popular badge')}
+                                                      >
+                                                        Popular
+                                                      </span>
+                                                    </div>
+                                                    <p
+                                                      className="ab-upsell-description text-xs mt-1"
+                                                      {...previewTargetAttributes('.ab-upsell-description', 'Upsell description')}
+                                                    >
+                                                      Deep edge clean for high-traffic windows.
+                                                    </p>
+                                                  </div>
+                                                  <div className="ab-upsell-price-wrap text-right">
+                                                    <p
+                                                      className="ab-upsell-price text-sm font-bold"
+                                                      {...previewTargetAttributes('.ab-upsell-price', 'Upsell price')}
+                                                    >
+                                                      +$32
+                                                    </p>
+                                                    <p
+                                                      className="ab-upsell-added text-xs mt-1"
+                                                      {...previewTargetAttributes('.ab-upsell-added', 'Upsell added state')}
+                                                    >
+                                                      ✓ Added
+                                                    </p>
+                                                  </div>
+                                                </div>
+                                                <p
+                                                  className="ab-upsell-tooltip text-[11px] mt-2 italic"
+                                                  {...previewTargetAttributes('.ab-upsell-tooltip', 'Upsell tooltip')}
+                                                >
+                                                  💡 Great add-on for homes with pets.
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            className="ab-upsell-card text-left"
+                                            {...previewTargetAttributes('.ab-upsell-card', 'Upsell card')}
+                                          >
+                                            <div className="ab-upsell-content flex items-start gap-3">
+                                              <div className="ab-upsell-icon">
+                                                <div className="ab-upsell-icon-fallback">+</div>
+                                              </div>
+                                              <div className="ab-upsell-main flex-1 min-w-0">
+                                                <div className="ab-upsell-header flex items-start justify-between gap-2">
+                                                  <div className="flex-1 min-w-0">
+                                                    <h5 className="ab-upsell-title text-sm font-medium">Appliance Pull-Out Clean</h5>
+                                                    <p className="ab-upsell-description text-xs mt-1">
+                                                      Behind-stove and fridge debris removal.
+                                                    </p>
+                                                  </div>
+                                                  <div className="ab-upsell-price-wrap text-right">
+                                                    <p className="ab-upsell-price text-sm font-bold">+$24</p>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </button>
+                                        </div>
+
+                                        <div
+                                          className="ab-upsell-selected-summary"
+                                          {...previewTargetAttributes('.ab-upsell-selected-summary', 'Upsell selected summary')}
+                                        >
+                                          <p
+                                            className="ab-upsell-selected-title text-xs font-semibold"
+                                            {...previewTargetAttributes('.ab-upsell-selected-title', 'Upsell selected title')}
+                                          >
+                                            Add-ons Selected
+                                          </p>
+                                          <div
+                                            className="ab-upsell-selected-row text-xs"
+                                            {...previewTargetAttributes('.ab-upsell-selected-row', 'Upsell selected row')}
+                                          >
+                                            <span
+                                              className="ab-upsell-selected-name"
+                                              {...previewTargetAttributes('.ab-upsell-selected-name', 'Upsell selected name')}
+                                            >
+                                              Window Track Detail
+                                            </span>
+                                            <span
+                                              className="ab-upsell-selected-price"
+                                              {...previewTargetAttributes('.ab-upsell-selected-price', 'Upsell selected price')}
+                                            >
+                                              +$32
+                                            </span>
+                                          </div>
+                                          <div
+                                            className="ab-upsell-selected-total text-xs"
+                                            {...previewTargetAttributes('.ab-upsell-selected-total', 'Upsell selected total')}
+                                          >
+                                            <span>Total Add-ons</span>
+                                            <span>+$32</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="preview-stage">
+                                      <p className="preview-stage-title">Stage 6 · Booking + Final CTA</p>
+                                      <div className="ab-question-card space-y-4">
+                                        <div>
+                                          <h4 className="text-sm font-medium mb-4">Select Date</h4>
+                                          <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                              <button
+                                                type="button"
+                                                className="ab-calendar-nav ab-calendar-nav-prev h-8 w-8 p-0 text-xs"
+                                                {...previewTargetAttributes('.ab-calendar-nav-prev', 'Calendar previous button')}
+                                              >
+                                                &#8249;
+                                              </button>
+                                              <p
+                                                className="ab-calendar-month-title text-lg font-semibold"
+                                                {...previewTargetAttributes('.ab-calendar-month-title', 'Calendar month title')}
+                                              >
+                                                March 2026
+                                              </p>
+                                              <button
+                                                type="button"
+                                                className="ab-calendar-nav ab-calendar-nav-next h-8 w-8 p-0 text-xs"
+                                                {...previewTargetAttributes('.ab-calendar-nav-next', 'Calendar next button')}
+                                              >
+                                                &#8250;
+                                              </button>
+                                            </div>
+
+                                            <div className="grid grid-cols-7 gap-1 mb-2">
+                                              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                                                <span
+                                                  key={day}
+                                                  className="ab-calendar-day-header text-center text-xs font-medium text-gray-500 py-2"
+                                                  {...previewTargetAttributes('.ab-calendar-day-header', 'Calendar day header')}
+                                                >
+                                                  {day}
+                                                </span>
+                                              ))}
+                                            </div>
+
+                                            <div className="grid grid-cols-7 gap-1">
+                                              {[
+                                                null, null, '1', '2', '3', '4', '5',
+                                                '6', '7', '8', '9', '10', '11', '12',
+                                                '13', '14', '15', '16', '17', '18', '19',
+                                                '20', '21', '22', '23', '24', '25', '26',
+                                                '27', '28', '29', '30', '31',
+                                              ].map((value, index) => (
+                                                value ? (
+                                                  <button
+                                                    key={`${value}-${index}`}
+                                                    type="button"
+                                                    className={`ab-calendar-date aspect-square rounded-lg border transition-all relative ${value === '10' ? 'selected border-2 border-blue-600 bg-blue-600 text-white shadow-lg scale-105' : value === '8' ? 'disabled border border-gray-200 bg-gray-100 text-gray-400' : 'border-2 border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50'}`}
+                                                    {...previewTargetAttributes('.ab-calendar-date', 'Calendar date button')}
+                                                  >
+                                                    <div className="flex flex-col items-center justify-center h-full">
+                                                      <span className="text-sm font-medium">{value}</span>
+                                                      {value === '10' && <span className="text-[10px] text-blue-100">2 left</span>}
+                                                    </div>
+                                                  </button>
+                                                ) : (
+                                                  <div key={`empty-${index}`} className="aspect-square" />
+                                                )
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+
                                         <div className="flex flex-wrap gap-2 text-[11px]">
                                           <span
-                                            className="ab-calendar-nav inline-flex rounded-full border border-slate-300 px-2 py-0.5"
+                                            className="inline-flex rounded-full border border-slate-300 px-2 py-0.5"
                                             {...previewTargetAttributes('.ab-calendar-nav', 'Calendar navigation base class')}
                                           >
                                             .ab-calendar-nav
                                           </span>
                                         </div>
 
-                                        <div className="flex items-center justify-between">
-                                          <button
-                                            type="button"
-                                            className="ab-calendar-nav ab-calendar-nav-prev text-xs"
-                                            {...previewTargetAttributes('.ab-calendar-nav-prev', 'Calendar previous button')}
-                                          >
-                                            Prev
-                                          </button>
-                                          <p
-                                            className="ab-calendar-month-title text-sm"
-                                            {...previewTargetAttributes('.ab-calendar-month-title', 'Calendar month title')}
-                                          >
-                                            March 2026
-                                          </p>
-                                          <button
-                                            type="button"
-                                            className="ab-calendar-nav ab-calendar-nav-next text-xs"
-                                            {...previewTargetAttributes('.ab-calendar-nav-next', 'Calendar next button')}
-                                          >
-                                            Next
-                                          </button>
-                                        </div>
-
-                                        <div className="grid grid-cols-7 gap-1">
-                                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                                            <span
-                                              key={day}
-                                              className="ab-calendar-day-header"
-                                              {...previewTargetAttributes('.ab-calendar-day-header', 'Calendar day header')}
-                                            >
-                                              {day}
-                                            </span>
-                                          ))}
-                                        </div>
-
-                                        <div className="grid grid-cols-7 gap-1 text-xs">
-                                          {['', '', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((value, index) => (
+                                        <div>
+                                          <h4 className="text-sm font-medium mb-2">Available Times for March 10, 2026</h4>
+                                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                                             <button
-                                              key={`${value}-${index}`}
                                               type="button"
-                                              className={`ab-calendar-date ${value === '10' ? 'selected' : ''} ${value === '8' ? 'disabled' : ''}`}
-                                              {...previewTargetAttributes('.ab-calendar-date', 'Calendar date button')}
+                                              className="ab-time-slot selected flex items-center justify-center p-3 h-auto text-xs"
+                                              {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
                                             >
-                                              {value || ' '}
+                                              <div className="flex flex-col items-center">
+                                                <span className="font-medium">9:00 AM</span>
+                                                <span className="text-[10px] text-blue-100">10:00 AM</span>
+                                              </div>
                                             </button>
-                                          ))}
-                                        </div>
-
-                                        <div className="grid gap-2 sm:grid-cols-3">
-                                          <button
-                                            type="button"
-                                            className="ab-time-slot selected text-xs"
-                                            {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
-                                          >
-                                            9:00 AM
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="ab-time-slot text-xs"
-                                            {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
-                                          >
-                                            11:30 AM
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="ab-time-slot disabled text-xs"
-                                            {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
-                                          >
-                                            2:00 PM (Booked)
-                                          </button>
+                                            <button
+                                              type="button"
+                                              className="ab-time-slot flex items-center justify-center p-3 h-auto text-xs hover:bg-green-50 hover:border-green-300"
+                                              {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
+                                            >
+                                              <div className="flex flex-col items-center">
+                                                <span className="font-medium">11:30 AM</span>
+                                                <span className="text-[10px] text-gray-500">12:30 PM</span>
+                                              </div>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="ab-time-slot disabled flex items-center justify-center p-3 h-auto text-xs"
+                                              {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
+                                            >
+                                              <div className="flex flex-col items-center">
+                                                <span className="font-medium">2:00 PM</span>
+                                                <span className="text-[10px] text-gray-500">Booked</span>
+                                              </div>
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
 
@@ -2138,12 +2877,15 @@ ${generateCSSVariables(styling)}
                                   </div>
                                 </div>
 
-                                {hoveredPreviewTarget && (
-                                  <div className="pointer-events-none absolute bottom-3 right-3 z-20 max-w-[250px] rounded-xl border border-blue-200 dark:border-blue-800 bg-white/95 dark:bg-slate-900/95 px-3 py-2 shadow-lg">
+                                {hoveredPreviewTarget && previewTooltipPosition && (
+                                  <div
+                                    className="pointer-events-none fixed z-[120] w-[250px] rounded-xl border border-blue-200 dark:border-blue-800 bg-white/95 dark:bg-slate-900/95 px-3 py-2 shadow-xl"
+                                    style={{ left: previewTooltipPosition.x, top: previewTooltipPosition.y }}
+                                  >
                                     <p className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Hover target</p>
                                     <p className="mt-1 font-mono text-[11px] text-blue-700 dark:text-blue-300">{hoveredPreviewTarget.selector}</p>
                                     <p className="mt-1 text-[11px] text-slate-600 dark:text-slate-300">
-                                      Click this element to set your AI edit target.
+                                      Click to open the AI edit modal for this element.
                                     </p>
                                   </div>
                                 )}
@@ -2155,66 +2897,143 @@ ${generateCSSVariables(styling)}
                                 <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">Element-Specific AI Edit</p>
                                 {selectedPreviewTarget ? (
                                   <p className="text-xs text-blue-800 dark:text-blue-200">
-                                    Editing <span className="font-mono">{selectedPreviewTarget.selector}</span> ({selectedPreviewTarget.label})
+                                    Selected <span className="font-mono">{selectedPreviewTarget.selector}</span> ({selectedPreviewTarget.label})
                                   </p>
                                 ) : (
                                   <p className="text-xs text-blue-800 dark:text-blue-200">
-                                    Select a preview element first, then describe the style change in plain language.
+                                    Click any preview element to open the element edit modal.
                                   </p>
                                 )}
                               </div>
-                              <div className="flex flex-col gap-2 sm:flex-row">
-                                <Input
-                                  value={targetedEditPrompt}
-                                  onChange={(event) => setTargetedEditPrompt(event.target.value)}
-                                  disabled={!selectedPreviewTarget || isGeneratingCSS}
-                                  placeholder={
-                                    selectedPreviewTarget
-                                      ? `e.g. Make ${selectedPreviewTarget.label.toLowerCase()} rounded with a softer shadow`
-                                      : "Click any preview element to start"
-                                  }
-                                  onKeyDown={(event) => {
-                                    if (event.key === 'Enter') {
-                                      event.preventDefault();
-                                      handleTargetedEdit();
-                                    }
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  disabled={!selectedPreviewTarget}
+                                  onClick={() => {
+                                    if (!selectedPreviewTarget) return;
+                                    setAiCSSError('');
+                                    setIsTargetedEditModalOpen(true);
                                   }}
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    disabled={!selectedPreviewTarget || !targetedEditPrompt.trim() || isGeneratingCSS}
-                                    onClick={handleTargetedEdit}
-                                  >
-                                    {isGeneratingCSS ? (
-                                      <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Applying...
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Sparkles className="h-4 w-4 mr-2" />
-                                        Apply Edit
-                                      </>
-                                    )}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={!selectedPreviewTarget}
-                                    onClick={() => {
-                                      setSelectedPreviewTarget(null);
-                                      setTargetedEditPrompt('');
-                                    }}
-                                  >
-                                    Clear
-                                  </Button>
-                                </div>
+                                >
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  Edit Selected Element
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={!selectedPreviewTarget}
+                                  onClick={() => {
+                                    setSelectedPreviewTarget(null);
+                                    setTargetedEditPrompt('');
+                                    setAiCSSError('');
+                                    setIsTargetedEditModalOpen(false);
+                                  }}
+                                >
+                                  Clear
+                                </Button>
                               </div>
                             </div>
                           </>
                         )}
                       </div>
+
+                      <Dialog
+                        open={isTargetedEditModalOpen}
+                        onOpenChange={(open) => {
+                          setIsTargetedEditModalOpen(open);
+                          if (!open) {
+                            setTargetedEditPrompt('');
+                          }
+                        }}
+                      >
+                        <DialogContent className="sm:max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle className="text-base">Edit Selected Element</DialogTitle>
+                            <DialogDescription className="text-xs">
+                              Describe the visual change and AI will update only this selector block in your custom CSS.
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          {selectedPreviewTarget ? (
+                            <div className="space-y-3">
+                              <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-3 py-2">
+                                <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Target</p>
+                                <p className="mt-1 font-mono text-xs text-blue-700 dark:text-blue-300">
+                                  {selectedPreviewTarget.selector}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                                  {selectedPreviewTarget.label}
+                                </p>
+                              </div>
+
+                              {!selectedTargetHasCustomBlock && (
+                                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                                  No CSS snippet exists for this selector yet. A new block will be added automatically.
+                                </div>
+                              )}
+
+                              <div className="space-y-1.5">
+                                <Label htmlFor="targeted-css-request" className="text-xs font-medium">
+                                  Change request
+                                </Label>
+                                <Textarea
+                                  id="targeted-css-request"
+                                  value={targetedEditPrompt}
+                                  onChange={(event) => setTargetedEditPrompt(event.target.value)}
+                                  placeholder={`e.g. Make ${selectedPreviewTarget.label.toLowerCase()} rounded with a softer shadow and subtle hover lift`}
+                                  className="min-h-[110px] text-sm"
+                                  disabled={isGeneratingCSS}
+                                  onKeyDown={(event) => {
+                                    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                                      event.preventDefault();
+                                      handleTargetedEdit();
+                                    }
+                                  }}
+                                />
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  Tip: press Ctrl/Cmd + Enter to apply quickly.
+                                </p>
+                              </div>
+
+                              {aiCSSError && (
+                                <p className="text-xs text-red-600">{aiCSSError}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-600 dark:text-slate-300">
+                              Click a preview element first to target a selector.
+                            </p>
+                          )}
+
+                          <DialogFooter className="gap-2 sm:gap-0">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setIsTargetedEditModalOpen(false);
+                                setTargetedEditPrompt('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleTargetedEdit}
+                              disabled={!selectedPreviewTarget || !targetedEditPrompt.trim() || isGeneratingCSS}
+                            >
+                              {isGeneratingCSS ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Applying...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  Apply Edit
+                                </>
+                              )}
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
 
                       {/* CSS Class Reference & Examples */}
                       <div className="space-y-3">
@@ -2281,6 +3100,7 @@ ${generateCSSVariables(styling)}
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-service-card</span> - Service cards</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-service-title</span> - Service titles</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-service-accordion</span> - Accordion headers</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-service-accordion-text</span> - Accordion text</div>
                               </div>
                             </div>
                             {/* Multiple Choice */}
@@ -2289,6 +3109,7 @@ ${generateCSSVariables(styling)}
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice</span> - Choice cards</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-multichoice-card</span> - Choice cards (alt)</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice-label</span> - Choice card text</div>
                               </div>
                             </div>
                             {/* Pricing Cards */}
@@ -2302,6 +3123,25 @@ ${generateCSSVariables(styling)}
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-description</span> - Description</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-bullet-icon</span> - Bullet icons</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-bullet-text</span> - Bullet text</div>
+                              </div>
+                            </div>
+                            {/* Upsell Cards */}
+                            <div>
+                              <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Upsell Cards:</p>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-section</span> - Upsell section wrapper</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-heading</span> - Upsell section title</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-subtitle</span> - Upsell helper text</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-grid</span> - Upsell card grid</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-card</span> - Upsell card</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-card-selected</span> - Selected upsell card</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-title</span> - Upsell title</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-description</span> - Upsell description</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-price</span> - Upsell price</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-popular-badge</span> - Popular badge</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-tooltip</span> - Upsell tooltip</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-selected-summary</span> - Selected upsell summary</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-upsell-selected-total</span> - Selected upsell total</div>
                               </div>
                             </div>
                             {/* Discounts & Messages */}
@@ -2388,6 +3228,7 @@ ${generateCSSVariables(styling)}
                               <div><span className="text-green-600 dark:text-green-400">--ab-service-title-font-family</span></div>
                               <div><span className="text-green-600 dark:text-green-400">--ab-service-title-font-weight</span></div>
                               <div><span className="text-green-600 dark:text-green-400">--ab-service-title-font-size</span></div>
+                              <div><span className="text-green-600 dark:text-green-400">--ab-service-accordion-text-color</span></div>
                               <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-bg</span></div>
                               <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-border-radius</span></div>
                               <div><span className="text-green-600 dark:text-green-400">--ab-pricing-card-border-color</span></div>
@@ -2506,6 +3347,10 @@ ${generateCSSVariables(styling)}
                             ref={cssInputRef}
                             value={customCSS}
                             onChange={(e) => handleCustomCSSChange(e.target.value)}
+                            wrap="off"
+                            spellCheck={false}
+                            autoCapitalize="off"
+                            autoCorrect="off"
                             onScroll={(e) => {
                               if (cssHighlightRef.current) {
                                 cssHighlightRef.current.scrollTop = e.currentTarget.scrollTop;
@@ -2528,7 +3373,7 @@ ${generateCSSVariables(styling)}
                               <h5 className="text-xs font-semibold text-blue-900">AI Edit CSS</h5>
                             </div>
                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                              Describe changes you want to make to your existing CSS
+                              Describe changes you want to make to your existing CSS. For element-specific changes, click an element in the Preview Lab.
                             </p>
                             <div className="flex gap-2">
                               <Input

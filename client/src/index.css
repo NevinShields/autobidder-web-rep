@@ -612,8 +612,9 @@
   inset: 0;
   pointer-events: none;
   overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
   padding: 0.5rem 0.75rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
   font-size: 0.75rem !important;
@@ -639,12 +640,14 @@
   font-size: 0.75rem !important;
   line-height: 1rem !important;
   font-weight: 400 !important;
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
   box-sizing: border-box;
   letter-spacing: 0;
   tab-size: 2;
   font-variant-ligatures: none;
+  resize: vertical;
 }
 
 .css-editor-input::selection {

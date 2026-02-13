@@ -298,10 +298,10 @@ export default function Landing() {
     <div className="min-h-screen bg-[#0a0a0a] text-[#fafafa] selection:bg-white selection:text-black font-sans relative overflow-x-hidden">
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-[9999] bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
 
-      <nav className="fixed top-0 w-full z-50 px-6 py-6 flex justify-between items-center backdrop-blur-md bg-[#0a0a0a]/80 border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <img src={autobidderLogo} alt="Autobidder logo" className="w-8 h-8 rounded-lg object-cover" />
-          <span className="text-xl font-bold tracking-tighter uppercase">Autobidder</span>
+      <nav className="fixed top-0 w-full z-50 px-4 py-4 md:px-6 md:py-6 flex justify-between items-center backdrop-blur-md bg-[#0a0a0a]/80 border-b border-white/5">
+        <div className="flex items-center gap-2 min-w-0">
+          <img src={autobidderLogo} alt="Autobidder logo" className="w-7 h-7 md:w-8 md:h-8 rounded-lg object-cover" />
+          <span className="hidden sm:inline text-base md:text-xl font-bold tracking-tighter uppercase truncate">Autobidder</span>
         </div>
         <div className="hidden md:flex gap-8 text-xs font-medium tracking-widest text-zinc-400 uppercase">
           <button type="button" onClick={scrollToSection("pricing")} className="hover:text-white transition-colors">
@@ -310,13 +310,18 @@ export default function Landing() {
           <button type="button" onClick={scrollToSection("demos")} className="hover:text-white transition-colors">
             Demos
           </button>
-          <a href="/login" className="hover:text-white transition-colors">
-            Log In
-          </a>
         </div>
-        <Button className="!py-2 !px-6 !text-[10px]" onClick={() => (window.location.href = "/onboarding")}>
-          Start Free
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="/login"
+            className="h-9 min-h-9 max-h-9 px-3 sm:px-4 inline-flex items-center justify-center rounded-full border border-white/20 text-[10px] leading-none font-medium uppercase tracking-wide sm:tracking-widest text-white/90 hover:bg-white/10 transition-colors whitespace-nowrap"
+          >
+            Sign In
+          </a>
+          <Button className="!h-9 !min-h-9 !max-h-9 !py-0 !px-4 sm:!px-6 !text-[10px] !leading-none !tracking-wide sm:!tracking-widest !shadow-none whitespace-nowrap" onClick={() => (window.location.href = "/onboarding")}>
+            Start Free
+          </Button>
+        </div>
       </nav>
 
       <section className="relative min-h-screen overflow-hidden">

@@ -296,10 +296,26 @@ function renderPricingCardLayout(
                   color: styling.textColor || '#1F2937'
                 }}
               >
-                <svg className="w-3 h-3" viewBox="0 0 24 24" style={{ color: styling.primaryColor || '#3B82F6' }}>
-                  {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
-                </svg>
-                {point.length > 30 ? point.substring(0, 30) + '...' : point}
+                <span
+                  className="ab-pricing-card-bullet-icon flex-shrink-0 rounded-full flex items-center justify-center"
+                  style={hasCustomCSS ? {} : {
+                    backgroundColor: styling.pricingBulletIconColor || styling.primaryColor || '#3B82F6',
+                    width: '14px',
+                    height: '14px'
+                  }}
+                >
+                  <svg
+                    className="text-white"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    style={{ width: '9px', height: '9px' }}
+                  >
+                    {renderBulletIconFn(styling.pricingBulletIconType || 'checkmark')}
+                  </svg>
+                </span>
+                <span className="ab-pricing-card-bullet-text">
+                  {point.length > 30 ? point.substring(0, 30) + '...' : point}
+                </span>
               </span>
             ))}
           </div>
@@ -778,6 +794,10 @@ export default function CustomFormDisplay() {
           font-family: var(--ab-service-title-font-family, 'Inter, sans-serif');
           font-weight: var(--ab-service-title-font-weight, 900);
           font-size: var(--ab-service-title-font-size, 0.875rem);
+        }
+
+        #autobidder-form .ab-service-accordion-text {
+          color: var(--ab-service-accordion-text-color, inherit);
         }
         
         /* Pricing card styles */
@@ -1742,15 +1762,15 @@ export default function CustomFormDisplay() {
                     <button
                       onClick={() => toggleServiceExpansion(serviceId)}
                       className="ab-service-accordion w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                      style={{
+                      style={designSettings?.customCSS ? {} : {
                         backgroundColor: isExpanded ? 'transparent' : '#F9FAFB',
                         borderBottom: isExpanded ? `1px solid ${componentStyles.questionCard?.borderColor || '#E5E7EB'}` : 'none',
                       }}
                       data-testid={`button-toggle-service-${serviceId}`}
                     >
                       <h3 
-                        className="text-xl font-semibold"
-                        style={{ color: styling.textColor || '#1F2937' }}
+                        className="ab-service-accordion-text text-xl font-semibold"
+                        style={designSettings?.customCSS ? {} : { color: styling.textColor || '#1F2937' }}
                       >
                         {service.title || service.name}
                       </h3>
@@ -2640,14 +2660,14 @@ export default function CustomFormDisplay() {
               }, [] as any[]);
               
               return allUpsells.length > 0 && (
-                <div className="mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
-                  <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                <div className="ab-upsell-section mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
+                  <h3 className="ab-upsell-heading text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
                     ⭐ Recommended Add-Ons
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="ab-upsell-subtitle text-sm text-gray-600 mb-4">
                     Enhance your services with these popular add-ons
                   </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="ab-upsell-grid grid grid-cols-1 md:grid-cols-2 gap-4">
                     {allUpsells.map((upsell) => {
                       const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
                       const isSelected = selectedUpsells.includes(upsell.id);
@@ -2656,14 +2676,14 @@ export default function CustomFormDisplay() {
                         <div
                           key={upsell.id}
                           onClick={() => handleUpsellToggle(upsell.id)}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${ 
+                          className={`ab-upsell-card p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 overflow-hidden ${ 
                             isSelected
-                              ? 'border-orange-500 bg-orange-50'
+                              ? 'ab-upsell-card-selected border-orange-500 bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                           }`}
                         >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0">
+                          <div className="ab-upsell-content flex items-start gap-3">
+                            <div className="ab-upsell-icon flex-shrink-0">
                               {upsell.iconUrl ? (
                                 <img 
                                   src={upsell.iconUrl} 
@@ -2677,31 +2697,31 @@ export default function CustomFormDisplay() {
                                   className="w-8 h-8 object-cover rounded"
                                 />
                               ) : (
-                                <div className="w-8 h-8 bg-orange-200 rounded flex items-center justify-center">
+                                <div className="ab-upsell-icon-fallback w-8 h-8 bg-orange-200 rounded flex items-center justify-center">
                                   <span className="text-orange-600 text-sm font-semibold">+</span>
                                 </div>
                               )}
                             </div>
                             
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                            <div className="ab-upsell-main flex-1 min-w-0">
+                              <div className="ab-upsell-header flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <h4 className="font-medium text-gray-900 break-words">{upsell.name}</h4>
+                                  <div className="ab-upsell-title-row flex items-center gap-2 flex-wrap">
+                                    <h4 className="ab-upsell-title font-medium text-gray-900 break-words">{upsell.name}</h4>
                                     {upsell.isPopular && (
-                                      <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                      <span className="ab-upsell-popular-badge bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
                                         Popular
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
+                                  <p className="ab-upsell-description text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
                                 </div>
-                                <div className="text-right flex-shrink-0 sm:ml-3">
-                                  <div className="text-lg font-bold text-orange-600 whitespace-nowrap">
+                                <div className="ab-upsell-price-wrap text-right flex-shrink-0 sm:ml-3">
+                                  <div className="ab-upsell-price text-lg font-bold text-orange-600 whitespace-nowrap">
                                     +${upsellPrice.toLocaleString()}
                                   </div>
                                   {isSelected && (
-                                    <div className="text-sm text-orange-600 font-medium mt-1 whitespace-nowrap">
+                                    <div className="ab-upsell-added text-sm text-orange-600 font-medium mt-1 whitespace-nowrap">
                                       ✓ Added
                                     </div>
                                   )}

@@ -21453,67 +21453,6 @@ This booking was created on ${new Date().toLocaleString()}.
     res.send(`User-agent: *\nSitemap: ${baseUrl}/sitemap.xml\n`);
   });
 
-  // Deprecated: use /sitemap.xml + child sitemaps instead
-  // Sitemap endpoint for directory pages
-  app.get("/sitemap-directory.xml", async (req, res) => {
-    try {
-      const baseUrl = getBaseUrl();
-
-      // Get approved categories
-      const categories = await db
-        .select()
-        .from(directoryCategories)
-        .where(eq(directoryCategories.status, "approved"));
-
-      // Get indexable cache entries
-      const indexablePages = await db
-        .select()
-        .from(directoryIndexCache)
-        .where(eq(directoryIndexCache.isIndexable, true));
-
-      // Get active company profiles
-      const profiles = await db
-        .select({ companySlug: directoryProfiles.companySlug })
-        .from(directoryProfiles)
-        .innerJoin(landingPages, eq(landingPages.userId, directoryProfiles.userId))
-        .where(and(
-          eq(directoryProfiles.isActive, true),
-          eq(directoryProfiles.showOnDirectory, true),
-          eq(directoryProfiles.status, "approved"),
-          eq(landingPages.status, "published")
-        ));
-
-      let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-      xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-
-      // Directory home
-      xml += `  <url>\n    <loc>${baseUrl}/directory</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
-
-      // Category pages
-      for (const cat of categories) {
-        xml += `  <url>\n    <loc>${baseUrl}/prices/${cat.slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
-      }
-
-      // Category + city pages
-      for (const page of indexablePages) {
-        xml += `  <url>\n    <loc>${baseUrl}/prices/${page.categorySlug}/${page.citySlug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.6</priority>\n  </url>\n`;
-      }
-
-      // Company pages
-      for (const profile of profiles) {
-        xml += `  <url>\n    <loc>${baseUrl}/directory/company/${profile.companySlug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
-      }
-
-      xml += '</urlset>';
-
-      res.header('Content-Type', 'application/xml');
-      res.send(xml);
-    } catch (error) {
-      console.error("[Directory] Error generating sitemap:", error);
-      res.status(500).send('Error generating sitemap');
-    }
-  });
-
   // ====== Property Data Autofill Endpoints ======
 
   // POST /api/property/resolve - Resolve property data from address (public, used by customer form)

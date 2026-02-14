@@ -320,30 +320,28 @@ export default function AutomationBuilder() {
 
     return (
       <div className="relative">
-        <Card className="border-2 border-orange-300 bg-orange-50 dark:bg-orange-950/20 shadow-md">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <TriggerIcon className="h-7 w-7 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="secondary" className="bg-orange-200 text-orange-900 dark:bg-orange-900 dark:text-orange-100">
-                    Trigger
-                  </Badge>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-gray-100 mb-1">
-                  {triggerInfo?.label || 'Select a trigger'}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                  This automation will run when this event occurs
-                </p>
-              </div>
+        <div className="rounded-2xl border-2 border-amber-300/60 dark:border-amber-500/20 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 shadow-md p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <TriggerIcon className="h-7 w-7 text-white" />
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-semibold bg-amber-200/80 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                  Trigger
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                {triggerInfo?.label || 'Select a trigger'}
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                This automation will run when this event occurs
+              </p>
+            </div>
+          </div>
+        </div>
         {/* Connecting line */}
-        <div className="absolute left-[42px] top-full w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+        <div className="absolute left-[42px] top-full w-0.5 h-16 bg-gradient-to-b from-amber-300 to-amber-400/50 dark:from-amber-600/50 dark:to-amber-500/30"></div>
       </div>
     );
   };
@@ -356,41 +354,40 @@ export default function AutomationBuilder() {
       <div key={index} className="relative">
         {/* Connecting line from previous step */}
         {index > 0 && (
-          <div className="absolute left-[42px] bottom-full w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+          <div className="absolute left-[42px] bottom-full w-0.5 h-16 bg-gradient-to-b from-amber-300/50 to-amber-400/30 dark:from-amber-600/30 dark:to-amber-500/20"></div>
         )}
-        
-        <Card className="border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 shadow-md hover:shadow-lg transition-all group" data-testid={`step-card-${index}`}>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-start gap-4">
-              {/* Step Icon */}
-              <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
-                <StepIcon className="h-7 w-7 text-white" />
-              </div>
-              
-              {/* Step Content */}
-              <div className="flex-1 min-w-0 w-full">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="rounded-full px-2 py-0.5 text-xs">
-                      Step {index + 1}
-                    </Badge>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-gray-100">
-                      {stepInfo?.label}
-                    </h3>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeStep(index)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
-                    data-testid={`button-remove-step-${index}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
 
-                {/* Step Configuration */}
-                <div className="mt-4 space-y-3 bg-gray-50 dark:bg-gray-700/50 dark:bg-gray-900/50 p-4 rounded-lg">
+        <div className="rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all group p-4 sm:p-6" data-testid={`step-card-${index}`}>
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            {/* Step Icon */}
+            <div className="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <StepIcon className="h-7 w-7 text-white" />
+            </div>
+
+            {/* Step Content */}
+            <div className="flex-1 min-w-0 w-full">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-semibold bg-amber-100/80 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                    Step {index + 1}
+                  </span>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {stepInfo?.label}
+                  </h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeStep(index)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl"
+                  data-testid={`button-remove-step-${index}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Step Configuration */}
+              <div className="mt-4 space-y-3 bg-gray-50/80 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-200/40 dark:border-gray-700/30">
                   {step.stepType === 'send_email' && (
                     <>
                       <div>
@@ -485,9 +482,9 @@ export default function AutomationBuilder() {
                           }}
                           className="mt-2"
                         >
-                          <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                          <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 rounded-xl">
                             <CollapsibleTrigger asChild>
-                              <button className="flex items-center justify-between w-full text-xs font-semibold text-blue-900 dark:text-blue-100 hover:opacity-80 transition-opacity">
+                              <button className="flex items-center justify-between w-full text-xs font-semibold text-amber-800 dark:text-amber-200 hover:opacity-80 transition-opacity">
                                 <span>Available Variables</span>
                                 {expandedVariables.has(index) ? (
                                   <ChevronUp className="h-4 w-4" />
@@ -515,9 +512,9 @@ export default function AutomationBuilder() {
                                         }, 0);
                                       }
                                     }}
-                                    className="text-left p-2 rounded bg-white dark:bg-gray-800 dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
+                                    className="text-left p-2 rounded bg-white dark:bg-gray-800 dark:bg-gray-800 border border-amber-200/60 dark:border-amber-700/40 hover:bg-amber-100/60 dark:hover:bg-amber-900/20 transition-colors min-w-0"
                                   >
-                                    <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
+                                    <code className="text-xs font-mono text-amber-700 dark:text-amber-300 break-all">{variable.name}</code>
                                     <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-0.5">{variable.description}</p>
                                   </button>
                                 ))}
@@ -558,9 +555,9 @@ export default function AutomationBuilder() {
                         }}
                         className="mt-2"
                       >
-                        <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                        <div className="p-3 bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 rounded-xl">
                           <CollapsibleTrigger asChild>
-                            <button className="flex items-center justify-between w-full text-xs font-semibold text-blue-900 dark:text-blue-100 hover:opacity-80 transition-opacity">
+                            <button className="flex items-center justify-between w-full text-xs font-semibold text-amber-800 dark:text-amber-200 hover:opacity-80 transition-opacity">
                               <span>Available Variables</span>
                               {expandedVariables.has(index) ? (
                                 <ChevronUp className="h-4 w-4" />
@@ -588,9 +585,9 @@ export default function AutomationBuilder() {
                                       }, 0);
                                     }
                                   }}
-                                  className="text-left p-2 rounded bg-white dark:bg-gray-800 dark:bg-gray-800 border border-blue-200 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900 transition-colors min-w-0"
+                                  className="text-left p-2 rounded bg-white dark:bg-gray-800 dark:bg-gray-800 border border-amber-200/60 dark:border-amber-700/40 hover:bg-amber-100/60 dark:hover:bg-amber-900/20 transition-colors min-w-0"
                                 >
-                                  <code className="text-xs font-mono text-blue-700 dark:text-blue-300 break-all">{variable.name}</code>
+                                  <code className="text-xs font-mono text-amber-700 dark:text-amber-300 break-all">{variable.name}</code>
                                   <p className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-0.5">{variable.description}</p>
                                 </button>
                               ))}
@@ -725,27 +722,26 @@ export default function AutomationBuilder() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
         {/* Add step button after this step */}
         <div className="relative">
-          <div className="absolute left-[42px] top-0 w-0.5 h-16 bg-gradient-to-b from-gray-300 to-gray-400 dark:from-gray-600 dark:to-gray-500"></div>
+          <div className="absolute left-[42px] top-0 w-0.5 h-16 bg-gradient-to-b from-amber-300/50 to-amber-400/30 dark:from-amber-600/30 dark:to-amber-500/20"></div>
           <div className="flex justify-center py-8">
             <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddStepMenu(showAddStepMenu === index + 1 ? null : index + 1)}
-                className="rounded-full w-10 h-10 p-0 bg-white dark:bg-gray-800 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-950 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 shadow-md"
+                className="rounded-full w-10 h-10 p-0 bg-white dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/20 border-2 border-gray-300/80 dark:border-gray-600 hover:border-amber-400 shadow-md transition-colors"
                 data-testid={`button-add-step-after-${index}`}
               >
-                <Plus className="h-5 w-5 text-gray-600 dark:text-gray-400 dark:text-gray-400" />
+                <Plus className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </Button>
-              
+
               {/* Inline add menu */}
               {showAddStepMenu === index + 1 && (
-                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-lg shadow-xl p-2">
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 border border-gray-200/60 dark:border-gray-700/40 rounded-2xl shadow-xl p-2">
                   <div className="space-y-1">
                     {STEP_TYPES.map((stepType) => {
                       const Icon = stepType.icon;
@@ -753,14 +749,14 @@ export default function AutomationBuilder() {
                         <button
                           key={stepType.value}
                           onClick={() => openStepConfig(stepType.value, index + 1)}
-                          className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-amber-50/60 dark:hover:bg-amber-900/10 transition-colors text-left"
                           data-testid={`button-add-step-type-${stepType.value}`}
                         >
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm shadow-amber-500/20">
                             <Icon className="h-5 w-5 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-sm text-gray-900 dark:text-white dark:text-gray-100">{stepType.label}</div>
+                            <div className="font-semibold text-sm text-gray-900 dark:text-white">{stepType.label}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">{stepType.description}</div>
                           </div>
                         </button>
@@ -779,9 +775,11 @@ export default function AutomationBuilder() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="p-6">
-          <Skeleton className="h-8 w-64 mb-4" />
-          <Skeleton className="h-64 w-full" />
+        <div className="flex flex-col items-center justify-center h-64" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 flex items-center justify-center mb-3">
+            <Zap className="h-5 w-5 animate-pulse text-amber-600" />
+          </div>
+          <p className="text-sm text-gray-400">Loading automation...</p>
         </div>
       </DashboardLayout>
     );
@@ -791,29 +789,27 @@ export default function AutomationBuilder() {
   if (!hasAccess) {
     return (
       <DashboardLayout>
-        <div className="p-6">
+        <div className="p-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <div className="max-w-2xl mx-auto mt-20">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Lock className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Automations</h2>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Automations are not available on the free plan. Upgrade to create automated workflows for your leads.
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <Link href="/dashboard">
-                      <Button variant="outline">Back to Dashboard</Button>
-                    </Link>
-                    <Link href="/pricing">
-                      <Button>View Plans</Button>
-                    </Link>
-                  </div>
+            <div className="rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm p-10">
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-500/20 dark:to-orange-500/20 flex items-center justify-center mx-auto mb-4 border border-amber-200/60 dark:border-amber-700/30">
+                  <Lock className="w-7 h-7 text-amber-600 dark:text-amber-400" />
                 </div>
-              </CardContent>
-            </Card>
+                <h2 className="text-2xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Automations</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                  Automations are not available on the free plan. Upgrade to create automated workflows for your leads.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Link href="/dashboard">
+                    <Button variant="outline" className="rounded-xl border-gray-200/80 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-colors">Back to Dashboard</Button>
+                  </Link>
+                  <Link href="/pricing">
+                    <Button className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-6">View Plans</Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </DashboardLayout>
@@ -822,27 +818,47 @@ export default function AutomationBuilder() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-700/50 dark:bg-gray-900">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+      <style>{`
+        @keyframes ab-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .ab-stagger-1 { animation: ab-fade-up 0.5s ease-out both; animation-delay: 0.05s; }
+        .ab-stagger-2 { animation: ab-fade-up 0.5s ease-out both; animation-delay: 0.1s; }
+        .ab-stagger-3 { animation: ab-fade-up 0.5s ease-out both; animation-delay: 0.15s; }
+        .ab-grain { position: relative; }
+        .ab-grain::before {
+          content: ''; position: absolute; inset: 0; opacity: 0.3; pointer-events: none; mix-blend-mode: overlay; border-radius: inherit;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900 ab-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {/* Hero Header */}
+        <div className="ab-stagger-1 mx-4 sm:mx-6 mt-4 sm:mt-6">
+          <div className="max-w-4xl mx-auto relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-900 dark:to-gray-800/60 border border-amber-200/40 dark:border-amber-500/10 p-5 sm:p-6">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/40 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-orange-200/30 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
+            <div className="relative flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                 <Link href="/crm/automations">
-                  <Button variant="ghost" size="sm" data-testid="button-back" className="flex-shrink-0">
+                  <Button variant="ghost" size="sm" data-testid="button-back" className="flex-shrink-0 rounded-xl hover:bg-amber-100/60 dark:hover:bg-amber-900/20 hover:text-amber-700 transition-colors">
                     <ChevronLeft className="h-4 w-4 sm:mr-1" />
                     <span className="hidden sm:inline">Back</span>
                   </Button>
                 </Link>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/20">
+                  <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white dark:text-gray-100 truncate">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600/70 dark:text-amber-400/60 font-semibold">Workflow Builder</p>
+                  <h1 className="text-lg sm:text-2xl text-gray-900 dark:text-white truncate" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                     {automationId ? 'Edit Automation' : 'Create Automation'}
                   </h1>
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Link href="/crm/automations">
-                  <Button variant="outline" size="sm" data-testid="button-cancel" className="hidden sm:inline-flex">
+                  <Button variant="outline" size="sm" data-testid="button-cancel" className="hidden sm:inline-flex rounded-xl border-gray-200/80 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-colors">
                     Cancel
                   </Button>
                 </Link>
@@ -851,6 +867,7 @@ export default function AutomationBuilder() {
                   disabled={!name || !triggerType || saveAutomationMutation.isPending}
                   data-testid="button-save-automation"
                   size="sm"
+                  className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-5"
                 >
                   <Save className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">{saveAutomationMutation.isPending ? "Saving..." : "Save"}</span>
@@ -861,11 +878,14 @@ export default function AutomationBuilder() {
         </div>
 
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+        <div className="ab-stagger-2 max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
           {/* Automation Details */}
-          <Card className="mb-6">
+          <Card className="mb-6 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
-              <CardTitle>Automation Details</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/15 to-orange-500/15 flex items-center justify-center"><Settings className="w-4 h-4 text-amber-600 dark:text-amber-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Automation Details</span>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -914,9 +934,12 @@ export default function AutomationBuilder() {
           </Card>
 
           {/* Trigger Selection */}
-          <Card className="mb-6">
+          <Card className="mb-6 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
-              <CardTitle>Select Trigger</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/15 to-purple-500/15 flex items-center justify-center"><Zap className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Select Trigger</span>
+              </CardTitle>
               <CardDescription>Choose the event that starts this automation</CardDescription>
             </CardHeader>
             <CardContent>
@@ -936,10 +959,10 @@ export default function AutomationBuilder() {
           </Card>
 
           {/* Workflow Builder */}
-          <div className="mb-8">
+          <div className="ab-stagger-3 mb-8">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white dark:text-gray-100">Workflow</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">Build your automation step by step</p>
+              <h2 className="text-xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Workflow</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Build your automation step by step</p>
             </div>
 
             <div className="space-y-0">
@@ -954,15 +977,15 @@ export default function AutomationBuilder() {
                       variant="outline"
                       size="lg"
                       onClick={() => setShowAddStepMenu(0)}
-                      className="rounded-full gap-2 border-2 border-dashed border-gray-400 hover:border-blue-500 bg-white dark:bg-gray-800 dark:bg-gray-800"
+                      className="rounded-full gap-2 border-2 border-dashed border-amber-300/60 hover:border-amber-500 bg-white dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/10 text-amber-700 dark:text-amber-300 transition-colors"
                       data-testid="button-add-first-step"
                     >
                       <Plus className="h-5 w-5" />
                       Add Your First Step
                     </Button>
-                    
+
                     {showAddStepMenu === 0 && (
-                      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 dark:border-gray-700 rounded-lg shadow-xl p-2">
+                      <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-80 bg-white dark:bg-gray-800 border border-gray-200/60 dark:border-gray-700/40 rounded-2xl shadow-xl p-2">
                         <div className="space-y-1">
                           {STEP_TYPES.map((stepType) => {
                             const Icon = stepType.icon;
@@ -970,14 +993,14 @@ export default function AutomationBuilder() {
                               <button
                                 key={stepType.value}
                                 onClick={() => openStepConfig(stepType.value, 0)}
-                                className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
+                                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-amber-50/60 dark:hover:bg-amber-900/10 transition-colors text-left"
                                 data-testid={`button-add-step-type-${stepType.value}`}
                               >
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm shadow-amber-500/20">
                                   <Icon className="h-5 w-5 text-white" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-semibold text-sm text-gray-900 dark:text-white dark:text-gray-100">{stepType.label}</div>
+                                  <div className="font-semibold text-sm text-gray-900 dark:text-white">{stepType.label}</div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400">{stepType.description}</div>
                                 </div>
                               </button>
@@ -1001,7 +1024,7 @@ export default function AutomationBuilder() {
             setStepConfigDialog({ isOpen: false, stepType: null, insertAt: 0, config: {} });
           }
         }}>
-          <DialogContent className="max-w-2xl" data-testid="dialog-step-config">
+          <DialogContent className="max-w-2xl rounded-2xl border-gray-200/60 dark:border-gray-700/40" data-testid="dialog-step-config">
             <DialogHeader>
               <DialogTitle>
                 Configure {STEP_TYPES.find(t => t.value === stepConfigDialog.stepType)?.label}
@@ -1269,6 +1292,7 @@ export default function AutomationBuilder() {
                 variant="outline"
                 onClick={() => setStepConfigDialog({ isOpen: false, stepType: null, insertAt: 0, config: {} })}
                 data-testid="button-cancel-step-config"
+                className="rounded-xl"
               >
                 Cancel
               </Button>
@@ -1277,7 +1301,7 @@ export default function AutomationBuilder() {
                 disabled={
                   !stepConfigDialog.stepType ||
                   (stepConfigDialog.stepType === 'send_email' && (
-                    !stepConfigDialog.config.subject?.trim() || 
+                    !stepConfigDialog.config.subject?.trim() ||
                     !stepConfigDialog.config.body?.trim() ||
                     (stepConfigDialog.config.recipientType === 'custom' && !stepConfigDialog.config.customRecipientEmail?.trim())
                   )) ||
@@ -1288,6 +1312,7 @@ export default function AutomationBuilder() {
                   ((stepConfigDialog.stepType === 'add_tag' || stepConfigDialog.stepType === 'remove_tag') && !stepConfigDialog.config.tagId)
                 }
                 data-testid="button-add-step-with-config"
+                className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-5"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Step

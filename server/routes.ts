@@ -8905,16 +8905,45 @@ The Autobidder Team`;
 
   app.patch("/api/profile", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).currentUser.id;
+      const currentUser = (req as any).currentUser;
+      const userId = currentUser.id;
       const updates = req.body;
       
       // Only allow certain fields to be updated
-      const allowedFields = ['firstName', 'lastName', 'organizationName', 'profileImageUrl'];
+      const allowedFields = ['firstName', 'lastName', 'organizationName', 'profileImageUrl', 'businessPhone'];
       const filteredUpdates: any = {};
       
       for (const field of allowedFields) {
         if (updates[field] !== undefined) {
           filteredUpdates[field] = updates[field];
+        }
+      }
+
+      // Handle businessPhone update if present
+      if (filteredUpdates.businessPhone !== undefined) {
+        const businessPhone = filteredUpdates.businessPhone;
+        delete filteredUpdates.businessPhone; // Don't save to user table directly
+
+        const effectiveUserId = getEffectiveOwnerId(currentUser);
+        // Only allow owners or users with manage settings permission to update business phone
+        if (currentUser.userType === 'owner' || currentUser.permissions?.canManageSettings) {
+          let settings = await storage.getBusinessSettingsByUserId(effectiveUserId);
+          if (settings) {
+            await storage.updateBusinessSettings(settings.id, { businessPhone });
+          } else if (currentUser.userType === 'owner') {
+            // Create default settings if they don't exist for the owner
+            await storage.createBusinessSettings({
+              userId: effectiveUserId,
+              businessName: filteredUpdates.organizationName || currentUser.organizationName || "My Business",
+              businessPhone: businessPhone,
+              styling: {
+                primaryColor: "#2563EB",
+                fontFamily: "inter",
+                buttonStyle: "rounded",
+                // include other required styling defaults if needed
+              } as any
+            });
+          }
         }
       }
       
@@ -8924,6 +8953,7 @@ The Autobidder Team`;
       }
       res.json(sanitizeUser(updatedUser));
     } catch (error) {
+      console.error("Profile update error:", error);
       res.status(500).json({ message: "Failed to update profile" });
     }
   });

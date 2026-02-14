@@ -71,7 +71,7 @@ export function SupportHelpButton() {
     return null;
   }
 
-  // Don't show if no videos (optional - you might want to show anyway)
+  // Don't show if no videos
   if (supportConfig && supportConfig.videos?.length === 0) {
     return null;
   }
@@ -82,10 +82,11 @@ export function SupportHelpButton() {
         variant="ghost"
         size="sm"
         onClick={() => setIsModalOpen(true)}
-        className="relative text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
+        className="h-9 w-9 p-0 relative text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-colors"
         title={`Help for ${pageInfo.name}`}
       >
-        <HelpCircle className="h-5 w-5" />
+        <HelpCircle className="h-[18px] w-[18px]" />
+        <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-amber-500 rounded-full" />
       </Button>
 
       <PageSupportModal

@@ -1222,7 +1222,7 @@ export default function CalendarPage() {
             setScheduleSheetOpen(false);
             openScheduleDialog(dateStr);
           }}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Event
@@ -1234,23 +1234,50 @@ export default function CalendarPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <style>{`
+        @keyframes cal-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .cal-stagger { animation: cal-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .cal-stagger-1 { animation-delay: 0ms; }
+        .cal-stagger-2 { animation-delay: 60ms; }
+        .cal-stagger-3 { animation-delay: 120ms; }
+        .cal-stagger-4 { animation-delay: 180ms; }
+        .cal-card-hover { transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+        .cal-card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 30px -8px rgba(0,0,0,0.12); }
+        .dark .cal-card-hover:hover { box-shadow: 0 8px 30px -8px rgba(0,0,0,0.4); }
+        .cal-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="p-4 sm:p-6 lg:p-8 cal-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Section */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate">
-                {view === 'month' ? 'Calendar & Bookings' : 'Daily Schedule'}
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-                {view === 'month' 
-                  ? 'View monthly bookings and manage appointments' 
-                  : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
-                }
-              </p>
+        {/* Hero Header */}
+        <div className="cal-stagger cal-stagger-1 relative overflow-hidden rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-orange-200/20 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
+          <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/20">
+                <Calendar className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-amber-600/70 dark:text-amber-400/60 font-semibold mb-1" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+                  {view === 'month' ? 'Schedule' : 'Daily View'}
+                </p>
+                <h1 className="text-3xl sm:text-4xl text-gray-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  {view === 'month' ? 'Calendar & Bookings' : 'Daily Schedule'}
+                </h1>
+                <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                  {view === 'month'
+                    ? 'View monthly bookings and manage appointments'
+                    : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
+                  }
+                </p>
+              </div>
             </div>
-            
+
             {view === 'day' && (
               <Button
                 onClick={() => {
@@ -1258,34 +1285,35 @@ export default function CalendarPage() {
                   setSelectedDate(null);
                 }}
                 variant="outline"
-                className="border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 self-start sm:self-auto"
+                className="rounded-full border-amber-200 hover:bg-amber-50 dark:border-amber-700/40 dark:hover:bg-amber-900/20 self-start sm:self-auto"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span>Back to Calendar</span>
               </Button>
             )}
           </div>
+        </div>
+
+        <div className="cal-stagger cal-stagger-2 flex flex-col gap-4">
 
           {/* Action Buttons - Month View */}
           {view === 'month' && !isMobile && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Block Dates Card */}
-              <Card className={`${blockingMode ? 'border-red-300 bg-red-50' : 'border-gray-200 dark:border-gray-700 hover:border-red-200 transition-colors'}`}>
-                <CardContent className="p-4">
-                  <Button 
+              <div className={`cal-card-hover rounded-2xl border p-4 ${blockingMode ? 'border-red-300/60 bg-gradient-to-br from-red-500/10 to-rose-500/10 dark:from-red-500/20 dark:to-rose-500/20' : 'border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm'}`}>
+                  <Button
                     variant={blockingMode ? "default" : "outline"}
-                    className={`w-full ${blockingMode ? "bg-red-600 hover:bg-red-700" : "border-red-200 hover:bg-red-50 dark:hover:bg-red-900/30"}`}
+                    className={`w-full rounded-xl ${blockingMode ? "bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white shadow-md shadow-red-500/20" : "border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/10 hover:border-amber-300"}`}
                     onClick={() => setBlockingMode(!blockingMode)}
                     data-testid="button-toggle-blocking-mode"
                   >
                     <Ban className="w-4 h-4 mr-2" />
                     {blockingMode ? "Exit Blocking Mode" : "Block Dates"}
                   </Button>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
                     {blockingMode ? "Click dates to block" : "Mark unavailable days"}
                   </p>
-                </CardContent>
-              </Card>
+              </div>
                 
               <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
                 <DialogContent>
@@ -1373,9 +1401,12 @@ export default function CalendarPage() {
               </Dialog>
 
               {/* Google Calendar Integration Card */}
-              <Card className={`${googleCalendarStatus?.connected ? 'border-amber-300 bg-amber-50' : 'border-gray-200 dark:border-gray-700 hover:border-blue-200 transition-colors'}`}>
-                <CardContent className="p-4 space-y-2">
-                  <Button 
+              <div className={`cal-card-hover rounded-2xl border p-4 space-y-2 ${
+                googleCalendarStatus?.connected
+                  ? 'border-emerald-200/60 dark:border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20'
+                  : 'border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm'
+              }`}>
+                  <Button
                     onClick={() => {
                       if (googleCalendarStatus?.connected) {
                         disconnectGoogleCalendarMutation.mutate();
@@ -1383,28 +1414,26 @@ export default function CalendarPage() {
                         handleConnectGoogleCalendar();
                       }
                     }}
-                    className={`w-full shadow-sm ${
-                      googleCalendarStatus?.connected 
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700' 
-                        : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                    className={`w-full rounded-xl shadow-sm ${
+                      googleCalendarStatus?.connected
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-emerald-500/20'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-amber-500/20'
                     }`}
                     data-testid="button-google-calendar"
                   >
                     <Calendar className="w-4 h-4 mr-2" />
                     {googleCalendarStatus?.connected ? "Connected to Google" : "Connect Google Calendar"}
                   </Button>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                     {googleCalendarStatus?.connected ? "Syncing with Google Calendar" : "Sync with Google Calendar"}
                   </p>
-                </CardContent>
-              </Card>
+              </div>
 
               {/* Calendar Settings Card */}
-              <Card className="border-gray-200 dark:border-gray-700 hover:border-green-200 transition-colors">
-                <CardContent className="p-4 space-y-2">
+              <div className="cal-card-hover rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm p-4 space-y-2">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 shadow-sm">
+                      <Button className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-sm shadow-amber-500/20">
                         <Settings className="w-4 h-4 mr-2" />
                         Calendar Settings
                       </Button>
@@ -1421,7 +1450,7 @@ export default function CalendarPage() {
                         {/* Booking Window Setting */}
                         <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                           <div className="flex items-center gap-2 mb-3">
-                            <Calendar className="w-4 h-4 text-blue-600" />
+                            <Calendar className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                             <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Booking Window</h3>
                           </div>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
@@ -1451,7 +1480,7 @@ export default function CalendarPage() {
                         {/* Weekly Schedule Setup */}
                         <div>
                           <div className="flex items-center gap-2 mb-3">
-                            <Clock className="w-4 h-4 text-green-600" />
+                            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                             <h3 className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">Weekly Schedule</h3>
                           </div>
 
@@ -1553,7 +1582,7 @@ export default function CalendarPage() {
                           <Button
                             onClick={() => saveAvailabilityMutation.mutate()}
                             disabled={saveAvailabilityMutation.isPending}
-                            className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-base font-medium"
+                            className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-base font-medium"
                             data-testid="button-save-schedule"
                           >
                             <Save className="w-5 h-5 mr-2" />
@@ -1563,11 +1592,10 @@ export default function CalendarPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
                     Manage availability schedule
                   </p>
-                </CardContent>
-              </Card>
+              </div>
             </div>
           )}
         </div>
@@ -1768,7 +1796,7 @@ export default function CalendarPage() {
                 <Button
                   onClick={handleScheduleSubmit}
                   disabled={scheduleWorkOrderMutation.isPending || createEventMutation.isPending}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
                   data-testid="button-confirm-schedule"
                 >
                   {scheduleWorkOrderMutation.isPending || createEventMutation.isPending ? 'Scheduling...' : 'Schedule'}
@@ -1799,7 +1827,7 @@ export default function CalendarPage() {
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                     {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                   </h2>
                   <Button
@@ -1814,16 +1842,16 @@ export default function CalendarPage() {
 
             {/* Calendar Selection */}
             {googleCalendarStatus?.connected && (
-              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
+              <Card className="border border-amber-200/40 dark:border-amber-500/10 shadow-sm bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/10">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-500 rounded-full">
+                      <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-sm">
                         <Calendar className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Selected Calendars</p>
-                        <p className="text-sm text-blue-900 dark:text-blue-100">
+                        <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Selected Calendars</p>
+                        <p className="text-sm text-amber-900 dark:text-amber-100">
                           {selectedCalendars.length > 0 ? `${selectedCalendars.length} calendar(s) selected` : 'All calendars'}
                         </p>
                       </div>
@@ -2017,7 +2045,7 @@ export default function CalendarPage() {
                     <Button
                       onClick={() => selectedDate && openScheduleDialog(selectedDate)}
                       size="sm"
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                      className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
                       data-testid="button-open-schedule-dialog"
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -2289,12 +2317,12 @@ export default function CalendarPage() {
               return (
                 <>
                   {/* Header */}
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 sm:p-6">
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-4 sm:p-6">
                     <DialogHeader>
                       <DialogTitle className="text-white text-lg sm:text-xl">
                         Booking Details
                       </DialogTitle>
-                      <DialogDescription className="text-blue-100">
+                      <DialogDescription className="text-amber-100">
                         {selectedBooking.date && new Date(selectedBooking.date).toLocaleDateString('en-US', {
                           weekday: 'long',
                           year: 'numeric',
@@ -2481,7 +2509,7 @@ export default function CalendarPage() {
                     {/* View Lead Button */}
                     {selectedBooking.bookedBy && (
                       <Button
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                        className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
                         onClick={() => {
                           setBookingDetailsOpen(false);
                           openLeadDetailsModal(selectedBooking.bookedBy, selectedBooking);
@@ -2556,7 +2584,7 @@ export default function CalendarPage() {
                     }}
                     className="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-full pl-4 pr-5 py-3 shadow-lg border"
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-600 to-blue-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm shadow-amber-500/20">
                       <Settings className="w-5 h-5 text-white" />
                     </div>
                     <span className="font-medium text-gray-700">Availability Settings</span>
@@ -2612,7 +2640,7 @@ export default function CalendarPage() {
               className={`fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-colors ${
                 fabOpen
                   ? 'bg-gray-600'
-                  : 'bg-gradient-to-r from-blue-600 to-purple-600'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-amber-500/30'
               }`}
               whileTap={{ scale: 0.95 }}
             >
@@ -2781,7 +2809,7 @@ export default function CalendarPage() {
                   setMobileSettingsOpen(false);
                 }}
                 disabled={saveAvailabilityMutation.isPending}
-                className="w-full h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-base font-medium"
+                className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-base font-medium"
               >
                 <Save className="w-5 h-5 mr-2" />
                 {saveAvailabilityMutation.isPending ? "Saving..." : "Save Settings"}

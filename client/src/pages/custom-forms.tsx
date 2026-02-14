@@ -258,29 +258,25 @@ export default function CustomForms() {
   if (!hasAccess) {
     return (
       <DashboardLayout>
-        <div className="p-6">
-          <div className="max-w-2xl mx-auto mt-20">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Lock className="w-8 h-8 text-gray-400" />
+        <div className="p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="max-w-2xl mx-auto mt-16">
+            <div className="rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm text-center py-16 px-6">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800/50 flex items-center justify-center mx-auto mb-4 border border-gray-200/60 dark:border-gray-700/40">
+                    <Lock className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Custom Forms</h2>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Custom Forms</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
                     Custom forms are not available on the free plan. Upgrade to create dedicated forms for different services.
                   </p>
                   <div className="flex gap-3 justify-center">
                     <Link href="/dashboard">
-                      <Button variant="outline">Back to Dashboard</Button>
+                      <Button variant="outline" className="rounded-full">Back to Dashboard</Button>
                     </Link>
                     <Link href="/pricing">
-                      <Button>View Plans</Button>
+                      <Button className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20">View Plans</Button>
                     </Link>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           </div>
         </div>
       </DashboardLayout>
@@ -289,21 +285,52 @@ export default function CustomForms() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Mobile-First Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white truncate">Custom Forms</h1>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">Create multiple independent forms with different services and designs</p>
-          </div>
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white w-full sm:w-auto shadow-lg">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Form
-              </Button>
-            </DialogTrigger>
+      <style>{`
+        @keyframes cf-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .cf-stagger { animation: cf-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .cf-stagger-1 { animation-delay: 0ms; }
+        .cf-stagger-2 { animation-delay: 60ms; }
+        .cf-stagger-3 { animation-delay: 120ms; }
+        .cf-stagger-4 { animation-delay: 180ms; }
+        .cf-stagger-5 { animation-delay: 240ms; }
+        .cf-card-hover { transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1); }
+        .cf-card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 30px -8px rgba(0,0,0,0.12); }
+        .dark .cf-card-hover:hover { box-shadow: 0 8px 30px -8px rgba(0,0,0,0.4); }
+        .cf-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8 cf-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        {/* Hero Header */}
+        <div className="cf-stagger cf-stagger-1 relative overflow-hidden rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8 mb-6">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-orange-200/20 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
+          <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/20">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-amber-600/70 dark:text-amber-400/60 font-semibold mb-1">Forms</p>
+                <h1 className="text-3xl sm:text-4xl text-gray-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  Custom Forms
+                </h1>
+                <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                  Create multiple independent forms with different services and designs
+                </p>
+              </div>
+            </div>
+
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white w-full sm:w-auto shadow-md shadow-amber-500/20 px-6">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Form
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Create Custom Form</DialogTitle>
@@ -388,81 +415,80 @@ export default function CustomForms() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900/50 hover:shadow-xl transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Total Forms</p>
-                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{customForms.length}</p>
-                </div>
-                <div className="h-12 w-12 bg-blue-500 rounded-full flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
+        {/* Metric Cards */}
+        <div className="cf-stagger cf-stagger-2 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+          <div className="cf-card-hover relative overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/20 backdrop-blur-sm p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] sm:text-xs uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400 mb-2">Total Forms</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  {customForms.length}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white/60 dark:bg-white/5 border border-white/80 dark:border-white/10">
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </div>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900/50 hover:shadow-xl transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-700 dark:text-green-300">Active Forms</p>
-                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">
-                    {customForms.filter((form) => form.enabled).length}
-                  </p>
-                </div>
-                <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
-                  <Globe className="w-6 h-6 text-white" />
-                </div>
+          <div className="cf-card-hover relative overflow-hidden rounded-2xl border border-emerald-200/60 dark:border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/20 dark:to-teal-500/20 backdrop-blur-sm p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] sm:text-xs uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400 mb-2">Active Forms</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  {customForms.filter((form) => form.enabled).length}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white/60 dark:bg-white/5 border border-white/80 dark:border-white/10">
+                <Globe className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+            </div>
+          </div>
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900/50 hover:shadow-xl transition-all duration-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-700 dark:text-purple-300">Total Leads</p>
-                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">0</p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">From custom forms</p>
-                </div>
-                <div className="h-12 w-12 bg-purple-500 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
+          <div className="cf-card-hover relative overflow-hidden rounded-2xl border border-violet-200/60 dark:border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-purple-500/10 dark:from-violet-500/20 dark:to-purple-500/20 backdrop-blur-sm p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] sm:text-xs uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400 mb-2">Total Leads</p>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  0
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">From custom forms</p>
               </div>
-            </CardContent>
-          </Card>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-white/60 dark:bg-white/5 border border-white/80 dark:border-white/10">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600 dark:text-violet-400" />
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Forms Grid */}
         {customForms.length === 0 ? (
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
-            <CardContent className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No custom forms yet</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <div className="cf-stagger cf-stagger-3 rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm text-center py-16 px-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800/50 flex items-center justify-center mx-auto mb-4 border border-gray-200/60 dark:border-gray-700/40">
+                <FileText className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>No custom forms yet</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
                 Create your first custom form to test different designs and service combinations on various landing pages.
               </p>
-              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              <Button onClick={() => setIsCreateDialogOpen(true)} className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20 px-6">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your First Form
               </Button>
-            </CardContent>
-          </Card>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="cf-stagger cf-stagger-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {customForms.map((form) => (
-              <Card key={form.id} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-800 hover:shadow-xl transition-all duration-200">
-                <CardHeader className="pb-4">
+              <div key={form.id} className="cf-card-hover rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
+                <div className="px-5 pt-5 pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{form.name}</CardTitle>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>{form.name}</h3>
                       {form.description && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{form.description}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{form.description}</p>
                       )}
                     </div>
                     <DropdownMenu>
@@ -517,9 +543,9 @@ export default function CustomForms() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </CardHeader>
-                
-                <CardContent className="overflow-hidden">
+                </div>
+
+                <div className="px-5 pb-5 overflow-hidden">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between min-w-0">
                       <span className="text-sm text-gray-600 dark:text-gray-400 flex-shrink-0">URL Slug</span>
@@ -547,29 +573,29 @@ export default function CustomForms() {
                       </span>
                     </div>
 
-                    <div className="pt-4 flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <div className="pt-4 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setConfigureForm(form)}
-                        className="flex-1 min-w-0"
+                        className="flex-1 min-w-0 rounded-lg border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/10 hover:border-amber-300 dark:hover:border-amber-700/40"
                       >
                         <Settings className="w-4 h-4 mr-1 flex-shrink-0" />
                         <span className="truncate">Configure</span>
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => copyFormUrl(form)}
-                        className="flex-1 min-w-0"
+                        className="flex-1 min-w-0 rounded-lg border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/10 hover:border-amber-300 dark:hover:border-amber-700/40"
                       >
                         <Copy className="w-4 h-4 mr-1 flex-shrink-0" />
                         <span className="truncate">Copy URL</span>
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}

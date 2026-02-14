@@ -50,6 +50,7 @@ interface UserProfile {
   userType: "owner" | "employee";
   ownerId?: string;
   organizationName?: string;
+  businessPhone?: string;
   isActive: boolean;
   plan?: "free" | "trial" | "starter" | "professional" | "enterprise" | "standard" | "plus" | "plus_seo";
   stripeCustomerId?: string;
@@ -116,6 +117,21 @@ export default function ProfilePage() {
     queryFn: () => fetch('/api/profile').then(res => res.json()),
   });
 
+  // Fetch business settings for the phone number
+  const { data: businessSettings } = useQuery<any>({
+    queryKey: ['/api/business-settings'],
+  });
+
+  // Sync business phone when settings load
+  useEffect(() => {
+    if (businessSettings?.businessPhone && !isEditing) {
+      setProfileData(prev => ({
+        ...prev,
+        businessPhone: businessSettings.businessPhone
+      }));
+    }
+  }, [businessSettings, isEditing]);
+
   // Handle payment success callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -168,6 +184,7 @@ export default function ProfilePage() {
       apiRequest('PATCH', '/api/profile', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
@@ -242,6 +259,7 @@ export default function ProfilePage() {
         firstName: profile?.firstName || '',
         lastName: profile?.lastName || '',
         organizationName: profile?.organizationName || '',
+        businessPhone: businessSettings?.businessPhone || '',
       });
     }
     setIsEditing(!isEditing);
@@ -469,6 +487,22 @@ export default function ProfilePage() {
                       onChange={(e) => setProfileData({...profileData, organizationName: e.target.value})}
                       disabled={!isEditing}
                       className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="businessPhone" className="flex items-center gap-2">
+                      <Settings className="w-4 h-4" />
+                      Business Phone
+                    </Label>
+                    <Input
+                      id="businessPhone"
+                      type="tel"
+                      value={isEditing ? (profileData.businessPhone || '') : (businessSettings?.businessPhone || '')}
+                      onChange={(e) => setProfileData({...profileData, businessPhone: e.target.value})}
+                      disabled={!isEditing}
+                      className="mt-1"
+                      placeholder="(555) 123-4567"
                     />
                   </div>
 

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Eye, FileIcon, Image as ImageIcon, Palette, Paperclip, Play, Layout, Building2, Upload, Trash2 } from "lucide-react";
+import { Eye, FileIcon, Image as ImageIcon, Palette, Paperclip, Play, Layout, Building2, Upload, Trash2, Save, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessSettings } from "@shared/schema";
@@ -274,9 +274,6 @@ export default function EstimatePageSettings() {
       ? []
       : estimatePageSettings.defaultAttachments || [];
 
-  const getPreviewAttachmentsForCategory = (category: EstimateAttachment["category"]) =>
-    previewAttachments.filter((attachment) => (attachment.category || "custom") === category);
-
   const previewEstimate = {
     estimateNumber: "EST-1024",
     customerName: "Alex Johnson",
@@ -341,10 +338,10 @@ export default function EstimatePageSettings() {
         {attachments.map(({ attachment, index }) => (
           <div
             key={`${attachment.url}-${index}`}
-            className="flex items-center justify-between border rounded-lg p-3 bg-white dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
+            className="flex items-center justify-between border border-gray-200/60 dark:border-gray-700/40 rounded-xl p-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded bg-gray-100 dark:bg-gray-900 flex items-center justify-center flex-shrink-0 text-blue-600">
+              <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-900 flex items-center justify-center flex-shrink-0 text-blue-600">
                 {attachment.type === "image" ? (
                   <ImageIcon className="h-5 w-5" />
                 ) : (
@@ -415,12 +412,12 @@ export default function EstimatePageSettings() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="p-6">
+        <div className="p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <div className="max-w-7xl mx-auto space-y-6">
-            <div className="h-12 bg-gray-200 dark:bg-gray-800 rounded w-1/3 animate-pulse" />
+            <div className="animate-pulse rounded-2xl h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
-              <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+              <div className="animate-pulse rounded-2xl h-96 bg-white/60 dark:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50" />
+              <div className="animate-pulse rounded-2xl h-96 bg-white/60 dark:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50" />
             </div>
           </div>
         </div>
@@ -430,97 +427,109 @@ export default function EstimatePageSettings() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 min-h-screen bg-slate-50/50 dark:bg-gray-900/50">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Estimate Page Editor</h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">Customize how your estimates appear to customers.</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="lg" className="shadow-sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0 overflow-hidden dark:bg-gray-900 dark:border-gray-800">
-                  <DialogHeader className="p-6 border-b bg-white dark:bg-gray-900 flex-shrink-0">
-                    <DialogTitle className="dark:text-gray-100">Estimate Page Preview</DialogTitle>
-                    <DialogDescription className="dark:text-gray-400">
-                      This preview uses your current defaults and sample data.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900/50">
-                    <div className={previewIsDetailed ? "grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] max-w-6xl mx-auto" : "space-y-6 max-w-4xl mx-auto"}>
-                      <Card className={`${previewCardClassName} dark:bg-gray-800 dark:border-gray-700`} style={{ backgroundColor: previewTheme.backgroundColor }}>
-                        <CardHeader
-                          className={`${previewHeaderClassName} dark:border-gray-700`}
-                          style={previewHeaderStyle}
-                        >
-                          {previewIsDetailed ? (
-                            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                              <div>
-                                <p className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-gray-400">Detailed Estimate</p>
-                                <CardTitle className={`text-2xl font-bold mt-2 ${previewHeaderTitleClass}`}>
-                                  Estimate #{previewEstimate.estimateNumber}
-                                </CardTitle>
-                                <p className="text-gray-600 dark:text-gray-300">Prepared for {previewEstimate.customerName}</p>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Layout: {previewLayoutId}</p>
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-slate-100 dark:bg-gray-700 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-gray-200">Draft</span>
-                                <span className="rounded-full bg-emerald-100 dark:bg-emerald-900/40 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">Confirmed Estimate</span>
-                                <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">Total</span>
-                                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(previewTotal)}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                              <div>
-                                <CardTitle className={`text-2xl font-bold mb-2 ${previewHeaderTitleClass}`}>
-                                  Professional Estimate
-                                </CardTitle>
-                                <p className={previewHeaderMutedClass}>
-                                  Estimate #{previewEstimate.estimateNumber}
-                                </p>
-                                <p className={`${previewHeaderMutedClass} mt-2 text-sm`}>
-                                  Layout: {previewLayoutId}
-                                </p>
-                              </div>
-                              <div className="text-left md:text-right">
-                                <p className={previewHeaderMutedClass}>Issue Date</p>
-                                <p className={`font-semibold ${previewHeaderTitleClass}`}>
-                                  {formatPreviewDate(previewEstimate.createdAt)}
-                                </p>
-                                <p className={`${previewHeaderMutedClass} mt-2`}>Valid Until</p>
-                                <p className={`font-semibold ${previewHeaderTitleClass}`}>
-                                  {formatPreviewDate(previewEstimate.validUntil)}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </CardHeader>
+      <style>{`
+        @keyframes dash-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .dash-stagger { animation: dash-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .dash-stagger-1 { animation-delay: 0ms; }
+        .dash-stagger-2 { animation-delay: 60ms; }
+        .dash-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+      `}</style>
 
-                        <CardContent className={previewIsMinimal ? "p-6" : "p-8"}>
-                          {previewShowBusinessDetails && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
-                              <h3 className="text-lg font-semibold mb-4" style={{ color: previewTheme.textColor }}>
-                                Business Details
-                              </h3>
-                              <div className={previewIsDetailed ? "bg-transparent p-0" : "bg-gray-50 dark:bg-slate-900 rounded-lg p-4"}>
+      <div className="p-4 sm:p-6 lg:p-8 dash-grain min-h-screen" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="max-w-7xl mx-auto space-y-6">
+
+          {/* Hero Header */}
+          <div className="dash-stagger dash-stagger-1 relative overflow-hidden rounded-2xl border border-blue-200/40 dark:border-blue-500/10 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-200/30 to-transparent dark:from-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-blue-600/70 dark:text-blue-400/60 font-semibold mb-2">Design Editor</p>
+                <h1 className="text-3xl sm:text-4xl text-gray-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  Estimate Designer
+                </h1>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                  Personalize the layout, branding, and standard attachments for every customer estimate.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="rounded-xl h-10 px-4 bg-white/50 backdrop-blur-sm border-white/20">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Live Preview
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-6xl w-[95vw] h-[90vh] p-0 flex flex-col gap-0 overflow-hidden dark:bg-gray-900 dark:border-gray-800">
+                    <DialogHeader className="p-6 border-b bg-white dark:bg-gray-900 flex-shrink-0">
+                      <DialogTitle className="dark:text-gray-100" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Estimate Preview</DialogTitle>
+                      <DialogDescription className="dark:text-gray-400">
+                        This preview uses your current defaults and sample customer data.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-950">
+                      <div className={previewIsDetailed ? "grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] max-w-6xl mx-auto" : "space-y-6 max-w-4xl mx-auto"}>
+                        <Card className={`${previewCardClassName} rounded-2xl border-gray-200/60 dark:border-gray-700/40 overflow-hidden`} style={{ backgroundColor: previewTheme.backgroundColor }}>
+                          <CardHeader
+                            className={`${previewHeaderClassName} dark:border-gray-700`}
+                            style={previewHeaderStyle}
+                          >
+                            {previewIsDetailed ? (
+                              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                  <p className="text-xs uppercase tracking-[0.2em] opacity-70">Detailed Estimate</p>
+                                  <CardTitle className={`text-2xl font-bold mt-2 ${previewHeaderTitleClass}`} style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                                    Estimate #{previewEstimate.estimateNumber}
+                                  </CardTitle>
+                                  <p className="opacity-80">Prepared for {previewEstimate.customerName}</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-semibold">Confirmed Estimate</span>
+                                  <span className="ml-2 text-sm opacity-70">Total</span>
+                                  <span className="text-lg font-bold">{formatCurrency(previewTotal)}</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div>
+                                  <CardTitle className={`text-3xl font-bold mb-2 ${previewHeaderTitleClass}`} style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                                    Professional Estimate
+                                  </CardTitle>
+                                  <p className={previewHeaderMutedClass}>
+                                    Estimate #{previewEstimate.estimateNumber}
+                                  </p>
+                                </div>
+                                <div className="text-left md:text-right text-sm">
+                                  <p className={previewHeaderMutedClass}>Valid Until</p>
+                                  <p className={`font-semibold ${previewHeaderTitleClass}`}>
+                                    {formatPreviewDate(previewEstimate.validUntil)}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </CardHeader>
+
+                          <CardContent className={previewIsMinimal ? "p-6" : "p-8"}>
+                            {previewShowBusinessDetails && (
+                              <div className={`mb-8 ${previewIsDetailed ? "rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-900/50 p-6" : ""}`}>
+                                <h3 className="text-lg font-bold mb-4" style={{ color: previewTheme.textColor, fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                                  Business Details
+                                </h3>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                                   {previewShowBusinessLogo && estimatePageSettings.defaultLogoUrl && (
                                     <img
                                       src={estimatePageSettings.defaultLogoUrl}
                                       alt={`${previewBusinessName} logo`}
-                                      className="h-12 w-auto object-contain"
+                                      className="h-14 w-auto object-contain"
                                     />
                                   )}
-                                  <div className="space-y-1 text-sm text-gray-700 dark:text-slate-200">
+                                  <div className="space-y-1 text-sm opacity-80" style={{ color: previewTheme.textColor }}>
                                     {previewShowBusinessName && (
-                                      <div className="font-semibold text-gray-900 dark:text-slate-100">{previewBusinessName}</div>
+                                      <div className="font-bold text-base">{previewBusinessName}</div>
                                     )}
                                     {previewShowBusinessAddress && <div>{previewBusinessAddress}</div>}
                                     {previewShowBusinessEmail && <div>{previewBusinessEmail}</div>}
@@ -528,422 +537,209 @@ export default function EstimatePageSettings() {
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
-                          <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
-                            <h3 className="text-lg font-semibold mb-4" style={{ color: previewTheme.textColor }}>
-                              Customer Information
-                            </h3>
-                            <div className={previewIsDetailed ? "bg-transparent p-0" : "bg-gray-50 dark:bg-slate-900 rounded-lg p-4"}>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <p className="text-sm text-gray-500 dark:text-slate-400">Name</p>
-                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerName}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500 dark:text-slate-400">Email</p>
-                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerEmail}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500 dark:text-slate-400">Phone</p>
-                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerPhone}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-500 dark:text-slate-400">Address</p>
-                                  <p className="font-medium text-gray-900 dark:text-slate-100">{previewEstimate.customerAddress}</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {previewMessage && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Message</h3>
-                              <div
-                                className={
-                                  previewIsMinimal
-                                    ? "border border-gray-200 dark:border-slate-700 p-4 rounded-lg"
-                                    : previewIsDetailed
-                                      ? "rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4"
-                                      : "bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded-lg"
-                                }
-                              >
-                                <p className="leading-relaxed whitespace-pre-wrap" style={{ color: previewTheme.textColor }}>
-                                  {previewMessage}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {estimatePageSettings.defaultShowVideo !== false &&
-                            estimatePageSettings.defaultVideoUrl &&
-                            getVideoEmbedUrl(estimatePageSettings.defaultVideoUrl) && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <Play className="w-5 h-5" style={{ color: previewTheme.primaryColor }} />
-                                Video
+                            )}
+                            
+                            <div className={`mb-8 ${previewIsDetailed ? "rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-900/50 p-6" : ""}`}>
+                              <h3 className="text-lg font-bold mb-4" style={{ color: previewTheme.textColor, fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                                Customer Information
                               </h3>
-                              <div className="aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                <iframe
-                                  src={getVideoEmbedUrl(estimatePageSettings.defaultVideoUrl)!}
-                                  className="w-full h-full"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                  title="Estimate Video Preview"
-                                />
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                  <p className="text-xs uppercase tracking-wider opacity-50 mb-1">Name</p>
+                                  <p className="font-medium">{previewEstimate.customerName}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs uppercase tracking-wider opacity-50 mb-1">Email</p>
+                                  <p className="font-medium">{previewEstimate.customerEmail}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs uppercase tracking-wider opacity-50 mb-1">Phone</p>
+                                  <p className="font-medium">{previewEstimate.customerPhone}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs uppercase tracking-wider opacity-50 mb-1">Address</p>
+                                  <p className="font-medium">{previewEstimate.customerAddress}</p>
+                                </div>
                               </div>
                             </div>
-                          )}
 
-                          {previewAttachments.length > 0 && (
-                            <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <Paperclip className="w-5 h-5" style={{ color: previewTheme.primaryColor }} />
-                                Attachments
-                              </h3>
-                              <div className="space-y-4">
-                                {(["terms", "insurance", "custom"] as const).map((category) => {
-                                  const categoryAttachments = getPreviewAttachmentsForCategory(category);
-                                  if (categoryAttachments.length === 0) return null;
-                                  return (
-                                    <div key={category} className="space-y-2">
-                                      <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">
-                                        {attachmentSections[category].label}
-                                      </p>
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {categoryAttachments.map((attachment, index) => (
-                                          <div
-                                            key={`${attachment.url}-${index}`}
-                                            className="flex items-center gap-3 p-3 border rounded-lg bg-white dark:bg-slate-900 dark:border-slate-700"
-                                          >
-                                            <div className="w-10 h-10 rounded bg-gray-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
-                                              {attachment.type === "image" ? (
-                                                <ImageIcon className="w-5 h-5 text-gray-500 dark:text-slate-400" />
-                                              ) : (
-                                                <FileIcon className="w-5 h-5 text-gray-500 dark:text-slate-400" />
-                                              )}
-                                            </div>
-                                            <div className="min-w-0">
-                                              <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
-                                                {attachment.name || "Attachment"}
-                                              </p>
-                                              <p className="text-xs text-gray-500 dark:text-slate-400 uppercase">{attachment.type}</p>
-                                            </div>
-                                          </div>
-                                        ))}
+                            {previewMessage && (
+                              <div className={`mb-8 ${previewIsDetailed ? "rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-900/50 p-6" : ""}`}>
+                                <h3 className="text-lg font-bold mb-4" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Message</h3>
+                                <div className="bg-blue-50/50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 p-5 rounded-2xl">
+                                  <p className="leading-relaxed whitespace-pre-wrap text-sm" style={{ color: previewTheme.textColor }}>
+                                    {previewMessage}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {previewAttachments.length > 0 && (
+                              <div className={`mb-8 ${previewIsDetailed ? "rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-900/50 p-6" : ""}`}>
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                                  <Paperclip className="w-5 h-5 text-blue-500" />
+                                  Attachments
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {previewAttachments.map((attachment, index) => (
+                                    <div
+                                      key={`${attachment.url}-${index}`}
+                                      className="flex items-center gap-3 p-3 border border-gray-200/60 dark:border-gray-700/40 rounded-xl bg-white dark:bg-gray-800"
+                                    >
+                                      <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-900 flex items-center justify-center flex-shrink-0">
+                                        {attachment.type === "image" ? <ImageIcon className="w-5 h-5 text-blue-500" /> : <FileIcon className="w-5 h-5 text-blue-500" />}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="text-sm font-medium truncate">{attachment.name || "Attachment"}</p>
+                                        <p className="text-[10px] uppercase opacity-50 font-bold">{attachment.type}</p>
                                       </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className={`mb-8 ${previewIsDetailed ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5" : ""}`}>
-                            <h3 className="text-lg font-semibold mb-4" style={{ color: previewTheme.textColor }}>
-                              Services & Pricing
-                            </h3>
-                            <div className="overflow-x-auto">
-                              <table className="w-full border-collapse border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
-                                <thead className="bg-gray-50 dark:bg-slate-900">
-                                  <tr>
-                                    <th className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-100">
-                                      Service
-                                    </th>
-                                    <th className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-left font-semibold text-gray-900 dark:text-slate-100">
-                                      Description
-                                    </th>
-                                    <th className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-right font-semibold text-gray-900 dark:text-slate-100">
-                                      Price
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {previewEstimate.services.map((service, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-slate-800">
-                                      <td className="border border-gray-200 dark:border-slate-700 px-4 py-3">
-                                        <div className="font-medium text-gray-900 dark:text-slate-100">{service.name}</div>
-                                      </td>
-                                      <td className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-gray-700 dark:text-slate-200">
-                                        {service.description}
-                                      </td>
-                                      <td className="border border-gray-200 dark:border-slate-700 px-4 py-3 text-right font-medium text-gray-900 dark:text-slate-100">
-                                        {formatCurrency(service.price)}
-                                      </td>
-                                    </tr>
                                   ))}
-                                </tbody>
-                              </table>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className={`mb-8 ${previewIsDetailed ? "rounded-2xl border border-gray-200/60 dark:border-gray-700/40 bg-gray-50/50 dark:bg-gray-900/50 p-6" : ""}`}>
+                              <h3 className="text-lg font-bold mb-4" style={{ color: previewTheme.textColor, fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                                Services & Pricing
+                              </h3>
+                              <div className="space-y-3">
+                                {previewEstimate.services.map((service, index) => (
+                                  <div key={index} className="flex justify-between items-start gap-4 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
+                                    <div className="min-w-0">
+                                      <p className="font-bold" style={{ color: previewTheme.textColor }}>{service.name}</p>
+                                      <p className="text-xs opacity-60 mt-0.5">{service.description}</p>
+                                    </div>
+                                    <p className="font-bold tabular-nums" style={{ color: previewTheme.textColor }}>{formatCurrency(service.price)}</p>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
 
-                          {!previewIsDetailed && (
-                            <>
-                              <div className="border-t pt-6">
-                                <div className="max-w-md ml-auto">
-                                  <div className="space-y-3">
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-gray-600 dark:text-slate-300">Subtotal:</span>
-                                      <span className="font-medium">{formatCurrency(previewSubtotal)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-gray-600 dark:text-slate-300">Tax:</span>
-                                      <span className="font-medium">{formatCurrency(previewTax)}</span>
-                                    </div>
-                                    <Separator />
-                                    <div className="flex justify-between items-center text-xl font-bold text-gray-900 dark:text-slate-100">
-                                      <span>Total:</span>
-                                      <span>{formatCurrency(previewTotal)}</span>
-                                    </div>
-                                  </div>
+                            <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
+                              <div className="max-w-md ml-auto space-y-3">
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="opacity-60">Subtotal:</span>
+                                  <span className="font-medium">{formatCurrency(previewSubtotal)}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xl font-bold" style={{ color: previewTheme.textColor }}>
+                                  <span>Total Amount:</span>
+                                  <span className="tabular-nums">{formatCurrency(previewTotal)}</span>
                                 </div>
                               </div>
-
-                              <div className="mt-8 pt-6 border-t text-center text-gray-600 dark:text-slate-300">
-                                <p className="text-sm">
-                                  This estimate is valid until {formatPreviewDate(previewEstimate.validUntil)}.
-                                </p>
-                                <p className="text-sm mt-2">
-                                  Thank you for choosing our services. We look forward to working with you!
-                                </p>
-                              </div>
-                            </>
-                          )}
-                        </CardContent>
-                      </Card>
-                      {previewIsDetailed && (
-                        <div className="space-y-6">
-                          <Card className="shadow-sm border" style={{ backgroundColor: previewTheme.backgroundColor }}>
-                            <CardContent className="p-6 space-y-4">
-                              <div>
-                                <p className="text-sm text-gray-500 dark:text-slate-400">Status</p>
-                                <p className="font-semibold text-gray-900 dark:text-slate-100">Draft</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-500 dark:text-slate-400">Estimate Number</p>
-                                <p className="font-semibold text-gray-900 dark:text-slate-100">{previewEstimate.estimateNumber}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-500 dark:text-slate-400">Issued</p>
-                                <p className="font-semibold text-gray-900 dark:text-slate-100">{formatPreviewDate(previewEstimate.createdAt)}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm text-gray-500 dark:text-slate-400">Valid Until</p>
-                                <p className="font-semibold text-gray-900 dark:text-slate-100">{formatPreviewDate(previewEstimate.validUntil)}</p>
-                              </div>
-                            </CardContent>
-                          </Card>
-
-                          <Card className="shadow-sm border" style={{ backgroundColor: previewTheme.backgroundColor }}>
-                            <CardHeader>
-                              <CardTitle className="text-lg">Line Items</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                              {previewEstimate.services.map((service, index) => (
-                                <div key={index} className="flex items-center justify-between text-sm">
-                                  <span className="text-gray-700 dark:text-slate-200">{service.name}</span>
-                                  <span className="font-semibold text-gray-900 dark:text-slate-100">{formatCurrency(service.price)}</span>
-                                </div>
-                              ))}
-                            </CardContent>
-                          </Card>
-
-                          <Card className="shadow-sm border" style={{ backgroundColor: previewTheme.backgroundColor }}>
-                            <CardHeader>
-                              <CardTitle className="text-lg">Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="border-t pt-6">
-                                <div className="space-y-3">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-600 dark:text-slate-300">Subtotal:</span>
-                                    <span className="font-medium">{formatCurrency(previewSubtotal)}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-600 dark:text-slate-300">Tax:</span>
-                                    <span className="font-medium">{formatCurrency(previewTax)}</span>
-                                  </div>
-                                  <Separator />
-                                  <div className="flex justify-between items-center text-xl font-bold text-gray-900 dark:text-slate-100">
-                                    <span>Total:</span>
-                                    <span>{formatCurrency(previewTotal)}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
               <Button
                 onClick={handleSave}
                 disabled={saveSettingsMutation.isPending}
-                size="lg"
-                className="px-8 shadow-sm"
+                className="rounded-xl h-10 px-6 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 shadow-lg shadow-gray-900/10"
               >
-                {saveSettingsMutation.isPending ? "Saving..." : "Save Changes"}
+                <Save className="h-4 w-4 mr-2" />
+                {saveSettingsMutation.isPending ? "Saving..." : "Save Designer Changes"}
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <div className="space-y-8">
-              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
+          <div className="dash-stagger dash-stagger-2 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="space-y-6">
+              <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
-                    <Layout className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                    Layout & Theme
+                  <CardTitle className="flex items-center gap-2 text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    <Layout className="h-5 w-5 text-blue-500" />
+                    Layout & Visual Theme
                   </CardTitle>
-                  <CardDescription className="dark:text-gray-400">
-                    Choose the structural layout and color scheme for your estimates.
+                  <CardDescription>
+                    Configure the structural layout and primary color scheme.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div>
-                    <Label htmlFor="estimate-layout-default" className="text-sm font-medium mb-2 block dark:text-gray-200">Layout Preset</Label>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Layout Strategy</Label>
                     <Select
                       value={estimatePageSettings.defaultLayoutId || "classic"}
                       onValueChange={(value) =>
                         setEstimatePageSettings((prev) => ({ ...prev, defaultLayoutId: value }))
                       }
                     >
-                      <SelectTrigger id="estimate-layout-default" className="h-11 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+                      <SelectTrigger className="h-11 rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="dark:bg-gray-900 dark:border-gray-700">
-                        <SelectItem value="classic" className="dark:text-gray-100 dark:focus:bg-gray-800">Classic (Standard clean look)</SelectItem>
-                        <SelectItem value="minimal" className="dark:text-gray-100 dark:focus:bg-gray-800">Minimal (Simplified, no borders)</SelectItem>
-                        <SelectItem value="detailed" className="dark:text-gray-100 dark:focus:bg-gray-800">Detailed (Split view with sidebar)</SelectItem>
+                      <SelectContent className="rounded-xl border-gray-200 dark:border-gray-700">
+                        <SelectItem value="classic">Classic Modern</SelectItem>
+                        <SelectItem value="minimal">Minimalist White</SelectItem>
+                        <SelectItem value="detailed">Detailed Split-View</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-sm font-medium dark:text-gray-200">Theme Colors</Label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Primary Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
-                            style={{ backgroundColor: estimatePageSettings.defaultTheme?.primaryColor || "#2563eb" }}
-                          />
-                          <Input
-                            type="color"
-                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
-                            value={estimatePageSettings.defaultTheme?.primaryColor || "#2563eb"}
-                            onChange={(e) =>
-                              setEstimatePageSettings((prev) => ({
-                                ...prev,
-                                defaultTheme: { ...prev.defaultTheme, primaryColor: e.target.value },
-                              }))
-                            }
-                          />
+                    <Label className="text-sm font-semibold">Color Palette</Label>
+                    <div className="grid grid-cols-2 gap-4">
+                      {['primaryColor', 'accentColor', 'backgroundColor', 'textColor'].map((key) => (
+                        <div key={key} className="space-y-2">
+                          <Label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">
+                            {key.replace('Color', '').replace('default', '')}
+                          </Label>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
+                              style={{ backgroundColor: (estimatePageSettings.defaultTheme as any)?.[key] || "#000" }}
+                            />
+                            <Input
+                              type="color"
+                              className="w-full h-10 p-1 cursor-pointer rounded-xl dark:bg-gray-900 dark:border-gray-700"
+                              value={(estimatePageSettings.defaultTheme as any)?.[key] || "#000"}
+                              onChange={(e) =>
+                                setEstimatePageSettings((prev) => ({
+                                  ...prev,
+                                  defaultTheme: { ...prev.defaultTheme, [key]: e.target.value },
+                                }))
+                              }
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Accent Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
-                            style={{ backgroundColor: estimatePageSettings.defaultTheme?.accentColor || "#16a34a" }}
-                          />
-                          <Input
-                            type="color"
-                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
-                            value={estimatePageSettings.defaultTheme?.accentColor || "#16a34a"}
-                            onChange={(e) =>
-                              setEstimatePageSettings((prev) => ({
-                                ...prev,
-                                defaultTheme: { ...prev.defaultTheme, accentColor: e.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Background Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
-                            style={{ backgroundColor: estimatePageSettings.defaultTheme?.backgroundColor || "#ffffff" }}
-                          />
-                          <Input
-                            type="color"
-                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
-                            value={estimatePageSettings.defaultTheme?.backgroundColor || "#ffffff"}
-                            onChange={(e) =>
-                              setEstimatePageSettings((prev) => ({
-                                ...prev,
-                                defaultTheme: { ...prev.defaultTheme, backgroundColor: e.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Text Color</Label>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm flex-shrink-0" 
-                            style={{ backgroundColor: estimatePageSettings.defaultTheme?.textColor || "#111827" }}
-                          />
-                          <Input
-                            type="color"
-                            className="w-full h-10 p-1 cursor-pointer dark:bg-gray-900 dark:border-gray-700"
-                            value={estimatePageSettings.defaultTheme?.textColor || "#111827"}
-                            onChange={(e) =>
-                              setEstimatePageSettings((prev) => ({
-                                ...prev,
-                                defaultTheme: { ...prev.defaultTheme, textColor: e.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="estimate-default-message" className="text-sm font-medium mb-2 block dark:text-gray-200">Default Message</Label>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">Default Global Message</Label>
                     <Textarea
-                      id="estimate-default-message"
                       value={estimatePageSettings.defaultMessage || ""}
                       onChange={(e) =>
                         setEstimatePageSettings((prev) => ({ ...prev, defaultMessage: e.target.value }))
                       }
-                      placeholder="Add a friendly message that appears on every estimate (e.g. 'Thank you for your business!')..."
+                      placeholder="Add a consistent greeting or footer message..."
                       rows={4}
-                      className="resize-none dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                      className="rounded-xl resize-none bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                     />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
+              <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
-                    <Building2 className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                    Business Branding
+                  <CardTitle className="flex items-center gap-2 text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    <Building2 className="h-5 w-5 text-amber-500" />
+                    Business Identity
                   </CardTitle>
-                  <CardDescription className="dark:text-gray-400">
-                    Configure which business details are visible on your estimates.
+                  <CardDescription>
+                    Choose which brand assets appear on your estimates.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center justify-between gap-6 mb-4">
+                  <div className="bg-gray-50/50 dark:bg-gray-900/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <Label htmlFor="estimate-show-logo" className="text-base font-medium dark:text-gray-200">
-                          Show Business Logo
-                        </Label>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Display your company logo at the top of the estimate.</p>
+                        <Label className="text-base font-bold">Business Logo</Label>
+                        <p className="text-xs text-gray-500">Enable brand visibility on top of every page.</p>
                       </div>
                       <Switch
-                        id="estimate-show-logo"
                         checked={estimatePageSettings.defaultShowBusinessLogo === true}
                         onCheckedChange={(checked) =>
                           setEstimatePageSettings((prev) => ({ ...prev, defaultShowBusinessLogo: checked }))
@@ -951,70 +747,38 @@ export default function EstimatePageSettings() {
                       />
                     </div>
                     
-                    <div className="space-y-3 pl-1">
-                      <Label className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold">Logo Image</Label>
-                      <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-4 mt-4">
+                      <div className="h-20 w-20 rounded-2xl bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 flex items-center justify-center overflow-hidden p-2">
                         {estimatePageSettings.defaultLogoUrl ? (
-                          <div className="relative group">
-                            <div className="h-20 w-auto p-2 bg-white dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                              <img
-                                src={estimatePageSettings.defaultLogoUrl}
-                                alt="Business logo"
-                                className="h-full w-auto object-contain"
-                              />
-                            </div>
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() =>
-                                setEstimatePageSettings((prev) => ({
-                                  ...prev,
-                                  defaultLogoUrl: "",
-                                  defaultShowBusinessLogo: false,
-                                }))
-                              }
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
+                          <img src={estimatePageSettings.defaultLogoUrl} className="max-h-full w-auto object-contain" />
                         ) : (
-                          <div className="h-20 w-20 bg-gray-100 dark:bg-gray-800 rounded-md border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
-                            <ImageIcon className="h-8 w-8 opacity-50" />
-                          </div>
+                          <ImageIcon className="h-8 w-8 text-gray-300" />
                         )}
-                        
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          allowedFileTypes={logoAllowedFileTypes}
-                          onGetUploadParameters={(file) => getLogoUploadParameters(file.name)}
-                          onComplete={handleLogoUploadComplete}
-                          buttonClassName="whitespace-nowrap"
-                        >
-                          <Button variant="outline" size="sm" className="gap-2 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700">
-                            <Upload className="h-4 w-4" />
-                            {estimatePageSettings.defaultLogoUrl ? "Change Logo" : "Upload Logo"}
-                          </Button>
-                        </ObjectUploader>
                       </div>
+                      <ObjectUploader
+                        maxNumberOfFiles={1}
+                        allowedFileTypes={logoAllowedFileTypes}
+                        onGetUploadParameters={(file) => getLogoUploadParameters(file.name)}
+                        onComplete={handleLogoUploadComplete}
+                      >
+                        <Button variant="outline" size="sm" className="rounded-xl border-gray-300 h-9">
+                          <Upload className="h-3.5 w-3.5 mr-2" />
+                          Upload Logo
+                        </Button>
+                      </ObjectUploader>
                     </div>
                   </div>
 
-                  <Separator className="dark:bg-gray-700" />
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
+                  <div className="grid grid-cols-2 gap-4">
                     {[
-                      { id: "name", label: "Business Name", key: "defaultShowBusinessName" },
-                      { id: "address", label: "Address", key: "defaultShowBusinessAddress" },
-                      { id: "email", label: "Email", key: "defaultShowBusinessEmail" },
-                      { id: "phone", label: "Phone", key: "defaultShowBusinessPhone" }
+                      { label: "Business Name", key: "defaultShowBusinessName" },
+                      { label: "Full Address", key: "defaultShowBusinessAddress" },
+                      { label: "Email Address", key: "defaultShowBusinessEmail" },
+                      { label: "Phone Number", key: "defaultShowBusinessPhone" }
                     ].map((item) => (
-                      <div key={item.id} className="flex items-center justify-between py-1">
-                        <Label htmlFor={`estimate-show-${item.id}`} className="text-sm font-medium cursor-pointer dark:text-gray-200">
-                          Show {item.label}
-                        </Label>
+                      <div key={item.key} className="flex items-center justify-between py-2 px-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                        <Label className="text-xs font-bold">{item.label}</Label>
                         <Switch
-                          id={`estimate-show-${item.id}`}
                           checked={(estimatePageSettings as any)[item.key] === true}
                           onCheckedChange={(checked) =>
                             setEstimatePageSettings((prev) => ({ ...prev, [item.key]: checked }))
@@ -1025,60 +789,28 @@ export default function EstimatePageSettings() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
-                    <Layout className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                    Customer Actions
-                  </CardTitle>
-                  <CardDescription className="dark:text-gray-400">
-                    Control which actions customers can take on the estimate page.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between gap-6">
-                    <div>
-                      <Label htmlFor="estimate-show-accept-decline" className="text-base font-medium dark:text-gray-200">
-                        Show Accept/Decline Buttons
-                      </Label>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        When enabled, customers can accept or decline estimates directly.
-                      </p>
-                    </div>
-                    <Switch
-                      id="estimate-show-accept-decline"
-                      checked={estimatePageSettings.defaultShowAcceptDecline !== false}
-                      onCheckedChange={(checked) =>
-                        setEstimatePageSettings((prev) => ({ ...prev, defaultShowAcceptDecline: checked }))
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
             </div>
 
-            <div className="space-y-8">
-              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
+            <div className="space-y-6">
+              <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
-                    <Paperclip className="h-5 w-5 text-blue-600 dark:text-blue-500" />
+                  <CardTitle className="flex items-center gap-2 text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    <Paperclip className="h-5 w-5 text-blue-500" />
                     Standard Attachments
                   </CardTitle>
-                  <CardDescription className="dark:text-gray-400">
-                    Files automatically included with every new estimate (e.g. Terms, Insurance).
+                  <CardDescription>
+                    Files automatically included with every new estimate.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-blue-50 dark:bg-blue-950/40 p-4 rounded-lg border border-blue-100 dark:border-blue-900/60 flex items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <Label htmlFor="estimate-attachments-default" className="text-blue-900 dark:text-blue-100 font-medium">Enable Default Attachments</Label>
-                      <p className="text-sm text-blue-700 dark:text-blue-200 mt-0.5">
-                        When enabled, the files below will be attached to all new estimates.
+                  <div className="bg-blue-50/50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800/40 flex items-center justify-between gap-4">
+                    <div>
+                      <Label className="text-blue-900 dark:text-blue-100 font-bold">Default Attachments</Label>
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                        Enable to auto-attach files to all new estimates.
                       </p>
                     </div>
                     <Switch
-                      id="estimate-attachments-default"
                       checked={estimatePageSettings.defaultIncludeAttachments !== false}
                       onCheckedChange={(checked) =>
                         setEstimatePageSettings((prev) => ({ ...prev, defaultIncludeAttachments: checked }))
@@ -1087,128 +819,89 @@ export default function EstimatePageSettings() {
                   </div>
 
                   <div className="space-y-6">
-                    <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{attachmentSections.terms.label}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{attachmentSections.terms.description}</p>
+                    {(["terms", "insurance", "custom"] as const).map((category) => (
+                      <div key={category} className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">{attachmentSections[category].label}</p>
+                            <p className="text-xs text-gray-500">{attachmentSections[category].description}</p>
+                          </div>
+                          {category !== 'custom' && (
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              allowedFileTypes={attachmentAllowedFileTypes}
+                              onGetUploadParameters={(file) => getUploadParameters(file.name)}
+                              onComplete={handleUploadComplete(category)}
+                            >
+                              <Button variant="secondary" size="sm" className="rounded-xl h-8 px-3 text-[10px] uppercase font-bold tracking-widest bg-gray-100 hover:bg-gray-200">
+                                <Upload className="h-3 w-3 mr-1.5" />
+                                Upload
+                              </Button>
+                            </ObjectUploader>
+                          )}
                         </div>
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          allowedFileTypes={attachmentAllowedFileTypes}
-                          onGetUploadParameters={(file) => getUploadParameters(file.name)}
-                          onComplete={handleUploadComplete("terms")}
-                          buttonClassName="whitespace-nowrap"
-                        >
-                          <Button variant="secondary" size="sm" className="gap-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-                            <Upload className="h-3.5 w-3.5" />
-                            Upload
-                          </Button>
-                        </ObjectUploader>
+                        
+                        {category === 'custom' && (
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="File name (e.g. Portfolio)"
+                              value={customAttachmentName}
+                              onChange={(e) => setCustomAttachmentName(e.target.value)}
+                              className="h-9 rounded-xl text-xs bg-white dark:bg-gray-900"
+                            />
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              allowedFileTypes={attachmentAllowedFileTypes}
+                              onGetUploadParameters={(file) => getUploadParameters(file.name)}
+                              onComplete={handleUploadComplete("custom", customAttachmentName)}
+                              disabled={!customAttachmentName.trim()}
+                            >
+                              <Button variant="secondary" size="sm" className="rounded-xl h-9 px-4 text-xs font-bold" disabled={!customAttachmentName.trim()}>
+                                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                                Add
+                              </Button>
+                            </ObjectUploader>
+                          </div>
+                        )}
+                        
+                        {renderAttachmentList(category)}
+                        <Separator className="last:hidden opacity-50" />
                       </div>
-                      {renderAttachmentList("terms")}
-                    </div>
-
-                    <Separator className="dark:bg-gray-700" />
-
-                    <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{attachmentSections.insurance.label}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{attachmentSections.insurance.description}</p>
-                        </div>
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          allowedFileTypes={attachmentAllowedFileTypes}
-                          onGetUploadParameters={(file) => getUploadParameters(file.name)}
-                          onComplete={handleUploadComplete("insurance")}
-                          buttonClassName="whitespace-nowrap"
-                        >
-                          <Button variant="secondary" size="sm" className="gap-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">
-                            <Upload className="h-3.5 w-3.5" />
-                            Upload
-                          </Button>
-                        </ObjectUploader>
-                      </div>
-                      {renderAttachmentList("insurance")}
-                    </div>
-
-                    <Separator className="dark:bg-gray-700" />
-
-                    <div className="space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{attachmentSections.custom.label}</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{attachmentSections.custom.description}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-3">
-                        <Input
-                          id="custom-attachment-name"
-                          placeholder="File display name (e.g. 'Welcome Packet')"
-                          value={customAttachmentName}
-                          onChange={(e) => setCustomAttachmentName(e.target.value)}
-                          className="flex-1 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                        />
-                        <ObjectUploader
-                          maxNumberOfFiles={1}
-                          allowedFileTypes={attachmentAllowedFileTypes}
-                          onGetUploadParameters={(file) => getUploadParameters(file.name)}
-                          onComplete={handleUploadComplete("custom", customAttachmentName)}
-                          buttonClassName="whitespace-nowrap"
-                          disabled={!customAttachmentName.trim()}
-                        >
-                          <Button variant="secondary" size="default" className="gap-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600" disabled={!customAttachmentName.trim()}>
-                            <Upload className="h-4 w-4" />
-                            Upload File
-                          </Button>
-                        </ObjectUploader>
-                      </div>
-                      {renderAttachmentList("custom")}
-                    </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="shadow-sm border-gray-200 dark:border-gray-800 dark:bg-gray-800">
+              <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 dark:text-gray-100">
-                    <Play className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                    Video Integration
+                  <CardTitle className="flex items-center gap-2 text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    <Play className="h-5 w-5 text-red-500" />
+                    Interactive Video
                   </CardTitle>
-                  <CardDescription className="dark:text-gray-400">
-                    Embed a video (YouTube, Loom, Vimeo) to personally greet your customers.
+                  <CardDescription>
+                    Add a personal touch with an embedded video greeting.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="estimate-video-toggle" className="text-sm font-medium dark:text-gray-200">
-                      Enable Video Section
-                    </Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-bold">Enable Video Section</Label>
                     <Switch
-                      id="estimate-video-toggle"
                       checked={estimatePageSettings.defaultShowVideo !== false}
                       onCheckedChange={(checked) =>
                         setEstimatePageSettings((prev) => ({ ...prev, defaultShowVideo: checked }))
                       }
                     />
                   </div>
-                  <div className={`transition-opacity ${estimatePageSettings.defaultShowVideo === false ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <Label htmlFor="estimate-video-default" className="text-xs text-gray-500 dark:text-gray-400 mb-1.5 block">Default Video URL</Label>
+                  <div className={estimatePageSettings.defaultShowVideo === false ? 'opacity-40 pointer-events-none' : ''}>
+                    <Label className="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1.5 block">Video URL</Label>
                     <Input
-                      id="estimate-video-default"
                       value={estimatePageSettings.defaultVideoUrl || ""}
                       onChange={(e) =>
                         setEstimatePageSettings((prev) => ({ ...prev, defaultVideoUrl: e.target.value }))
                       }
-                      placeholder="https://youtube.com/watch?v=..."
-                      disabled={estimatePageSettings.defaultShowVideo === false}
-                      className="dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                      placeholder="YouTube, Loom, or Vimeo link..."
+                      className="rounded-xl bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700"
                     />
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
-                      Supports YouTube, Vimeo, and Loom links.
-                    </p>
                   </div>
                 </CardContent>
               </Card>

@@ -1794,8 +1794,11 @@ ${generateCSSVariables(styling)}
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="flex flex-col items-center justify-center h-64" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 flex items-center justify-center mb-3">
+            <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+          </div>
+          <p className="text-sm text-gray-400">Loading design settings...</p>
         </div>
       </DashboardLayout>
     );
@@ -1803,28 +1806,51 @@ ${generateCSSVariables(styling)}
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <style>{`
+        @keyframes design-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .design-stagger-1 { animation: design-fade-up 0.5s ease-out both; animation-delay: 0.05s; }
+        .design-stagger-2 { animation: design-fade-up 0.5s ease-out both; animation-delay: 0.1s; }
+        .design-grain { position: relative; }
+        .design-grain::before {
+          content: ''; position: absolute; inset: 0; opacity: 0.3; pointer-events: none; mix-blend-mode: overlay; border-radius: inherit;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="p-4 sm:p-6 design-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <div className="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-4">
-            <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white">Design Dashboard</h1>
-              <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400">Customize your calculator's appearance and styling</p>
+
+        {/* Hero Header */}
+        <div className="design-stagger-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-900 dark:to-gray-800/60 border border-amber-200/40 dark:border-amber-500/10 p-6 sm:p-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/40 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-orange-200/30 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
+          <div className="relative flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/20">
+                <Palette className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600/70 dark:text-amber-400/60 font-semibold">Customization</p>
+                <h1 className="text-2xl sm:text-3xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  Design Dashboard
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Customize your calculator's appearance and styling</p>
+              </div>
             </div>
-            
+
             <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
-              {/* Action Buttons */}
               <div className="flex space-x-2 w-full sm:w-auto">
-                <Button variant="outline" onClick={handleReset} className="flex-1 sm:flex-none">
+                <Button variant="outline" onClick={handleReset} className="flex-1 sm:flex-none rounded-xl border-gray-200/80 dark:border-gray-700/60 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-700 hover:border-amber-200 transition-colors">
                   <RotateCcw className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Reset</span>
                 </Button>
-                
-                <Button 
+
+                <Button
                   onClick={handleSave}
                   disabled={!hasUnsavedChanges || isSaving}
-                  className="relative flex-1 sm:flex-none"
+                  className="relative flex-1 sm:flex-none rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-6"
                 >
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -1841,8 +1867,8 @@ ${generateCSSVariables(styling)}
           </div>
 
           {hasUnsavedChanges && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-sm text-amber-800">
+            <div className="relative mt-4 bg-amber-100/60 dark:bg-amber-500/10 border border-amber-200/60 dark:border-amber-500/20 rounded-xl p-3">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
                 You have unsaved changes. Click "Save Changes" to apply your updates.
               </p>
             </div>
@@ -1850,29 +1876,29 @@ ${generateCSSVariables(styling)}
         </div>
 
         {/* Main Content */}
-        <div className="w-full">
+        <div className="design-stagger-2 w-full">
           {/* Editor Panel - Full Width */}
           <div className="w-full">
             <Tabs defaultValue="components" className="w-full">
               <div className="w-full overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0">
-                <TabsList className="inline-flex w-auto min-w-fit rounded-full bg-slate-100/80 dark:bg-gray-800/70 p-1 shadow-sm ring-1 ring-slate-200/70 dark:ring-gray-700/70 backdrop-blur">
+                <TabsList className="inline-flex w-auto min-w-fit rounded-full bg-amber-50/80 dark:bg-gray-800/70 p-1 shadow-sm ring-1 ring-amber-200/50 dark:ring-gray-700/70 backdrop-blur">
                   <TabsTrigger
                     value="components"
-                    className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+                    className="h-10 rounded-full px-5 text-sm font-medium text-gray-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-amber-800 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-amber-300"
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Components
                   </TabsTrigger>
                   <TabsTrigger
                     value="themes"
-                    className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+                    className="h-10 rounded-full px-5 text-sm font-medium text-gray-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-amber-800 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-amber-300"
                   >
                     <Palette className="h-4 w-4 mr-2" />
                     Themes
                   </TabsTrigger>
                   <TabsTrigger
                     value="custom-css"
-                    className="h-10 rounded-full px-5 text-sm font-medium text-slate-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-white"
+                    className="h-10 rounded-full px-5 text-sm font-medium text-gray-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-amber-800 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-amber-300"
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Custom CSS
@@ -1883,21 +1909,21 @@ ${generateCSSVariables(styling)}
               <TabsContent value="components" className="mt-6">
                 <div className="space-y-6">
                   {/* Form Container Design */}
-                  <Card className="mb-4">
+                  <Card className="mb-4 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
                     <CardHeader className="pb-2 pt-0">
-                      <div 
-                        className="flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 p-2 -m-2 rounded"
+                      <div
+                        className="flex items-center justify-between cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-900/10 p-2 -m-2 rounded-xl transition-colors"
                         onClick={() => setIsFormContainerExpanded(!isFormContainerExpanded)}
                       >
                         <div className="flex items-center space-x-3">
                           {isFormContainerExpanded ? (
-                            <ChevronDown className="h-4 w-4 text-gray-500" />
+                            <ChevronDown className="h-4 w-4 text-amber-500" />
                           ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-500" />
+                            <ChevronRight className="h-4 w-4 text-gray-400" />
                           )}
                           <div className="flex flex-col justify-center">
-                            <CardTitle className="text-base">Form Container</CardTitle>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Customize the main form container spacing and appearance</p>
+                            <CardTitle className="text-base" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Form Container</CardTitle>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Customize the main form container spacing and appearance</p>
                           </div>
                         </div>
                       </div>
@@ -2042,9 +2068,9 @@ ${generateCSSVariables(styling)}
 
               <TabsContent value="custom-css" className="mt-6">
                 <div className="space-y-6">
-                  <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                  <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-base">Custom CSS</CardTitle>
+                      <CardTitle className="text-base" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Custom CSS</CardTitle>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         Generate or edit custom CSS that overrides component settings.
                       </p>

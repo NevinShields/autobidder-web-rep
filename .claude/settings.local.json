@@ -56,7 +56,8 @@
       "Bash(npx skills:*)",
       "Bash(git clone:*)",
       "Bash(GIT_TERMINAL_PROMPT=0 git clone:*)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

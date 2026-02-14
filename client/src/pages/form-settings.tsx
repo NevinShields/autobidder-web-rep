@@ -408,14 +408,12 @@ export default function FormSettings() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6"></div>
-            <div className="space-y-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              ))}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="flex flex-col items-center justify-center h-64">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 flex items-center justify-center mb-3">
+              <Settings className="h-5 w-5 animate-spin text-amber-600" />
             </div>
+            <p className="text-sm text-gray-400">Loading settings...</p>
           </div>
         </div>
       </DashboardLayout>
@@ -424,41 +422,57 @@ export default function FormSettings() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Settings className="w-6 h-6" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Form Logic & Settings</h1>
+      <style>{`
+        @keyframes formsettings-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .fs-stagger-1 { animation: formsettings-fade-up 0.5s ease-out both; animation-delay: 0.05s; }
+        .fs-stagger-2 { animation: formsettings-fade-up 0.5s ease-out both; animation-delay: 0.1s; }
+        .fs-stagger-3 { animation: formsettings-fade-up 0.5s ease-out both; animation-delay: 0.15s; }
+        .fs-grain { position: relative; }
+        .fs-grain::before {
+          content: ''; position: absolute; inset: 0; opacity: 0.3; pointer-events: none; mix-blend-mode: overlay; border-radius: inherit;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fs-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+
+        {/* Hero Header */}
+        <div className="fs-stagger-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-900 dark:to-gray-800/60 border border-amber-200/40 dark:border-amber-500/10 p-6 sm:p-8 mb-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/40 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-orange-200/30 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl" />
+          <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/20">
+                <Settings className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-amber-600/70 dark:text-amber-400/60 font-semibold">Configuration</p>
+                <h1 className="text-2xl sm:text-3xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  Form Logic & Settings
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  Configure pricing rules, customer flow, and form behavior
+                </p>
+              </div>
+            </div>
+            <Link href={`/styled-calculator?userId=${user?.id}`}>
+              <Button className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-6">
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Preview Form
+              </Button>
+            </Link>
           </div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Configure pricing rules, customer flow, and form behavior for your embeddable quote form.
-          </p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <Alert>
-            <ExternalLink className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>Test your form settings and see how customers will experience your quote form.</span>
-              <Link href={`/styled-calculator?userId=${user?.id}`}>
-                <Button variant="outline" size="sm">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Preview Form
-                </Button>
-              </Link>
-            </AlertDescription>
-          </Alert>
-        </div>
-
-            <div className="space-y-6">
+            <div className="fs-stagger-2 space-y-6">
           {/* Customer Flow Settings */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Customer Flow
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/15 to-orange-500/15 flex items-center justify-center"><Users className="w-4 h-4 text-amber-600 dark:text-amber-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Customer Flow</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -543,7 +557,7 @@ export default function FormSettings() {
               </div>
 
               {formSettings.enableRouteOptimization && (
-                <div className="pl-4 border-l-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-r-lg">
+                <div className="pl-4 border-l-2 border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-r-lg">
                   <div>
                     <Label htmlFor="routeOptimizationThreshold">Maximum Distance (miles)</Label>
                     <Input
@@ -574,7 +588,7 @@ export default function FormSettings() {
                   </p>
                 </div>
                 
-                <div className="pl-4 border-l-2 border-blue-100 space-y-4">
+                <div className="pl-4 border-l-2 border-amber-200/60 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-sm font-medium">Selection Title</Label>
@@ -670,7 +684,7 @@ export default function FormSettings() {
                 </div>
                 
                 {formSettings.enableCustomButton && (
-                  <div className="pl-4 border-l-2 border-blue-100 space-y-4">
+                  <div className="pl-4 border-l-2 border-amber-200/60 space-y-4">
                     <div>
                       <Label className="text-sm font-medium">Button Text</Label>
                       <Input
@@ -745,11 +759,11 @@ export default function FormSettings() {
           </Card>
 
           {/* Bundle Discount Settings */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Percent className="w-5 h-5" />
-                Bundle Pricing
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/15 to-purple-500/15 flex items-center justify-center"><Percent className="w-4 h-4 text-violet-600 dark:text-violet-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Bundle Pricing</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -817,11 +831,11 @@ export default function FormSettings() {
           </Card>
 
           {/* Discount Management */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Tag className="w-5 h-5" />
-                Customer Discounts
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/15 to-green-500/15 flex items-center justify-center"><Tag className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Customer Discounts</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -959,11 +973,11 @@ export default function FormSettings() {
           </Card>
 
           {/* Guide Videos Settings */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Video className="w-5 h-5" />
-                Guide Videos
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500/15 to-pink-500/15 flex items-center justify-center"><Video className="w-4 h-4 text-rose-600 dark:text-rose-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Guide Videos</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1073,11 +1087,11 @@ export default function FormSettings() {
           </Card>
 
           {/* Sales Tax Settings */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Receipt className="w-5 h-5" />
-                Sales Tax
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/15 to-orange-500/15 flex items-center justify-center"><Receipt className="w-4 h-4 text-amber-600 dark:text-amber-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Sales Tax</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1096,7 +1110,7 @@ export default function FormSettings() {
               </div>
 
               {formSettings.enableSalesTax && (
-                <div className="space-y-4 pl-4 border-l-2 border-blue-100">
+                <div className="space-y-4 pl-4 border-l-2 border-amber-200/60">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Tax Rate (%)</Label>
@@ -1134,11 +1148,11 @@ export default function FormSettings() {
           </Card>
 
           {/* Disclaimer Settings */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Pricing Disclaimer
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500/15 to-blue-500/15 flex items-center justify-center"><FileText className="w-4 h-4 text-sky-600 dark:text-sky-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Pricing Disclaimer</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1186,11 +1200,11 @@ export default function FormSettings() {
           </Card>
 
           {/* Lead Contact Intake Settings */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5" />
-                Lead Contact Information
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/15 to-violet-500/15 flex items-center justify-center"><UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Lead Contact Information</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1216,7 +1230,7 @@ export default function FormSettings() {
                     </div>
                   </div>
                   {true && (
-                    <div className="pl-4 border-l-2 border-blue-100">
+                    <div className="pl-4 border-l-2 border-amber-200/60">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <MobileToggle
                           checked={formSettings.requireName ?? true}
@@ -1246,7 +1260,7 @@ export default function FormSettings() {
                     </div>
                   </div>
                   {true && (
-                    <div className="pl-4 border-l-2 border-blue-100">
+                    <div className="pl-4 border-l-2 border-amber-200/60">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <MobileToggle
                           checked={formSettings.requireEmail ?? true}
@@ -1276,7 +1290,7 @@ export default function FormSettings() {
                     </div>
                   </div>
                   {formSettings.enablePhone && (
-                    <div className="pl-4 border-l-2 border-blue-100">
+                    <div className="pl-4 border-l-2 border-amber-200/60">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <MobileToggle
                           checked={formSettings.requirePhone}
@@ -1309,7 +1323,7 @@ export default function FormSettings() {
                     </div>
                   </div>
                   {formSettings.enableAddress && (
-                    <div className="pl-4 border-l-2 border-blue-100">
+                    <div className="pl-4 border-l-2 border-amber-200/60">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <MobileToggle
                           checked={formSettings.requireAddress}
@@ -1640,11 +1654,11 @@ export default function FormSettings() {
 
 
           {/* Location-Based Pricing */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Location-Based Pricing
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500/15 to-cyan-500/15 flex items-center justify-center"><MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400" /></div>
+                <span style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Location-Based Pricing</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -1681,7 +1695,7 @@ export default function FormSettings() {
               </div>
 
               {formSettings.enableDistancePricing && (
-                <div className="space-y-4 pl-4 border-l-2 border-blue-100">
+                <div className="space-y-4 pl-4 border-l-2 border-amber-200/60">
                   {/* Service Radius */}
                   <div>
                     <Label className="text-sm font-medium">Service Area Radius (miles)</Label>
@@ -1782,11 +1796,11 @@ export default function FormSettings() {
           </Card>
 
           {/* Meta Conversion Tracking */}
-          <Card>
+          <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Share2 className="h-5 w-5 text-blue-600" />
-                <CardTitle>Meta Conversion Tracking</CardTitle>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/15 to-indigo-500/15 flex items-center justify-center"><Share2 className="h-4 w-4 text-blue-600 dark:text-blue-400" /></div>
+                <CardTitle style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Meta Conversion Tracking</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1879,10 +1893,11 @@ export default function FormSettings() {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <Button 
+            <Button
               onClick={handleSave}
               disabled={saveSettingsMutation.isPending}
               size="lg"
+              className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-8"
             >
               {saveSettingsMutation.isPending ? 'Saving...' : 'Save Form Settings'}
             </Button>

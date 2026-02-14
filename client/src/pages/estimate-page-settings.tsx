@@ -632,9 +632,8 @@ export default function EstimatePageSettings() {
                         </Card>
                       </div>
                     </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogContent>
+                </Dialog>
               <Button
                 onClick={handleSave}
                 disabled={saveSettingsMutation.isPending}

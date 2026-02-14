@@ -32,7 +32,6 @@ import { apiRequest } from "@/lib/queryClient";
 import type { DesignSettings, StylingOptions } from "@shared/schema";
 import { generateCSSVariables } from "@shared/css-variables";
 import VisualComponentEditor from "@/components/visual-component-editor";
-import ThemeEditor from "@/components/theme-editor";
 
 const escapeHtml = (value: string) =>
   value
@@ -75,6 +74,608 @@ const formatCustomCSS = (value: string) => {
   formatted = formatted.replace(/;\s*(?=\})/g, ';\n');
   return formatted;
 };
+
+type CssThemePreset = {
+  id: string;
+  name: string;
+  description: string;
+  css: string;
+  preview: {
+    canvas: string;
+    surface: string;
+    border: string;
+    text: string;
+    accent: string;
+    button: string;
+  };
+};
+
+type CssThemeTokens = {
+  containerBg: string;
+  surfaceBg: string;
+  border: string;
+  text: string;
+  surfaceText: string;
+  mutedText: string;
+  selectedText: string;
+  primary: string;
+  primaryText: string;
+  primaryHover: string;
+  accent: string;
+  accentSoft: string;
+  selectedBg: string;
+  selectedBorder: string;
+  inputBg: string;
+  inputBorder: string;
+  inputText: string;
+  inputPlaceholder: string;
+  priceBg: string;
+  priceText: string;
+  error: string;
+};
+
+const buildThemeCss = (t: CssThemeTokens) => `
+.ab-form-container {
+  background: ${t.containerBg};
+  border: 1px solid ${t.border};
+  color: ${t.text};
+  border-radius: 18px;
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.14);
+}
+
+.ab-question-card {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.ab-button,
+.ab-button-primary {
+  background: ${t.primary};
+  color: ${t.primaryText};
+  border: 1px solid ${t.primary};
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.ab-button:hover,
+.ab-button-primary:hover {
+  background: ${t.primaryHover};
+  border-color: ${t.primaryHover};
+  transform: translateY(-1px);
+}
+
+.ab-input,
+.ab-number-input,
+.ab-text-input,
+.ab-textarea,
+.ab-select,
+.ab-address-input,
+.ab-file-input {
+  background: ${t.inputBg};
+  color: ${t.inputText};
+  border: 1px solid ${t.inputBorder};
+  border-radius: 10px;
+  caret-color: ${t.inputText};
+}
+
+.ab-select-content {
+  background: ${t.inputBg};
+  border: 1px solid ${t.inputBorder};
+  color: ${t.inputText};
+}
+
+.ab-input::placeholder,
+.ab-number-input::placeholder,
+.ab-text-input::placeholder,
+.ab-textarea::placeholder,
+.ab-address-input::placeholder {
+  color: ${t.inputPlaceholder};
+  opacity: 1;
+}
+
+.ab-checkbox {
+  accent-color: ${t.primary};
+}
+
+.ab-slider {
+  accent-color: ${t.primary};
+}
+
+.ab-slider-value,
+.ab-slider-unit {
+  color: ${t.primary};
+  font-weight: 700;
+}
+
+.ab-slider-min,
+.ab-slider-max {
+  color: ${t.mutedText};
+}
+
+.ab-label,
+.ab-question-label {
+  color: ${t.text};
+  font-weight: 600;
+}
+
+.ab-form-title {
+  color: ${t.surfaceText};
+  font-weight: 800;
+}
+
+.ab-form-subtitle {
+  color: ${t.mutedText};
+}
+
+.ab-progress-label {
+  color: ${t.text};
+}
+
+.ab-progress-percentage {
+  color: ${t.primary};
+  font-weight: 700;
+}
+
+.ab-progress-track {
+  background: ${t.border};
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ab-progress-fill {
+  background: ${t.primary};
+}
+
+.ab-address-nav-button,
+.ab-address-back-button,
+.ab-address-skip-button {
+  color: ${t.primary};
+}
+
+.ab-address-nav-button:hover,
+.ab-address-back-button:hover,
+.ab-address-skip-button:hover {
+  color: ${t.primaryHover};
+}
+
+.ab-address-input-label {
+  color: ${t.primary};
+  font-weight: 600;
+}
+
+.ab-service-card {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  border-radius: 14px;
+  color: ${t.surfaceText};
+}
+
+.ab-service-title {
+  color: ${t.surfaceText};
+  font-weight: 800;
+}
+
+.ab-service-accordion {
+  border: 1px solid ${t.border};
+  background: ${t.surfaceBg};
+  border-radius: 12px;
+}
+
+.ab-service-accordion-text {
+  color: ${t.surfaceText};
+}
+
+.ab-multiple-choice,
+.ab-multichoice-card {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  color: ${t.surfaceText};
+}
+
+.ab-multiple-choice-label {
+  color: ${t.surfaceText};
+}
+
+.ab-pricing-card {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  border-radius: 16px;
+  color: ${t.surfaceText};
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+}
+
+.ab-pricing-card-price {
+  background: ${t.priceBg};
+  color: ${t.priceText};
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.ab-pricing-card-icon {
+  background: ${t.accentSoft};
+  border: 1px solid ${t.selectedBorder};
+  color: ${t.primary};
+}
+
+.ab-pricing-card-title,
+.ab-pricing-card-description,
+.ab-pricing-card-bullet-text {
+  color: ${t.surfaceText};
+}
+
+.ab-pricing-card-bullet-icon {
+  background: ${t.accent};
+  color: ${t.primaryText};
+}
+
+.ab-pricing-section-title,
+.ab-pricing-breakdown-title,
+.ab-pricing-line-item-name,
+.ab-pricing-line-item-value,
+.ab-pricing-subtotal-label,
+.ab-pricing-subtotal-value,
+.ab-pricing-tax-label,
+.ab-pricing-tax-value,
+.ab-pricing-total-label {
+  color: ${t.surfaceText};
+}
+
+.ab-pricing-cart-status {
+  color: ${t.mutedText};
+}
+
+.ab-pricing-total-value {
+  color: ${t.primary};
+}
+
+.ab-upsell-section,
+.ab-discount-section,
+.ab-pricing-disclaimer,
+.ab-customer-summary,
+.ab-upsell-selected-summary,
+.ab-discount-savings {
+  background: ${t.accentSoft};
+  border: 1px solid ${t.selectedBorder};
+  border-radius: 12px;
+}
+
+.ab-upsell-heading,
+.ab-upsell-title,
+.ab-discount-title,
+.ab-customer-summary-title,
+.ab-pricing-disclaimer-label,
+.ab-discount-savings-title {
+  color: ${t.surfaceText};
+  font-weight: 700;
+}
+
+.ab-upsell-subtitle,
+.ab-upsell-description,
+.ab-upsell-tooltip,
+.ab-discount-subtitle,
+.ab-discount-description,
+.ab-pricing-disclaimer-text,
+.ab-customer-summary-line,
+.ab-discount-line-label,
+.ab-discount-line-value,
+.ab-discount-savings-row {
+  color: ${t.mutedText};
+}
+
+.ab-upsell-grid,
+.ab-discount-grid {
+  gap: 10px;
+}
+
+.ab-upsell-card,
+.ab-discount-card {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  border-radius: 12px;
+}
+
+.ab-upsell-card-selected,
+.ab-discount-card.selected,
+.ab-multiple-choice.selected,
+.ab-service-card.selected {
+  background: ${t.selectedBg};
+  border-color: ${t.selectedBorder};
+  box-shadow: 0 0 0 2px ${t.selectedBorder}33;
+}
+
+.ab-upsell-price,
+.ab-discount-percent,
+.ab-discount-savings-total,
+.ab-upsell-selected-total {
+  color: ${t.primary};
+  font-weight: 700;
+}
+
+.ab-upsell-popular-badge,
+.ab-discount-applied {
+  background: ${t.selectedBg};
+  color: ${t.primary};
+  border: 1px solid ${t.selectedBorder};
+}
+
+.ab-discount-name {
+  color: ${t.surfaceText};
+  font-weight: 600;
+}
+
+.ab-discount-line {
+  border-top: 1px dashed ${t.border};
+}
+
+.ab-calendar-nav,
+.ab-calendar-nav-prev,
+.ab-calendar-nav-next,
+.ab-calendar-date,
+.ab-time-slot {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  color: ${t.surfaceText};
+}
+
+.ab-calendar-month-title,
+.ab-calendar-day-header {
+  color: ${t.surfaceText};
+}
+
+.selected {
+  border-color: ${t.selectedBorder} !important;
+}
+
+.disabled {
+  opacity: 0.55;
+  filter: grayscale(0.15);
+  pointer-events: none;
+}
+
+.ab-error {
+  color: ${t.error};
+  font-weight: 600;
+}
+
+.ab-service-card.selected,
+.ab-multiple-choice.selected,
+.ab-upsell-card-selected,
+.ab-discount-card.selected,
+.selected {
+  color: ${t.selectedText} !important;
+}
+
+.ab-service-card.selected .ab-service-title,
+.ab-multiple-choice.selected .ab-multiple-choice-label,
+.ab-upsell-card-selected .ab-upsell-title,
+.ab-upsell-card-selected .ab-upsell-description,
+.ab-discount-card.selected .ab-discount-name,
+.ab-discount-card.selected .ab-discount-description {
+  color: ${t.selectedText} !important;
+}
+`;
+
+const CSS_THEME_PRESETS: CssThemePreset[] = [
+  {
+    id: "clean-precision",
+    name: "Clean Precision",
+    description: "Crisp, neutral layout with subtle depth and sharp contrast.",
+    preview: {
+      canvas: "#f8fafc",
+      surface: "#ffffff",
+      border: "#dbe3ef",
+      text: "#0f172a",
+      accent: "#111827",
+      button: "linear-gradient(135deg, #0f172a 0%, #111827 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "#ffffff",
+      surfaceBg: "#ffffff",
+      border: "#dbe3ef",
+      text: "#0f172a",
+      surfaceText: "#0f172a",
+      mutedText: "#475569",
+      selectedText: "#0f172a",
+      primary: "#0f172a",
+      primaryText: "#f8fafc",
+      primaryHover: "#111827",
+      accent: "#111827",
+      accentSoft: "#f1f5f9",
+      selectedBg: "#eef2ff",
+      selectedBorder: "#334155",
+      inputBg: "#ffffff",
+      inputBorder: "#cbd5e1",
+      inputText: "#0f172a",
+      inputPlaceholder: "#64748b",
+      priceBg: "#e2e8f0",
+      priceText: "#0f172a",
+      error: "#b91c1c",
+    }),
+  },
+  {
+    id: "sunset-card",
+    name: "Sunset Card",
+    description: "Warm amber-coral gradient theme with soft rounded elements.",
+    preview: {
+      canvas: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
+      surface: "#ffffff",
+      border: "#fdba74",
+      text: "#7c2d12",
+      accent: "#f97316",
+      button: "linear-gradient(135deg, #f97316 0%, #ef4444 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(180deg, #fff7ed 0%, #ffffff 48%)",
+      surfaceBg: "#ffffff",
+      border: "#fdba74",
+      text: "#7c2d12",
+      surfaceText: "#7c2d12",
+      mutedText: "#9a3412",
+      selectedText: "#7c2d12",
+      primary: "#f97316",
+      primaryText: "#ffffff",
+      primaryHover: "#ea580c",
+      accent: "#ef4444",
+      accentSoft: "#fff1e8",
+      selectedBg: "#fff1e8",
+      selectedBorder: "#f97316",
+      inputBg: "#ffffff",
+      inputBorder: "#fdba74",
+      inputText: "#7c2d12",
+      inputPlaceholder: "#c2410c",
+      priceBg: "#ffedd5",
+      priceText: "#c2410c",
+      error: "#dc2626",
+    }),
+  },
+  {
+    id: "ocean-glass",
+    name: "Ocean Glass",
+    description: "Cool aqua glassmorphism feel with transparent layered cards.",
+    preview: {
+      canvas: "linear-gradient(135deg, #cffafe 0%, #ecfdf5 100%)",
+      surface: "rgba(255,255,255,0.7)",
+      border: "#99f6e4",
+      text: "#155e75",
+      accent: "#0d9488",
+      button: "linear-gradient(135deg, #0d9488 0%, #0ea5e9 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(145deg, rgba(207, 250, 254, 0.8), rgba(236, 253, 245, 0.86))",
+      surfaceBg: "rgba(255, 255, 255, 0.72)",
+      border: "rgba(45, 212, 191, 0.55)",
+      text: "#155e75",
+      surfaceText: "#155e75",
+      mutedText: "#0f766e",
+      selectedText: "#134e4a",
+      primary: "#0d9488",
+      primaryText: "#f8fafc",
+      primaryHover: "#0f766e",
+      accent: "#0891b2",
+      accentSoft: "rgba(207, 250, 254, 0.52)",
+      selectedBg: "rgba(204, 251, 241, 0.7)",
+      selectedBorder: "#0d9488",
+      inputBg: "rgba(255, 255, 255, 0.9)",
+      inputBorder: "rgba(45, 212, 191, 0.6)",
+      inputText: "#155e75",
+      inputPlaceholder: "#0f766e",
+      priceBg: "rgba(186, 230, 253, 0.7)",
+      priceText: "#0c4a6e",
+      error: "#be123c",
+    }),
+  },
+  {
+    id: "graphite-lime",
+    name: "Graphite Lime",
+    description: "High-contrast dark panels with electric lime accents.",
+    preview: {
+      canvas: "#111827",
+      surface: "#1f2937",
+      border: "#374151",
+      text: "#f9fafb",
+      accent: "#a3e635",
+      button: "linear-gradient(135deg, #a3e635 0%, #84cc16 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "#111827",
+      surfaceBg: "#1f2937",
+      border: "#374151",
+      text: "#f9fafb",
+      surfaceText: "#f9fafb",
+      mutedText: "#cbd5e1",
+      selectedText: "#ecfccb",
+      primary: "#a3e635",
+      primaryText: "#111827",
+      primaryHover: "#84cc16",
+      accent: "#bef264",
+      accentSoft: "#1b2a10",
+      selectedBg: "#25331a",
+      selectedBorder: "#a3e635",
+      inputBg: "#111827",
+      inputBorder: "#4b5563",
+      inputText: "#f9fafb",
+      inputPlaceholder: "#94a3b8",
+      priceBg: "#3f6212",
+      priceText: "#ecfccb",
+      error: "#fda4af",
+    }),
+  },
+  {
+    id: "midnight-royal",
+    name: "Midnight Royal",
+    description: "Deep navy surfaces with vivid cobalt highlights and crisp text.",
+    preview: {
+      canvas: "linear-gradient(135deg, #0b1220 0%, #111827 100%)",
+      surface: "#172033",
+      border: "#334155",
+      text: "#f8fafc",
+      accent: "#3b82f6",
+      button: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(180deg, #0b1220 0%, #111827 45%)",
+      surfaceBg: "#172033",
+      border: "#334155",
+      text: "#f8fafc",
+      surfaceText: "#f8fafc",
+      mutedText: "#cbd5e1",
+      selectedText: "#dbeafe",
+      primary: "#3b82f6",
+      primaryText: "#ffffff",
+      primaryHover: "#2563eb",
+      accent: "#60a5fa",
+      accentSoft: "#1e2e4e",
+      selectedBg: "#1e3a8a",
+      selectedBorder: "#3b82f6",
+      inputBg: "#0f172a",
+      inputBorder: "#475569",
+      inputText: "#f8fafc",
+      inputPlaceholder: "#94a3b8",
+      priceBg: "#1d4ed8",
+      priceText: "#dbeafe",
+      error: "#fda4af",
+    }),
+  },
+  {
+    id: "sandstone-sage",
+    name: "Sandstone Sage",
+    description: "Warm neutral cards with earthy green accents and soft contrast.",
+    preview: {
+      canvas: "linear-gradient(135deg, #f8f5ef 0%, #efe9dc 100%)",
+      surface: "#fffdf8",
+      border: "#d6c8ac",
+      text: "#3f3a2d",
+      accent: "#6b8f71",
+      button: "linear-gradient(135deg, #6b8f71 0%, #4d6b53 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(180deg, #f8f5ef 0%, #fffdf8 48%)",
+      surfaceBg: "#fffdf8",
+      border: "#d6c8ac",
+      text: "#3f3a2d",
+      surfaceText: "#3f3a2d",
+      mutedText: "#6b6351",
+      selectedText: "#2f4f39",
+      primary: "#6b8f71",
+      primaryText: "#f8fafc",
+      primaryHover: "#4d6b53",
+      accent: "#5f7f66",
+      accentSoft: "#edf4e8",
+      selectedBg: "#edf4e8",
+      selectedBorder: "#6b8f71",
+      inputBg: "#ffffff",
+      inputBorder: "#c7b795",
+      inputText: "#3f3a2d",
+      inputPlaceholder: "#8a7f67",
+      priceBg: "#e8e0cf",
+      priceText: "#4b5f3d",
+      error: "#b91c1c",
+    }),
+  },
+];
 
 type PreviewTarget = {
   selector: string;
@@ -1403,6 +2004,24 @@ ${generateCSSVariables(styling)}
     }
   }, []);
 
+  const handleApplyCssThemePreset = useCallback((preset: CssThemePreset) => {
+    const currentCSS = customCSS.trim();
+    const nextCSS = formatCustomCSS(preset.css);
+
+    if (currentCSS && currentCSS !== nextCSS) {
+      const shouldOverride = window.confirm(
+        "Applying this theme will replace your existing Custom CSS. Continue?"
+      );
+      if (!shouldOverride) return;
+    }
+
+    handleCustomCSSChange(nextCSS);
+    toast({
+      title: "Theme CSS applied",
+      description: `${preset.name} has been added to the Custom CSS editor.`,
+    });
+  }, [customCSS, handleCustomCSSChange, toast]);
+
 
   useEffect(() => {
     if (cssInputRef.current && cssHighlightRef.current) {
@@ -1813,13 +2432,8 @@ ${generateCSSVariables(styling)}
         }
         .design-stagger-1 { animation: design-fade-up 0.5s ease-out both; animation-delay: 0.05s; }
         .design-stagger-2 { animation: design-fade-up 0.5s ease-out both; animation-delay: 0.1s; }
-        .design-grain { position: relative; }
-        .design-grain::before {
-          content: ''; position: absolute; inset: 0; opacity: 0.3; pointer-events: none; mix-blend-mode: overlay; border-radius: inherit;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-        }
       `}</style>
-      <div className="p-4 sm:p-6 design-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="p-4 sm:p-6" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Hero Header */}
@@ -1894,7 +2508,7 @@ ${generateCSSVariables(styling)}
                     className="h-10 rounded-full px-5 text-sm font-medium text-gray-500 dark:text-gray-300 transition-all data-[state=active]:bg-white data-[state=active]:text-amber-800 data-[state=active]:shadow-sm dark:data-[state=active]:bg-gray-900/80 dark:data-[state=active]:text-amber-300"
                   >
                     <Palette className="h-4 w-4 mr-2" />
-                    Themes
+                    Theme Picker
                   </TabsTrigger>
                   <TabsTrigger
                     value="custom-css"
@@ -2056,14 +2670,69 @@ ${generateCSSVariables(styling)}
               </TabsContent>
 
               <TabsContent value="themes" className="mt-6">
-                <ThemeEditor
-                  designSettings={{ styling, componentStyles }}
-                  onChange={(updates) => {
-                    if (updates.styling) {
-                      handleStylingChange(updates.styling);
-                    }
-                  }}
-                />
+                <Card className="rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                      CSS Theme Picker
+                    </CardTitle>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Choose a starter CSS style. This writes directly to the Custom CSS editor.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+                      Selecting a theme replaces existing Custom CSS content if present.
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {CSS_THEME_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => handleApplyCssThemePreset(preset)}
+                          className="text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/50 p-4 hover:border-amber-300 hover:shadow-sm transition-all"
+                          data-testid={`button-theme-preset-${preset.id}`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{preset.name}</p>
+                            <Badge variant="secondary" className="text-[10px]">Apply</Badge>
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{preset.description}</p>
+                          <div
+                            className="mt-3 rounded-lg border p-2"
+                            style={{
+                              background: preset.preview.canvas,
+                              borderColor: preset.preview.border,
+                            }}
+                          >
+                            <div
+                              className="rounded-md border p-2 space-y-2"
+                              style={{
+                                background: preset.preview.surface,
+                                borderColor: preset.preview.border,
+                              }}
+                            >
+                              <div className="h-2 rounded w-2/3" style={{ backgroundColor: preset.preview.text, opacity: 0.85 }} />
+                              <div className="h-2 rounded w-1/2" style={{ backgroundColor: preset.preview.text, opacity: 0.45 }} />
+                              <div className="flex items-center justify-between gap-2 pt-1">
+                                <div className="h-5 w-5 rounded-full" style={{ backgroundColor: preset.preview.accent, opacity: 0.85 }} />
+                                <div
+                                  className="h-6 w-20 rounded-full border"
+                                  style={{
+                                    background: preset.preview.button,
+                                    borderColor: preset.preview.border,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Tip: after applying a preset, fine-tune it in the <span className="font-semibold">Custom CSS</span> tab.
+                    </p>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="custom-css" className="mt-6">
@@ -3075,6 +3744,19 @@ ${generateCSSVariables(styling)}
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-form-container</span> - Form wrapper</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-question-card</span> - Question cards</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-form-title</span> - Step/page titles</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-form-subtitle</span> - Step/page subtitles</div>
+                              </div>
+                            </div>
+                            {/* Progress */}
+                            <div>
+                              <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Progress:</p>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-progress</span> - Progress wrapper</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-progress-label</span> - Step label text</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-progress-percentage</span> - Percent text</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-progress-track</span> - Progress track</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-progress-fill</span> - Progress fill</div>
                               </div>
                             </div>
                             {/* Buttons */}
@@ -3083,6 +3765,9 @@ ${generateCSSVariables(styling)}
                               <div className="grid grid-cols-2 md:grid-cols-3 gap-1">
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-button</span> - All buttons</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-button-primary</span> - Primary buttons</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-address-nav-button</span> - Address nav text buttons</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-address-back-button</span> - Address back button</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-address-skip-button</span> - Address skip button</div>
                               </div>
                             </div>
                             {/* Input Fields */}
@@ -3097,6 +3782,7 @@ ${generateCSSVariables(styling)}
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-select-content</span> - Dropdown menu</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-checkbox</span> - Checkboxes</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-address-input</span> - Address inputs</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-address-input-label</span> - Address field label</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-file-input</span> - File uploads</div>
                               </div>
                             </div>
@@ -3149,6 +3835,9 @@ ${generateCSSVariables(styling)}
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-description</span> - Description</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-bullet-icon</span> - Bullet icons</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-card-bullet-text</span> - Bullet text</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-section-title</span> - Packages heading</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-breakdown-title</span> - Breakdown heading</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-pricing-total-value</span> - Final total amount</div>
                               </div>
                             </div>
                             {/* Upsell Cards */}

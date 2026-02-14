@@ -129,13 +129,64 @@ export default function ServiceSelector() {
           if (isNaN(convertedValue)) return;
         } else if (['select', 'dropdown'].includes(variable.type) && variable.options) {
           const strValue = String(attrValue).toLowerCase();
-          const matchedOption = variable.options.find((opt: any) =>
+          let matchedOption = variable.options.find((opt: any) =>
             String(opt.label).toLowerCase().includes(strValue) ||
             String(opt.value).toLowerCase().includes(strValue) ||
             strValue.includes(String(opt.label).toLowerCase())
           );
+          // Story count normalization for options like "One story", "Two stories", etc.
+          if (!matchedOption && variable.prefillSourceKey === 'stories') {
+            const parsedStories = typeof attrValue === 'number'
+              ? attrValue
+              : Number.parseFloat(String(attrValue));
+            if (Number.isFinite(parsedStories)) {
+              const storyCount = Math.round(parsedStories);
+              const numberWords: Record<number, string> = {
+                1: 'one',
+                2: 'two',
+                3: 'three',
+                4: 'four',
+                5: 'five',
+                6: 'six',
+                7: 'seven',
+                8: 'eight',
+                9: 'nine',
+                10: 'ten',
+              };
+              const word = numberWords[storyCount];
+              const storySignals = [
+                `${storyCount} story`,
+                `${storyCount} stories`,
+                `${storyCount}-story`,
+                `${storyCount}story`,
+                `${storyCount}st story`,
+                `${storyCount}nd story`,
+                `${storyCount}rd story`,
+                `${storyCount}th story`,
+                `story ${storyCount}`,
+                `stories ${storyCount}`,
+                word ? `${word} story` : '',
+                word ? `${word} stories` : '',
+                word ? `${word}-story` : '',
+                storyCount === 1 ? 'single story' : '',
+                storyCount === 2 ? 'double story' : '',
+                storyCount === 3 ? 'triple story' : '',
+              ].filter(Boolean);
+
+              matchedOption = variable.options.find((opt: any) => {
+                const label = String(opt.label || '').toLowerCase();
+                const value = String(opt.value || '').toLowerCase();
+                const numericValue = Number.parseFloat(String(opt.numericValue ?? ''));
+                const multiplier = Number.parseFloat(String(opt.multiplier ?? ''));
+                return storySignals.some((signal) => label.includes(signal) || value.includes(signal))
+                  || (Number.isFinite(numericValue) && Math.round(numericValue) === storyCount)
+                  || (Number.isFinite(multiplier) && Math.round(multiplier) === storyCount);
+              });
+            }
+          }
           if (matchedOption) {
-            convertedValue = matchedOption.value;
+            // Select/Dropdown options are stored/rendered as strings in the UI component.
+            convertedValue = String(matchedOption.value);
           } else {
             return;
           }
@@ -158,13 +209,6 @@ export default function ServiceSelector() {
         const updated = { ...prev };
 
         for (const { serviceId, variableId, value, connectionKey } of prefillUpdates) {
-          // Only prefill if user hasn't already entered a value
-          const existingValue = updated[serviceId]?.[variableId];
-          if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) {
-            console.log(`[PropertyPrefill] Skipping ${variableId}: existing value "${existingValue}" found`);
-            continue;
-          }
-
           console.log(`[PropertyPrefill] Setting ${variableId} = ${value} (type: ${typeof value})`);
           updated[serviceId] = {
             ...updated[serviceId],

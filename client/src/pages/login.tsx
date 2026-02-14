@@ -98,21 +98,22 @@ export default function Login() {
 
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-gradient-to-br from-blue-500/30 to-purple-500/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-br from-pink-500/30 to-yellow-500/30 rounded-full blur-3xl animate-pulse delay-500"></div>
-        </div>
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4 login-grain bg-slate-50 dark:bg-slate-950" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        .login-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="absolute inset-0">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-amber-200/50 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/3 translate-x-1/3 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-orange-200/40 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/3 -translate-x-1/4 blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
         {/* Logo and Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-6">
-            <div className="p-4 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+            <div className="p-4 rounded-full bg-white/80 dark:bg-white/5 backdrop-blur-md border border-slate-200/80 dark:border-white/10">
               <img 
                 src={autobidderLogo} 
                 alt="Autobidder" 
@@ -120,16 +121,16 @@ export default function Login() {
               />
             </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent mb-3">
+          <h1 className="text-4xl text-slate-900 dark:text-white mb-3" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
             Welcome Back
           </h1>
-          <p className="text-white/80 text-lg">Sign in to access your pricing calculators</p>
+          <p className="text-slate-600 dark:text-slate-300 text-lg">Sign in to access your pricing calculators</p>
         </div>
 
         {/* Login Card */}
-        <Card className="glass-card backdrop-blur-xl bg-white/10 border-white/20 shadow-2xl">
+        <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/75 shadow-sm backdrop-blur-xl">
           <CardHeader className="pb-6">
-            <CardTitle className="text-center text-2xl font-bold text-white">Sign In</CardTitle>
+            <CardTitle className="text-center text-2xl font-bold text-slate-900 dark:text-slate-100">Sign In</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <Form {...form}>
@@ -140,24 +141,19 @@ export default function Login() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/90 font-medium">Email Address</FormLabel>
+                      <FormLabel className="text-slate-800 dark:text-slate-200 font-medium">Email Address</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-white/50" />
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                           <Input 
                             type="email" 
                             placeholder="john@example.com" 
-                            className="pl-10 glass-input bg-white/10 border-white/30 text-purple-900 placeholder:text-purple-700/70 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25" 
-                            style={{
-                              WebkitTextFillColor: '#1e0734',
-                              WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.1) inset',
-                              WebkitBackgroundClip: 'padding-box'
-                            }}
+                            className="pl-10 bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500"
                             {...field} 
                           />
                         </div>
                       </FormControl>
-                      <FormMessage className="text-red-300" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -168,25 +164,20 @@ export default function Login() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-white/90 font-medium">Password</FormLabel>
+                      <FormLabel className="text-slate-800 dark:text-slate-200 font-medium">Password</FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Input 
                             type={showPassword ? "text" : "password"}
                             placeholder="Enter your password" 
-                            className="pr-10 glass-input bg-white/10 border-white/30 text-purple-900 placeholder:text-purple-700/70 backdrop-blur-md focus:border-purple-400/50 focus:ring-purple-400/25"
-                            style={{
-                              WebkitTextFillColor: '#1e0734',
-                              WebkitBoxShadow: '0 0 0 1000px rgba(255,255,255,0.1) inset',
-                              WebkitBackgroundClip: 'padding-box'
-                            }}
+                            className="pr-10 bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500"
                             {...field} 
                           />
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-white/10 text-white/70 hover:text-white"
+                            className="absolute right-0 top-0 h-full px-3 py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-transparent"
                             onClick={() => setShowPassword(!showPassword)}
                           >
                             {showPassword ? (
@@ -197,7 +188,7 @@ export default function Login() {
                           </Button>
                         </div>
                       </FormControl>
-                      <FormMessage className="text-red-300" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -205,11 +196,10 @@ export default function Login() {
                 {/* Submit Button */}
                 <Button 
                   type="submit"
-                  className="w-full h-12 relative group overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold rounded-lg shadow-lg shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02]"
+                  className="w-full h-12 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white font-semibold rounded-lg shadow-sm transition-all duration-200"
                   disabled={loginMutation.isPending}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative flex items-center justify-center">
+                  <div className="flex items-center justify-center">
                     {loginMutation.isPending ? (
                       <>
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
@@ -228,17 +218,17 @@ export default function Login() {
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/20" />
+                <span className="w-full border-t border-slate-200 dark:border-slate-700" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-transparent px-2 text-white/60">Or continue with</span>
+                <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">Or continue with</span>
               </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="w-full h-12 bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white font-medium"
+              className="w-full h-12 bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
               onClick={() => window.location.href = "/api/auth/google"}
               data-testid="button-google-login"
             >
@@ -247,26 +237,26 @@ export default function Login() {
             </Button>
 
             {/* Features */}
-            <div className="pt-6 border-t border-white/20">
-              <p className="text-sm text-white/80 text-center mb-4 font-medium">What you'll get access to:</p>
+            <div className="pt-6 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-sm text-slate-700 dark:text-slate-300 text-center mb-4 font-medium">What you'll get access to:</p>
               <div className="space-y-3">
-                <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
-                  <div className="p-1.5 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 mr-3">
-                    <Calculator className="h-4 w-4 text-white" />
+                <div className="flex items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700">
+                  <div className="p-1.5 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-500/20 dark:to-indigo-500/20 mr-3">
+                    <Calculator className="h-4 w-4 text-blue-700 dark:text-blue-300" />
                   </div>
-                  <span className="text-sm text-white/90">Create unlimited pricing calculators</span>
+                  <span className="text-sm text-slate-800 dark:text-slate-200">Create unlimited pricing calculators</span>
                 </div>
-                <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
-                  <div className="p-1.5 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 mr-3">
-                    <Users className="h-4 w-4 text-white" />
+                <div className="flex items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700">
+                  <div className="p-1.5 rounded-full bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-500/20 dark:to-fuchsia-500/20 mr-3">
+                    <Users className="h-4 w-4 text-violet-700 dark:text-violet-300" />
                   </div>
-                  <span className="text-sm text-white/90">Manage leads and customer inquiries</span>
+                  <span className="text-sm text-slate-800 dark:text-slate-200">Manage leads and customer inquiries</span>
                 </div>
-                <div className="flex items-center p-3 rounded-xl bg-white/10 backdrop-blur-md">
-                  <div className="p-1.5 rounded-full bg-gradient-to-br from-green-500/30 to-emerald-500/30 mr-3">
-                    <Shield className="h-4 w-4 text-white" />
+                <div className="flex items-center p-3 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700">
+                  <div className="p-1.5 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-500/20 dark:to-green-500/20 mr-3">
+                    <Shield className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
                   </div>
-                  <span className="text-sm text-white/90">Secure team collaboration tools</span>
+                  <span className="text-sm text-slate-800 dark:text-slate-200">Secure team collaboration tools</span>
                 </div>
               </div>
             </div>
@@ -276,14 +266,14 @@ export default function Login() {
         {/* Footer */}
         <div className="text-center mt-8 space-y-3">
           <div className="text-sm">
-            <Link href="/forgot-password" className="text-purple-300 hover:text-purple-200 font-medium transition-colors duration-200">
+            <Link href="/forgot-password" className="text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200 font-medium transition-colors duration-200">
               Forgot your password?
             </Link>
           </div>
-          <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
-            <p className="text-sm text-white/80">
+          <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-700">
+            <p className="text-sm text-slate-700 dark:text-slate-300">
               New to Autobidder?{" "}
-              <Link href="/onboarding" className="text-purple-300 hover:text-purple-200 font-semibold transition-colors duration-200">
+              <Link href="/onboarding" className="text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200 font-semibold transition-colors duration-200">
                 Create an account
               </Link>
             </p>

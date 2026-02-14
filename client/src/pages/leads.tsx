@@ -1234,7 +1234,7 @@ export default function LeadsPage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="p-6">
+        <div className="p-4 sm:p-6 lg:p-8 leads-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <Skeleton className="h-8 w-48 mb-2" />
@@ -1254,39 +1254,43 @@ export default function LeadsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <style>{`
+        .leads-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="p-4 sm:p-6 lg:p-8 leads-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <div className="max-w-7xl mx-auto">
         {/* Premium Header */}
         <div className="mb-8">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
             {/* Background decoration */}
-            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px]" />
-            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-orange-200/20 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
 
             <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-white dark:bg-gray-800/10 rounded-xl backdrop-blur-sm">
-                    <Users className="h-6 w-6 text-blue-400" />
+                  <div className="p-2 bg-white/80 dark:bg-white/5 border border-white/80 dark:border-white/10 rounded-xl backdrop-blur-sm">
+                    <Users className="h-5 w-5 text-amber-700 dark:text-amber-300" />
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-white">
+                  <h1 className="text-3xl sm:text-4xl text-slate-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                     Customer Leads
                   </h1>
                 </div>
-                <p className="text-slate-400 text-sm sm:text-base max-w-xl">
+                <p className="text-sm text-slate-600 dark:text-slate-300 sm:text-base max-w-xl">
                   Track, manage, and convert your leads into customers
                 </p>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex bg-white dark:bg-gray-800/10 rounded-lg p-1 backdrop-blur-sm">
+                <div className="flex rounded-full bg-slate-100/80 dark:bg-gray-800/70 p-1 shadow-sm ring-1 ring-slate-200/70 dark:ring-gray-700/70 backdrop-blur">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setViewMode("table")}
                     data-testid="button-view-table"
-                    className={`rounded-md transition-all ${viewMode === "table" ? "bg-white dark:bg-gray-800 text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white dark:bg-gray-800/10"}`}
+                    className={`h-9 rounded-full px-4 text-sm transition-all ${viewMode === "table" ? "bg-white dark:bg-gray-900/80 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-gray-900/40"}`}
                   >
                     <Columns className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Table</span>
@@ -1296,7 +1300,7 @@ export default function LeadsPage() {
                     size="sm"
                     onClick={() => setViewMode("kanban")}
                     data-testid="button-view-kanban"
-                    className={`rounded-md transition-all ${viewMode === "kanban" ? "bg-white dark:bg-gray-800 text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white dark:bg-gray-800/10"}`}
+                    className={`h-9 rounded-full px-4 text-sm transition-all ${viewMode === "kanban" ? "bg-white dark:bg-gray-900/80 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-gray-900/40"}`}
                   >
                     <LayoutGrid className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Kanban</span>
@@ -1306,7 +1310,7 @@ export default function LeadsPage() {
                     size="sm"
                     onClick={() => setViewMode("map")}
                     data-testid="button-view-map"
-                    className={`rounded-md transition-all ${viewMode === "map" ? "bg-white dark:bg-gray-800 text-slate-900 shadow-sm" : "text-slate-300 hover:text-white hover:bg-white dark:bg-gray-800/10"}`}
+                    className={`h-9 rounded-full px-4 text-sm transition-all ${viewMode === "map" ? "bg-white dark:bg-gray-900/80 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/80 dark:hover:bg-gray-900/40"}`}
                   >
                     <Map className="h-4 w-4 sm:mr-2" />
                     <span className="hidden sm:inline">Map</span>
@@ -1412,23 +1416,23 @@ export default function LeadsPage() {
 
         {/* Filters and Search */}
         <Collapsible open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
-          <div className="rounded-2xl border border-slate-200 bg-white dark:bg-gray-800 shadow-sm mb-8 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
+          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur mb-8 overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/60">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-slate-100 dark:bg-gray-700 rounded-lg">
-                    <Filter className="w-4 h-4 text-slate-600 dark:text-gray-300" />
+                      <Filter className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-800 dark:text-gray-100">Filters & Search</h3>
-                    <p className="text-xs text-slate-500 dark:text-gray-400">Refine your lead list</p>
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-100">Filters & Search</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Refine your lead list</p>
                   </div>
                 </div>
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="gap-2 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white"
+                    className="gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                     data-testid="button-toggle-filters"
                   >
                     {isFiltersOpen ? (
@@ -1571,16 +1575,16 @@ export default function LeadsPage() {
         {viewMode === "map" ? (
           <>
             {/* Map View */}
-            <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
+	            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur overflow-hidden">
+	              <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/60">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
                       <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-800 dark:text-white">Customer Locations</h3>
-                      <p className="text-sm text-slate-500 dark:text-gray-400">
+                      <h3 className="font-semibold text-slate-800 dark:text-slate-100">Customer Locations</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
                         {sortedLeads.filter(l => l.address).length} of {sortedLeads.length} customers with addresses
                       </p>
                     </div>
@@ -1609,8 +1613,8 @@ export default function LeadsPage() {
         ) : viewMode === "table" ? (
           <>
             {/* Premium Leads Table */}
-            <div className="rounded-2xl border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
-              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-gray-700 bg-slate-50/50 dark:bg-gray-800/50">
+	            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur overflow-hidden">
+	              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/60">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     {/* Show checkbox to select all only in selection mode */}
@@ -1624,13 +1628,13 @@ export default function LeadsPage() {
                       />
                     )}
                     <div>
-                      <h3 className="font-semibold text-slate-800 dark:text-white">
+	                    <h3 className="font-semibold text-slate-800 dark:text-slate-100">
                         {isSelectionMode ? (
                           selectedLeadIds.length > 0 ? `${selectedLeadIds.length} Selected` : 'Select Leads'
                         ) : (
                           <>
                             All Leads
-                            <span className="ml-2 text-sm font-normal text-slate-500 dark:text-gray-400">
+	                            <span className="ml-2 text-sm font-normal text-slate-500 dark:text-slate-400">
                               ({sortedLeads.length})
                             </span>
                           </>

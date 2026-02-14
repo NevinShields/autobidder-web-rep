@@ -1690,12 +1690,12 @@ export default function CustomFormDisplay() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h1 
-                className="text-3xl font-bold mb-2"
+                className="ab-form-title text-3xl font-bold mb-2"
                 style={{ color: styling.primaryColor || '#2563EB' }}
               >
                 {form?.name || 'Select Your Services'}
               </h1>
-              <p className="text-gray-600">
+              <p className="ab-form-subtitle text-gray-600">
                 {form?.description || "Choose the services you'd like a quote for"}
               </p>
             </div>
@@ -1725,12 +1725,12 @@ export default function CustomFormDisplay() {
           <div className="space-y-8">
             <div className="text-center mb-8">
               <h1 
-                className="text-3xl font-bold mb-2"
+                className="ab-form-title text-3xl font-bold mb-2"
                 style={{ color: styling.primaryColor || '#2563EB' }}
               >
                 Service Configuration
               </h1>
-              <p className="text-gray-600">
+              <p className="ab-form-subtitle text-gray-600">
                 Please provide details for your selected services
               </p>
             </div>
@@ -1967,12 +1967,12 @@ export default function CustomFormDisplay() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h1 
-                className="text-3xl font-bold mb-2"
+                className="ab-form-title text-3xl font-bold mb-2"
                 style={{ color: styling.primaryColor || '#2563EB' }}
               >
                 Contact Information
               </h1>
-              <p className="text-gray-600">
+              <p className="ab-form-subtitle text-gray-600">
                 We need your contact details to send you the quote
               </p>
             </div>
@@ -2317,12 +2317,12 @@ export default function CustomFormDisplay() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h1 
-                className="text-3xl font-bold mb-2"
+                className="ab-form-title text-3xl font-bold mb-2"
                 style={{ color: styling.primaryColor || '#2563EB' }}
               >
                 Your Quote
               </h1>
-              <p className="text-gray-600">
+              <p className="ab-form-subtitle text-gray-600">
                 Review your service quote and pricing details
               </p>
             </div>
@@ -2784,12 +2784,12 @@ export default function CustomFormDisplay() {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h1 
-                className="text-3xl font-bold mb-2"
+                className="ab-form-title text-3xl font-bold mb-2"
                 style={{ color: styling.primaryColor || '#2563EB' }}
               >
                 Schedule Your Service
               </h1>
-              <p className="text-gray-600">
+              <p className="ab-form-subtitle text-gray-600">
                 Choose a convenient time for your service appointment
               </p>
             </div>

@@ -1498,6 +1498,30 @@ export default function StyledCalculator(props: any = {}) {
         #autobidder-form .ab-pricing-card-bullet-text {
           color: var(--ab-pricing-card-bullet-text-color, inherit);
         }
+
+        /* Progress bar styles */
+        #autobidder-form .ab-progress-label {
+          color: var(--ab-label-color, #374151);
+        }
+
+        #autobidder-form .ab-progress-percentage {
+          color: var(--ab-primary-color, #2563EB);
+        }
+
+        #autobidder-form .ab-progress-track {
+          background-color: var(--ab-progress-track-bg, #E5E7EB);
+          height: var(--ab-progress-track-height, 8px);
+          border-radius: 9999px;
+          overflow: hidden;
+        }
+
+        #autobidder-form .ab-progress-fill {
+          background-color: var(--ab-primary-color, #2563EB);
+        }
+
+        #autobidder-form .ab-address-nav-button {
+          color: var(--ab-primary-color, #2563EB);
+        }
         
         /* Slider styles */
         #autobidder-form .ab-slider {
@@ -1833,13 +1857,64 @@ export default function StyledCalculator(props: any = {}) {
           if (isNaN(convertedValue)) return;
         } else if (['select', 'dropdown'].includes(variable.type) && variable.options) {
           const strValue = String(attrValue).toLowerCase();
-          const matchedOption = variable.options.find((opt: any) =>
+          let matchedOption = variable.options.find((opt: any) =>
             String(opt.label).toLowerCase().includes(strValue) ||
             String(opt.value).toLowerCase().includes(strValue) ||
             strValue.includes(String(opt.label).toLowerCase())
           );
+          // Story count normalization for options like "One story", "Two stories", etc.
+          if (!matchedOption && variable.prefillSourceKey === 'stories') {
+            const parsedStories = typeof attrValue === 'number'
+              ? attrValue
+              : Number.parseFloat(String(attrValue));
+            if (Number.isFinite(parsedStories)) {
+              const storyCount = Math.round(parsedStories);
+              const numberWords: Record<number, string> = {
+                1: 'one',
+                2: 'two',
+                3: 'three',
+                4: 'four',
+                5: 'five',
+                6: 'six',
+                7: 'seven',
+                8: 'eight',
+                9: 'nine',
+                10: 'ten',
+              };
+              const word = numberWords[storyCount];
+              const storySignals = [
+                `${storyCount} story`,
+                `${storyCount} stories`,
+                `${storyCount}-story`,
+                `${storyCount}story`,
+                `${storyCount}st story`,
+                `${storyCount}nd story`,
+                `${storyCount}rd story`,
+                `${storyCount}th story`,
+                `story ${storyCount}`,
+                `stories ${storyCount}`,
+                word ? `${word} story` : '',
+                word ? `${word} stories` : '',
+                word ? `${word}-story` : '',
+                storyCount === 1 ? 'single story' : '',
+                storyCount === 2 ? 'double story' : '',
+                storyCount === 3 ? 'triple story' : '',
+              ].filter(Boolean);
+
+              matchedOption = variable.options.find((opt: any) => {
+                const label = String(opt.label || '').toLowerCase();
+                const value = String(opt.value || '').toLowerCase();
+                const numericValue = Number.parseFloat(String(opt.numericValue ?? ''));
+                const multiplier = Number.parseFloat(String(opt.multiplier ?? ''));
+                return storySignals.some((signal) => label.includes(signal) || value.includes(signal))
+                  || (Number.isFinite(numericValue) && Math.round(numericValue) === storyCount)
+                  || (Number.isFinite(multiplier) && Math.round(multiplier) === storyCount);
+              });
+            }
+          }
           if (matchedOption) {
-            convertedValue = matchedOption.value;
+            // Select/Dropdown options are stored/rendered as strings in the UI component.
+            convertedValue = String(matchedOption.value);
           } else {
             return;
           }
@@ -1854,11 +1929,50 @@ export default function StyledCalculator(props: any = {}) {
             .map((t: string) => t.trim())
             .filter(Boolean);
           const candidates = tokens.length > 0 ? tokens : [raw];
+          const expandedCandidates = [...candidates];
+          if (variable.prefillSourceKey === 'stories') {
+            const parsedStories = typeof attrValue === 'number'
+              ? attrValue
+              : Number.parseFloat(String(attrValue));
+            if (Number.isFinite(parsedStories)) {
+              const storyCount = Math.round(parsedStories);
+              const numberWords: Record<number, string> = {
+                1: 'one',
+                2: 'two',
+                3: 'three',
+                4: 'four',
+                5: 'five',
+                6: 'six',
+                7: 'seven',
+                8: 'eight',
+                9: 'nine',
+                10: 'ten',
+              };
+              const word = numberWords[storyCount];
+              expandedCandidates.push(
+                `${storyCount}`,
+                `${storyCount} story`,
+                `${storyCount} stories`,
+                `${storyCount}-story`,
+                `${storyCount}story`,
+                `${storyCount}st story`,
+                `${storyCount}nd story`,
+                `${storyCount}rd story`,
+                `${storyCount}th story`,
+                `story ${storyCount}`,
+                `stories ${storyCount}`,
+                ...(word ? [`${word}`, `${word} story`, `${word} stories`, `${word}-story`] : []),
+                ...(storyCount === 1 ? ['single', 'single story'] : []),
+                ...(storyCount === 2 ? ['double', 'double story'] : []),
+                ...(storyCount === 3 ? ['triple', 'triple story'] : [])
+              );
+            }
+          }
 
           const matchedOptions = variable.options.filter((opt: any) => {
             const label = String(opt.label || '').toLowerCase();
             const value = String(opt.value || '').toLowerCase();
-            return candidates.some((candidate: string) =>
+            return expandedCandidates.some((candidate: string) =>
               label === candidate ||
               value === candidate ||
               label.includes(candidate) ||
@@ -1895,13 +2009,6 @@ export default function StyledCalculator(props: any = {}) {
         const updated = { ...prev };
 
         for (const { serviceId, variableId, value, connectionKey } of prefillUpdates) {
-          // Only prefill if user hasn't already entered a value
-          const existingValue = updated[serviceId]?.[variableId];
-          if (existingValue !== undefined && existingValue !== '' && existingValue !== 0) {
-            console.log(`[PropertyPrefill] Skipping ${variableId}: existing value "${existingValue}" found`);
-            continue;
-          }
-
           console.log(`[PropertyPrefill] Setting ${variableId} = ${value} (type: ${typeof value})`);
           updated[serviceId] = {
             ...updated[serviceId],
@@ -2718,14 +2825,14 @@ export default function StyledCalculator(props: any = {}) {
               <div className="text-center mb-8">
                 {businessSettings?.styling?.showFormTitle !== false && (
                   <h1 
-                    className="text-3xl font-bold mb-2"
-                    style={{ color: styling.primaryColor || '#2563EB' }}
+                    className="ab-form-title text-3xl font-bold mb-2"
+                    style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
                   >
                     {businessSettings?.styling?.selectionTitle || 'Select Your Services'}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && (
-                  <p className="text-gray-600">
+                  <p className="ab-form-subtitle text-gray-600">
                     {businessSettings?.styling?.selectionSubtitle || "Choose the services you'd like a quote for"}
                   </p>
                 )}
@@ -2782,19 +2889,23 @@ export default function StyledCalculator(props: any = {}) {
           <div className="space-y-6">
             <div className="text-center mb-4">
               <h1
-                className="text-2xl font-bold mb-2 flex items-center justify-center gap-2"
-                style={{ color: styling.primaryColor || '#2563EB' }}
+                className="ab-form-title text-2xl font-bold mb-2 flex items-center justify-center gap-2"
+                style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
               >
                 <Home className="w-6 h-6" />
                 Property Address
               </h1>
-              <p className="text-gray-600 text-sm">
+              <p className="ab-form-subtitle text-gray-600 text-sm">
                 Enter the property address to automatically fill in measurements and details.
               </p>
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="property-address" style={{ color: styling.primaryColor || '#2563EB' }}>
+              <Label
+                htmlFor="property-address"
+                className="ab-label ab-question-label ab-address-input-label"
+                style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
+              >
                 Property Address
               </Label>
               <Suspense fallback={<Skeleton className="h-10 w-full" />}>
@@ -2836,8 +2947,8 @@ export default function StyledCalculator(props: any = {}) {
               <div className="flex justify-between items-center">
                 <button
                   onClick={() => setCurrentStep("selection")}
-                  className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                  style={{ color: styling.primaryColor || '#2563EB' }}
+                  className="ab-address-nav-button ab-address-back-button text-sm opacity-70 hover:opacity-100 transition-opacity"
+                  style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
                 >
                   ← Back
                 </button>
@@ -2846,8 +2957,8 @@ export default function StyledCalculator(props: any = {}) {
                     setPropertyAutofillSkipped(true);
                     setCurrentStep("configuration");
                   }}
-                  className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                  style={{ color: styling.primaryColor || '#2563EB' }}
+                  className="ab-address-nav-button ab-address-skip-button text-sm opacity-70 hover:opacity-100 transition-opacity"
+                  style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
                 >
                   Skip this step →
                 </button>
@@ -2864,14 +2975,14 @@ export default function StyledCalculator(props: any = {}) {
               <div className="text-center mb-8">
                 {businessSettings?.styling?.showFormTitle !== false && businessSettings?.styling?.configurationTitle && businessSettings.styling.configurationTitle.trim() && (
                   <h1
-                    className="text-3xl font-bold mb-2"
-                    style={{ color: styling.primaryColor || '#2563EB' }}
+                    className="ab-form-title text-3xl font-bold mb-2"
+                    style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
                   >
                     {businessSettings.styling.configurationTitle}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && businessSettings?.styling?.configurationSubtitle && businessSettings.styling.configurationSubtitle.trim() && (
-                  <p className="text-gray-600">
+                  <p className="ab-form-subtitle text-gray-600">
                     {businessSettings.styling.configurationSubtitle}
                   </p>
                 )}
@@ -3385,14 +3496,14 @@ export default function StyledCalculator(props: any = {}) {
               <div className="text-center mb-8">
                 {businessSettings?.styling?.showFormTitle !== false && businessSettings?.styling?.contactTitle && businessSettings.styling.contactTitle.trim() && (
                   <h1 
-                    className="text-3xl font-bold mb-2"
-                    style={{ color: styling.primaryColor || '#2563EB' }}
+                    className="ab-form-title text-3xl font-bold mb-2"
+                    style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
                   >
                     {businessSettings.styling.contactTitle}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && businessSettings?.styling?.contactSubtitle && businessSettings.styling.contactSubtitle.trim() && (
-                  <p className="text-gray-600">
+                  <p className="ab-form-subtitle text-gray-600">
                     {businessSettings.styling.contactSubtitle}
                   </p>
                 )}
@@ -3677,14 +3788,14 @@ export default function StyledCalculator(props: any = {}) {
               <div className="text-center mb-8">
                 {businessSettings?.styling?.showFormTitle !== false && businessSettings?.styling?.pricingTitle && businessSettings.styling.pricingTitle.trim() && (
                   <h1 
-                    className="text-3xl font-bold mb-2"
-                    style={{ color: styling.primaryColor || '#2563EB' }}
+                    className="ab-form-title text-3xl font-bold mb-2"
+                    style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
                   >
                     {businessSettings.styling.pricingTitle}
                   </h1>
                 )}
                 {businessSettings?.styling?.showFormSubtitle !== false && businessSettings?.styling?.pricingSubtitle && businessSettings.styling.pricingSubtitle.trim() && (
-                  <p className="text-gray-600">
+                  <p className="ab-form-subtitle text-gray-600">
                     {businessSettings.styling.pricingSubtitle}
                   </p>
                 )}
@@ -3699,8 +3810,8 @@ export default function StyledCalculator(props: any = {}) {
             )}
             {/* Detailed Pricing Card */}
             <div 
-              className="p-8 rounded-lg mb-6"
-              style={{
+              className="ab-pricing-card ab-pricing-summary-card p-8 rounded-lg mb-6"
+              style={hasCustomCSS ? undefined : {
                 backgroundColor: 'transparent',
                 borderRadius: `${styling.containerBorderRadius || 12}px`,
                 borderWidth: '1px',
@@ -3712,13 +3823,19 @@ export default function StyledCalculator(props: any = {}) {
             >
               {/* Service Pricing Cards */}
               <div className="space-y-6 mb-8">
-                <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8" style={{ color: styling.textColor || '#1F2937' }}>
+                <h3
+                  className="ab-pricing-section-title text-xl sm:text-2xl font-bold text-center mb-6 sm:mb-8"
+                  style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                >
                   Your Service Packages
                 </h3>
 
                 {/* Cart status indicator when cart mode is enabled with multiple services */}
                 {businessSettings?.enableServiceCart && selectedServices.length > 1 && (
-                  <p className="text-center text-sm mb-4" style={{ color: styling.textColor ? `${styling.textColor}99` : '#6B7280' }}>
+                  <p
+                    className="ab-pricing-cart-status text-center text-sm mb-4"
+                    style={hasCustomCSS ? undefined : { color: styling.textColor ? `${styling.textColor}99` : '#6B7280' }}
+                  >
                     {cartServiceIds.length} of {selectedServices.length} services selected for checkout
                   </p>
                 )}
@@ -3842,7 +3959,10 @@ export default function StyledCalculator(props: any = {}) {
 
               {/* Detailed Pricing Breakdown */}
               <div className="border-t border-gray-300 pt-6 space-y-4">
-                <h3 className="text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                <h3
+                  className="ab-pricing-breakdown-title text-lg font-semibold mb-4"
+                  style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                >
                   Pricing Breakdown
                 </h3>
                 
@@ -3858,14 +3978,20 @@ export default function StyledCalculator(props: any = {}) {
                     return (
                       <div key={serviceId} className="flex justify-between items-center py-2 border-b border-gray-100">
                         <div className="flex-1">
-                          <span className="text-base" style={{ color: styling.textColor || '#1F2937' }}>
+                          <span
+                            className="ab-pricing-line-item-name text-base"
+                            style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                          >
                             {serviceName}
                           </span>
                           {price === 0 && serviceCalculations[serviceId] <= 0 && (
                             <span className="ml-2 text-sm text-red-500">(Price Error)</span>
                           )}
                         </div>
-                        <span className="text-base font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                        <span
+                          className="ab-pricing-line-item-value text-base font-medium"
+                          style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                        >
                           ${price.toLocaleString()}
                         </span>
                       </div>
@@ -3875,10 +4001,16 @@ export default function StyledCalculator(props: any = {}) {
 
                 {/* Subtotal */}
                 <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                  <span
+                    className="ab-pricing-subtotal-label text-lg font-medium"
+                    style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                  >
                     Subtotal:
                   </span>
-                  <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                  <span
+                    className="ab-pricing-subtotal-value text-lg font-medium"
+                    style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                  >
                     ${subtotal.toLocaleString()}
                   </span>
                 </div>
@@ -3966,10 +4098,16 @@ export default function StyledCalculator(props: any = {}) {
                 {/* Sales Tax */}
                 {taxAmount > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-lg" style={{ color: styling.textColor || '#1F2937' }}>
+                    <span
+                      className="ab-pricing-tax-label text-lg"
+                      style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                    >
                       Sales Tax ({businessSettings?.styling?.salesTaxRate || 0}%):
                     </span>
-                    <span className="text-lg font-medium" style={{ color: styling.textColor || '#1F2937' }}>
+                    <span
+                      className="ab-pricing-tax-value text-lg font-medium"
+                      style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                    >
                       ${taxAmount.toLocaleString()}
                     </span>
                   </div>
@@ -3978,12 +4116,15 @@ export default function StyledCalculator(props: any = {}) {
                 {/* Final Total */}
                 <div className="border-t border-gray-300 pt-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold" style={{ color: styling.textColor || '#1F2937' }}>
+                    <span
+                      className="ab-pricing-total-label text-xl font-bold"
+                      style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                    >
                       Total:
                     </span>
                     <span 
-                      className="text-4xl font-bold"
-                      style={{ color: styling.primaryColor || '#2563EB' }}
+                      className="ab-pricing-total-value text-4xl font-bold"
+                      style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
                     >
                       ${finalTotalPrice.toLocaleString()}
                     </span>
@@ -3999,7 +4140,10 @@ export default function StyledCalculator(props: any = {}) {
               {/* Discount Selection */}
               {businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0 && (
                 <div className="ab-discount-section mt-6 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                  <h3 className="ab-discount-title text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                  <h3
+                    className="ab-discount-title text-lg font-semibold mb-4"
+                    style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                  >
                     💰 Available Discounts
                   </h3>
                   <p className="ab-discount-subtitle text-sm text-gray-600 mb-4">
@@ -4086,7 +4230,10 @@ export default function StyledCalculator(props: any = {}) {
                 
                 return allUpsells.length > 0 && (
                   <div className="ab-upsell-section mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
-                    <h3 className="ab-upsell-heading text-lg font-semibold mb-4" style={{ color: styling.textColor || '#1F2937' }}>
+                    <h3
+                      className="ab-upsell-heading text-lg font-semibold mb-4"
+                      style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                    >
                       ⭐ Recommended Add-Ons
                     </h3>
                     <p className="ab-upsell-subtitle text-sm text-gray-600 mb-4">
@@ -4206,9 +4353,17 @@ export default function StyledCalculator(props: any = {}) {
 
               {/* Pricing Disclaimer */}
               {businessSettings?.styling?.enableDisclaimer && businessSettings.styling.disclaimerText && (
-                <div className="ab-pricing-disclaimer mt-6 p-4 bg-gray-50 rounded-lg border-l-4" style={{ borderLeftColor: styling.primaryColor || '#3B82F6' }}>
+                <div
+                  className="ab-pricing-disclaimer mt-6 p-4 bg-gray-50 rounded-lg border-l-4"
+                  style={hasCustomCSS ? undefined : { borderLeftColor: styling.primaryColor || '#3B82F6' }}
+                >
                   <p className="ab-pricing-disclaimer-text text-sm text-gray-600">
-                    <strong className="ab-pricing-disclaimer-label font-medium" style={{ color: styling.textColor || '#1F2937' }}>Important: </strong>
+                    <strong
+                      className="ab-pricing-disclaimer-label font-medium"
+                      style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                    >
+                      Important:
+                    </strong>{' '}
                     {businessSettings.styling.disclaimerText}
                   </p>
                 </div>
@@ -4216,7 +4371,10 @@ export default function StyledCalculator(props: any = {}) {
 
               {/* Customer Info Summary */}
               <div className="ab-customer-summary mt-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="ab-customer-summary-title font-semibold mb-2" style={{ color: styling.textColor || '#1F2937' }}>
+                <h4
+                  className="ab-customer-summary-title font-semibold mb-2"
+                  style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                >
                   Quote for: {leadForm.name}
                 </h4>
                 <p className="ab-customer-summary-line text-sm text-gray-600">{leadForm.email}</p>
@@ -4307,12 +4465,12 @@ export default function StyledCalculator(props: any = {}) {
           <div className="space-y-6">
             <div className="text-center mb-8">
               <h1 
-                className="text-3xl font-bold mb-2"
-                style={{ color: styling.primaryColor || '#2563EB' }}
+                className="ab-form-title text-3xl font-bold mb-2"
+                style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
               >
                 Schedule Your Service
               </h1>
-              <p className="text-gray-600">
+              <p className="ab-form-subtitle text-gray-600">
                 Choose a convenient time for your service appointment
               </p>
             </div>
@@ -4325,8 +4483,8 @@ export default function StyledCalculator(props: any = {}) {
             )}
             {/* Quote Summary */}
             <div 
-              className="p-6 rounded-lg mb-6"
-              style={{
+              className="ab-pricing-card ab-pricing-summary-card p-6 rounded-lg mb-6"
+              style={hasCustomCSS ? undefined : {
                 backgroundColor: hexToRgba(
                   componentStyles.pricingCard?.backgroundColor || '#F8F9FA',
                   componentStyles.pricingCard?.backgroundColorAlpha ?? 100
@@ -4342,10 +4500,21 @@ export default function StyledCalculator(props: any = {}) {
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="font-semibold" style={{ color: styling.textColor || '#1F2937' }}>
-                    Total: ${schedulingFinalTotal.toLocaleString()}
+                  <h3 className="font-semibold">
+                    <span
+                      className="ab-pricing-total-label"
+                      style={hasCustomCSS ? undefined : { color: styling.textColor || '#1F2937' }}
+                    >
+                      Total:
+                    </span>{" "}
+                    <span
+                      className="ab-pricing-total-value"
+                      style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
+                    >
+                      ${schedulingFinalTotal.toLocaleString()}
+                    </span>
                   </h3>
-                  <p className="text-sm text-gray-600">
+                  <p className="ab-pricing-cart-status text-sm text-gray-600">
                     {selectedServices.length} service(s) selected
                     {schedulingBundleDiscount > 0 && (
                       <span className="text-green-600 font-medium"> • ${schedulingBundleDiscount.toLocaleString()} bundle savings!</span>
@@ -4520,29 +4689,34 @@ export default function StyledCalculator(props: any = {}) {
       >
         {/* Progress Bar - Only show when showProgressGuide is enabled */}
         {businessSettings?.styling?.showProgressGuide && (
-          <div className="mb-6 px-2" data-testid="progress-bar-container">
+          <div className="ab-progress mb-6 px-2" data-testid="progress-bar-container">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium" style={{ color: styling.textColor || '#374151' }}>
+              <span
+                className="ab-progress-label text-sm font-medium"
+                style={hasCustomCSS ? undefined : { color: styling.textColor || '#374151' }}
+              >
                 {getProgressLabel()}
               </span>
-              <span className="text-sm font-medium" style={{ color: styling.primaryColor || '#2563EB' }}>
+              <span
+                className="ab-progress-percentage text-sm font-medium"
+                style={hasCustomCSS ? undefined : { color: styling.primaryColor || '#2563EB' }}
+              >
                 {Math.round(progressPercentage)}%
               </span>
             </div>
             <div 
-              className="w-full rounded-full overflow-hidden"
-              style={{ 
-                backgroundColor: '#E5E7EB',
-                height: '8px'
-              }}
+              className="ab-progress-track w-full h-2 rounded-full overflow-hidden"
+              style={hasCustomCSS ? undefined : { backgroundColor: '#E5E7EB' }}
               data-testid="progress-bar-track"
             >
               <div
-                className="h-full transition-all duration-300 ease-out"
-                style={{
-                  width: `${progressPercentage}%`,
-                  backgroundColor: styling.primaryColor || '#2563EB',
-                }}
+                className="ab-progress-fill h-full transition-all duration-300 ease-out"
+                style={hasCustomCSS
+                  ? { width: `${progressPercentage}%` }
+                  : {
+                      width: `${progressPercentage}%`,
+                      backgroundColor: styling.primaryColor || '#2563EB',
+                    }}
                 data-testid="progress-bar-fill"
               />
             </div>

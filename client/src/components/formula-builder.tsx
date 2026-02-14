@@ -21,6 +21,7 @@ import { TemplateLibraryButton } from "./template-library";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import FormulaExpressionInput from "./formula-expression-input";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DndContext,
   closestCenter,
@@ -197,6 +198,8 @@ export default function FormulaBuilderComponent({
   const [templateIconUrl, setTemplateIconUrl] = useState<string | null>(formula.iconUrl || null);
   const [bulletInput, setBulletInput] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isTemplateAdmin = user?.email?.toLowerCase() === "admin@autobidder.org";
 
   // Sync local formulaExpression state when formula.formula changes (e.g., after AI generation)
   useEffect(() => {
@@ -489,7 +492,7 @@ export default function FormulaBuilderComponent({
               </div>
               <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                 <TemplateLibraryButton />
-                {(formula.variables.length > 0 || formula.formula) && (
+                {isTemplateAdmin && (
                   <Button 
                     variant="outline" 
                     onClick={() => setShowSaveAsTemplateModal(true)}

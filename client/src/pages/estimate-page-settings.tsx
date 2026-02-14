@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { Eye, FileIcon, Image as ImageIcon, Palette, Paperclip, Play, Layout, Building2, Upload, Trash2, Save, Plus } from "lucide-react";
+import { Eye, FileIcon, Image as ImageIcon, Palette, Paperclip, Play, Layout, Building2, Upload, Trash2, Save, Plus, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessSettings } from "@shared/schema";
@@ -634,14 +634,15 @@ export default function EstimatePageSettings() {
                     </div>
                   </DialogContent>
                 </Dialog>
-              <Button
-                onClick={handleSave}
-                disabled={saveSettingsMutation.isPending}
-                className="rounded-xl h-10 px-6 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 shadow-lg shadow-gray-900/10"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saveSettingsMutation.isPending ? "Saving..." : "Save Designer Changes"}
-              </Button>
+                <Button
+                  onClick={handleSave}
+                  disabled={saveSettingsMutation.isPending}
+                  className="rounded-xl h-10 px-6 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 shadow-lg shadow-gray-900/10"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saveSettingsMutation.isPending ? "Saving..." : "Save Designer Changes"}
+                </Button>
+              </div>
             </div>
           </div>
 

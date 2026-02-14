@@ -122,9 +122,14 @@ export default function IntegrationsPage() {
   if (!hasAccess) {
     return (
       <DashboardLayout>
-        <div className="p-6">
+        <style>{`
+          .integrations-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+          }
+        `}</style>
+        <div className="p-4 sm:p-6 lg:p-8 integrations-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
           <div className="max-w-2xl mx-auto mt-20">
-            <Card>
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
               <CardContent className="pt-6">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -153,22 +158,36 @@ export default function IntegrationsPage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
+      <style>{`
+        .integrations-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="p-4 sm:p-6 lg:p-8 integrations-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mb-2">
-            Integrations
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 dark:text-gray-400">
-            Connect Autobidder with your favorite tools and automate your workflow
-          </p>
+        <div className="relative overflow-hidden rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-orange-200/20 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-white/80 dark:bg-white/5 border border-white/80 dark:border-white/10 rounded-xl backdrop-blur-sm">
+                <Zap className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+              </div>
+              <h1 className="text-3xl sm:text-4xl text-slate-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                Integrations
+              </h1>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300">
+              Connect Autobidder with your favorite tools and automate your workflow
+            </p>
+          </div>
         </div>
 
         {/* Integration Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Zapier Integration Card */}
-          <Card className="relative overflow-hidden border-2 hover:border-orange-200 dark:hover:border-orange-800 transition-colors group cursor-pointer">
+          <Card className="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur hover:border-orange-200 dark:hover:border-orange-800 transition-colors group cursor-pointer">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-600 rounded-bl-full opacity-10 group-hover:opacity-20 transition-opacity"></div>
             
             <CardHeader className="pb-4">
@@ -396,7 +415,7 @@ export default function IntegrationsPage() {
           </Card>
 
           {/* Twilio Integration Card */}
-          <Card className="relative overflow-hidden border-2 hover:border-blue-200 dark:hover:border-blue-800 transition-colors group cursor-pointer">
+          <Card className="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur hover:border-blue-200 dark:hover:border-blue-800 transition-colors group cursor-pointer">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-bl-full opacity-10 group-hover:opacity-20 transition-opacity"></div>
             
             <CardHeader className="pb-4">
@@ -444,7 +463,7 @@ export default function IntegrationsPage() {
           </Card>
 
           {/* Coming Soon Cards */}
-          <Card className="relative overflow-hidden border-2 opacity-60">
+          <Card className="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur opacity-60">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-bl-full opacity-10"></div>
             
             <CardHeader className="pb-4">
@@ -476,7 +495,7 @@ export default function IntegrationsPage() {
             </CardContent>
           </Card>
 
-          <Card className="relative overflow-hidden border-2 opacity-60">
+          <Card className="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur opacity-60">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-bl-full opacity-10"></div>
             
             <CardHeader className="pb-4">
@@ -511,7 +530,7 @@ export default function IntegrationsPage() {
 
         {/* Zapier Workflow Embed */}
         {user && (
-          <Card className="mt-8">
+          <Card className="mt-8 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-orange-500" />
@@ -547,7 +566,7 @@ export default function IntegrationsPage() {
         )}
 
         {/* Help Section */}
-        <Card className="mt-8">
+        <Card className="mt-8 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Info className="w-5 h-5" />

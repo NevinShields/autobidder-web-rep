@@ -159,17 +159,35 @@ export default function EmbedCode() {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Embed Code Generator</h1>
-          <p className="text-gray-600 dark:text-gray-400">Generate iframe embed codes for your pricing calculators</p>
+      <style>{`
+        .embed-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8 embed-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="mb-8 relative overflow-hidden rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-orange-200/20 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-white/80 dark:bg-white/5 border border-white/80 dark:border-white/10 rounded-xl backdrop-blur-sm">
+                <Code className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+              </div>
+              <h1 className="text-3xl sm:text-4xl text-slate-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                Embed Code Generator
+              </h1>
+            </div>
+            <p className="text-slate-600 dark:text-slate-300">
+              Generate iframe embed codes for your pricing calculators
+            </p>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Configuration Panel */}
           <div className="space-y-6">
             {/* Embed Settings */}
-            <Card>
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
@@ -243,7 +261,7 @@ export default function EmbedCode() {
             </Card>
 
             {/* Single Formula Embed */}
-            <Card>
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Code className="h-5 w-5" />
@@ -337,7 +355,7 @@ export default function EmbedCode() {
 
           {/* Styled Calculator Embed */}
           <div className="space-y-6">
-            <Card>
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Palette className="h-5 w-5" />
@@ -408,7 +426,7 @@ export default function EmbedCode() {
             </Card>
 
             {/* Usage Instructions */}
-            <Card>
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
               <CardHeader>
                 <CardTitle>Usage Instructions</CardTitle>
               </CardHeader>

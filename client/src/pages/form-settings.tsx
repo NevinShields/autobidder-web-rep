@@ -430,13 +430,8 @@ export default function FormSettings() {
         .fs-stagger-1 { animation: formsettings-fade-up 0.5s ease-out both; animation-delay: 0.05s; }
         .fs-stagger-2 { animation: formsettings-fade-up 0.5s ease-out both; animation-delay: 0.1s; }
         .fs-stagger-3 { animation: formsettings-fade-up 0.5s ease-out both; animation-delay: 0.15s; }
-        .fs-grain { position: relative; }
-        .fs-grain::before {
-          content: ''; position: absolute; inset: 0; opacity: 0.3; pointer-events: none; mix-blend-mode: overlay; border-radius: inherit;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-        }
       `}</style>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fs-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
         {/* Hero Header */}
         <div className="fs-stagger-1 relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-900 dark:to-gray-800/60 border border-amber-200/40 dark:border-amber-500/10 p-6 sm:p-8 mb-8">

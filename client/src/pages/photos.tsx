@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Image as ImageIcon, Calendar, Tag, Grid3x3, List, Download, X } from "lucide-react";
+import { Search, Image as ImageIcon, Calendar, Tag, Grid3x3, List, Download, X, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
+import { Label } from "@/components/ui/label";
 
 interface PhotoMeasurement {
   id: number;
@@ -344,7 +345,7 @@ export default function PhotosPage() {
               <Card className="bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200/60 dark:border-gray-700/40 rounded-2xl overflow-hidden">
                 <CardContent className="p-0">
                   <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {/* List view items simplified for space */}
+                    {/* List view items */}
                     {filteredLeadImages.map((lead) => (
                       <div key={`lead-${lead.id}`} className="p-5 hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors group cursor-pointer" onClick={() => handleDownloadPhoto(lead.uploadedImages[0])}>
                         <div className="flex items-center gap-5">

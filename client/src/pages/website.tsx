@@ -457,77 +457,104 @@ export default function Website() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-        <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                {hasExistingWebsite ? 'Your Website' : 'Website Builder'}
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1">
-                {hasExistingWebsite 
-                  ? 'Manage and customize your professional website'
-                  : 'Create professional websites with our custom templates'
-                }
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <SupportContact 
-                trigger={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="px-3 py-2"
-                    data-testid="button-support"
-                  >
-                    <HeadphonesIcon className="w-3 w-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                    <span className="text-xs sm:text-sm">Support</span>
-                  </Button>
-                }
-              />
+      <style>{`
+        @keyframes dash-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .dash-stagger { animation: dash-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .dash-stagger-1 { animation-delay: 0ms; }
+        .dash-stagger-2 { animation-delay: 60ms; }
+        .dash-stagger-3 { animation-delay: 120ms; }
+        .dash-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+      `}</style>
+
+      <div className="p-4 sm:p-6 lg:p-8 dash-grain min-h-screen" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Hero Header */}
+          <div className="dash-stagger dash-stagger-1 relative overflow-hidden rounded-2xl border border-blue-200/40 dark:border-blue-500/10 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-200/30 to-transparent dark:from-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-blue-600/70 dark:text-blue-400/60 font-semibold mb-2">Online Presence</p>
+                <h1 className="text-3xl sm:text-4xl text-gray-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  {hasExistingWebsite ? 'Your Website' : 'Website Builder'}
+                </h1>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                  {hasExistingWebsite 
+                    ? 'Manage and customize your professional website.'
+                    : 'Create professional websites with our custom templates.'
+                  }
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <SupportContact 
+                  trigger={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl h-10 px-4 bg-white/50 backdrop-blur-sm border-white/20"
+                      data-testid="button-support"
+                    >
+                      <HeadphonesIcon className="w-4 h-4 mr-2" />
+                      Support
+                    </Button>
+                  }
+                />
+              </div>
             </div>
           </div>
 
           {/* Dashboard Stats */}
-          <div className="grid grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-            <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardContent className="p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
-                    <Globe className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
+          <div className="dash-stagger dash-stagger-2 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+            <Card className="relative overflow-hidden bg-white dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg group hover:translate-y-[-2px] transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 dark:from-blue-500/10 dark:to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">Total Websites</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                      {websiteStats.totalWebsites}
+                    </p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Total Websites</p>
-                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{websiteStats.totalWebsites}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardContent className="p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
-                    <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 text-green-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Published</p>
-                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{websiteStats.publishedWebsites}</p>
+                  <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                    <Globe className="w-6 h-6" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white dark:bg-gray-800/70 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardContent className="p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
-                    <Edit className="w-4 h-4 sm:w-6 sm:h-6 text-yellow-600" />
+            <Card className="relative overflow-hidden bg-white dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg group hover:translate-y-[-2px] transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 dark:from-emerald-500/10 dark:to-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">Published</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                      {websiteStats.publishedWebsites}
+                    </p>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Drafts</p>
-                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">{websiteStats.draftWebsites}</p>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden bg-white dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-lg group hover:translate-y-[-2px] transition-all duration-300">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-orange-500/5 dark:from-amber-500/10 dark:to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs uppercase tracking-wider font-semibold text-gray-500 dark:text-gray-400">Drafts</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                      {websiteStats.draftWebsites}
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <Edit className="w-6 h-6" />
                   </div>
                 </div>
               </CardContent>

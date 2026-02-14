@@ -37,7 +37,8 @@ import {
   AlertCircle,
   LogOut,
   ExternalLink,
-  Globe
+  Globe,
+  Zap
 } from "lucide-react";
 import SubscriptionManagement from "@/components/subscription-management";
 
@@ -176,7 +177,7 @@ export default function ProfilePage() {
           });
         });
     }
-  }, [toast, refetch, queryClient]);
+  }, [toast, refetch]);
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -364,11 +365,18 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p>Loading profile...</p>
+        <div className="p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="animate-pulse rounded-2xl h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="animate-pulse rounded-2xl h-96 bg-white/60 dark:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50" />
+                <div className="animate-pulse rounded-2xl h-64 bg-white/60 dark:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50" />
+              </div>
+              <div className="space-y-6">
+                <div className="animate-pulse rounded-2xl h-48 bg-white/60 dark:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50" />
+                <div className="animate-pulse rounded-2xl h-48 bg-white/60 dark:bg-gray-800/60 border border-gray-200/50 dark:border-gray-700/50" />
+              </div>
             </div>
           </div>
         </div>
@@ -378,145 +386,165 @@ export default function ProfilePage() {
 
   return (
     <DashboardLayout>
-      <div className="p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <User className="w-8 h-8 text-blue-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile Settings</h1>
-              <p className="text-gray-600 dark:text-gray-400">Manage your account information and preferences</p>
+      <style>{`
+        @keyframes dash-fade-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .dash-stagger { animation: dash-fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        .dash-stagger-1 { animation-delay: 0ms; }
+        .dash-stagger-2 { animation-delay: 60ms; }
+        .dash-stagger-3 { animation-delay: 120ms; }
+        .dash-stagger-4 { animation-delay: 180ms; }
+        .dash-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+      `}</style>
+
+      <div className="p-4 sm:p-6 lg:p-8 dash-grain min-h-screen" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="max-w-7xl mx-auto space-y-6">
+
+          {/* Hero Header */}
+          <div className="dash-stagger dash-stagger-1 relative overflow-hidden rounded-2xl border border-blue-200/40 dark:border-blue-500/10 bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-200/30 to-transparent dark:from-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-blue-600/70 dark:text-blue-400/60 font-semibold mb-2">Account</p>
+                <h1 className="text-3xl sm:text-4xl text-gray-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  Profile Settings
+                </h1>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-md">
+                  Manage your personal information, notification preferences, and subscription details.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge variant={profile?.isActive ? "default" : "destructive"} className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                  {profile?.isActive ? "Active Account" : "Inactive"}
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl h-10 px-4 bg-white/50 backdrop-blur-sm border-white/20 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 transition-colors"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Profile Information */}
+            {/* Left Column: Profile & Notifications */}
             <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+              
+              {/* Profile Info Card */}
+              <Card className="dash-stagger dash-stagger-2 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
+                <CardHeader className="flex flex-row items-start justify-between border-b border-gray-100 dark:border-gray-800 pb-6">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5 hidden sm:block" />
+                    <CardTitle className="text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                       Profile Information
                     </CardTitle>
                     <CardDescription>
-                      Update your personal information and account details
+                      Your personal details and organizational identity.
                     </CardDescription>
                   </div>
                   <Button
                     variant={isEditing ? "outline" : "default"}
                     size="sm"
+                    className="rounded-xl h-9"
                     onClick={handleEditToggle}
                     disabled={updateProfileMutation.isPending}
                   >
-                    {isEditing ? "Cancel" : "Edit Profile"}
+                    {isEditing ? "Cancel" : <><Settings className="w-4 h-4 mr-2" /> Edit Profile</>}
                   </Button>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Profile Picture */}
-                  <div className="flex items-center gap-4">
-                    <Avatar className="w-20 h-20">
-                      <AvatarImage src={profile?.profileImageUrl} />
-                      <AvatarFallback className="text-lg">
-                        {profile?.firstName?.[0]}{profile?.lastName?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg">
+                <CardContent className="pt-6 space-y-6">
+                  <div className="flex items-center gap-6">
+                    <div className="relative group">
+                      <Avatar className="w-24 h-24 border-4 border-white dark:border-gray-800 shadow-xl">
+                        <AvatarImage src={profile?.profileImageUrl} />
+                        <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold">
+                          {profile?.firstName?.[0]}{profile?.lastName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <button className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                        <Camera className="w-6 h-6" />
+                      </button>
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                         {profile?.firstName} {profile?.lastName}
                       </h3>
-                      <p className="text-gray-600 dark:text-gray-400 break-all sm:break-normal">{profile?.email}</p>
-                      <Button variant="outline" size="sm" className="mt-2">
-                        <Camera className="w-4 h-4 mr-2" />
-                        Change Photo
-                      </Button>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm flex items-center gap-2 mt-1">
+                        <Mail className="w-3.5 h-3.5" />
+                        {profile?.email}
+                      </p>
+                      <div className="flex gap-2 mt-3">
+                        <Badge variant="secondary" className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+                          {profile?.userType}
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 border-blue-200 text-blue-600 dark:border-blue-900 dark:text-blue-400">
+                          {profile?.plan?.replace('_', ' ')} Plan
+                        </Badge>
+                      </div>
                     </div>
                   </div>
 
-                  <Separator />
+                  <Separator className="dark:bg-gray-800" />
 
-                  {/* Basic Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">First Name</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-widest text-gray-500 font-bold">First Name</Label>
                       <Input
-                        id="firstName"
                         value={isEditing ? (profileData.firstName || '') : (profile?.firstName || '')}
                         onChange={(e) => setProfileData({...profileData, firstName: e.target.value})}
                         disabled={!isEditing}
-                        className="mt-1"
+                        className="rounded-xl h-11 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="lastName">Last Name</Label>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-widest text-gray-500 font-bold">Last Name</Label>
                       <Input
-                        id="lastName"
                         value={isEditing ? (profileData.lastName || '') : (profile?.lastName || '')}
                         onChange={(e) => setProfileData({...profileData, lastName: e.target.value})}
                         disabled={!isEditing}
-                        className="mt-1"
+                        className="rounded-xl h-11 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-widest text-gray-500 font-bold">Organization</Label>
+                      <Input
+                        value={isEditing ? (profileData.organizationName || '') : (profile?.organizationName || '')}
+                        onChange={(e) => setProfileData({...profileData, organizationName: e.target.value})}
+                        disabled={!isEditing}
+                        className="rounded-xl h-11 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-widest text-gray-500 font-bold">Business Phone</Label>
+                      <Input
+                        type="tel"
+                        value={isEditing ? (profileData.businessPhone || '') : (businessSettings?.businessPhone || '')}
+                        onChange={(e) => setProfileData({...profileData, businessPhone: e.target.value})}
+                        disabled={!isEditing}
+                        placeholder="(555) 123-4567"
+                        className="rounded-xl h-11 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="email" className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      Email Address
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profile?.email || ''}
-                      disabled
-                      className="mt-1 bg-gray-50 dark:bg-gray-800"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Email cannot be changed. Contact support if needed.
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="organization" className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4" />
-                      Organization Name
-                    </Label>
-                    <Input
-                      id="organization"
-                      value={isEditing ? (profileData.organizationName || '') : (profile?.organizationName || '')}
-                      onChange={(e) => setProfileData({...profileData, organizationName: e.target.value})}
-                      disabled={!isEditing}
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="businessPhone" className="flex items-center gap-2">
-                      <Settings className="w-4 h-4" />
-                      Business Phone
-                    </Label>
-                    <Input
-                      id="businessPhone"
-                      type="tel"
-                      value={isEditing ? (profileData.businessPhone || '') : (businessSettings?.businessPhone || '')}
-                      onChange={(e) => setProfileData({...profileData, businessPhone: e.target.value})}
-                      disabled={!isEditing}
-                      className="mt-1"
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-
                   {isEditing && (
-                    <div className="flex gap-2 pt-4">
+                    <div className="flex gap-3 pt-4">
                       <Button 
                         onClick={handleSave}
                         disabled={updateProfileMutation.isPending}
-                        className="flex items-center gap-2"
+                        className="rounded-xl px-6 bg-blue-600 hover:bg-blue-700"
                       >
-                        <Save className="w-4 h-4" />
-                        {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
+                        <Save className="w-4 h-4 mr-2" />
+                        {updateProfileMutation.isPending ? "Saving..." : "Save Profile Changes"}
                       </Button>
-                      <Button variant="outline" onClick={handleEditToggle}>
+                      <Button variant="outline" onClick={handleEditToggle} className="rounded-xl px-6">
                         Cancel
                       </Button>
                     </div>
@@ -524,432 +552,215 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              {/* Notification Preferences */}
-              <Card>
+              {/* Notifications Card */}
+              <Card className="dash-stagger dash-stagger-3 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="w-5 h-5 hidden sm:block" />
+                  <CardTitle className="text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                     Notification Preferences
                   </CardTitle>
                   <CardDescription>
-                    Choose how you want to receive notifications
+                    Stay updated on your business activity.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="emailNotifications" className="text-sm font-medium">
-                        Email Notifications
-                      </Label>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Receive updates via email</p>
+                <CardContent className="space-y-4 pt-2">
+                  {[
+                    { id: "email", label: "Email Notifications", desc: "Receive automated alerts and reports", icon: Mail, checked: notifications.emailNotifications, field: 'emailNotifications' },
+                    { id: "leads", label: "Lead Alerts", desc: "Real-time notifications for new quote requests", icon: Users, checked: notifications.leadAlerts, field: 'leadAlerts' },
+                    { id: "system", label: "System Updates", desc: "Maintenance alerts and new feature announcements", icon: Zap, checked: notifications.systemUpdates, field: 'systemUpdates' }
+                  ].map((pref) => (
+                    <div key={pref.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/50 dark:bg-gray-900/30 border border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800">
+                          <pref.icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                        </div>
+                        <div>
+                          <Label className="text-sm font-bold">{pref.label}</Label>
+                          <p className="text-xs text-gray-500">{pref.desc}</p>
+                        </div>
+                      </div>
+                      <Switch 
+                        checked={pref.checked}
+                        onCheckedChange={(checked) => setNotifications({...notifications, [pref.field as any]: checked})}
+                      />
                     </div>
-                    <Switch
-                      id="emailNotifications"
-                      checked={notifications.emailNotifications}
-                      onCheckedChange={(checked) => 
-                        setNotifications({...notifications, emailNotifications: checked})
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="leadAlerts" className="text-sm font-medium">
-                        New Lead Alerts
-                      </Label>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Get notified when new leads are received</p>
-                    </div>
-                    <Switch
-                      id="leadAlerts"
-                      checked={notifications.leadAlerts}
-                      onCheckedChange={(checked) => 
-                        setNotifications({...notifications, leadAlerts: checked})
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <Label htmlFor="systemUpdates" className="text-sm font-medium">
-                        System Updates
-                      </Label>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Receive notifications about system changes</p>
-                    </div>
-                    <Switch
-                      id="systemUpdates"
-                      checked={notifications.systemUpdates}
-                      onCheckedChange={(checked) => 
-                        setNotifications({...notifications, systemUpdates: checked})
-                      }
-                    />
-                  </div>
-
-                  <Separator className="my-4" />
-
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm font-medium">Push Notifications</Label>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">Get instant alerts on your device when new leads come in</p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      data-testid="button-enable-lead-alerts"
-                      onClick={async () => {
-                        try {
-                          if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                            toast({
-                              title: "Not Supported",
-                              description: "Push notifications are not supported in this browser.",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-
-                          const registration = await navigator.serviceWorker.register('/service-worker.js');
-                          await navigator.serviceWorker.ready;
-
-                          const permission = await Notification.requestPermission();
-                          if (permission !== 'granted') {
-                            toast({
-                              title: "Permission Denied",
-                              description: "Please allow notifications to receive lead alerts.",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-
-                          const vapidResponse = await fetch('/api/vapid-public-key');
-                          const { publicKey } = await vapidResponse.json();
-
-                          const urlBase64ToUint8Array = (base64String: string) => {
-                            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-                            const base64 = (base64String + padding)
-                              .replace(/-/g, '+')
-                              .replace(/_/g, '/');
-                            const rawData = window.atob(base64);
-                            const outputArray = new Uint8Array(rawData.length);
-                            for (let i = 0; i < rawData.length; ++i) {
-                              outputArray[i] = rawData.charCodeAt(i);
-                            }
-                            return outputArray;
-                          };
-
-                          const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(publicKey)
-                          });
-
-                          const saveResponse = await fetch('/api/save-subscription', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(subscription)
-                          });
-
-                          if (saveResponse.ok) {
-                            toast({
-                              title: "Lead Alerts Enabled",
-                              description: "You will now receive push notifications for new leads.",
-                            });
-                          } else {
-                            throw new Error('Failed to save subscription');
-                          }
-                        } catch (error) {
-                          console.error('Push subscription error:', error);
-                          toast({
-                            title: "Setup Failed",
-                            description: "Failed to enable push notifications. Please try again.",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                    >
-                      <Bell className="w-4 h-4 mr-2" />
-                      Enable Lead Alerts
-                    </Button>
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
 
-              {/* Subscription Management */}
               <SubscriptionManagement />
             </div>
 
-            {/* Sidebar */}
+            {/* Right Column: Account Status & Security */}
             <div className="space-y-6">
-              {/* Account Status */}
-              <Card>
+              {/* Security Card */}
+              <Card className="dash-stagger dash-stagger-2 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 hidden sm:block" />
-                    Account Status
+                  <CardTitle className="text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    Security & Access
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Account Type</span>
-                    <Badge variant={profile?.userType === 'owner' ? 'default' : 'secondary'}>
-                      {profile?.userType === 'owner' ? 'Owner' : 'Employee'}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Status</span>
-                    <Badge variant={profile?.isActive ? 'default' : 'destructive'}>
-                      {profile?.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-
-                  {profile?.createdAt && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Member Since</span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(profile.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Directory Listing */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Globe className="w-5 h-5 hidden sm:block" />
-                    Directory Listing
-                  </CardTitle>
-                  <CardDescription>
-                    Get found by homeowners in the public directory
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {directoryProfile ? (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Status</span>
-                        <Badge variant={directoryProfile.showOnDirectory ? "default" : "secondary"}>
-                          {directoryProfile.showOnDirectory ? "Listed" : "Hidden"}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="directoryToggle" className="text-sm font-medium">
-                            Show in Directory
-                          </Label>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {directoryProfile.showOnDirectory
-                              ? "Customers can find you"
-                              : "Your listing is hidden"}
-                          </p>
-                        </div>
-                        <Switch
-                          id="directoryToggle"
-                          checked={directoryProfile.showOnDirectory}
-                          onCheckedChange={checked => toggleDirectoryVisibility.mutate(checked)}
-                          disabled={toggleDirectoryVisibility.isPending}
-                        />
-                      </div>
-                      <Separator />
-                      <Link href={`/directory/company/${directoryProfile.companySlug}`}>
-                        <Button variant="outline" className="w-full justify-start">
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          View Company Page
-                        </Button>
-                      </Link>
-                      <Link href="/directory-dashboard">
-                        <Button variant="outline" className="w-full justify-start">
-                          <Settings className="w-4 h-4 mr-2" />
-                          Manage Listing
-                        </Button>
-                      </Link>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-gray-500">
-                        You haven't set up a directory listing yet. List your business to get found by customers.
-                      </p>
-                      <Link href="/directory-setup">
-                        <Button className="w-full">
-                          <Building2 className="w-4 h-4 mr-2" />
-                          Set Up Listing
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Permissions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lock className="w-5 h-5 hidden sm:block" />
-                    Permissions
-                  </CardTitle>
-                  <CardDescription>
-                    Your current access permissions
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {profile?.permissions && Object.entries(profile.permissions).map(([key, value]) => (
-                      <div key={key} className="flex items-center gap-3">
-                        {getPermissionIcon(key)}
-                        <span className={`text-sm flex-1 ${value ? 'text-green-700' : 'text-gray-500'}`}>
-                          {getPermissionLabel(key)}
-                        </span>
-                        <Badge variant={value ? 'default' : 'secondary'} className="text-xs">
-                          {value ? 'Enabled' : 'Disabled'}
-                        </Badge>
-                      </div>
-                    ))}
-                    {(!profile?.permissions || Object.keys(profile.permissions).length === 0) && (
-                      <p className="text-sm text-gray-500">No specific permissions set</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {profile?.userType === 'owner' && (
-                    <Button variant="outline" className="w-full justify-start" onClick={() => navigate("/users")}>
-                      <Users className="w-4 h-4 mr-2" />
-                      Manage Team
-                    </Button>
-                  )}
+                <CardContent className="space-y-3">
                   <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start">
-                        <Lock className="w-4 h-4 mr-2" />
+                      <Button variant="outline" className="w-full justify-start rounded-xl h-11 border-gray-200 dark:border-gray-700">
+                        <Lock className="w-4 h-4 mr-3 text-blue-500" />
                         Change Password
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-md rounded-2xl" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                       <DialogHeader>
-                        <DialogTitle>Change Password</DialogTitle>
-                        <DialogDescription>
-                          Enter your current password and choose a new password.
-                        </DialogDescription>
+                        <DialogTitle style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Update Password</DialogTitle>
+                        <DialogDescription>Enter your current password to authorize this change.</DialogDescription>
                       </DialogHeader>
-                      <div className="space-y-4">
+                      <div className="space-y-4 pt-4">
                         <div className="space-y-2">
-                          <Label htmlFor="current-password">Current Password</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Current Password</Label>
                           <div className="relative">
                             <Input
-                              id="current-password"
                               type={showPasswords.current ? "text" : "password"}
                               value={passwordData.currentPassword}
                               onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
-                              placeholder="Enter current password"
+                              placeholder="••••••••"
+                              className="rounded-xl h-11 pr-10"
                             />
-                            <Button
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                               onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
                             >
-                              {showPasswords.current ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
+                              {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="new-password">New Password</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">New Password</Label>
                           <div className="relative">
                             <Input
-                              id="new-password"
                               type={showPasswords.new ? "text" : "password"}
                               value={passwordData.newPassword}
                               onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
-                              placeholder="Enter new password"
+                              placeholder="••••••••"
+                              className="rounded-xl h-11 pr-10"
                             />
-                            <Button
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                               onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
                             >
-                              {showPasswords.new ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
+                              {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="confirm-password">Confirm New Password</Label>
+                          <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Confirm Password</Label>
                           <div className="relative">
                             <Input
-                              id="confirm-password"
                               type={showPasswords.confirm ? "text" : "password"}
                               value={passwordData.confirmPassword}
                               onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                              placeholder="Confirm new password"
+                              placeholder="••••••••"
+                              className="rounded-xl h-11 pr-10"
                             />
-                            <Button
+                            <button
                               type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                               onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
                             >
-                              {showPasswords.confirm ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
+                              {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                           </div>
                         </div>
                       </div>
-                      <DialogFooter>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setIsChangePasswordOpen(false);
-                            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
+                      <DialogFooter className="pt-6">
+                        <Button variant="outline" onClick={() => setIsChangePasswordOpen(false)} className="rounded-xl">Cancel</Button>
+                        <Button 
+                          className="rounded-xl bg-blue-600" 
                           onClick={handleChangePassword}
-                          disabled={!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword || changePasswordMutation.isPending}
+                          disabled={changePasswordMutation.isPending || !passwordData.currentPassword || !passwordData.newPassword}
                         >
-                          {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
+                          {changePasswordMutation.isPending ? "Updating..." : "Update Password"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Account Settings
+
+                  <Button variant="outline" className="w-full justify-start rounded-xl h-11 border-gray-200 dark:border-gray-700">
+                    <Shield className="w-4 h-4 mr-3 text-emerald-500" />
+                    Authentication Logs
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
-                    <User className="w-4 h-4 mr-2" />
-                    Delete Account
-                  </Button>
+                  
+                  {profile?.userType === 'owner' && (
+                    <Button variant="outline" className="w-full justify-start rounded-xl h-11 border-gray-200 dark:border-gray-700" onClick={() => navigate("/users")}>
+                      <Users className="w-4 h-4 mr-3 text-indigo-500" />
+                      Team Management
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Directory Listing Card */}
+              <Card className="dash-stagger dash-stagger-3 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    Public Directory
+                  </CardTitle>
+                  <CardDescription>Get discovered by homeowners near you.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {directoryProfile ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/40">
+                        <span className="text-sm font-medium">Listing Status</span>
+                        <Badge variant={directoryProfile.showOnDirectory ? "default" : "secondary"}>
+                          {directoryProfile.showOnDirectory ? "Visible" : "Hidden"}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        <Link href={`/directory/company/${directoryProfile.companySlug}`}>
+                          <Button variant="outline" className="w-full justify-start rounded-xl border-gray-200 dark:border-gray-700 h-10">
+                            <ExternalLink className="w-3.5 h-3.5 mr-2.5" />
+                            View Profile
+                          </Button>
+                        </Link>
+                        <Link href="/directory-dashboard">
+                          <Button variant="outline" className="w-full justify-start rounded-xl border-gray-200 dark:border-gray-700 h-10">
+                            <Settings className="w-3.5 h-3.5 mr-2.5" />
+                            Manage Listing
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Globe className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-sm text-gray-500 mb-4 px-4">Set up your directory profile to appear in public search results.</p>
+                      <Link href="/directory-setup">
+                        <Button className="w-full rounded-xl">Set Up Listing</Button>
+                      </Link>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Permissions Summary */}
+              <Card className="dash-stagger dash-stagger-4 rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-xl" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    Active Permissions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {profile?.permissions && Object.entries(profile.permissions).slice(0, 6).map(([key, value]) => (
+                      <div key={key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                        <div className={`w-1.5 h-1.5 rounded-full ${value ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-400 flex-1">{getPermissionLabel(key)}</span>
+                        {value && <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />}
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </div>

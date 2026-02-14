@@ -238,7 +238,7 @@ export default function Onboarding() {
 
   if (isLoading || authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0f]">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -429,28 +429,33 @@ export default function Onboarding() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-2 sm:p-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-2 sm:p-4 onboarding-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{`
+        .onboarding-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+        }
+      `}</style>
       <div className="w-full max-w-xl">
-        <div className="bg-[#12121a] border border-[#1e1e2d] rounded-xl sm:rounded-2xl p-4 sm:p-8">
+        <div className="bg-white/90 dark:bg-slate-900/75 border border-slate-200/80 dark:border-slate-700/70 rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-sm backdrop-blur">
           <div className="flex items-center justify-between mb-6 sm:mb-8">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-              <span className="text-white font-medium text-sm sm:text-base">Getting Started</span>
+              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+              <span className="text-slate-800 dark:text-slate-100 font-medium text-sm sm:text-base">Getting Started</span>
             </div>
-            <span className="text-blue-400 text-xs sm:text-sm">Step {currentStep} of {steps.length}</span>
+            <span className="text-amber-700 dark:text-amber-300 text-xs sm:text-sm">Step {currentStep} of {steps.length}</span>
           </div>
 
           <div className="flex justify-center mb-4 sm:mb-6">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-blue-400" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-amber-600 dark:text-amber-300" />
             </div>
           </div>
 
           <div className="text-center mb-6 sm:mb-8">
-            <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
               {currentStepDetails.title}
             </h1>
-            <p className="text-gray-400 text-sm sm:text-base px-2">
+            <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base px-2">
               {currentStepDetails.description}
             </p>
           </div>
@@ -464,10 +469,10 @@ export default function Onboarding() {
                     disabled={step.step > currentStep}
                     className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all ${
                       step.completed
-                        ? 'bg-blue-500 text-white'
+                        ? 'bg-amber-500 text-white'
                         : step.step === currentStep
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-[#1e1e2d] text-gray-500'
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}
                     data-testid={`step-indicator-${step.step}`}
                   >
@@ -478,14 +483,14 @@ export default function Onboarding() {
                     )}
                   </button>
                   <span className={`text-[10px] sm:text-xs mt-1 sm:mt-2 ${
-                    step.step <= currentStep ? 'text-white' : 'text-gray-500'
+                    step.step <= currentStep ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'
                   }`}>
                     {step.label}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
                   <div className={`w-6 sm:w-12 h-[2px] mx-1 sm:mx-2 mb-5 sm:mb-6 ${
-                    step.completed ? 'bg-blue-500' : 'bg-[#1e1e2d]'
+                    step.completed ? 'bg-amber-500' : 'bg-slate-200 dark:bg-slate-800'
                   }`} />
                 )}
               </div>
@@ -495,10 +500,10 @@ export default function Onboarding() {
           <div className="space-y-5">
             {currentStep === 1 && (
               <div className="text-center py-4">
-                <p className="text-gray-400 mb-4">
+                <p className="text-slate-600 dark:text-slate-300 mb-4">
                   Join thousands of contractors who've transformed their pricing process with Autobidder.
                 </p>
-                <div className="flex items-center justify-center gap-2 text-green-400 text-sm">
+                <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>14-day free trial included</span>
                 </div>
@@ -508,7 +513,7 @@ export default function Onboarding() {
             {currentStep === 2 && !isAuthenticated && (
               <>
                 <div>
-                  <Label htmlFor="firstName" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                  <Label htmlFor="firstName" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                     First Name
                   </Label>
                   <Input
@@ -516,13 +521,13 @@ export default function Onboarding() {
                     value={userInfo.firstName}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, firstName: e.target.value }))}
                     placeholder="John"
-                    className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
+                    className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500 h-12"
                     data-testid="input-firstName"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="lastName" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                  <Label htmlFor="lastName" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                     Last Name
                   </Label>
                   <Input
@@ -530,13 +535,13 @@ export default function Onboarding() {
                     value={userInfo.lastName}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, lastName: e.target.value }))}
                     placeholder="Smith"
-                    className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
+                    className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500 h-12"
                     data-testid="input-lastName"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="email" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                  <Label htmlFor="email" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                     Email Address
                   </Label>
                   <Input
@@ -545,13 +550,13 @@ export default function Onboarding() {
                     value={userInfo.email}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="john@example.com"
-                    className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
+                    className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500 h-12"
                     data-testid="input-email"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="password" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                  <Label htmlFor="password" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                     Password
                   </Label>
                   <Input
@@ -560,24 +565,24 @@ export default function Onboarding() {
                     value={userInfo.password}
                     onChange={(e) => setUserInfo(prev => ({ ...prev, password: e.target.value }))}
                     placeholder="Minimum 8 characters"
-                    className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
+                    className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500 h-12"
                     data-testid="input-password"
                   />
                 </div>
 
                 <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-[#2a2a3a]" />
+                    <span className="w-full border-t border-slate-200 dark:border-slate-700" />
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-[#12121a] px-2 text-gray-500">Or continue with</span>
+                    <span className="bg-white dark:bg-slate-900 px-2 text-slate-500 dark:text-slate-400">Or continue with</span>
                   </div>
                 </div>
 
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full h-12 bg-[#1a1a24] border-[#2a2a3a] text-white hover:bg-[#1e1e2d] hover:text-white font-medium"
+                  className="w-full h-12 bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
                   onClick={() => window.location.href = "/api/auth/google"}
                   data-testid="button-google-signup"
                 >
@@ -590,7 +595,7 @@ export default function Onboarding() {
             {((currentStep === 2 && isAuthenticated) || (currentStep === 3 && !isAuthenticated)) && (
               <>
                 <div>
-                  <Label htmlFor="businessName" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                  <Label htmlFor="businessName" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                     Business Name
                   </Label>
                   <Input
@@ -598,13 +603,13 @@ export default function Onboarding() {
                     value={businessInfo.businessName || ""}
                     onChange={(e) => setBusinessInfo(prev => ({ ...prev, businessName: e.target.value }))}
                     placeholder="Your Business Name"
-                    className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
+                    className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500 h-12"
                     data-testid="input-businessName"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="industry" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                  <Label htmlFor="industry" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                     Industry
                   </Label>
                   <Select
@@ -612,7 +617,7 @@ export default function Onboarding() {
                     onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, industry: value }))}
                   >
                     <SelectTrigger 
-                      className="bg-[#1a1a24] border-[#2a2a3a] text-white h-12 focus:border-blue-500/50"
+                      className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 h-12 focus-visible:ring-amber-500/30 focus-visible:border-amber-500"
                       data-testid="select-industry"
                     >
                       <SelectValue placeholder="Select your industry" />
@@ -627,7 +632,7 @@ export default function Onboarding() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="serviceCity" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                    <Label htmlFor="serviceCity" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                       City
                     </Label>
                     <Input
@@ -635,12 +640,12 @@ export default function Onboarding() {
                       value={businessInfo.serviceCity || ""}
                       onChange={(e) => setBusinessInfo(prev => ({ ...prev, serviceCity: e.target.value }))}
                       placeholder="Austin"
-                      className="bg-[#1a1a24] border-[#2a2a3a] text-white placeholder:text-gray-600 focus:border-blue-500/50 h-12"
+                      className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-amber-500/30 focus-visible:border-amber-500 h-12"
                       data-testid="input-serviceCity"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="serviceState" className="text-gray-400 uppercase text-xs tracking-wider block mb-2">
+                    <Label htmlFor="serviceState" className="text-slate-600 dark:text-slate-400 uppercase text-xs tracking-wider block mb-2">
                       State
                     </Label>
                     <Select
@@ -649,7 +654,7 @@ export default function Onboarding() {
                     >
                       <SelectTrigger
                         id="serviceState"
-                        className="bg-[#1a1a24] border-[#2a2a3a] text-white h-12 focus:border-blue-500/50"
+                        className="bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 h-12 focus-visible:ring-amber-500/30 focus-visible:border-amber-500"
                         data-testid="select-serviceState"
                       >
                         <SelectValue placeholder="Select state" />
@@ -668,7 +673,7 @@ export default function Onboarding() {
             {prepopulateTemplatesMutation.isPending && (
               <div className="flex items-center justify-center space-x-3 py-4">
                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
-                <p className="text-gray-400">Setting up your calculators...</p>
+                <p className="text-slate-600 dark:text-slate-300">Setting up your calculators...</p>
               </div>
             )}
 
@@ -677,23 +682,23 @@ export default function Onboarding() {
                 <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
                   <CheckCircle2 className="w-8 h-8 text-green-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Welcome to Autobidder!</h3>
-                <p className="text-gray-400 mb-4">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Welcome to Autobidder!</h3>
+                <p className="text-slate-600 dark:text-slate-300 mb-4">
                   {!isAuthenticated ? "Your account has been created and your 14-day trial has started!" : "Your business profile is complete!"}
                 </p>
-                <p className="text-gray-500 text-sm">
+                <p className="text-slate-500 dark:text-slate-400 text-sm">
                   You're now ready to start building amazing pricing calculators.
                 </p>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[#1e1e2d]">
+          <div className="flex items-center justify-between mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-200 dark:border-slate-700">
             <Button
               variant="outline"
               onClick={handleBack}
               disabled={currentStep === 1}
-              className="bg-transparent border-[#2a2a3a] text-white hover:bg-[#1e1e2d] hover:text-white px-4 sm:px-6 text-sm sm:text-base"
+              className="bg-transparent border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 px-4 sm:px-6 text-sm sm:text-base"
               data-testid="button-back"
             >
               Back
@@ -702,7 +707,7 @@ export default function Onboarding() {
             <Button
               onClick={handleNext}
               disabled={updateStepMutation.isPending || createAccountMutation.isPending || prepopulateTemplatesMutation.isPending}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-6 sm:px-8 text-sm sm:text-base"
+              className="bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white px-6 sm:px-8 text-sm sm:text-base"
               data-testid="button-continue"
             >
               {(updateStepMutation.isPending || createAccountMutation.isPending || prepopulateTemplatesMutation.isPending) ? (

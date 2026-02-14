@@ -155,14 +155,14 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
             </CardHeader>
 
             <CardContent className="space-y-4 px-6 pb-6">
-              <ul className="space-y-3">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <Check className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
-                  </li>
+              <div className="space-y-4 mb-6 flex-grow">
+                {plan.features.map((feature) => (
+                  <div key={feature} className="flex gap-3 items-start text-xs text-gray-600 dark:text-gray-300">
+                    <Check className={`w-4 h-4 shrink-0 ${plan.popular ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`} />
+                    <span>{feature}</span>
+                  </div>
                 ))}
-              </ul>
+              </div>
 
               <Button
                 onClick={() => handlePlanSelect(planId)}

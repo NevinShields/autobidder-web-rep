@@ -392,17 +392,24 @@ export default function UsersPage() {
   if (!canAccess("canManageTeam")) {
     return (
       <DashboardLayout>
-        <div className="max-w-6xl mx-auto space-y-6">
-          <Card className="text-center py-12">
-            <CardContent>
-              <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h3>
-              <p className="text-gray-600 mb-4">You don't have permission to manage team members.</p>
-              <Button variant="outline" onClick={() => navigate("/dashboard")}>
-                Go to Dashboard
-              </Button>
-            </CardContent>
-          </Card>
+        <style>{`
+          .users-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+          }
+        `}</style>
+        <div className="p-4 sm:p-6 lg:p-8 users-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="max-w-6xl mx-auto space-y-6">
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/75 shadow-sm backdrop-blur text-center py-12">
+              <CardContent>
+                <User className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Access Restricted</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">You don't have permission to manage team members.</p>
+                <Button variant="outline" onClick={() => navigate("/dashboard")}>
+                  Go to Dashboard
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -411,9 +418,16 @@ export default function UsersPage() {
   if (isLoading) {
     return (
       <DashboardLayout>
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="text-center py-12">
-            <div className="animate-pulse">Loading team members...</div>
+        <style>{`
+          .users-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+          }
+        `}</style>
+        <div className="p-4 sm:p-6 lg:p-8 users-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="max-w-6xl mx-auto space-y-6">
+            <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/75 shadow-sm backdrop-blur text-center py-12">
+              <div className="animate-pulse text-slate-700 dark:text-slate-300">Loading team members...</div>
+            </div>
           </div>
         </div>
       </DashboardLayout>
@@ -423,14 +437,21 @@ export default function UsersPage() {
   if (error) {
     return (
       <DashboardLayout>
-        <div className="max-w-6xl mx-auto space-y-6">
-          <Card className="text-center py-12">
-            <CardContent>
-              <User className="w-12 h-12 text-red-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Unable to load team members</h3>
-              <p className="text-gray-600 mb-4">Please try again later.</p>
-            </CardContent>
-          </Card>
+        <style>{`
+          .users-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+          }
+        `}</style>
+        <div className="p-4 sm:p-6 lg:p-8 users-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="max-w-6xl mx-auto space-y-6">
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/75 shadow-sm backdrop-blur text-center py-12">
+              <CardContent>
+                <User className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Unable to load team members</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-4">Please try again later.</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -438,31 +459,39 @@ export default function UsersPage() {
 
   return (
     <DashboardLayout>
+      <style>{`
+        .users-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="p-4 sm:p-6 lg:p-8 users-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <div className="max-w-6xl mx-auto space-y-8">
-        <Card className="border-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-blue-950 dark:via-gray-950 dark:to-purple-950">
+        <Card className="relative overflow-hidden rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80">
           <CardContent className="py-6">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-orange-200/20 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
+            <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                    <Users className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 rounded-2xl bg-white/80 dark:bg-white/5 border border-white/80 dark:border-white/10 backdrop-blur-sm flex items-center justify-center">
+                    <Users className="w-6 h-6 text-amber-700 dark:text-amber-300" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100" data-testid="text-page-title">
+                    <h1 className="text-3xl text-slate-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }} data-testid="text-page-title">
                       Team Management
                     </h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-1">
+                    <p className="text-slate-600 dark:text-slate-300 mt-1">
                       Invite teammates and control access across your workspace.
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <span>{teamMembers} team members</span>
-                  <span className="h-1 w-1 rounded-full bg-gray-400" />
+                  <span className="h-1 w-1 rounded-full bg-slate-400" />
                   <span>{activeMembers} active</span>
                   {pendingInvites > 0 && (
                     <>
-                      <span className="h-1 w-1 rounded-full bg-gray-400" />
+                      <span className="h-1 w-1 rounded-full bg-slate-400" />
                       <span>{pendingInvites} pending</span>
                     </>
                   )}
@@ -470,7 +499,7 @@ export default function UsersPage() {
               </div>
               <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" data-testid="button-invite-user">
+                  <Button className="h-10 rounded-full px-5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white shadow-sm" data-testid="button-invite-user">
                     <UserPlus className="w-4 h-4 mr-2" />
                     Invite Team Member
                   </Button>
@@ -646,38 +675,38 @@ export default function UsersPage() {
         </Dialog>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border border-blue-100 dark:border-blue-900">
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
             <CardContent className="py-4">
-              <p className="text-xs uppercase tracking-wide text-blue-600 dark:text-blue-300">Total Members</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{totalMembers}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Total Members</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{totalMembers}</p>
             </CardContent>
           </Card>
-          <Card className="border border-green-100 dark:border-green-900">
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
             <CardContent className="py-4">
-              <p className="text-xs uppercase tracking-wide text-green-600 dark:text-green-300">Active</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{activeMembers}</p>
+              <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Active</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{activeMembers}</p>
             </CardContent>
           </Card>
-          <Card className="border border-amber-100 dark:border-amber-900">
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
             <CardContent className="py-4">
               <p className="text-xs uppercase tracking-wide text-amber-600 dark:text-amber-300">Pending</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{pendingInvites}</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{pendingInvites}</p>
             </CardContent>
           </Card>
-          <Card className="border border-purple-100 dark:border-purple-900">
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
             <CardContent className="py-4">
-              <p className="text-xs uppercase tracking-wide text-purple-600 dark:text-purple-300">Team Only</p>
-              <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{teamMembers}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-600 dark:text-slate-400">Team Only</p>
+              <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{teamMembers}</p>
             </CardContent>
           </Card>
         </div>
 
-        <Card>
+        <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
           <CardHeader className="space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <CardTitle>Team Members</CardTitle>
-                <CardDescription>Search, filter, and manage access for your team.</CardDescription>
+                <CardTitle className="text-slate-900 dark:text-slate-100">Team Members</CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400">Search, filter, and manage access for your team.</CardDescription>
               </div>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative">
@@ -685,9 +714,9 @@ export default function UsersPage() {
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     placeholder="Search by name or email"
-                    className="pl-9"
+                    className="pl-9 bg-white dark:bg-slate-950/50 border-slate-300/90 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   />
-                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -727,7 +756,7 @@ export default function UsersPage() {
               return (
                 <div
                   key={user.id}
-                  className="flex flex-col gap-4 rounded-xl border border-gray-100 dark:border-gray-800 p-4 hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
+                  className="flex flex-col gap-4 rounded-xl border border-slate-200/80 dark:border-slate-700/70 p-4 hover:border-amber-300/70 dark:hover:border-amber-500/40 transition-colors bg-white/70 dark:bg-slate-900/40"
                   data-testid={`card-user-${user.id}`}
                 >
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -735,7 +764,7 @@ export default function UsersPage() {
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         user.userType === 'owner'
                           ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                          : 'bg-gradient-to-br from-blue-500 to-purple-500'
+                          : 'bg-gradient-to-br from-slate-600 to-slate-800 dark:from-slate-400 dark:to-slate-600'
                       }`}>
                         {user.userType === 'owner' ? (
                           <Crown className="w-5 h-5 text-white" />
@@ -745,7 +774,7 @@ export default function UsersPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                             {user.firstName} {user.lastName}
                           </h3>
                           <Badge variant={user.userType === 'owner' ? 'default' : 'secondary'}>
@@ -758,12 +787,12 @@ export default function UsersPage() {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         {user.userType === 'owner' ? (
                           <>
                             <CheckCircle className="w-4 h-4 text-green-500" />
@@ -815,7 +844,7 @@ export default function UsersPage() {
                   </div>
 
                   <div>
-                    <Label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2 block">Permissions</Label>
+                    <Label className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2 block">Permissions</Label>
                     <div className="flex flex-wrap gap-2">
                       {previewPermissions.length > 0 ? (
                         previewPermissions.map((permission) => (
@@ -824,7 +853,7 @@ export default function UsersPage() {
                           </Badge>
                         ))
                       ) : (
-                        <span className="text-xs text-gray-500">No specific permissions set</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">No specific permissions set</span>
                       )}
                       {remainingPermissions > 0 && (
                         <Badge variant="secondary" className="text-xs">
@@ -840,11 +869,11 @@ export default function UsersPage() {
         </Card>
 
         {filteredUsers.length === 0 && users.length > 0 && (
-          <Card className="text-center py-10">
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/75 shadow-sm backdrop-blur text-center py-10">
             <CardContent>
-              <User className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No matches found</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">Try adjusting your search or filter.</p>
+              <User className="w-10 h-10 text-slate-400 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No matches found</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">Try adjusting your search or filter.</p>
               <Button variant="outline" onClick={() => { setSearchTerm(""); setStatusFilter("all"); }}>
                 Clear Filters
               </Button>
@@ -853,11 +882,11 @@ export default function UsersPage() {
         )}
 
         {users.length === 0 && (
-          <Card className="text-center py-12">
+          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/75 shadow-sm backdrop-blur text-center py-12">
             <CardContent>
-              <UserPlus className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No team members yet</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">Start building your team by inviting your first member.</p>
+              <UserPlus className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No team members yet</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">Start building your team by inviting your first member.</p>
               <Button onClick={() => setIsInviteDialogOpen(true)} data-testid="button-first-invite">
                 <UserPlus className="w-4 h-4 mr-2" />
                 Invite Team Member
@@ -867,16 +896,16 @@ export default function UsersPage() {
         )}
 
         {users.length === 1 && users[0].userType === 'owner' && (
-          <Card className="border-dashed border-2 border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">
+          <Card className="rounded-2xl border-dashed border-2 border-amber-200/70 dark:border-amber-700/50 bg-amber-50/40 dark:bg-amber-950/20">
             <CardContent className="py-8 text-center">
-              <UserPlus className="w-10 h-10 text-blue-500 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Grow your team</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+              <UserPlus className="w-10 h-10 text-amber-600 dark:text-amber-400 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">Grow your team</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4 max-w-md mx-auto">
                 Invite salespeople or employees to help manage leads, update calculators, and grow your business.
               </p>
               <Button 
                 onClick={() => setIsInviteDialogOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700"
+                className="h-10 rounded-full px-5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white"
                 data-testid="button-grow-team"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
@@ -885,6 +914,7 @@ export default function UsersPage() {
             </CardContent>
           </Card>
         )}
+      </div>
       </div>
     </DashboardLayout>
   );

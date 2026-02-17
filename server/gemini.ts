@@ -198,7 +198,7 @@ Response format (JSON):
   "iconUrl": "relevant emoji like 🏠, 🔧, 🎨, etc."
 }`;
 
-    const response = await client.generateContent({
+    const response = await (client as any).generateContent({
       model: "gemini-2.0-flash-exp",
       config: {
         systemInstruction: systemPrompt,
@@ -433,7 +433,7 @@ Response format (JSON):
 
     const currentFormulaJson = JSON.stringify(currentFormula, null, 2);
     
-    const response = await client.generateContent({
+    const response = await (client as any).generateContent({
       model: "gemini-2.0-flash-exp", 
       config: {
         systemInstruction: systemPrompt,

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, json, varchar, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, json, varchar, index, AnyPgColumn } from "drizzle-orm/pg-core";
 import { isNull } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
@@ -1535,18 +1535,18 @@ export const stylingOptionsSchema = z.object({
   backgroundColor: z.string().default('#FFFFFF'),
   
   // Typography
-  fontFamily: z.enum(['inter', 'roboto', 'open-sans', 'lato', 'montserrat']).default('inter'),
-  fontSize: z.enum(['sm', 'base', 'lg']).default('base'),
-  fontWeight: z.enum(['normal', 'medium', 'semibold', 'bold']).default('medium'),
+  fontFamily: z.enum(['inter', 'roboto', 'open-sans', 'opensans', 'lato', 'montserrat']).default('inter'),
+  fontSize: z.enum(['xs', 'sm', 'base', 'lg', 'xl', '2xl']).default('base'),
+  fontWeight: z.enum(['light', 'normal', 'medium', 'semibold', 'bold']).default('medium'),
   textColor: z.string().default('#1F2937'),
   
   // Button styling
   primaryColor: z.string().default('#2563EB'),
   buttonStyle: z.enum(['rounded', 'square', 'pill']).default('rounded'),
   buttonBorderRadius: z.number().min(0).max(50).default(12),
-  buttonPadding: z.enum(['sm', 'md', 'lg']).default('lg'),
+  buttonPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
   buttonFontWeight: z.enum(['normal', 'medium', 'semibold', 'bold']).default('semibold'),
-  buttonShadow: z.enum(['none', 'sm', 'md', 'lg']).default('md'),
+  buttonShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('md'),
   buttonBackgroundColor: z.string().default('#2563EB'),
   buttonTextColor: z.string().default('#FFFFFF'),
   buttonBorderWidth: z.number().min(0).max(10).default(0),
@@ -1560,18 +1560,20 @@ export const stylingOptionsSchema = z.object({
   inputBorderWidth: z.number().min(1).max(5).default(2),
   inputBorderColor: z.string().default('#E5E7EB'),
   inputFocusColor: z.string().default('#2563EB'),
-  inputPadding: z.enum(['sm', 'md', 'lg']).default('lg'),
+  inputPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
   inputBackgroundColor: z.string().default('#F9FAFB'),
   inputShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('sm'),
   inputFontSize: z.enum(['xs', 'sm', 'base', 'lg', 'xl']).default('base'),
   inputTextColor: z.string().default('#1F2937'),
+  inputPlaceholderColor: z.string().default('#9CA3AF'),
   inputHeight: z.number().min(30).max(80).default(40),
   inputWidth: z.enum(['sm', 'md', 'lg', 'xl', 'full']).default('full'),
   
   // Multiple choice styling
   multiChoiceImageSize: z.union([
     z.enum(['sm', 'md', 'lg', 'xl']), // Predefined sizes
-    z.number().min(10).max(100) // Percentage from 10% to 100%
+    z.number().min(10).max(100), // Percentage from 10% to 100%
+    z.object({ percentage: z.number().min(10).max(100) }),
   ]).default('lg'),
   multiChoiceImageShadow: z.enum(['none', 'sm', 'md', 'lg']).default('md'),
   multiChoiceImageBorderRadius: z.number().min(0).max(50).default(12),
@@ -1580,7 +1582,7 @@ export const stylingOptionsSchema = z.object({
   multiChoiceSelectedColor: z.string().default('#2563EB'),
   multiChoiceSelectedBgColor: z.string().default('#EFF6FF'),
   multiChoiceHoverBgColor: z.string().default('#F8FAFC'),
-  multiChoiceLayout: z.enum(['grid', 'single']).default('grid'),
+  multiChoiceLayout: z.enum(['grid', 'single', 'list']).default('grid'),
   // Active and hover states for multiple choice
   multipleChoiceActiveBackgroundColor: z.string().default('#3B82F6'),
   multipleChoiceActiveBorderColor: z.string().default('#2563EB'),
@@ -1606,6 +1608,7 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorBorderColor: z.string().default('#E5E7EB'),
   serviceSelectorSelectedBgColor: z.string().default('#EFF6FF'),
   serviceSelectorSelectedBorderColor: z.string().default('#2563EB'),
+  serviceSelectorSelectedTextColor: z.string().default('#1F2937'),
   serviceSelectorTitleFontSize: z.enum(['sm', 'base', 'lg', 'xl', '2xl']).default('xl'),
   serviceSelectorDescriptionFontSize: z.enum(['xs', 'sm', 'base', 'lg']).default('base'),
   serviceSelectorTitleLineHeight: z.enum(['tight', 'snug', 'normal', 'relaxed', 'loose']).default('normal'),
@@ -1621,12 +1624,15 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorLineHeight: z.number().min(0).max(100).default(20),
   serviceSelectorPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
   serviceSelectorGap: z.enum(['sm', 'md', 'lg', 'xl']).default('lg'),
-  serviceSelectorContentAlignment: z.enum(['top', 'center', 'bottom']).default('center'),
+  serviceSelectorContentAlignment: z.enum(['top', 'center', 'bottom', 'left', 'right']).default('center'),
   // Active and hover states for service selector
   serviceSelectorActiveBackgroundColor: z.string().default('#3B82F6'),
   serviceSelectorActiveBorderColor: z.string().default('#2563EB'),
   serviceSelectorHoverBackgroundColor: z.string().default('#F3F4F6'),
   serviceSelectorHoverBorderColor: z.string().default('#D1D5DB'),
+  // Legacy aliases retained for backwards compatibility
+  serviceSelectorHoverBgColor: z.string().default('#F3F4F6'),
+  serviceSelectorTextColor: z.string().default('#1F2937'),
   
   // Pricing card styling
   pricingCardBorderRadius: z.number().min(0).max(50).default(12),
@@ -1634,6 +1640,10 @@ export const stylingOptionsSchema = z.object({
   pricingCardBorderWidth: z.number().min(0).max(10).default(0),
   pricingCardBorderColor: z.string().default('#E5E7EB'),
   pricingCardBackgroundColor: z.string().default('#FFFFFF'),
+  pricingCardWidth: z.number().min(200).max(1200).default(700),
+  pricingCardHeight: z.number().min(0).max(2000).default(0),
+  pricingCardMargin: z.number().min(0).max(200).default(0),
+  pricingCardPadding: z.number().min(0).max(200).default(24),
   pricingTextColor: z.string().default('#1F2937'),
   pricingAccentColor: z.string().default('#2563EB'),
   pricingIconVisible: z.boolean().default(true),
@@ -1718,6 +1728,8 @@ export const stylingOptionsSchema = z.object({
 
   // Property data autofill
   enablePropertyAutofill: z.boolean().default(false),
+  componentStyles: z.record(z.any()).optional(),
+  leadSourceOptions: z.array(z.string()).default([]),
 });
 
 export const insertFormulaSchema = createInsertSchema(formulas).omit({
@@ -2258,6 +2270,8 @@ export const crmAutomations = pgTable("crm_automations", {
   requiresConfirmation: boolean("requires_confirmation").notNull().default(false), // Requires user confirmation before running (for manual triggers)
   triggerType: text("trigger_type").notNull(), // new_lead, estimate_sent, estimate_viewed, estimate_approved, job_booked, job_completed, payment_confirmed
   triggerConfig: jsonb("trigger_config").$type<{
+    targetStage?: string;
+    targetTagId?: number;
     conditions?: Array<{
       field: string;
       operator: string;
@@ -2281,8 +2295,11 @@ export const crmAutomationSteps = pgTable("crm_automation_steps", {
     emailBody?: string;
     fromName?: string;
     replyToEmail?: string;
+    recipientType?: 'customer' | 'custom';
+    customRecipientEmail?: string;
     // For send_sms
     smsMessage?: string;
+    customRecipientPhone?: string;
     // For wait
     waitDuration?: number; // in minutes
     // For update_stage
@@ -2310,6 +2327,9 @@ export const crmAutomationRuns = pgTable("crm_automation_runs", {
       body?: string;
       fromName?: string;
       replyToEmail?: string;
+      recipientType?: 'customer' | 'custom';
+      customRecipientEmail?: string;
+      customRecipientPhone?: string;
       duration?: number;
       durationUnit?: string;
       newStage?: string;
@@ -2664,7 +2684,6 @@ export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  completedAt: true,
 }).extend({
   duration: z.number().positive().optional(),
 });
@@ -2685,7 +2704,6 @@ export const insertCrmAutomationSchema = createInsertSchema(crmAutomations).omit
 
 export const insertCrmAutomationStepSchema = createInsertSchema(crmAutomationSteps).omit({
   id: true,
-  createdAt: true,
 });
 
 export const insertCrmAutomationRunSchema = createInsertSchema(crmAutomationRuns).omit({
@@ -2941,7 +2959,7 @@ export const directoryCategories = pgTable("directory_categories", {
   slug: text("slug").notNull().unique(),           // "pressure-washing"
   description: text("description"),
   iconUrl: text("icon_url"),
-  parentCategoryId: integer("parent_category_id").references(() => directoryCategories.id),
+  parentCategoryId: integer("parent_category_id").references((): AnyPgColumn => directoryCategories.id),
   status: varchar("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),

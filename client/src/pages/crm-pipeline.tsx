@@ -35,7 +35,7 @@ const LEGACY_STAGES = [
 type LeadType = (Lead | MultiServiceLead) & { type: "lead" | "multiServiceLead" };
 
 function LeadCard({ lead, onClick }: { lead: LeadType; onClick: () => void }) {
-  const price = "calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice;
+  const price = ("calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice) ?? 0;
   
   return (
     <Card 
@@ -88,7 +88,7 @@ function LeadCard({ lead, onClick }: { lead: LeadType; onClick: () => void }) {
 function LeadDetailDialog({ lead, open, onOpenChange }: { lead: LeadType | null; open: boolean; onOpenChange: (open: boolean) => void }) {
   if (!lead) return null;
   
-  const price = "calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice;
+  const price = ("calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice) ?? 0;
   const stageHistory = lead.stageHistory || [];
   
   return (
@@ -181,7 +181,7 @@ function DroppableColumn({ stage, leads, onLeadClick }: {
 }) {
   const count = leads.length;
   const totalValue = leads.reduce((sum, lead) => {
-    const price = "calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice;
+    const price = ("calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice) ?? 0;
     return sum + price;
   }, 0);
   

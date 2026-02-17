@@ -231,7 +231,7 @@ export async function sendWebsiteActivationEmail(
     subtitle: `Hi ${userName}, your website has been created successfully`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-        Congratulations! Your website "${websiteName}" has been created and is ready for you to customize.
+        Congratulations! Your website has been created and is ready for you to customize.
       </h2>
       
       <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
@@ -467,25 +467,25 @@ export async function sendTeamInviteEmail(
 }
 
 export async function sendSubscriptionConfirmationEmail(userEmail: string, planName: string): Promise<boolean> {
-  const subject = `Welcome to ${planName} - Subscription Confirmed`;
+  const subject = `Welcome to Autobidder - ${planName} Plan Confirmed`;
   
   const html = createUnifiedEmailTemplate({
     title: "Subscription Confirmed!",
-    subtitle: `Welcome to ${planName}`,
+    subtitle: `Welcome to Autobidder`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-        Congratulations! Your ${planName} subscription is now active.
+        Congratulations! Your ${planName} plan is now active.
       </h2>
       
       <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-        You now have full access to all ${planName} features and can take your business to the next level with Autobidder.
+        You now have full access to Autobidder and can take your business to the next level.
       </p>
       
       <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
         Your subscription will automatically renew. You can manage your subscription settings in your account dashboard at any time.
       </p>
     `,
-    cardTitle: `Your ${planName} benefits:`,
+    cardTitle: `Your ${planName} plan benefits:`,
     cardContent: `
       <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
         <li style="margin-bottom: 8px;">Unlimited pricing calculators</li>
@@ -496,7 +496,7 @@ export async function sendSubscriptionConfirmationEmail(userEmail: string, planN
       </ul>
     `,
     footerText: "This confirmation was sent by Autobidder • Your Business Growth Platform",
-    accentColor: "#7c3aed"
+    accentColor: "#2563eb"
   });
   
   return await sendEmail({

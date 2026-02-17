@@ -135,8 +135,15 @@ app.post(["/api/stripe-webhook", "/api/stripe/webhook"], express.raw({type: 'app
             if (userResult.length > 0) {
               const user = userResult[0];
               const userName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.email || 'Customer');
+              const planNameMap: Record<string, string> = {
+                'standard': 'Standard',
+                'plus': 'Plus',
+                'plusSeo': 'Plus SEO',
+                'plus_seo': 'Plus SEO'
+              };
+              const readablePlanName = planNameMap[planId] || planId;
               if (user.email) {
-                await sendSubscriptionConfirmationEmail(user.email, userName);
+                await sendSubscriptionConfirmationEmail(user.email, readablePlanName);
               }
               console.log('📧 Subscription confirmation email sent');
             }
@@ -287,11 +294,46 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  const maxListenRetries = 5;
+  const retryDelayMs = 1200;
+  let listenAttempt = 0;
+
+  const startListening = () => {
+    listenAttempt += 1;
+
+    server.listen(
+      {
+        port,
+        host: "0.0.0.0",
+        reusePort: true,
+      },
+      () => {
+        log(`serving on port ${port}`);
+      }
+    );
+  };
+
+  server.on("error", (error: any) => {
+    if (error?.code === "EADDRINUSE" && listenAttempt < maxListenRetries) {
+      log(
+        `port ${port} is busy (attempt ${listenAttempt}/${maxListenRetries}); retrying in ${retryDelayMs}ms`,
+        "startup"
+      );
+      setTimeout(startListening, retryDelayMs);
+      return;
+    }
+
+    if (error?.code === "EADDRINUSE") {
+      log(
+        `failed to bind port ${port} after ${maxListenRetries} attempts. Ensure only one server process is running.`,
+        "startup"
+      );
+      process.exit(1);
+    }
+
+    console.error("Server listen error:", error);
+    process.exit(1);
   });
+
+  startListening();
 })();

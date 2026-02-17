@@ -36,6 +36,7 @@ interface AutomationStep {
     replyToEmail?: string;
     recipientType?: 'customer' | 'custom';
     customRecipientEmail?: string;
+    customRecipientPhone?: string;
     duration?: number;
     durationUnit?: 'minutes' | 'hours' | 'days';
     newStage?: string;
@@ -74,6 +75,17 @@ const LEAD_STAGES = [
   'negotiation',
   'won',
   'lost',
+];
+
+const TRIGGER_STAGE_OPTIONS = [
+  'new',
+  'open',
+  'pre_estimate',
+  'estimate_approved',
+  'booked',
+  'completed',
+  'lost',
+  'paid',
 ];
 
 const getAvailableVariables = (triggerType: string) => {
@@ -125,6 +137,7 @@ export default function AutomationBuilder() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [triggerType, setTriggerType] = useState("");
+  const [triggerConfig, setTriggerConfig] = useState<{ targetStage?: string; targetTagId?: number }>({});
   const [requiresConfirmation, setRequiresConfirmation] = useState(false);
   const [steps, setSteps] = useState<AutomationStep[]>([]);
   const [removedStepIds, setRemovedStepIds] = useState<number[]>([]);
@@ -161,6 +174,11 @@ export default function AutomationBuilder() {
       setName(automation.name || "");
       setDescription(automation.description || "");
       setTriggerType(automation.triggerType || "");
+      const loadedTriggerConfig = (automation as any).triggerConfig || {};
+      setTriggerConfig({
+        targetStage: loadedTriggerConfig.targetStage,
+        targetTagId: loadedTriggerConfig.targetTagId ? Number(loadedTriggerConfig.targetTagId) : undefined,
+      });
       setRequiresConfirmation(automation.requiresConfirmation || false);
       
       // Steps are included in the automation response
@@ -178,10 +196,18 @@ export default function AutomationBuilder() {
 
   const saveAutomationMutation = useMutation({
     mutationFn: async () => {
+      const normalizedTriggerConfig =
+        triggerType === 'lead_stage_changed'
+          ? { targetStage: triggerConfig.targetStage }
+          : triggerType === 'lead_tag_assigned'
+          ? { targetTagId: triggerConfig.targetTagId }
+          : {};
+
       const automationData = {
         name,
         description,
         triggerType,
+        triggerConfig: normalizedTriggerConfig,
         requiresConfirmation,
         isActive: true,
       };
@@ -273,7 +299,11 @@ export default function AutomationBuilder() {
       isOpen: true,
       stepType: stepType as AutomationStep['stepType'],
       insertAt,
-      config: stepType === 'wait' ? { duration: 1, durationUnit: 'hours' } : {},
+      config: stepType === 'wait'
+        ? { duration: 1, durationUnit: 'hours' }
+        : stepType === 'send_sms'
+        ? { recipientType: 'customer' }
+        : {},
     });
     setShowAddStepMenu(null);
   };
@@ -314,6 +344,13 @@ export default function AutomationBuilder() {
     setSteps(newSteps);
   };
 
+  const handleTriggerTypeChange = (value: string) => {
+    setTriggerType(value);
+    if (value !== 'lead_stage_changed' && value !== 'lead_tag_assigned') {
+      setTriggerConfig({});
+    }
+  };
+
   const renderTriggerCard = () => {
     const triggerInfo = TRIGGER_TYPES.find(t => t.value === triggerType);
     const TriggerIcon = triggerInfo?.icon || Zap;
@@ -337,6 +374,16 @@ export default function AutomationBuilder() {
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 This automation will run when this event occurs
               </p>
+              {triggerType === 'lead_stage_changed' && triggerConfig.targetStage && (
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                  Runs when lead moves to: <span className="font-semibold">{triggerConfig.targetStage.replace(/_/g, ' ')}</span>
+                </p>
+              )}
+              {triggerType === 'lead_tag_assigned' && triggerConfig.targetTagId && (
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-2">
+                  Runs when tag assigned: <span className="font-semibold">{leadTags?.find(t => t.id === triggerConfig.targetTagId)?.displayName || leadTags?.find(t => t.id === triggerConfig.targetTagId)?.name || `Tag #${triggerConfig.targetTagId}`}</span>
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -528,6 +575,37 @@ export default function AutomationBuilder() {
 
                   {step.stepType === 'send_sms' && (
                     <div>
+                      <div>
+                        <Label htmlFor={`sms-recipient-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Send To *</Label>
+                        <Select
+                          value={step.config.recipientType || 'customer'}
+                          onValueChange={(value: 'customer' | 'custom') => updateStepConfig(index, { recipientType: value })}
+                        >
+                          <SelectTrigger id={`sms-recipient-${index}`} className="mt-1" data-testid={`select-sms-recipient-${index}`}>
+                            <SelectValue placeholder="Select recipient" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="customer">Lead's Phone Number (from lead)</SelectItem>
+                            <SelectItem value="custom">Custom Phone Number</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Choose who will receive this SMS</p>
+                      </div>
+                      {step.config.recipientType === 'custom' && (
+                        <div className="mt-3">
+                          <Label htmlFor={`custom-phone-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">Custom Phone Number *</Label>
+                          <Input
+                            id={`custom-phone-${index}`}
+                            type="tel"
+                            value={step.config.customRecipientPhone || ""}
+                            onChange={(e) => updateStepConfig(index, { customRecipientPhone: e.target.value })}
+                            placeholder="e.g., +15551234567"
+                            className="mt-1"
+                            data-testid={`input-custom-phone-${index}`}
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Include country code for best delivery (E.164 format)</p>
+                        </div>
+                      )}
                       <Label htmlFor={`sms-message-${index}`} className="text-xs font-medium text-gray-700 dark:text-gray-300">SMS Message</Label>
                       <Textarea
                         id={`sms-message-${index}`}
@@ -864,7 +942,13 @@ export default function AutomationBuilder() {
                 </Link>
                 <Button
                   onClick={() => saveAutomationMutation.mutate()}
-                  disabled={!name || !triggerType || saveAutomationMutation.isPending}
+                  disabled={
+                    !name ||
+                    !triggerType ||
+                    (triggerType === 'lead_stage_changed' && !triggerConfig.targetStage) ||
+                    (triggerType === 'lead_tag_assigned' && !triggerConfig.targetTagId) ||
+                    saveAutomationMutation.isPending
+                  }
                   data-testid="button-save-automation"
                   size="sm"
                   className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-5"
@@ -943,7 +1027,7 @@ export default function AutomationBuilder() {
               <CardDescription>Choose the event that starts this automation</CardDescription>
             </CardHeader>
             <CardContent>
-              <Select value={triggerType} onValueChange={setTriggerType}>
+              <Select value={triggerType} onValueChange={handleTriggerTypeChange}>
                 <SelectTrigger data-testid="select-trigger-type">
                   <SelectValue placeholder="Select a trigger event" />
                 </SelectTrigger>
@@ -955,6 +1039,51 @@ export default function AutomationBuilder() {
                   ))}
                 </SelectContent>
               </Select>
+              {triggerType === 'lead_stage_changed' && (
+                <div className="mt-4">
+                  <Label htmlFor="trigger-stage-target">Run when stage changes to *</Label>
+                  <Select
+                    value={triggerConfig.targetStage || ''}
+                    onValueChange={(value) => setTriggerConfig({ targetStage: value })}
+                  >
+                    <SelectTrigger id="trigger-stage-target" className="mt-1" data-testid="select-trigger-stage-target">
+                      <SelectValue placeholder="Select destination stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TRIGGER_STAGE_OPTIONS.map((stage) => (
+                        <SelectItem key={stage} value={stage}>
+                          {stage.charAt(0).toUpperCase() + stage.slice(1).replace(/_/g, ' ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {triggerType === 'lead_tag_assigned' && (
+                <div className="mt-4">
+                  <Label htmlFor="trigger-tag-target">Run when this tag is assigned *</Label>
+                  <Select
+                    value={triggerConfig.targetTagId?.toString() || ''}
+                    onValueChange={(value) => setTriggerConfig({ targetTagId: parseInt(value, 10) })}
+                  >
+                    <SelectTrigger id="trigger-tag-target" className="mt-1" data-testid="select-trigger-tag-target">
+                      <SelectValue placeholder="Select a tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leadTags?.map((tag) => (
+                        <SelectItem key={tag.id} value={tag.id.toString()}>
+                          {tag.displayName || tag.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {(!leadTags || leadTags.length === 0) && (
+                    <p className="text-xs text-orange-600 mt-2">
+                      No tags found. Create tags in CRM Settings first.
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1115,6 +1244,41 @@ export default function AutomationBuilder() {
 
               {stepConfigDialog.stepType === 'send_sms' && (
                 <div>
+                  <div>
+                    <Label htmlFor="dialog-sms-recipient">Send To *</Label>
+                    <Select
+                      value={stepConfigDialog.config.recipientType || 'customer'}
+                      onValueChange={(value: 'customer' | 'custom') => setStepConfigDialog(prev => ({
+                        ...prev,
+                        config: { ...prev.config, recipientType: value }
+                      }))}
+                    >
+                      <SelectTrigger id="dialog-sms-recipient" className="mt-1" data-testid="select-dialog-sms-recipient">
+                        <SelectValue placeholder="Select recipient" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="customer">Lead's Phone Number (from lead)</SelectItem>
+                        <SelectItem value="custom">Custom Phone Number</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {stepConfigDialog.config.recipientType === 'custom' && (
+                    <div className="mt-3">
+                      <Label htmlFor="dialog-custom-sms-phone">Custom Phone Number *</Label>
+                      <Input
+                        id="dialog-custom-sms-phone"
+                        type="tel"
+                        value={stepConfigDialog.config.customRecipientPhone || ""}
+                        onChange={(e) => setStepConfigDialog(prev => ({
+                          ...prev,
+                          config: { ...prev.config, customRecipientPhone: e.target.value }
+                        }))}
+                        placeholder="e.g., +15551234567"
+                        className="mt-1"
+                        data-testid="input-dialog-custom-sms-phone"
+                      />
+                    </div>
+                  )}
                   <Label htmlFor="dialog-sms-message">SMS Message *</Label>
                   <Textarea
                     id="dialog-sms-message"
@@ -1305,7 +1469,10 @@ export default function AutomationBuilder() {
                     !stepConfigDialog.config.body?.trim() ||
                     (stepConfigDialog.config.recipientType === 'custom' && !stepConfigDialog.config.customRecipientEmail?.trim())
                   )) ||
-                  (stepConfigDialog.stepType === 'send_sms' && !stepConfigDialog.config.body?.trim()) ||
+                  (stepConfigDialog.stepType === 'send_sms' && (
+                    !stepConfigDialog.config.body?.trim() ||
+                    (stepConfigDialog.config.recipientType === 'custom' && !stepConfigDialog.config.customRecipientPhone?.trim())
+                  )) ||
                   (stepConfigDialog.stepType === 'wait' && (!stepConfigDialog.config.duration || stepConfigDialog.config.duration < 1 || !stepConfigDialog.config.durationUnit)) ||
                   (stepConfigDialog.stepType === 'update_stage' && !stepConfigDialog.config.newStage) ||
                   (stepConfigDialog.stepType === 'create_task' && !stepConfigDialog.config.taskTitle?.trim()) ||

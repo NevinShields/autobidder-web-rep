@@ -37,10 +37,16 @@ interface ComponentStyle {
   customCSS?: string;
   fontSize?: string;
   textColor?: string;
+  textColorAlpha?: number;
   showServiceIcon?: boolean;
   thumbColor?: string;
   thumbSize?: number;
   thumbBorderRadius?: number;
+  borderColorAlpha?: number;
+  backgroundColorAlpha?: number;
+  activeBackgroundColor?: string;
+  activeBorderColor?: string;
+  trackBackgroundColor?: string;
 }
 
 interface VisualComponentEditorProps {

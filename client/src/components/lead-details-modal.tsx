@@ -130,6 +130,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [showRevisionDialog, setShowRevisionDialog] = useState(false);
   const [revisionNotes, setRevisionNotes] = useState("");
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [showAdjustSoftBookingDialog, setShowAdjustSoftBookingDialog] = useState(false);
+  const [bookingToAdjust, setBookingToAdjust] = useState<LeadBookingEvent | null>(null);
+  const [adjustStartAt, setAdjustStartAt] = useState("");
+  const [adjustEndAt, setAdjustEndAt] = useState("");
   const [scheduledDate, setScheduledDate] = useState("");
   const [selectedEstimateId, setSelectedEstimateId] = useState<number | null>(null);
   const [showCreateEstimateDialog, setShowCreateEstimateDialog] = useState(false);
@@ -145,6 +149,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   const [editedAddress, setEditedAddress] = useState("");
   const [editedHowDidYouHear, setEditedHowDidYouHear] = useState("");
   const [editedSource, setEditedSource] = useState("");
+  const [selectedStage, setSelectedStage] = useState<string>("new");
   const [showNotificationDialog, setShowNotificationDialog] = useState(false);
   const [notificationWorkOrderData, setNotificationWorkOrderData] = useState<{
     workOrderId: number;
@@ -315,6 +320,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       const endpoint = leadType === 'multi' ? `/api/multi-service-leads/${leadId}/stage` : `/api/leads/${leadId}/stage`;
       return await apiRequest("PATCH", endpoint, { stage });
     },
+    onMutate: async ({ stage }) => {
+      const previousStage = selectedStage;
+      setSelectedStage(stage);
+      return { previousStage };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
@@ -323,7 +333,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
         description: "Lead status has been updated successfully.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _vars, context) => {
+      if (context?.previousStage) {
+        setSelectedStage(context.previousStage);
+      }
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update lead status. Please try again.",
@@ -406,6 +419,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       return;
     }
     setLocalUploadedImages(lead.uploadedImages || []);
+    const normalizedStage = lead.stage === "open" ? "pre_estimate" : (lead.stage || "new");
+    setSelectedStage(normalizedStage);
   }, [lead]);
 
   // Image upload mutation
@@ -543,7 +558,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       customMessage?: string;
       layoutId?: string;
       theme?: any;
-      attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" }>;
+      attachments?: Array<{ url: string; name?: string; type: "image" | "pdf" | "file"; category?: "terms" | "insurance" | "custom" }>;
       videoUrl?: string;
     }) => {
       const response = await fetch(`/api/estimates/${estimateId}/send-to-customer`, {
@@ -687,6 +702,31 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
       toast({
         title: "Confirmation failed",
         description: "Unable to confirm this booking. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const adjustSoftBookingMutation = useMutation({
+    mutationFn: async ({ bookingId, startsAt, endsAt }: { bookingId: number; startsAt: string; endsAt: string }) => {
+      return await apiRequest("PATCH", `/api/calendar-events/${bookingId}`, { startsAt, endsAt });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/leads/${lead?.id}/bookings`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/availability-slots"] });
+      setShowAdjustSoftBookingDialog(false);
+      setBookingToAdjust(null);
+      setAdjustStartAt("");
+      setAdjustEndAt("");
+      toast({
+        title: "Soft booking updated",
+        description: "Date and time have been updated.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: error?.message || "Unable to update this soft booking. Please try again.",
         variant: "destructive",
       });
     },
@@ -972,6 +1012,19 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   const calculatedTaxAmount = calculateTaxAmount();
 
+  const toDateTimeLocal = (isoDate: string) => {
+    const dt = new Date(isoDate);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  };
+
+  const openAdjustSoftBookingDialog = (booking: LeadBookingEvent) => {
+    setBookingToAdjust(booking);
+    setAdjustStartAt(toDateTimeLocal(booking.startsAt));
+    setAdjustEndAt(toDateTimeLocal(booking.endsAt));
+    setShowAdjustSoftBookingDialog(true);
+  };
+
   if (!processedLead) return null;
 
   const handleCall = () => {
@@ -1031,26 +1084,26 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-800 border-0 shadow-2xl p-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/50 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 shadow-2xl shadow-amber-500/10 p-0">
         {/* Premium Header */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 pr-14 rounded-t-2xl">
+        <div className="relative overflow-hidden bg-gradient-to-br from-amber-600 via-orange-600 to-orange-700 p-6 pr-14 rounded-t-2xl">
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-200/30 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-300/20 rounded-full blur-3xl" />
 
           <div className="relative">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <div className="h-14 w-14 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
                   <span className="text-white font-bold text-xl">
                     {processedLead.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-white">
+                  <h2 className="text-2xl text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                     {processedLead.name}
                   </h2>
-                  <p className="text-slate-400 text-sm mt-0.5">
+                  <p className="text-amber-100/80 text-sm mt-0.5">
                     {format(new Date(processedLead.createdAt), "MMMM dd, yyyy 'at' h:mm a")}
                   </p>
                 </div>
@@ -1058,11 +1111,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
               {/* Status Badge */}
               <Select
-                value={processedLead.stage === 'open' ? 'new' : (processedLead.stage || 'new')}
+                value={selectedStage}
                 onValueChange={handleStatusChange}
                 disabled={updateStatusMutation.isPending}
               >
-                <SelectTrigger className="w-40 h-9 bg-white/10 border-white/20 text-white backdrop-blur-sm hover:bg-white/20 transition-colors">
+                <SelectTrigger className="w-40 h-9 bg-white/15 border-white/30 text-white backdrop-blur-sm hover:bg-white/25 transition-colors">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1379,7 +1432,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               size="sm"
                               variant="outline"
                               className="border-amber-200 text-amber-700 hover:bg-amber-100"
-                              onClick={() => setLocation("/calendar")}
+                              onClick={() => openAdjustSoftBookingDialog(booking)}
                             >
                               <Calendar className="h-3.5 w-3.5 mr-2" />
                               Adjust Schedule
@@ -2673,10 +2726,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
             setManualLineItems([{ name: '', description: '', price: 0 }]);
           }
         }}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
-            <DialogHeader>
-              <DialogTitle>Create Estimate</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-0 rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 shadow-2xl shadow-amber-500/10">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle className="text-2xl text-slate-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Create Estimate</DialogTitle>
+              <DialogDescription className="text-slate-600 dark:text-slate-400">
                 {estimateCreationMethod === 'choose' && "Choose how you want to create this estimate"}
                 {estimateCreationMethod === 'calculator' && "Create estimate from calculator data"}
                 {estimateCreationMethod === 'manual' && "Create estimate with custom line items"}
@@ -2685,10 +2739,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
             {/* Step 1: Choose Method */}
             {estimateCreationMethod === 'choose' && (
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 px-6 py-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Card 
-                    className="cursor-pointer hover:border-primary transition-colors"
+                    className="cursor-pointer rounded-2xl border-amber-200/70 dark:border-amber-500/20 bg-white/80 dark:bg-gray-800/60 hover:border-amber-400 dark:hover:border-amber-500/40 transition-colors"
                     onClick={() => {
                       if (!lead) return;
                       
@@ -2720,7 +2774,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   </Card>
                   
                   <Card 
-                    className="cursor-pointer hover:border-primary transition-colors"
+                    className="cursor-pointer rounded-2xl border-amber-200/70 dark:border-amber-500/20 bg-white/80 dark:bg-gray-800/60 hover:border-amber-400 dark:hover:border-amber-500/40 transition-colors"
                     onClick={() => setEstimateCreationMethod('manual')}
                     data-testid="option-manual-estimate"
                   >
@@ -2738,11 +2792,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
             {/* Manual Line Items Method */}
             {estimateCreationMethod === 'manual' && (
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 px-6 py-4">
                 <div className="space-y-3">
-                  <Label>Line Items</Label>
+                  <Label className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Line Items</Label>
                   {manualLineItems.map((item, index) => (
-                    <div key={index} className="border dark:border-gray-600 p-3 rounded-lg space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-start">
+                    <div key={index} className="border border-amber-200/60 dark:border-amber-500/20 bg-white/80 dark:bg-gray-800/60 p-3 rounded-xl space-y-2 sm:space-y-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-start">
                       {/* Mobile: stacked layout, Desktop: grid */}
                       <div className="sm:col-span-4">
                         <Label className="text-xs text-gray-500 dark:text-gray-400 sm:hidden mb-1 block">Item Name</Label>
@@ -2755,6 +2809,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             setManualLineItems(newItems);
                           }}
                           data-testid={`input-line-item-name-${index}`}
+                          className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                         />
                       </div>
                       <div className="sm:col-span-4">
@@ -2768,6 +2823,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             setManualLineItems(newItems);
                           }}
                           data-testid={`input-line-item-description-${index}`}
+                          className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                         />
                       </div>
                       <div className="flex gap-2 items-end sm:col-span-4 sm:grid sm:grid-cols-4 sm:gap-2">
@@ -2810,14 +2866,14 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     size="sm"
                     onClick={() => setManualLineItems([...manualLineItems, { name: '', description: '', price: 0 }])}
                     data-testid="button-add-line-item"
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto rounded-full border-slate-200 dark:border-slate-700"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Add Line Item
                   </Button>
                 </div>
 
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="p-4 bg-white/80 dark:bg-gray-800/60 border border-amber-200/60 dark:border-amber-500/20 rounded-xl">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-300">Total:</span>
                     <span className={`text-xl font-bold ${manualLineItems.reduce((sum, item) => sum + (item.price || 0), 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
@@ -2827,7 +2883,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="estimate-message-manual">Business Message</Label>
+                  <Label htmlFor="estimate-message-manual" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Business Message</Label>
                   <Textarea
                     id="estimate-message-manual"
                     placeholder="Thank you for your interest..."
@@ -2835,20 +2891,21 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                     onChange={(e) => setEstimateMessage(e.target.value)}
                     rows={3}
                     data-testid="input-estimate-message-manual"
+                    className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                   />
                 </div>
               </div>
             )}
 
             {/* Footer Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2">
+            <div className="px-6 pb-6 flex flex-col-reverse sm:flex-row justify-between gap-2">
               {estimateCreationMethod !== 'choose' && (
                 <Button
                   variant="outline"
                   onClick={() => setEstimateCreationMethod('choose')}
                   disabled={createEstimateMutation.isPending}
                   data-testid="button-back"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-full border-slate-200 dark:border-slate-700"
                 >
                   Back
                 </Button>
@@ -2859,7 +2916,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   onClick={() => setShowCreateEstimateDialog(false)}
                   disabled={createEstimateMutation.isPending}
                   data-testid="button-cancel-create-estimate"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto rounded-full border-slate-200 dark:border-slate-700"
                 >
                   Cancel
                 </Button>
@@ -2884,7 +2941,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       });
                     }}
                     disabled={createEstimateMutation.isPending}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20"
                     data-testid="button-submit-create-estimate"
                   >
                     {createEstimateMutation.isPending ? "Creating..." : "Create Estimate"}
@@ -2911,16 +2968,17 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
         {/* Revision Dialog */}
         <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Request Estimate Revision</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 shadow-2xl shadow-amber-500/10">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle className="text-2xl text-slate-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Request Estimate Revision</DialogTitle>
+              <DialogDescription className="text-slate-600 dark:text-slate-400">
                 Provide details about what needs to be changed in this estimate.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 px-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="revision-notes">Revision Notes</Label>
+                <Label htmlFor="revision-notes" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Revision Notes</Label>
                 <Textarea
                   id="revision-notes"
                   placeholder="Describe what changes are needed..."
@@ -2928,11 +2986,12 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                   onChange={(e) => setRevisionNotes(e.target.value)}
                   rows={4}
                   data-testid="textarea-revision-notes"
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                 />
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowRevisionDialog(false)}>
+            <div className="px-6 pb-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRevisionDialog(false)} className="rounded-full border-slate-200 dark:border-slate-700">
                 Cancel
               </Button>
               <Button
@@ -2946,6 +3005,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 }}
                 disabled={!revisionNotes.trim() || requestRevisionMutation.isPending}
                 data-testid="button-submit-revision"
+                className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20"
               >
                 Submit Revision Request
               </Button>
@@ -2955,28 +3015,30 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
 
         {/* Schedule Work Order Dialog */}
         <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Convert to Work Order</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 shadow-2xl shadow-amber-500/10">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle className="text-2xl text-slate-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Convert to Work Order</DialogTitle>
+              <DialogDescription className="text-slate-600 dark:text-slate-400">
                 Optionally schedule a date for this work order.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 px-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="scheduled-date">Scheduled Date (Optional)</Label>
+                <Label htmlFor="scheduled-date" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Scheduled Date (Optional)</Label>
                 <Input
                   id="scheduled-date"
                   type="datetime-local"
                   value={scheduledDate}
                   onChange={(e) => setScheduledDate(e.target.value)}
                   data-testid="input-scheduled-date"
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400">Leave blank to create without scheduling</p>
               </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
+            <div className="px-6 pb-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowScheduleDialog(false)} className="rounded-full border-slate-200 dark:border-slate-700">
                 Cancel
               </Button>
               <Button
@@ -2990,8 +3052,89 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                 }}
                 disabled={convertToWorkOrderMutation.isPending}
                 data-testid="button-submit-work-order"
+                className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20"
               >
                 Create Work Order
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Adjust Soft Booking Dialog */}
+        <Dialog open={showAdjustSoftBookingDialog} onOpenChange={setShowAdjustSoftBookingDialog}>
+          <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 shadow-2xl shadow-amber-500/10">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle className="text-2xl text-slate-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Adjust Soft Booking</DialogTitle>
+              <DialogDescription className="text-slate-600 dark:text-slate-400">
+                Update the tentative booking date and time before confirming it.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 px-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="adjust-soft-booking-start" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Start</Label>
+                <Input
+                  id="adjust-soft-booking-start"
+                  type="datetime-local"
+                  value={adjustStartAt}
+                  onChange={(e) => setAdjustStartAt(e.target.value)}
+                  data-testid="input-adjust-soft-booking-start"
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="adjust-soft-booking-end" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">End</Label>
+                <Input
+                  id="adjust-soft-booking-end"
+                  type="datetime-local"
+                  value={adjustEndAt}
+                  onChange={(e) => setAdjustEndAt(e.target.value)}
+                  data-testid="input-adjust-soft-booking-end"
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
+                />
+              </div>
+            </div>
+            <div className="px-6 pb-6 flex flex-col sm:flex-row justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setLocation("/calendar")}
+                data-testid="button-open-calendar-adjust-soft-booking"
+                className="rounded-full border-slate-200 dark:border-slate-700"
+              >
+                Open Full Calendar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowAdjustSoftBookingDialog(false)}
+                data-testid="button-cancel-adjust-soft-booking"
+                className="rounded-full border-slate-200 dark:border-slate-700"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!bookingToAdjust || !adjustStartAt || !adjustEndAt) return;
+                  const startsAtIso = new Date(adjustStartAt).toISOString();
+                  const endsAtIso = new Date(adjustEndAt).toISOString();
+                  if (new Date(endsAtIso) <= new Date(startsAtIso)) {
+                    toast({
+                      title: "Invalid time range",
+                      description: "End time must be after start time.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  adjustSoftBookingMutation.mutate({
+                    bookingId: bookingToAdjust.id,
+                    startsAt: startsAtIso,
+                    endsAt: endsAtIso,
+                  });
+                }}
+                disabled={!adjustStartAt || !adjustEndAt || adjustSoftBookingMutation.isPending}
+                data-testid="button-save-adjust-soft-booking"
+                className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20"
+              >
+                {adjustSoftBookingMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </DialogContent>

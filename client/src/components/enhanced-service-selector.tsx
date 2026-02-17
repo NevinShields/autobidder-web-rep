@@ -47,6 +47,11 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorMaxHeight?: number;
     serviceSelectorPadding?: string;
     serviceSelectorGap?: string;
+    serviceSelectorGapSize?: number;
+    serviceSelectorIconSizeUnit?: string;
+    serviceSelectorIconPixelSize?: number;
+    serviceSelectorIconPercentSize?: number;
+    serviceSelectorHoverBgColor?: string;
     serviceSelectorContentAlignment?: string;
     // New active/hover state properties
     serviceSelectorActiveBackgroundColor?: string;
@@ -58,6 +63,9 @@ interface EnhancedServiceSelectorProps {
     serviceSelectorHoverBorderColor?: string;
     serviceSelectorHoverBorderColorAlpha?: number;
     // Typography properties
+    titleFontFamily?: string;
+    titleFontWeight?: string;
+    fontFamily?: string;
     serviceSelectorFontSize?: string;
     serviceSelectorTextColor?: string;
     serviceSelectorTextColorAlpha?: number;

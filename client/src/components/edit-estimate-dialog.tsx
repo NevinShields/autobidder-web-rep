@@ -146,6 +146,8 @@ export default function EditEstimateDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/estimates"] });
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/leads?includeTags=true"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/multi-service-leads?includeTags=true"] });
       setLineItems([{ name: '', description: '', price: 0 }]);
       setBusinessMessage("");
       setCustomMessage("");

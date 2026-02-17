@@ -13,6 +13,15 @@ function canAccessZapier(plan: string | null | undefined): boolean {
   return ZAPIER_ALLOWED_PLANS.includes(plan || 'free');
 }
 
+async function getFreshZapierUser(req: any) {
+  const sessionUser = req.currentUser;
+  if (!sessionUser?.id) return null;
+
+  // Always read from DB to avoid stale session snapshots (common after upgrades/impersonation).
+  const dbUser = await storage.getUserById(sessionUser.id);
+  return dbUser || sessionUser;
+}
+
 // CRM Pipeline stages
 const CRM_STAGES = [
   { id: 'any', name: 'Any Stage' },
@@ -938,7 +947,10 @@ export function registerZapierRoutes(app: Express): void {
       }
 
       // Check plan access and permissions for Zapier
-      const currentUser = (req as any).currentUser;
+      const currentUser = await getFreshZapierUser(req as any);
+      if (!currentUser) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       if (!canAccessZapier(currentUser.plan)) {
         return res.status(403).json({
           error: "Zapier integration not available on free plan",
@@ -982,7 +994,10 @@ export function registerZapierRoutes(app: Express): void {
       }
 
       // Check plan access and permissions for Zapier
-      const currentUser = (req as any).currentUser;
+      const currentUser = await getFreshZapierUser(req as any);
+      if (!currentUser) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       if (!canAccessZapier(currentUser.plan)) {
         return res.status(403).json({
           error: "Zapier integration not available on free plan",
@@ -1022,7 +1037,10 @@ export function registerZapierRoutes(app: Express): void {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const currentUser = (req as any).currentUser;
+      const currentUser = await getFreshZapierUser(req as any);
+      if (!currentUser) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       if (currentUser.userType !== 'owner' && currentUser.userType !== 'super_admin' && currentUser.permissions?.canAccessZapier !== true) {
         return res.status(403).json({ error: "You don't have permission to access Zapier integrations" });
       }

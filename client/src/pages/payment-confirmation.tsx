@@ -91,7 +91,8 @@ export default function PaymentConfirmation() {
       paymentIntentId,
       subscriptionId: subId
     })
-      .then((data) => {
+      .then(async (response) => {
+        const data = await response.json();
         setClientSecret(data.clientSecret);
         setIsLoading(false);
       })

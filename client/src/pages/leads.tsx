@@ -47,6 +47,12 @@ interface Lead {
   dudaSubmissionId?: string;
   createdAt: string;
   ipAddress?: string;
+  stageHistory?: Array<{
+    stage: string;
+    changedAt: string;
+    notes?: string;
+  }>;
+  lastStageChange?: string;
   formula?: {
     name: string;
     title: string;
@@ -68,6 +74,7 @@ interface MultiServiceLead {
     calculatedPrice: number;
   }>;
   totalPrice: number;
+  calculatedPrice?: number;
   appliedDiscounts?: Array<{
     id: string;
     name: string;
@@ -716,7 +723,9 @@ export default function LeadsPage() {
     invalidateQueries: [
       ["/api/estimates"],
       ["/api/leads"],
-      ["/api/multi-service-leads"]
+      ["/api/multi-service-leads"],
+      ["/api/leads?includeTags=true"],
+      ["/api/multi-service-leads?includeTags=true"],
     ],
   });
 
@@ -1199,12 +1208,32 @@ export default function LeadsPage() {
     setKanbanDetailDialogOpen(true);
   };
   
+  const normalizeTagValue = (value?: string) =>
+    (value || "").toLowerCase().replace(/[\s_-]+/g, "").trim();
+
+  const hasPreEstimateTag = (lead: KanbanLead) =>
+    ((lead as any).tags || []).some((tag: any) => {
+      const tagValue = normalizeTagValue(tag?.displayName || tag?.name);
+      return tagValue === "preestimate";
+    });
+
+  const getKanbanStage = (lead: KanbanLead) => {
+    // Legacy "open" should display in Pre-Estimate in the new pipeline view.
+    if (lead.stage === "open") return "pre_estimate";
+    // Some leads are marked via tags before stage sync; keep them visible in Pre-Estimate
+    // only while they're still in early stages.
+    if (hasPreEstimateTag(lead) && ["new", "open", "pre_estimate"].includes(lead.stage)) {
+      return "pre_estimate";
+    }
+    return lead.stage;
+  };
+
   const stages = PIPELINE_STAGES;
   const kanbanLeads = [...allLeads].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
   const leadsByStage = stages.reduce((acc, stage) => {
-    acc[stage.value] = kanbanLeads.filter(lead => lead.stage === stage.value);
+    acc[stage.value] = kanbanLeads.filter((lead) => getKanbanStage(lead) === stage.value);
     return acc;
   }, {} as Record<string, typeof allLeads>);
   
@@ -2190,25 +2219,29 @@ export default function LeadsPage() {
 
         {/* Add Customer Dialog */}
         <Dialog open={isAddCustomerDialogOpen} onOpenChange={setIsAddCustomerDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Customer</DialogTitle>
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle className="text-2xl text-slate-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                Add New Customer
+              </DialogTitle>
             </DialogHeader>
             
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 px-6 py-4">
               <div className="space-y-2">
-                <Label htmlFor="customer-name">Name *</Label>
+                <Label htmlFor="customer-name" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Name *</Label>
                 <Input
                   id="customer-name"
                   data-testid="input-customer-name"
                   placeholder="Enter customer name"
                   value={newCustomerData.name}
                   onChange={(e) => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="customer-email">Email *</Label>
+                <Label htmlFor="customer-email" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Email *</Label>
                 <Input
                   id="customer-email"
                   data-testid="input-customer-email"
@@ -2216,11 +2249,12 @@ export default function LeadsPage() {
                   placeholder="Enter customer email"
                   value={newCustomerData.email}
                   onChange={(e) => setNewCustomerData({ ...newCustomerData, email: e.target.value })}
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="customer-phone">Phone</Label>
+                <Label htmlFor="customer-phone" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Phone</Label>
                 <Input
                   id="customer-phone"
                   data-testid="input-customer-phone"
@@ -2228,33 +2262,36 @@ export default function LeadsPage() {
                   placeholder="Enter phone number"
                   value={newCustomerData.phone}
                   onChange={(e) => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="customer-address">Address</Label>
+                <Label htmlFor="customer-address" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Address</Label>
                 <Input
                   id="customer-address"
                   data-testid="input-customer-address"
                   placeholder="Enter address"
                   value={newCustomerData.address}
                   onChange={(e) => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="customer-notes">Notes</Label>
+                <Label htmlFor="customer-notes" className="text-xs uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Notes</Label>
                 <Input
                   id="customer-notes"
                   data-testid="input-customer-notes"
                   placeholder="Add any notes"
                   value={newCustomerData.notes}
                   onChange={(e) => setNewCustomerData({ ...newCustomerData, notes: e.target.value })}
+                  className="rounded-xl border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/80"
                 />
               </div>
             </div>
             
-            <DialogFooter>
+            <DialogFooter className="px-6 pb-6">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2268,6 +2305,7 @@ export default function LeadsPage() {
                   });
                 }}
                 data-testid="button-cancel-add-customer"
+                className="rounded-full border-slate-200 dark:border-slate-700"
               >
                 Cancel
               </Button>
@@ -2275,6 +2313,7 @@ export default function LeadsPage() {
                 onClick={() => createCustomerMutation.mutate(newCustomerData)}
                 disabled={createCustomerMutation.isPending || !newCustomerData.name || !newCustomerData.email}
                 data-testid="button-save-customer"
+                className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20"
               >
                 {createCustomerMutation.isPending ? "Adding..." : "Add Customer"}
               </Button>

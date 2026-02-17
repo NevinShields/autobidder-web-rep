@@ -215,12 +215,16 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
   };
 
   const fontSizeClasses = {
+    'xs': 'text-xs',
     'sm': 'text-sm',
     'base': 'text-base',
-    'lg': 'text-lg'
+    'lg': 'text-lg',
+    'xl': 'text-xl',
+    '2xl': 'text-2xl',
   };
 
   const fontWeightClasses = {
+    'light': 'font-light',
     'normal': 'font-normal',
     'medium': 'font-medium',
     'semibold': 'font-semibold',
@@ -230,7 +234,8 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
   const paddingClasses = {
     'sm': 'px-3 py-2',
     'md': 'px-4 py-3',
-    'lg': 'px-6 py-4'
+    'lg': 'px-6 py-4',
+    'xl': 'px-8 py-5',
   };
 
   // Use component styles when available, fall back to formula styling
@@ -280,13 +285,13 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
   const buttonStyles = getButtonStyles();
 
   const buttonShadowClass = shadowClasses[formula.styling.buttonShadow];
-  const buttonPaddingClass = paddingClasses[formula.styling.buttonPadding];
+  const buttonPaddingClass = paddingClasses[formula.styling.buttonPadding] || paddingClasses.lg;
   const buttonFontWeightClass = fontWeightClasses[formula.styling.buttonFontWeight];
-  const inputPaddingClass = paddingClasses[formula.styling.inputPadding];
+  const inputPaddingClass = paddingClasses[formula.styling.inputPadding] || paddingClasses.lg;
 
   return (
     <div 
-      className={`mx-auto border overflow-auto ${shadowClasses[formula.styling.containerShadow]} ${fontSizeClasses[formula.styling.fontSize]} ${fontWeightClasses[formula.styling.fontWeight]}`}
+      className={`mx-auto border overflow-auto ${shadowClasses[formula.styling.containerShadow]} ${fontSizeClasses[formula.styling.fontSize] || 'text-base'} ${fontWeightClasses[formula.styling.fontWeight] || 'font-medium'}`}
       style={containerStyles}
     >
       <div className="p-6">

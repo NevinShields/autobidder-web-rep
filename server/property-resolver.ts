@@ -110,6 +110,55 @@ function findBuildingAreaFromPayload(property: any): number | null {
   return preferred?.value ?? results[0].value;
 }
 
+function findFootprintAreaFromPayload(property: any): number | null {
+  const results: Array<{ path: string; value: number }> = [];
+  const seen = new Set<any>();
+
+  const visit = (node: any, path: string) => {
+    if (node === null || node === undefined) return;
+    if (typeof node !== "object") return;
+    if (seen.has(node)) return;
+    seen.add(node);
+
+    for (const [key, rawValue] of Object.entries(node)) {
+      const nextPath = path ? `${path}.${key}` : key;
+      const lowPath = nextPath.toLowerCase();
+
+      const parsed = coerceLoosePositiveNumber(rawValue);
+      if (parsed !== null) {
+        const includesSizeSignal =
+          lowPath.includes("size") || lowPath.includes("sqft") || lowPath.includes("square") || lowPath.includes("area");
+        const includesFootprintSignal =
+          lowPath.includes("ground") || lowPath.includes("footprint") || lowPath.includes("base");
+        const excludesLivingSignal = !lowPath.includes("living");
+        const excludesSurfaceSignals =
+          lowPath.includes("lot") || lowPath.includes("land") || lowPath.includes("garage") || lowPath.includes("parking") ||
+          lowPath.includes("deck") || lowPath.includes("patio") || lowPath.includes("driveway") || lowPath.includes("pool");
+        const plausibleRange = parsed >= 300 && parsed <= 25000;
+
+        if (includesSizeSignal && includesFootprintSignal && excludesLivingSignal && !excludesSurfaceSignals && plausibleRange) {
+          results.push({ path: nextPath, value: parsed });
+        }
+      }
+
+      if (typeof rawValue === "object" && rawValue !== null) {
+        visit(rawValue, nextPath);
+      }
+    }
+  };
+
+  visit(property, "property");
+
+  if (results.length === 0) return null;
+
+  const preferred = results.find((r) =>
+    r.path.toLowerCase().includes("groundfloorsize") ||
+    r.path.toLowerCase().includes("ground_floor") ||
+    r.path.toLowerCase().includes("footprint")
+  );
+  return preferred?.value ?? results[0].value;
+}
+
 /**
  * Normalize an address string for cache key purposes.
  * Lowercases, trims, standardizes abbreviations, strips unit/apt suffixes.
@@ -198,24 +247,24 @@ export function mapAttomToCanonical(response: any): PropertyAttributes {
   if (!property) return attrs;
   const buildingSize = property?.building?.size;
 
-  // Building area
+  // Building area (footprint-first to avoid using living area by default).
   const bldgSize = pickFirstPositive(
+    buildingSize?.groundFloorSize,
+    findFirstPositiveByKeyPriority(buildingSize, ["ground", "footprint", "base"]),
+    findFootprintAreaFromPayload(property),
     buildingSize?.bldgSize,
-    buildingSize?.livingSize,
-    buildingSize?.universalSize,
-    // ATTOM variants that are often present when bldgSize is not
     buildingSize?.grossSize,
     buildingSize?.grossSizeAdjusted,
-    buildingSize?.groundFloorSize,
+    buildingSize?.universalSize,
     // Fallback for non-standard key variants in ATTOM payloads
-    findFirstPositiveByKeyPriority(buildingSize, ['bldg', 'living', 'gross', 'universal', 'ground', 'sqft', 'size']),
+    findFirstPositiveByKeyPriority(buildingSize, ["bldg", "gross", "universal", "ground", "sqft", "size"]),
     // Deep fallback scan across payload for non-standard ATTOM naming
     findBuildingAreaFromPayload(property),
   );
   if (bldgSize !== null) {
     attrs.building_area_sqft = bldgSize;
   } else {
-    console.log('[PropertyResolver] building_area_sqft missing. building.size keys:', Object.keys(buildingSize || {}));
+    console.log("[PropertyResolver] building_area_sqft missing. building.size keys:", Object.keys(buildingSize || {}));
   }
 
   // Stories
@@ -376,12 +425,17 @@ export async function resolvePropertyData(address: string): Promise<{
     if (existing.retrievedAt > thirtyDaysAgo) {
       const cachedAttributes = (existing.attributesJson || {}) as PropertyAttributes;
 
-      // Backfill old cached snapshots using current mapping logic without forcing a live ATTOM call.
-      // This helps when payload had sqft data under alternate keys we previously did not map.
-      if ((cachedAttributes as any).building_area_sqft === undefined && existing.rawPayloadJson) {
+      // Re-derive canonical fields from raw ATTOM payload when available.
+      // This keeps cached snapshots aligned with current mapping semantics
+      // (e.g., footprint-first building_area_sqft).
+      if (existing.rawPayloadJson) {
         const remapped = mapAttomToCanonical(existing.rawPayloadJson);
-        if ((remapped as any).building_area_sqft !== undefined) {
-          const merged = { ...cachedAttributes, ...remapped };
+
+        const needsMerge =
+          (remapped as any).building_area_sqft !== undefined;
+
+        if (needsMerge) {
+          const merged: PropertyAttributes = { ...cachedAttributes, ...remapped };
           console.log(`[PropertyResolver] Cache backfill applied for: ${normalized}`);
           return {
             snapshot: existing,

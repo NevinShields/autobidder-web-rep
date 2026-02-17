@@ -26,6 +26,10 @@ interface AutomationContext {
   estimateId?: number;
   workOrderId?: number;
   invoiceId?: number;
+  tagData?: {
+    id: number;
+    name: string;
+  };
   leadData?: {
     name: string;
     email: string;
@@ -68,6 +72,8 @@ interface StepConfig {
   body?: string;
   fromName?: string;
   replyToEmail?: string;
+  recipientType?: 'customer' | 'custom';
+  customRecipientPhone?: string;
   duration?: number;
   durationUnit?: 'minutes' | 'hours' | 'days';
   newStage?: string;
@@ -196,7 +202,7 @@ export class AutomationExecutionService {
     );
     result = result.replace(/\{\s*estimate\.preEstimateButton\s*\}/g,
       estimateLink
-        ? `<div style="text-align: center; margin: 30px 0;"><a href="${estimateLink}" style="display: inline-block; background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(71, 85, 105, 0.25);">View Pre-Estimate</a>${estimateType === 'pre_estimate' ? '<div style="margin-top: 8px; display: inline-block; background: #e2e8f0; color: #334155; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;">Pre-Estimate</div>' : ''}</div>`
+        ? `<div style="text-align: center; margin: 30px 0;"><a href="${estimateLink}" style="display: inline-block; background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(71, 85, 105, 0.25);">View Pre-Estimate</a></div>`
         : ''
     );
     
@@ -392,8 +398,11 @@ export class AutomationExecutionService {
       throw new Error('SMS message body is required');
     }
 
-    // Determine recipient phone from context
-    const recipientPhone = context.leadData?.phone;
+    // Determine recipient phone from step config or context
+    const recipientPhone =
+      config.recipientType === 'custom'
+        ? config.customRecipientPhone?.trim()
+        : context.leadData?.phone;
     
     if (!recipientPhone) {
       console.warn('Cannot send SMS: no phone number found in context');
@@ -708,6 +717,8 @@ export class AutomationExecutionService {
           renderedConfig.replyToEmail = config.replyToEmail || '';
         } else if (step.stepType === 'send_sms') {
           renderedConfig.body = config.body ? this.replaceVariables(config.body, context) : '';
+          renderedConfig.recipientType = config.recipientType || 'customer';
+          renderedConfig.customRecipientPhone = config.customRecipientPhone || '';
         } else if (step.stepType === 'wait') {
           renderedConfig.duration = config.duration || 1;
           renderedConfig.durationUnit = config.durationUnit || 'hours';
@@ -918,6 +929,22 @@ export class AutomationExecutionService {
       console.log(`Found ${automations.length} automations for trigger: ${triggerType}`);
 
       for (const automation of automations) {
+        // Optional trigger config filter: only run stage-change automations for the selected destination stage
+        if (triggerType === 'lead_stage_changed') {
+          const targetStage = (automation.triggerConfig as any)?.targetStage;
+          if (targetStage && context.leadData?.stage !== targetStage) {
+            console.log(`Skipping automation ${automation.id}: stage ${context.leadData?.stage} does not match target ${targetStage}`);
+            continue;
+          }
+        }
+        if (triggerType === 'lead_tag_assigned') {
+          const targetTagId = (automation.triggerConfig as any)?.targetTagId;
+          if (targetTagId && context.tagData?.id !== Number(targetTagId)) {
+            console.log(`Skipping automation ${automation.id}: tag ${context.tagData?.id} does not match target ${targetTagId}`);
+            continue;
+          }
+        }
+
         // If automation requires confirmation and this is a manual trigger, create pending run
         if (automation.requiresConfirmation && isManualTrigger) {
           const runId = await this.createPendingAutomationRun(automation.id, context);

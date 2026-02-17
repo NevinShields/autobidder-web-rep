@@ -436,9 +436,10 @@ export default function EnhancedVariableInput({
 
       const displayLength = Math.max(2, Math.min(5, String(normalizedValue).length));
       const inputChWidth = `calc(${displayLength}ch + 28px)`;
-      const stepperHeight = typeof (inputStyle as React.CSSProperties).height === 'number'
-        ? (inputStyle as React.CSSProperties).height
-        : Number.parseFloat(String((inputStyle as React.CSSProperties).height || 40)) || 40;
+      const rawHeight = (inputStyle as React.CSSProperties).height;
+      const stepperHeight = typeof rawHeight === 'number'
+        ? rawHeight
+        : Number.parseFloat(String(rawHeight || 40)) || 40;
       const inputFontSize = Number.parseFloat(String((inputStyle as React.CSSProperties).fontSize || 14)) || 14;
       const inputVerticalPadding = Math.max(2, Math.round((stepperHeight - inputFontSize) / 2));
 

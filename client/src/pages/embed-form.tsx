@@ -89,8 +89,8 @@ function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }:
             }>
               <GoogleMapsLoader>
                 <MeasureMapTerraImproved
-                  measurementType={measurementType}
-                  unit={unit}
+                  measurementType={measurementType as "area" | "distance"}
+                  unit={unit as "sqft" | "sqm" | "ft" | "m"}
                   onMeasurementComplete={onMeasurementComplete}
                 />
               </GoogleMapsLoader>
@@ -189,7 +189,7 @@ export default function EmbedForm() {
 
     // Find variables with connectionKey across selected services
     selectedServices.forEach(serviceId => {
-      const formula = availableFormulas.find(f => f.id === serviceId);
+      const formula = availableFormulas.find((f: any) => f.id === serviceId);
       if (formula?.variables) {
         formula.variables.forEach((variable: any) => {
           if (variable.connectionKey) {
@@ -217,7 +217,7 @@ export default function EmbedForm() {
 
   // Get service-specific variables (excluding connected ones)
   const getServiceSpecificVariables = (formulaId: number) => {
-    const formula = availableFormulas?.find(f => f.id === formulaId);
+    const formula = availableFormulas?.find((f: any) => f.id === formulaId);
     if (!formula?.variables) return [];
     
     const connectedKeys = getConnectedVariables().map(cv => cv.connectionKey);
@@ -237,7 +237,7 @@ export default function EmbedForm() {
     const connectedVar = getConnectedVariables().find(cv => cv.connectionKey === connectionKey);
     if (connectedVar) {
       connectedVar.formulaIds.forEach(formulaId => {
-        const formula = availableFormulas?.find(f => f.id === formulaId);
+        const formula = availableFormulas?.find((f: any) => f.id === formulaId);
         const variable = formula?.variables.find((v: any) => v.connectionKey === connectionKey);
         if (variable) {
           setServiceVariables(prev => ({
@@ -342,13 +342,13 @@ export default function EmbedForm() {
     }));
 
     // Recalculate price for this service
-    const formula = availableFormulas.find(f => f.id === serviceId);
+    const formula = availableFormulas.find((f: any) => f.id === serviceId);
     console.log('📋 Found formula:', { formulaId: serviceId, formulaName: formula?.name, hasFormula: !!formula?.formula });
     
     if (formula?.formula) {
+      let formulaExpression = formula.formula;
       try {
         const variables = { ...serviceVariables[serviceId], [variableId]: value };
-        let formulaExpression = formula.formula;
         
         console.log('🧮 Starting calculation:', { 
           originalFormula: formula.formula, 
@@ -511,7 +511,7 @@ export default function EmbedForm() {
       uploadedImages: uploadedImages,
       photoMeasurements: photoMeasurements,
       services: selectedServices.map(serviceId => {
-        const formula = availableFormulas.find(f => f.id === serviceId);
+        const formula = availableFormulas.find((f: any) => f.id === serviceId);
         return {
           formulaId: serviceId,
           formulaName: formula?.name || "Unknown Service",
@@ -541,7 +541,7 @@ export default function EmbedForm() {
     if (selectedServices.length === 0) return false;
     
     return selectedServices.every(serviceId => {
-      const formula = availableFormulas.find(f => f.id === serviceId);
+      const formula = availableFormulas.find((f: any) => f.id === serviceId);
       if (!formula || !formula.variables) return true;
       
       const serviceVars = serviceVariables[serviceId] || {};
@@ -907,7 +907,7 @@ export default function EmbedForm() {
                            styling.serviceSelectorGap === 'xl' ? '2rem' : '1rem'
                     }}
                   >
-                    {availableFormulas.map((formula) => (
+                    {availableFormulas.map((formula: any) => (
                       <Card 
                         key={formula.id}
                         className={`cursor-pointer transition-all duration-200 hover:scale-105 ${gridAndCardClasses.cardSizeClasses} ${
@@ -1286,7 +1286,7 @@ export default function EmbedForm() {
                   {showPricing && selectedServices.length > 0 && subtotal > 0 && (!styling.requireContactFirst || contactSubmitted) && (
                     <ServiceCardDisplay
                       selectedServices={selectedServices.map(serviceId => {
-                        const formula = availableFormulas.find(f => f.id === serviceId);
+                        const formula = availableFormulas.find((f: any) => f.id === serviceId);
                         return {
                           formula: formula!,
                           calculatedPrice: serviceCalculations[serviceId] || 0,
@@ -1353,7 +1353,7 @@ export default function EmbedForm() {
 
                   {/* Service-Specific Configuration Variables */}
                   {selectedServices.map((serviceId) => {
-                    const formula = availableFormulas.find(f => f.id === serviceId);
+                    const formula = availableFormulas.find((f: any) => f.id === serviceId);
                     if (!formula) return null;
                     
                     const serviceSpecificVars = getServiceSpecificVariables(serviceId);
@@ -1445,6 +1445,7 @@ export default function EmbedForm() {
                             <CollapsiblePhotoMeasurement
                               setup={formula.photoMeasurementSetup}
                               formulaName={formula.name}
+                              businessOwnerId={(formula as any).userId || ""}
                               onMeasurementComplete={(measurement) => {
                                 // Find the first area/size variable and auto-populate it
                                 const areaVariable = serviceSpecificVars.find((v: any) => 
@@ -1581,7 +1582,7 @@ export default function EmbedForm() {
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
                         {selectedServices.map((serviceId) => {
-                          const formula = availableFormulas.find(f => f.id === serviceId);
+                          const formula = availableFormulas.find((f: any) => f.id === serviceId);
                           const calculatedPrice = serviceCalculations[serviceId] || 0;
                           const serviceVars = serviceVariables[serviceId] || {};
                           
@@ -1591,18 +1592,18 @@ export default function EmbedForm() {
                           const serviceFeatures = Object.entries(serviceVars)
                             .filter(([key, value]) => {
                               if (!value || value === '') return false;
-                              const variable = formula.variables.find(v => v.id === key);
+                              const variable = formula.variables.find((v: any) => v.id === key);
                               return variable && variable.type !== 'text'; // Exclude basic text inputs
                             })
                             .map(([key, value]) => {
-                              const variable = formula.variables.find(v => v.id === key);
+                              const variable = formula.variables.find((v: any) => v.id === key);
                               if (!variable) return null;
                               
                               let displayValue = value;
                               if (typeof value === 'boolean') {
                                 displayValue = value ? 'Yes' : 'No';
                               } else if (variable.type === 'multiple-choice' || variable.type === 'dropdown') {
-                                const option = variable.options?.find(opt => opt.value === value);
+                                const option = variable.options?.find((opt: any) => opt.value === value);
                                 if (option) displayValue = option.label;
                               }
                               
@@ -1611,7 +1612,7 @@ export default function EmbedForm() {
                                 value: displayValue
                               };
                             })
-                            .filter(Boolean);
+                            .filter((feature): feature is { name: string; value: string | number | boolean } => Boolean(feature));
 
                           return (
                             <Card 

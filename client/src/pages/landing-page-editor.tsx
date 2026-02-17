@@ -324,6 +324,7 @@ export default function LandingPageEditorPage() {
   );
 
   function renderEditor() {
+    if (!draft) return null;
     return (
       <div className="space-y-4">
         <Card>

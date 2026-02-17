@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { BusinessSettings, StylingOptions } from "@shared/schema";
 
-const defaultStyling: StylingOptions = {
+const defaultStyling = {
   containerWidth: 600,
   containerHeight: 800,
   containerBorderRadius: 12,
@@ -40,7 +40,7 @@ const defaultStyling: StylingOptions = {
   inputBackgroundColor: '#FFFFFF',
   showPriceBreakdown: true,
   includeLedCapture: true,
-};
+} as StylingOptions;
 
 export default function BusinessSettings() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -57,18 +57,18 @@ export default function BusinessSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading } = useQuery<BusinessSettings | null>({
     queryKey: ["/api/business-settings"],
   });
 
   useEffect(() => {
     if (settings) {
-      setBusinessName(settings.businessName);
+      setBusinessName(settings.businessName || "");
       setBusinessEmail(settings.businessEmail || "");
-      setEnableLeadCapture(settings.enableLeadCapture);
-      setEnableBooking(settings.enableBooking);
+      setEnableLeadCapture(!!settings.enableLeadCapture);
+      setEnableBooking(!!settings.enableBooking);
       setEnableServiceCart(settings.enableServiceCart || false);
-      setStyling(settings.styling);
+      setStyling((settings.styling as StylingOptions) || defaultStyling);
     }
   }, [settings]);
 

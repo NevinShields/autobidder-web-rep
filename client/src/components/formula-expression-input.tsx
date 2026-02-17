@@ -3,7 +3,13 @@ import { useRef, useState } from "react";
 interface FormulaExpressionInputProps {
   value: string;
   onChange: (value: string) => void;
-  variables: Array<{ id: string; label: string }>;
+  variables: Array<{
+    id: string;
+    label?: string;
+    type?: string;
+    allowMultipleSelection?: boolean;
+    options?: Array<{ id?: string; value?: string | number }>;
+  }>;
   placeholder?: string;
   className?: string;
 }

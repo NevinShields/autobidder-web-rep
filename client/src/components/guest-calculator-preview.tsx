@@ -21,13 +21,14 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
   useEffect(() => {
     const defaults: Record<string, any> = {};
     formula.variables.forEach((variable) => {
+      const variableType = variable.type as string;
       if (variable.defaultValue !== undefined) {
         defaults[variable.id] = variable.defaultValue;
-      } else if (variable.type === 'slider' || variable.type === 'stepper') {
+      } else if (variableType === 'slider' || variableType === 'stepper') {
         defaults[variable.id] = variable.min ?? 0;
-      } else if (variable.type === 'number') {
+      } else if (variableType === 'number') {
         defaults[variable.id] = 0;
-      } else if (variable.type === 'multiple-choice' || variable.type === 'select' || variable.type === 'dropdown') {
+      } else if (variableType === 'multiple-choice' || variableType === 'select' || variableType === 'dropdown') {
         if (variable.options && variable.options.length > 0) {
           defaults[variable.id] = variable.options[0].value;
         }
@@ -50,20 +51,21 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
       let formulaExpression = formula.formula;
 
       formula.variables.forEach((variable) => {
+        const variableType = variable.type as string;
         let variableValue = values[variable.id];
 
         // Handle array values for single-select
-        if (Array.isArray(variableValue) && (variable.type === 'select' || variable.type === 'dropdown')) {
+        if (Array.isArray(variableValue) && (variableType === 'select' || variableType === 'dropdown')) {
           variableValue = variableValue[0];
         }
 
-        if (variable.type === 'select' && variable.options) {
+        if (variableType === 'select' && variable.options) {
           const option = variable.options.find((opt) => opt.value === variableValue);
           variableValue = option?.multiplier || option?.numericValue || 0;
-        } else if (variable.type === 'dropdown' && variable.options) {
+        } else if (variableType === 'dropdown' && variable.options) {
           const option = variable.options.find((opt) => opt.value === variableValue);
           variableValue = option?.numericValue || 0;
-        } else if (variable.type === 'multiple-choice' && variable.options) {
+        } else if (variableType === 'multiple-choice' && variable.options) {
           if (Array.isArray(variableValue)) {
             variableValue = variableValue.reduce((total: number, selectedValue: string) => {
               const option = variable.options?.find((opt) => opt.value.toString() === selectedValue);
@@ -75,7 +77,7 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
           } else {
             variableValue = 0;
           }
-        } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
+        } else if (variableType === 'number' || variableType === 'slider' || variableType === 'stepper') {
           variableValue = Number(variableValue) || 0;
         } else {
           variableValue = 0;
@@ -99,13 +101,14 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
   const resetCalculator = () => {
     const defaults: Record<string, any> = {};
     formula.variables.forEach((variable) => {
+      const variableType = variable.type as string;
       if (variable.defaultValue !== undefined) {
         defaults[variable.id] = variable.defaultValue;
-      } else if (variable.type === 'slider' || variable.type === 'stepper') {
+      } else if (variableType === 'slider' || variableType === 'stepper') {
         defaults[variable.id] = variable.min ?? 0;
-      } else if (variable.type === 'number') {
+      } else if (variableType === 'number') {
         defaults[variable.id] = 0;
-      } else if (variable.type === 'multiple-choice' || variable.type === 'select' || variable.type === 'dropdown') {
+      } else if (variableType === 'multiple-choice' || variableType === 'select' || variableType === 'dropdown') {
         if (variable.options && variable.options.length > 0) {
           defaults[variable.id] = variable.options[0].value;
         }
@@ -117,7 +120,7 @@ export default function GuestCalculatorPreview({ formula, onSaveClick }: GuestCa
   const renderVariableInput = (variable: AIFormulaResponse['variables'][0]) => {
     const value = variableValues[variable.id];
 
-    switch (variable.type) {
+    switch (variable.type as string) {
       case 'number':
         return (
           <div className="space-y-2">

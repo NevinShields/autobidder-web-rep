@@ -412,9 +412,7 @@ const buildThemeCss = (t: CssThemeTokens) => `
 
 .ab-calendar-nav,
 .ab-calendar-nav-prev,
-.ab-calendar-nav-next,
-.ab-calendar-date,
-.ab-time-slot {
+.ab-calendar-nav-next {
   background: ${t.surfaceBg};
   border: 1px solid ${t.border};
   color: ${t.surfaceText};
@@ -423,6 +421,94 @@ const buildThemeCss = (t: CssThemeTokens) => `
 .ab-calendar-month-title,
 .ab-calendar-day-header {
   color: ${t.surfaceText};
+}
+
+.ab-calendar-date {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  color: ${t.surfaceText};
+}
+
+.ab-calendar-date.ab-calendar-date-available {
+  background: ${t.accentSoft};
+  border-color: ${t.selectedBorder};
+  box-shadow: inset 0 0 0 1px ${t.selectedBorder}44;
+}
+
+.ab-calendar-date.ab-calendar-date-available:hover {
+  border-color: ${t.primary};
+  background: ${t.selectedBg};
+  transform: translateY(-1px);
+}
+
+.ab-calendar-date.ab-calendar-date-unavailable,
+.ab-calendar-date.ab-calendar-date-past,
+.ab-calendar-date:disabled {
+  background: ${t.inputBg};
+  border: 1px dashed ${t.border};
+  color: ${t.mutedText};
+  opacity: 0.58;
+  filter: grayscale(0.22);
+  cursor: not-allowed;
+}
+
+.ab-calendar-date .ab-calendar-date-meta {
+  color: ${t.mutedText};
+}
+
+.ab-time-slot {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  color: ${t.surfaceText};
+}
+
+.ab-time-slot.ab-time-slot-available:hover {
+  border-color: ${t.primary};
+  background: ${t.selectedBg};
+}
+
+.ab-calendar-date.selected,
+.ab-time-slot.selected {
+  background: ${t.primary};
+  border-color: ${t.primary};
+  color: ${t.primaryText};
+  box-shadow: 0 0 0 2px ${t.primary}33;
+}
+
+.ab-time-slot .ab-time-slot-meta {
+  color: ${t.mutedText};
+}
+
+.ab-time-slot:disabled,
+.ab-time-slot.disabled {
+  background: ${t.inputBg};
+  border: 1px dashed ${t.border};
+  color: ${t.mutedText};
+}
+
+.ab-calendar-legend-label {
+  color: ${t.mutedText};
+}
+
+.ab-calendar-legend-swatch-available {
+  background: ${t.accentSoft};
+  border-color: ${t.selectedBorder};
+}
+
+.ab-calendar-legend-swatch-selected {
+  background: ${t.primary};
+  border-color: ${t.primary};
+}
+
+.ab-calendar-legend-swatch-unavailable {
+  background: ${t.inputBg};
+  border-color: ${t.border};
+}
+
+.ab-calendar-date.selected .ab-calendar-date-meta,
+.ab-time-slot.selected .ab-time-slot-meta {
+  color: ${t.primaryText};
+  opacity: 0.9;
 }
 
 .selected {
@@ -674,6 +760,182 @@ const CSS_THEME_PRESETS: CssThemePreset[] = [
       priceText: "#4b5f3d",
       error: "#b91c1c",
     }),
+  },
+  {
+    id: "aurora-mint",
+    name: "Aurora Mint",
+    description: "Fresh mint and sky palette with clean contrast and airy surfaces.",
+    preview: {
+      canvas: "linear-gradient(135deg, #ecfeff 0%, #f0fdf4 100%)",
+      surface: "#ffffff",
+      border: "#a7f3d0",
+      text: "#134e4a",
+      accent: "#0ea5a4",
+      button: "linear-gradient(135deg, #0ea5a4 0%, #14b8a6 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(180deg, #ecfeff 0%, #f0fdf4 52%)",
+      surfaceBg: "#ffffff",
+      border: "#a7f3d0",
+      text: "#134e4a",
+      surfaceText: "#134e4a",
+      mutedText: "#0f766e",
+      selectedText: "#115e59",
+      primary: "#0ea5a4",
+      primaryText: "#f8fafc",
+      primaryHover: "#0f766e",
+      accent: "#14b8a6",
+      accentSoft: "#ecfdf5",
+      selectedBg: "#ccfbf1",
+      selectedBorder: "#14b8a6",
+      inputBg: "#ffffff",
+      inputBorder: "#99f6e4",
+      inputText: "#134e4a",
+      inputPlaceholder: "#0f766e",
+      priceBg: "#ccfbf1",
+      priceText: "#115e59",
+      error: "#be123c",
+    }),
+  },
+  {
+    id: "rosewood-ink",
+    name: "Rosewood Ink",
+    description: "Elegant deep rose accents on soft ink surfaces with warm neutrals.",
+    preview: {
+      canvas: "linear-gradient(135deg, #faf5ff 0%, #fff1f2 100%)",
+      surface: "#ffffff",
+      border: "#e9d5ff",
+      text: "#3b0d2e",
+      accent: "#be185d",
+      button: "linear-gradient(135deg, #be185d 0%, #9d174d 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(180deg, #faf5ff 0%, #fff1f2 50%)",
+      surfaceBg: "#ffffff",
+      border: "#e9d5ff",
+      text: "#3b0d2e",
+      surfaceText: "#3b0d2e",
+      mutedText: "#6b2d4b",
+      selectedText: "#831843",
+      primary: "#be185d",
+      primaryText: "#fff7fb",
+      primaryHover: "#9d174d",
+      accent: "#db2777",
+      accentSoft: "#fdf2f8",
+      selectedBg: "#fce7f3",
+      selectedBorder: "#be185d",
+      inputBg: "#ffffff",
+      inputBorder: "#f5d0fe",
+      inputText: "#3b0d2e",
+      inputPlaceholder: "#9d174d",
+      priceBg: "#fce7f3",
+      priceText: "#9d174d",
+      error: "#b91c1c",
+    }),
+  },
+  {
+    id: "neo-brutalism",
+    name: "Neo Brutalism",
+    description: "Bold, high-contrast blocks with heavy borders and unapologetic color.",
+    preview: {
+      canvas: "#fef08a",
+      surface: "#ffffff",
+      border: "#111827",
+      text: "#111827",
+      accent: "#ff2d55",
+      button: "linear-gradient(135deg, #ff2d55 0%, #ff7a00 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "#fef08a",
+      surfaceBg: "#ffffff",
+      border: "#111827",
+      text: "#111827",
+      surfaceText: "#111827",
+      mutedText: "#1f2937",
+      selectedText: "#111827",
+      primary: "#ff2d55",
+      primaryText: "#ffffff",
+      primaryHover: "#e11d48",
+      accent: "#ff7a00",
+      accentSoft: "#fff7ed",
+      selectedBg: "#fde68a",
+      selectedBorder: "#111827",
+      inputBg: "#ffffff",
+      inputBorder: "#111827",
+      inputText: "#111827",
+      inputPlaceholder: "#374151",
+      priceBg: "#86efac",
+      priceText: "#14532d",
+      error: "#b91c1c",
+    }) + `
+#autobidder-form,
+#autobidder-form .ab-question-card,
+#autobidder-form .ab-pricing-card,
+#autobidder-form .ab-input,
+#autobidder-form .ab-select,
+#autobidder-form .ab-textarea,
+#autobidder-form .ab-service-card,
+#autobidder-form .ab-multiple-choice,
+#autobidder-form .ab-upsell-card,
+#autobidder-form .ab-discount-card,
+#autobidder-form .ab-button {
+  border-width: 3px !important;
+  border-style: solid !important;
+  border-color: #111827 !important;
+  box-shadow: 6px 6px 0 #111827 !important;
+  border-radius: 0 !important;
+}
+`,
+  },
+  {
+    id: "frosted-glass",
+    name: "Frosted Glass",
+    description: "Soft translucent layers with blur, cool light, and subtle depth.",
+    preview: {
+      canvas: "linear-gradient(135deg, #dbeafe 0%, #e0f2fe 50%, #ede9fe 100%)",
+      surface: "rgba(255,255,255,0.62)",
+      border: "rgba(255,255,255,0.55)",
+      text: "#0f172a",
+      accent: "#2563eb",
+      button: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(135deg, #dbeafe 0%, #e0f2fe 50%, #ede9fe 100%)",
+      surfaceBg: "rgba(255, 255, 255, 0.62)",
+      border: "rgba(255, 255, 255, 0.55)",
+      text: "#0f172a",
+      surfaceText: "#0f172a",
+      mutedText: "#334155",
+      selectedText: "#0f172a",
+      primary: "#2563eb",
+      primaryText: "#f8fafc",
+      primaryHover: "#1d4ed8",
+      accent: "#6366f1",
+      accentSoft: "rgba(219, 234, 254, 0.6)",
+      selectedBg: "rgba(191, 219, 254, 0.62)",
+      selectedBorder: "rgba(96, 165, 250, 0.85)",
+      inputBg: "rgba(255, 255, 255, 0.72)",
+      inputBorder: "rgba(148, 163, 184, 0.5)",
+      inputText: "#0f172a",
+      inputPlaceholder: "#475569",
+      priceBg: "rgba(199, 210, 254, 0.62)",
+      priceText: "#1e3a8a",
+      error: "#be123c",
+    }) + `
+#autobidder-form .ab-question-card,
+#autobidder-form .ab-pricing-card,
+#autobidder-form .ab-input,
+#autobidder-form .ab-select,
+#autobidder-form .ab-textarea,
+#autobidder-form .ab-service-card,
+#autobidder-form .ab-multiple-choice,
+#autobidder-form .ab-upsell-card,
+#autobidder-form .ab-discount-card {
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+`,
   },
 ];
 
@@ -1248,9 +1510,18 @@ const previewScaffoldCSS = `
   position: relative;
 }
 
-#design-css-preview #autobidder-form .ab-calendar-date.disabled {
-  background: rgb(243 244 246);
-  color: rgb(156 163 175);
+#design-css-preview #autobidder-form .ab-calendar-date.ab-calendar-date-available {
+  background: var(--ab-service-selector-active-bg, #EFF6FF);
+  border-color: var(--ab-service-selector-active-border-color, #3B82F6);
+}
+
+#design-css-preview #autobidder-form .ab-calendar-date.ab-calendar-date-unavailable,
+#design-css-preview #autobidder-form .ab-calendar-date.ab-calendar-date-past,
+#design-css-preview #autobidder-form .ab-calendar-date:disabled,
+#design-css-preview #autobidder-form .ab-time-slot:disabled {
+  background: var(--ab-input-bg, #F3F4F6);
+  color: var(--ab-input-placeholder-color, #9CA3AF);
+  border-style: dashed;
   cursor: not-allowed;
 }
 
@@ -1261,11 +1532,45 @@ const previewScaffoldCSS = `
   transition: all 0.2s ease;
 }
 
+#design-css-preview #autobidder-form .ab-time-slot.ab-time-slot-available:hover {
+  border-color: var(--ab-primary-color, #2563EB);
+  background: var(--ab-service-selector-active-bg, #EFF6FF);
+}
+
 #design-css-preview #autobidder-form .ab-calendar-date.selected,
 #design-css-preview #autobidder-form .ab-time-slot.selected {
   background: var(--ab-primary-color, #2563EB);
   color: #ffffff;
   border-color: var(--ab-primary-color, #2563EB);
+}
+
+#design-css-preview #autobidder-form .ab-calendar-date .ab-calendar-date-meta,
+#design-css-preview #autobidder-form .ab-time-slot .ab-time-slot-meta {
+  color: var(--ab-label-color, #64748b);
+}
+
+#design-css-preview #autobidder-form .ab-calendar-date.selected .ab-calendar-date-meta,
+#design-css-preview #autobidder-form .ab-time-slot.selected .ab-time-slot-meta {
+  color: rgb(219 234 254);
+}
+
+#design-css-preview #autobidder-form .ab-calendar-legend-label {
+  color: var(--ab-label-color, #64748b);
+}
+
+#design-css-preview #autobidder-form .ab-calendar-legend-swatch-available {
+  background: var(--ab-service-selector-active-bg, #EFF6FF);
+  border-color: var(--ab-service-selector-active-border-color, #3B82F6);
+}
+
+#design-css-preview #autobidder-form .ab-calendar-legend-swatch-selected {
+  background: var(--ab-primary-color, #2563EB);
+  border-color: var(--ab-primary-color, #2563EB);
+}
+
+#design-css-preview #autobidder-form .ab-calendar-legend-swatch-unavailable {
+  background: var(--ab-input-bg, #F3F4F6);
+  border-color: var(--ab-input-border-color, #D1D5DB);
 }
 
 #design-css-preview #autobidder-form .disabled {
@@ -1375,7 +1680,7 @@ const scopeCSSForPreview = (css: string): string => {
 };
 
 // Default styling options
-const defaultStyling: StylingOptions = {
+const defaultStyling = {
   containerWidth: 700,
   containerHeight: 850,
   containerBorderRadius: 16,
@@ -1520,7 +1825,7 @@ const defaultStyling: StylingOptions = {
   enableCustomButton: false,
   customButtonText: 'Get Another Quote',
   customButtonUrl: ''
-};
+} as StylingOptions;
 
 // Default component styles
 const defaultComponentStyles = {
@@ -3451,7 +3756,7 @@ ${generateCSSVariables(styling)}
                                               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                                                 <span
                                                   key={day}
-                                                  className="ab-calendar-day-header text-center text-xs font-medium text-gray-500 py-2"
+                                                  className="ab-calendar-day-header text-center text-xs font-medium py-2"
                                                   {...previewTargetAttributes('.ab-calendar-day-header', 'Calendar day header')}
                                                 >
                                                   {day}
@@ -3471,12 +3776,13 @@ ${generateCSSVariables(styling)}
                                                   <button
                                                     key={`${value}-${index}`}
                                                     type="button"
-                                                    className={`ab-calendar-date aspect-square rounded-lg border transition-all relative ${value === '10' ? 'selected border-2 border-blue-600 bg-blue-600 text-white shadow-lg scale-105' : value === '8' ? 'disabled border border-gray-200 bg-gray-100 text-gray-400' : 'border-2 border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50'}`}
+                                                    className={`ab-calendar-date aspect-square rounded-lg border transition-all relative ${value === '10' ? 'selected shadow-lg scale-105' : value === '8' ? 'ab-calendar-date-past' : value === '12' ? 'ab-calendar-date-unavailable' : 'ab-calendar-date-available'}`}
                                                     {...previewTargetAttributes('.ab-calendar-date', 'Calendar date button')}
                                                   >
                                                     <div className="flex flex-col items-center justify-center h-full">
                                                       <span className="text-sm font-medium">{value}</span>
-                                                      {value === '10' && <span className="text-[10px] text-blue-100">2 left</span>}
+                                                      {value === '10' && <span className="ab-calendar-date-meta text-[10px]">2 left</span>}
+                                                      {value === '12' && <span className="ab-calendar-date-meta text-[10px]">full</span>}
                                                     </div>
                                                   </button>
                                                 ) : (
@@ -3487,12 +3793,18 @@ ${generateCSSVariables(styling)}
                                           </div>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-2 text-[11px]">
-                                          <span
-                                            className="inline-flex rounded-full border border-slate-300 px-2 py-0.5"
-                                            {...previewTargetAttributes('.ab-calendar-nav', 'Calendar navigation base class')}
-                                          >
-                                            .ab-calendar-nav
+                                        <div className="ab-calendar-legend flex flex-wrap gap-3 text-[11px]">
+                                          <span className="ab-calendar-legend-item inline-flex items-center gap-1.5">
+                                            <span className="ab-calendar-legend-swatch ab-calendar-legend-swatch-available h-3 w-3 rounded-sm border" />
+                                            <span className="ab-calendar-legend-label">Available</span>
+                                          </span>
+                                          <span className="ab-calendar-legend-item inline-flex items-center gap-1.5">
+                                            <span className="ab-calendar-legend-swatch ab-calendar-legend-swatch-selected h-3 w-3 rounded-sm border" />
+                                            <span className="ab-calendar-legend-label">Selected</span>
+                                          </span>
+                                          <span className="ab-calendar-legend-item inline-flex items-center gap-1.5">
+                                            <span className="ab-calendar-legend-swatch ab-calendar-legend-swatch-unavailable h-3 w-3 rounded-sm border" />
+                                            <span className="ab-calendar-legend-label">Unavailable / Past</span>
                                           </span>
                                         </div>
 
@@ -3506,27 +3818,28 @@ ${generateCSSVariables(styling)}
                                             >
                                               <div className="flex flex-col items-center">
                                                 <span className="font-medium">9:00 AM</span>
-                                                <span className="text-[10px] text-blue-100">10:00 AM</span>
+                                                <span className="ab-time-slot-meta text-[10px]">10:00 AM</span>
                                               </div>
                                             </button>
                                             <button
                                               type="button"
-                                              className="ab-time-slot flex items-center justify-center p-3 h-auto text-xs hover:bg-green-50 hover:border-green-300"
+                                              className="ab-time-slot ab-time-slot-available flex items-center justify-center p-3 h-auto text-xs"
                                               {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
                                             >
                                               <div className="flex flex-col items-center">
                                                 <span className="font-medium">11:30 AM</span>
-                                                <span className="text-[10px] text-gray-500">12:30 PM</span>
+                                                <span className="ab-time-slot-meta text-[10px]">12:30 PM</span>
                                               </div>
                                             </button>
                                             <button
                                               type="button"
-                                              className="ab-time-slot disabled flex items-center justify-center p-3 h-auto text-xs"
+                                              className="ab-time-slot flex items-center justify-center p-3 h-auto text-xs"
+                                              disabled
                                               {...previewTargetAttributes('.ab-time-slot', 'Time slot')}
                                             >
                                               <div className="flex flex-col items-center">
                                                 <span className="font-medium">2:00 PM</span>
-                                                <span className="text-[10px] text-gray-500">Booked</span>
+                                                <span className="ab-time-slot-meta text-[10px]">Booked</span>
                                               </div>
                                             </button>
                                           </div>

@@ -27,11 +27,28 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+): Promise<Response>;
+export async function apiRequest(
+  url: string,
+  init?: RequestInit,
+): Promise<Response>;
+export async function apiRequest(
+  methodOrUrl: string,
+  urlOrInit?: string | RequestInit,
+  data?: unknown,
 ): Promise<Response> {
+  const isLegacySignature = typeof urlOrInit === "string";
+  const url = isLegacySignature ? urlOrInit : methodOrUrl;
+  const init: RequestInit = isLegacySignature
+    ? {
+        method: methodOrUrl,
+        headers: data ? { "Content-Type": "application/json" } : {},
+        body: data ? JSON.stringify(data) : undefined,
+      }
+    : (urlOrInit ?? {});
+
   const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    ...init,
     credentials: "include",
   });
 

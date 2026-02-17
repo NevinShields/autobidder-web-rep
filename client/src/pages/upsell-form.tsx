@@ -1289,7 +1289,8 @@ export default function UpsellForm() {
                                           className="w-8 h-8 object-cover rounded"
                                           onError={(e) => {
                                             e.currentTarget.style.display = 'none';
-                                            e.currentTarget.nextElementSibling.style.display = 'block';
+                                            const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                                            if (fallback) fallback.style.display = 'block';
                                           }}
                                         />
                                       ) : upsell.icon && upsell.icon.startsWith('http') ? (
@@ -1299,7 +1300,8 @@ export default function UpsellForm() {
                                           className="w-8 h-8 object-cover rounded"
                                           onError={(e) => {
                                             e.currentTarget.style.display = 'none';
-                                            e.currentTarget.nextElementSibling.style.display = 'block';
+                                            const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+                                            if (fallback) fallback.style.display = 'block';
                                           }}
                                         />
                                       ) : (
@@ -1535,6 +1537,7 @@ export default function UpsellForm() {
                           <div className="mb-6">
                             <CollapsiblePhotoMeasurement
                               setup={formula.photoMeasurementSetup}
+                              businessOwnerId={(formula as any).userId || ""}
                               onMeasurementComplete={(measurement) => {
                                 // Find the first area/size variable and auto-populate it
                                 const areaVariable = serviceSpecificVars.find((v: any) => 

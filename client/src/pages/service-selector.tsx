@@ -319,6 +319,11 @@ export default function ServiceSelector() {
       services: ServiceCalculation[];
       totalPrice: number;
       leadInfo: LeadFormData;
+      appliedDiscounts?: Array<{ name: string; type: "percentage" | "fixed"; value: number; amount: number }>;
+      selectedUpsells?: Array<{ id: string; name: string; percentage: number; amount: number }>;
+      bundleDiscount?: number;
+      taxAmount?: number;
+      subtotal?: number;
     }) => {
       const payload = {
         name: data.leadInfo.name,
@@ -329,6 +334,11 @@ export default function ServiceSelector() {
         howDidYouHear: data.leadInfo.howDidYouHear,
         services: data.services,
         totalPrice: data.totalPrice,
+        appliedDiscounts: data.appliedDiscounts || [],
+        selectedUpsells: data.selectedUpsells || [],
+        bundleDiscountAmount: data.bundleDiscount ?? 0,
+        taxAmount: data.taxAmount ?? 0,
+        subtotal: data.subtotal ?? data.totalPrice,
       };
       return apiRequest("POST", "/api/multi-service-leads", payload);
     },
@@ -650,12 +660,16 @@ export default function ServiceSelector() {
   };
 
   const fontSizeClasses = {
+    'xs': 'text-xs',
     'sm': 'text-sm',
     'base': 'text-base',
-    'lg': 'text-lg'
+    'lg': 'text-lg',
+    'xl': 'text-xl',
+    '2xl': 'text-2xl',
   };
 
   const fontWeightClasses = {
+    'light': 'font-light',
     'normal': 'font-normal',
     'medium': 'font-medium',
     'semibold': 'font-semibold',
@@ -665,7 +679,8 @@ export default function ServiceSelector() {
   const paddingClasses = {
     'sm': 'px-3 py-2',
     'md': 'px-4 py-3',
-    'lg': 'px-6 py-4'
+    'lg': 'px-6 py-4',
+    'xl': 'px-8 py-5',
   };
 
   const buttonStyles = {
@@ -693,7 +708,7 @@ export default function ServiceSelector() {
       <div className="max-w-4xl mx-auto px-2 sm:px-4 py-4 sm:py-8">
         <div className="flex justify-center mb-4 sm:mb-8">
           <div 
-            className={`mx-auto border overflow-hidden ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize]} ${fontWeightClasses[styling.fontWeight]} w-full max-w-none sm:max-w-2xl lg:max-w-4xl`}
+            className={`mx-auto border overflow-hidden ${shadowClasses[styling.containerShadow]} ${fontSizeClasses[styling.fontSize] || 'text-base'} ${fontWeightClasses[styling.fontWeight] || 'font-medium'} w-full max-w-none sm:max-w-2xl lg:max-w-4xl`}
             style={{
               borderRadius: `${styling.containerBorderRadius}px`,
               borderWidth: `${styling.containerBorderWidth}px`,
@@ -758,14 +773,14 @@ export default function ServiceSelector() {
                       primaryColor: styling.primaryColor,
                       textColor: styling.textColor,
                       backgroundColor: styling.backgroundColor,
-                      buttonPadding: paddingClasses[styling.buttonPadding],
+                      buttonPadding: paddingClasses[styling.buttonPadding] || paddingClasses.lg,
                       serviceSelectorWidth: styling.serviceSelectorWidth,
                       serviceSelectorBorderRadius: styling.serviceSelectorBorderRadius,
                       serviceSelectorShadow: styling.serviceSelectorShadow,
                       serviceSelectorBackgroundColor: styling.serviceSelectorBackgroundColor,
                       serviceSelectorBorderWidth: styling.serviceSelectorBorderWidth,
                       serviceSelectorBorderColor: styling.serviceSelectorBorderColor,
-                      serviceSelectorHoverBgColor: styling.serviceSelectorHoverBgColor,
+                      serviceSelectorHoverBackgroundColor: (styling as any).serviceSelectorHoverBgColor,
                       serviceSelectorHoverBorderColor: styling.serviceSelectorHoverBorderColor,
                       serviceSelectorSelectedBgColor: styling.serviceSelectorSelectedBgColor,
                       serviceSelectorSelectedBorderColor: styling.serviceSelectorSelectedBorderColor,

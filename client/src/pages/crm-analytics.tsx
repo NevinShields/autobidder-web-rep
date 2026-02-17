@@ -31,19 +31,17 @@ export default function CrmAnalytics() {
   });
   
   const allLeads = [...regularLeads, ...multiServiceLeads];
+  const getLeadPrice = (lead: Lead | MultiServiceLead) =>
+    ("calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice) ?? 0;
+  const getLastStageChange = (lead: Lead | MultiServiceLead) =>
+    "lastStageChange" in lead ? lead.lastStageChange : undefined;
   
   const totalRevenue = allLeads
     .filter(lead => lead.stage === 'paid' || lead.stage === 'completed')
-    .reduce((sum, lead) => {
-      const price = "calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice;
-      return sum + price;
-    }, 0);
+    .reduce((sum, lead) => sum + getLeadPrice(lead), 0);
   
   const averageDealSize = allLeads.length > 0
-    ? allLeads.reduce((sum, lead) => {
-        const price = "calculatedPrice" in lead ? lead.calculatedPrice : lead.totalPrice;
-        return sum + price;
-      }, 0) / allLeads.length
+    ? allLeads.reduce((sum, lead) => sum + getLeadPrice(lead), 0) / allLeads.length
     : 0;
   
   if (pipelineLoading || conversionLoading) {
@@ -173,10 +171,10 @@ export default function CrmAnalytics() {
           <CardContent>
             <div className="space-y-4">
               {allLeads
-                .filter(lead => lead.lastStageChange)
+                .filter(lead => !!getLastStageChange(lead))
                 .sort((a, b) => {
-                  const dateA = a.lastStageChange ? new Date(a.lastStageChange).getTime() : 0;
-                  const dateB = b.lastStageChange ? new Date(b.lastStageChange).getTime() : 0;
+                  const dateA = getLastStageChange(a) ? new Date(getLastStageChange(a)!).getTime() : 0;
+                  const dateB = getLastStageChange(b) ? new Date(getLastStageChange(b)!).getTime() : 0;
                   return dateB - dateA;
                 })
                 .slice(0, 5)
@@ -190,11 +188,11 @@ export default function CrmAnalytics() {
                       </p>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-500">
-                      {lead.lastStageChange && new Date(lead.lastStageChange).toLocaleDateString()}
+                      {getLastStageChange(lead) && new Date(getLastStageChange(lead)!).toLocaleDateString()}
                     </p>
                   </div>
                 ))}
-              {allLeads.filter(lead => lead.lastStageChange).length === 0 && (
+              {allLeads.filter(lead => !!getLastStageChange(lead)).length === 0 && (
                 <p className="text-sm text-gray-500 dark:text-gray-500 text-center py-8">
                   No recent activity
                 </p>

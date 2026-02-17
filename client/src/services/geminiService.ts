@@ -63,7 +63,7 @@ You are a professional digital asset creator. Your task is to generate a high-fi
       },
     });
 
-    const part = response.candidates?.[0]?.content?.parts.find((p: any) => p.inlineData);
+    const part = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
     if (!part?.inlineData?.data) throw new Error("Failed to generate image variation.");
     return part.inlineData.data;
   });
@@ -119,7 +119,7 @@ export const refineIcon = async (
       },
     });
 
-    const part = response.candidates?.[0]?.content?.parts.find((p: any) => p.inlineData);
+    const part = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
     if (!part?.inlineData?.data) throw new Error("Refinement failed.");
     return part.inlineData.data;
   });

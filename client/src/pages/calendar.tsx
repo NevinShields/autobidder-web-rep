@@ -172,6 +172,8 @@ export default function CalendarPage() {
   const [editMode, setEditMode] = useState(false);
   const [editStartTime, setEditStartTime] = useState('');
   const [editEndTime, setEditEndTime] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [selectedLead, setSelectedLead] = useState<CalendarLead | null>(null);
   const [leadDetailsOpen, setLeadDetailsOpen] = useState(false);
 
@@ -538,6 +540,63 @@ export default function CalendarPage() {
     },
   });
 
+  const updateBookedEventMutation = useMutation({
+    mutationFn: async ({ slotId, payload }: { slotId: number; payload: any }) => {
+      const slotRes = await apiRequest('PATCH', `/api/availability-slots/${slotId}`, payload.slotUpdate);
+
+      if (payload.calendarEventUpdate && payload.calendarEventId) {
+        await apiRequest('PATCH', `/api/calendar-events/${payload.calendarEventId}`, payload.calendarEventUpdate);
+      }
+
+      return slotRes;
+    },
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/multi-service-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      setEditMode(false);
+      setBookingDetailsOpen(false);
+      toast({
+        title: "Booking updated",
+        description: "The booked event has been updated successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update failed",
+        description: error?.message || "Failed to update booked event.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteBookedEventMutation = useMutation({
+    mutationFn: async ({ slotId, calendarEventId }: { slotId: number; calendarEventId?: number }) => {
+      if (calendarEventId) {
+        await apiRequest('DELETE', `/api/calendar-events/${calendarEventId}`, {});
+      }
+      await apiRequest('DELETE', `/api/availability-slots/${slotId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/availability-slots'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/multi-service-leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      setEditMode(false);
+      setBookingDetailsOpen(false);
+      toast({
+        title: "Booking deleted",
+        description: "The booked event has been removed from your calendar.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed",
+        description: error?.message || "Failed to delete booked event.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Save availability mutation - saves both schedule and maxDaysOut
   const saveAvailabilityMutation = useMutation({
     mutationFn: async () => {
@@ -692,7 +751,6 @@ export default function CalendarPage() {
       email: slot.leadEmail || '',
       phone: slot.leadPhone,
       address: slot.leadAddress,
-      notes: slot.notes,
       services,
       totalPrice: calculatedPrice,
       calculatedPrice,
@@ -717,6 +775,16 @@ export default function CalendarPage() {
     setSelectedLead(lead);
     setLeadDetailsOpen(true);
   };
+
+  useEffect(() => {
+    if (!selectedBooking) return;
+    const normalizeTime = (time: string) => (time || '').slice(0, 5);
+    setEditStartTime(normalizeTime(selectedBooking.startTime));
+    setEditEndTime(normalizeTime(selectedBooking.endTime));
+    setEditTitle(selectedBooking.title || '');
+    setEditNotes(selectedBooking.notes || '');
+    setEditMode(false);
+  }, [selectedBooking]);
 
   const isDateBlocked = (dateStr: string) => {
     if (!Array.isArray(blockedDates)) return null;
@@ -810,6 +878,33 @@ export default function CalendarPage() {
     }
   };
 
+  const openBookedEventFromMonth = (
+    dateStr: string,
+    bookingType: 'any' | 'soft' | 'confirmed' = 'any'
+  ) => {
+    const matchingBookings = getBookingsForDate(dateStr).filter((booking: any) => {
+      if (!booking.isBooked) return false;
+      if (bookingType === 'soft') return booking.bookingStatus === 'tentative';
+      if (bookingType === 'confirmed') return booking.bookingStatus !== 'tentative';
+      return true;
+    });
+
+    if (matchingBookings.length === 0) return;
+
+    if (matchingBookings.length === 1) {
+      setSelectedBooking(matchingBookings[0]);
+      setBookingDetailsOpen(true);
+      return;
+    }
+
+    setSelectedDate(dateStr);
+    setView('day');
+    toast({
+      title: "Multiple bookings found",
+      description: "Select a booking from day view to see customer details.",
+    });
+  };
+
   const handleDragStart = (dateStr: string) => {
     // Don't allow drag selection in blocking mode
     if (blockingMode) return;
@@ -900,8 +995,8 @@ export default function CalendarPage() {
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = formatDateForAPI(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
       const dayBookings = getBookingsForDate(dateStr);
-      const bookedCount = dayBookings.filter((b: any) => b.isBooked).length;
       const softBookedCount = dayBookings.filter((b: any) => b.isBooked && b.bookingStatus === 'tentative').length;
+      const bookedCount = dayBookings.filter((b: any) => b.isBooked && b.bookingStatus !== 'tentative').length;
       const availableCount = dayBookings.filter((b: any) => !b.isBooked).length;
       const blocked = isDateBlocked(dateStr);
       const googleEvents = getGoogleEventsForDate(dateStr);
@@ -946,14 +1041,32 @@ export default function CalendarPage() {
                     </div>
                   )}
                   {bookedCount > 0 && (
-                    <div className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate dark:bg-red-900/40 dark:text-red-300">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openBookedEventFromMonth(dateStr, 'confirmed');
+                      }}
+                      className="w-full text-left text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded truncate dark:bg-red-900/40 dark:text-red-300 hover:opacity-90"
+                      data-testid={`calendar-day-booked-${day}`}
+                    >
                       {bookedCount} booked
-                    </div>
+                    </button>
                   )}
                   {softBookedCount > 0 && (
-                    <div className="text-xs bg-amber-100 text-amber-700 px-1 py-0.5 rounded truncate dark:bg-amber-900/40 dark:text-amber-300">
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openBookedEventFromMonth(dateStr, 'soft');
+                      }}
+                      className="w-full text-left text-xs bg-amber-100 text-amber-700 px-1 py-0.5 rounded truncate dark:bg-amber-900/40 dark:text-amber-300 hover:opacity-90"
+                      data-testid={`calendar-day-soft-booked-${day}`}
+                    >
                       {softBookedCount} soft
-                    </div>
+                    </button>
                   )}
                   {availableCount > 0 && (
                     <div className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded truncate dark:bg-green-900/40 dark:text-green-300">
@@ -2298,7 +2411,10 @@ export default function CalendarPage() {
         </AnimatePresence>
 
         {/* Booking Details Dialog */}
-        <Dialog open={bookingDetailsOpen} onOpenChange={setBookingDetailsOpen}>
+        <Dialog open={bookingDetailsOpen} onOpenChange={(open) => {
+          setBookingDetailsOpen(open);
+          if (!open) setEditMode(false);
+        }}>
           <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto p-0">
             {selectedBooking && (() => {
               // Use embedded lead data from slot (preferred) or fall back to fetched lead details
@@ -2339,6 +2455,55 @@ export default function CalendarPage() {
 
                   {/* Content */}
                   <div className="p-4 sm:p-6 space-y-4">
+                    {editMode && (
+                      <div className="space-y-3 border rounded-lg p-3 bg-gray-50 dark:bg-gray-800/50">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Edit Booking</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label htmlFor="edit-booking-start" className="text-xs">Start Time</Label>
+                            <Input
+                              id="edit-booking-start"
+                              type="time"
+                              value={editStartTime}
+                              onChange={(e) => setEditStartTime(e.target.value)}
+                              data-testid="input-edit-booking-start-time"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="edit-booking-end" className="text-xs">End Time</Label>
+                            <Input
+                              id="edit-booking-end"
+                              type="time"
+                              value={editEndTime}
+                              onChange={(e) => setEditEndTime(e.target.value)}
+                              data-testid="input-edit-booking-end-time"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-booking-title" className="text-xs">Title</Label>
+                          <Input
+                            id="edit-booking-title"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder="Booking title"
+                            data-testid="input-edit-booking-title"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-booking-notes" className="text-xs">Notes</Label>
+                          <Textarea
+                            id="edit-booking-notes"
+                            value={editNotes}
+                            onChange={(e) => setEditNotes(e.target.value)}
+                            rows={3}
+                            placeholder="Booking notes"
+                            data-testid="textarea-edit-booking-notes"
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {hasCustomerData ? (
                       <>
                         {/* Customer Info */}
@@ -2506,13 +2671,101 @@ export default function CalendarPage() {
                       </Button>
                     )}
 
+                    {selectedBooking.isBooked && !editMode && (
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setEditMode(true)}
+                        data-testid="button-edit-booked-event"
+                      >
+                        <Edit2 className="w-4 h-4 mr-2" />
+                        Edit Booking
+                      </Button>
+                    )}
+
+                    {selectedBooking.isBooked && editMode && (
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => setEditMode(false)}
+                          data-testid="button-cancel-edit-booked-event"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          className="flex-1"
+                          disabled={
+                            !editStartTime ||
+                            !editEndTime ||
+                            updateBookedEventMutation.isPending
+                          }
+                          onClick={() => {
+                            if (!selectedBooking?.date) return;
+
+                            const date = selectedBooking.date;
+                            const slotUpdate = {
+                              date,
+                              startTime: editStartTime,
+                              endTime: editEndTime,
+                              title: editTitle || selectedBooking.title,
+                              notes: editNotes,
+                            };
+
+                            const calendarEventUpdate = selectedBooking.calendarEventId
+                              ? {
+                                  startsAt: new Date(`${date}T${editStartTime}:00`).toISOString(),
+                                  endsAt: new Date(`${date}T${editEndTime}:00`).toISOString(),
+                                  title: editTitle || selectedBooking.title,
+                                  notes: editNotes,
+                                }
+                              : undefined;
+
+                            updateBookedEventMutation.mutate({
+                              slotId: selectedBooking.id,
+                              payload: {
+                                slotUpdate,
+                                calendarEventId: selectedBooking.calendarEventId,
+                                calendarEventUpdate,
+                              },
+                            });
+                          }}
+                          data-testid="button-save-edit-booked-event"
+                        >
+                          {updateBookedEventMutation.isPending ? "Saving..." : "Save Changes"}
+                        </Button>
+                      </div>
+                    )}
+
+                    {selectedBooking.isBooked && (
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        disabled={deleteBookedEventMutation.isPending}
+                        onClick={() => {
+                          if (!selectedBooking) return;
+                          if (!confirm("Delete this booked event from the calendar?")) return;
+                          deleteBookedEventMutation.mutate({
+                            slotId: selectedBooking.id,
+                            calendarEventId: selectedBooking.calendarEventId,
+                          });
+                        }}
+                        data-testid="button-delete-booked-event"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {deleteBookedEventMutation.isPending ? "Deleting..." : "Delete Booking"}
+                      </Button>
+                    )}
+
                     {/* View Lead Button */}
                     {selectedBooking.bookedBy && (
                       <Button
                         className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
                         onClick={() => {
                           setBookingDetailsOpen(false);
-                          openLeadDetailsModal(selectedBooking.bookedBy, selectedBooking);
+                          if (typeof selectedBooking.bookedBy === 'number') {
+                            openLeadDetailsModal(selectedBooking.bookedBy, selectedBooking);
+                          }
                         }}
                       >
                         <ExternalLink className="w-4 h-4 mr-2" />
@@ -2729,7 +2982,6 @@ export default function CalendarPage() {
                                   onCheckedChange={(checked) => {
                                     updateDayAvailability(dayIndex, { enabled: !!checked });
                                   }}
-                                  onClick={(e) => e.stopPropagation()}
                                 />
                                 <span className={`font-medium text-sm ${
                                   dayData.enabled ? 'text-gray-900 dark:text-white' : 'text-gray-500'

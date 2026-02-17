@@ -636,7 +636,7 @@ export default function MeasureMapTerraImproved({
           };
 
           // The add method returns the ids of the features that were added
-          const [newFeatureId] = draw.add([newFeature]);
+          const [newFeatureId] = (draw as any).add([newFeature]);
           
           // Center the map on the new feature
           if (map && polygon.coordinates && polygon.coordinates[0]) {

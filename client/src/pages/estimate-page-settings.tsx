@@ -89,7 +89,7 @@ export default function EstimatePageSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: businessSettings, isLoading } = useQuery({
+  const { data: businessSettings, isLoading } = useQuery<any>({
     queryKey: ["/api/business-settings"],
   });
 
@@ -456,10 +456,10 @@ export default function EstimatePageSettings() {
                   Personalize the layout, branding, and standard attachments for every customer estimate.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex w-full sm:w-auto items-center gap-3 flex-wrap">
                 <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="rounded-xl h-10 px-4 bg-white/50 backdrop-blur-sm border-white/20">
+                    <Button variant="outline" size="sm" className="rounded-xl h-10 px-4 bg-white/50 backdrop-blur-sm border-white/20 w-full sm:w-auto">
                       <Eye className="h-4 w-4 mr-2" />
                       Live Preview
                     </Button>
@@ -637,10 +637,11 @@ export default function EstimatePageSettings() {
                 <Button
                   onClick={handleSave}
                   disabled={saveSettingsMutation.isPending}
-                  className="rounded-xl h-10 px-6 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 shadow-lg shadow-gray-900/10"
+                  className="rounded-xl h-10 px-4 sm:px-6 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900 shadow-lg shadow-gray-900/10 w-full sm:w-auto"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {saveSettingsMutation.isPending ? "Saving..." : "Save Designer Changes"}
+                  <span className="sm:hidden">{saveSettingsMutation.isPending ? "Saving..." : "Save Changes"}</span>
+                  <span className="hidden sm:inline">{saveSettingsMutation.isPending ? "Saving..." : "Save Designer Changes"}</span>
                 </Button>
               </div>
             </div>
@@ -834,7 +835,7 @@ export default function EstimatePageSettings() {
                               onGetUploadParameters={(file) => getUploadParameters(file.name)}
                               onComplete={handleUploadComplete(category)}
                             >
-                              <Button variant="secondary" size="sm" className="rounded-xl h-8 px-3 text-[10px] uppercase font-bold tracking-widest bg-gray-100 hover:bg-gray-200">
+                              <Button variant="outline" size="sm" className="rounded-xl h-8 px-3 text-[10px] uppercase font-bold tracking-widest bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
                                 <Upload className="h-3 w-3 mr-1.5" />
                                 Upload
                               </Button>
@@ -857,7 +858,7 @@ export default function EstimatePageSettings() {
                               onComplete={handleUploadComplete("custom", customAttachmentName)}
                               disabled={!customAttachmentName.trim()}
                             >
-                              <Button variant="secondary" size="sm" className="rounded-xl h-9 px-4 text-xs font-bold" disabled={!customAttachmentName.trim()}>
+                              <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 text-xs font-bold bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800" disabled={!customAttachmentName.trim()}>
                                 <Plus className="h-3.5 w-3.5 mr-1.5" />
                                 Add
                               </Button>

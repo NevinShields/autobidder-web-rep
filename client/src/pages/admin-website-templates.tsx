@@ -69,9 +69,12 @@ export default function AdminWebsiteTemplates() {
   });
 
   // Fetch all custom website templates
-  const { data: templates = [], isLoading, refetch } = useQuery({
+  const { data: templates = [], isLoading, refetch } = useQuery<CustomWebsiteTemplate[]>({
     queryKey: ['/api/admin/custom-website-templates'],
-    queryFn: () => apiRequest('GET', '/api/admin/custom-website-templates')
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/admin/custom-website-templates');
+      return await response.json();
+    }
   });
 
   // Create template mutation

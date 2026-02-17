@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, ExternalLink, X } from 'lucide-react';
+import { CheckCircle, ExternalLink, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -12,42 +12,49 @@ const SUBSCRIPTION_PLANS = {
   standard: {
     name: 'Standard',
     monthlyPrice: 49,
-    yearlyPrice: 41.42, // $497/year = $41.42/month
+    yearlyPrice: 41.42,
+    yearlyTotal: 497,
     popular: false,
     features: [
-      '5 pricing calculators',
-      '500 leads per month',
-      'Basic customization',
-      'Email support'
+      'Custom Price Calculations',
+      'Lead Generation',
+      'Scheduling',
+      'Custom Design Editor',
+      'Custom Logic Builder',
+      'Spam Filter',
+      'Template Library',
+      'Stats Panel',
+      'Facebook Pixel Tracking',
+      'Google Tracking'
     ]
   },
   plus: {
-    name: 'Plus Plan',
+    name: 'Plus',
     monthlyPrice: 97,
-    yearlyPrice: 80.83, // $970/year = $80.83/month
+    yearlyPrice: 83.08,
+    yearlyTotal: 997,
     popular: true,
     features: [
-      '25 pricing calculators',
-      '2,500 leads per month',
-      'Advanced customization',
-      'Calendar integration',
-      'Analytics dashboard',
-      'Priority support'
+      'Everything in Standard',
+      'Location Filtering',
+      'Bid Approval System',
+      'Zapier Integration',
+      'Website Included',
+      'Team Members',
+      'Multi Forms'
     ]
   },
   plusSeo: {
     name: 'Plus SEO',
     monthlyPrice: 297,
-    yearlyPrice: 247.50, // $2970/year = $247.50/month
+    yearlyPrice: 247.50,
+    yearlyTotal: 2970,
     popular: false,
     features: [
-      'Unlimited calculators',
-      'Unlimited leads',
-      'White-label branding',
-      'Team collaboration',
-      'API access',
-      'Custom integrations',
-      'Dedicated support'
+      'Everything in Plus',
+      'Monthly SEO Done For You',
+      'Access to SEO Dashboard',
+      'Premium Support'
     ]
   }
 };
@@ -143,7 +150,7 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
                 </div>
                 {billingPeriod === 'yearly' && (
                   <div className="text-sm text-green-600 dark:text-green-400 font-medium">
-                    Billed yearly (${plan.yearlyPrice * 12}/year)
+                    Billed yearly (${plan.yearlyTotal}/year)
                   </div>
                 )}
                 {billingPeriod === 'monthly' && (
@@ -155,14 +162,14 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
             </CardHeader>
 
             <CardContent className="space-y-4 px-6 pb-6">
-              <div className="space-y-4 mb-6 flex-grow">
+              <ul className="space-y-4 mb-8">
                 {plan.features.map((feature) => (
-                  <div key={feature} className="flex gap-3 items-start text-xs text-gray-600 dark:text-gray-300">
-                    <Check className={`w-4 h-4 shrink-0 ${plan.popular ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`} />
-                    <span>{feature}</span>
-                  </div>
+                  <li key={feature} className="flex items-center">
+                    <CheckCircle className="h-5 w-5 text-[#00ff66] mr-3 flex-shrink-0" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
 
               <Button
                 onClick={() => handlePlanSelect(planId)}

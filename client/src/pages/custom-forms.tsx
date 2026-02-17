@@ -224,9 +224,7 @@ export default function CustomForms() {
   };
 
   const copyFormUrl = (form: CustomForm) => {
-    // Get account slug (use email or ID for now)
-    const accountSlug = user?.id || 'account';
-    const formUrl = `${window.location.origin}/f/${accountSlug}/${form.slug}`;
+    const formUrl = `${window.location.origin}${getDirectFormPath(form)}`;
     navigator.clipboard.writeText(formUrl);
     toast({
       title: "Form URL copied to clipboard",
@@ -234,14 +232,24 @@ export default function CustomForms() {
   };
 
   const copyEmbedCode = (form: CustomForm) => {
-    // Get account slug (use email or ID for now)
-    const accountSlug = user?.id || 'account';
-    const embedUrl = `${window.location.origin}/f/${accountSlug}/${form.slug}?embed=1`;
+    const embedUrl = `${window.location.origin}${getDirectFormPath(form, { embed: true })}`;
     const embedCode = `<iframe src="${embedUrl}" width="600" height="800" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></iframe>`;
     navigator.clipboard.writeText(embedCode);
     toast({
       title: "Embed code copied to clipboard",
     });
+  };
+
+  const getDirectFormPath = (form: CustomForm, options?: { embed?: boolean }) => {
+    const params = new URLSearchParams();
+    params.set("userId", form.accountId);
+    if (Array.isArray(form.serviceIds) && form.serviceIds.length > 0) {
+      params.set("serviceIds", form.serviceIds.join(","));
+    }
+    if (options?.embed) {
+      params.set("embed", "1");
+    }
+    return `/custom-form/${form.id}?${params.toString()}`;
   };
 
   if (formsLoading || formulasLoading) {
@@ -331,51 +339,57 @@ export default function CustomForms() {
                   Create New Form
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Create Custom Form</DialogTitle>
-                <DialogDescription>
+            <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
+              <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+              <DialogHeader className="px-6 pt-6">
+                <DialogTitle className="text-2xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                  Create Custom Form
+                </DialogTitle>
+                <DialogDescription className="text-gray-600 dark:text-gray-400">
                   Create a new custom form with specific services for testing on different landing pages.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-5 px-6 pb-6">
                 <div>
-                  <Label htmlFor="form-name">Form Name</Label>
+                  <Label htmlFor="form-name" className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Form Name</Label>
                   <Input
                     id="form-name"
                     value={formName}
                     onChange={(e) => handleNameChange(e.target.value)}
                     placeholder="e.g., House Washing Only"
+                    className="mt-1.5 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                   />
                 </div>
                 
                 <div>
-                  <Label htmlFor="form-slug">URL Slug</Label>
+                  <Label htmlFor="form-slug" className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">URL Slug</Label>
                   <Input
                     id="form-slug"
                     value={formSlug}
                     onChange={(e) => setFormSlug(e.target.value)}
                     placeholder="e.g., house-washing"
+                    className="mt-1.5 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Your form will be available at: /f/{user?.id || 'account'}/{formSlug || 'your-slug'}
+                    Your form URL will be generated as a direct /custom-form link after creation.
                   </p>
                 </div>
                 
                 <div>
-                  <Label htmlFor="form-description">Description (Optional)</Label>
+                  <Label htmlFor="form-description" className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Description (Optional)</Label>
                   <Textarea
                     id="form-description"
                     value={formDescription}
                     onChange={(e) => setFormDescription(e.target.value)}
                     placeholder="Brief description of this form's purpose"
                     rows={3}
+                    className="mt-1.5 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                   />
                 </div>
 
                 <div>
-                  <Label>Select Services</Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                  <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Select Services</Label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-amber-200/60 dark:border-amber-500/20 bg-white/80 dark:bg-gray-800/70 rounded-xl p-3 mt-1.5">
                     {formulas.map((formula) => (
                       <div key={formula.id} className="flex items-center space-x-2">
                         <input
@@ -391,7 +405,7 @@ export default function CustomForms() {
                           }}
                           className="rounded border-gray-300"
                         />
-                        <label htmlFor={`service-${formula.id}`} className="text-sm font-medium">
+                        <label htmlFor={`service-${formula.id}`} className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           {formula.name}
                         </label>
                       </div>
@@ -404,11 +418,11 @@ export default function CustomForms() {
                   )}
                 </div>
 
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                <div className="flex justify-end space-x-2 pt-2">
+                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="rounded-full border-gray-200 dark:border-gray-700">
                     Cancel
                   </Button>
-                  <Button onClick={handleCreateForm} disabled={createFormMutation.isPending}>
+                  <Button onClick={handleCreateForm} disabled={createFormMutation.isPending} className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20">
                     {createFormMutation.isPending ? "Creating..." : "Create Form"}
                   </Button>
                 </div>
@@ -513,7 +527,7 @@ export default function CustomForms() {
                           Copy Embed Code
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <a href={`/f/${user?.id || 'account'}/${form.slug}`} target="_blank" rel="noopener noreferrer">
+                          <a href={getDirectFormPath(form)} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Preview Form
                           </a>
@@ -525,16 +539,19 @@ export default function CustomForms() {
                               Delete Form
                             </DropdownMenuItem>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border border-red-200/70 dark:border-red-500/30 bg-gradient-to-br from-white/95 via-red-50/70 to-orange-50/70 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-red-500/10">
+                            <div className="h-1.5 bg-gradient-to-r from-red-500 to-orange-500" />
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Custom Form</AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogTitle className="px-6 pt-6 text-2xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                                Delete Custom Form
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="px-6 text-gray-600 dark:text-gray-400">
                                 Are you sure you want to delete "{form.name}"? This action cannot be undone and will also delete all associated leads.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteFormMutation.mutate(form.id)} className="bg-red-600 hover:bg-red-700">
+                            <AlertDialogFooter className="px-6 pb-6">
+                              <AlertDialogCancel className="rounded-full border-gray-200 dark:border-gray-700">Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteFormMutation.mutate(form.id)} className="rounded-full bg-red-600 hover:bg-red-700">
                                 Delete Form
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -602,34 +619,38 @@ export default function CustomForms() {
 
         {/* Configuration Dialog */}
         <Dialog open={!!configureForm} onOpenChange={() => setConfigureForm(null)}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Configure Form: {configureForm?.name}</DialogTitle>
-              <DialogDescription>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto p-0 rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle className="text-2xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                Configure Form: {configureForm?.name}
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
                 Manage your form settings, copy embed codes, and track performance.
               </DialogDescription>
             </DialogHeader>
             
             {configureForm && (
-              <div className="space-y-6">
+              <div className="space-y-6 px-6 pb-6">
                 {/* Form URLs and Embed Codes */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Share Your Form</h3>
+                <div className="space-y-4 rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-white/75 dark:bg-gray-800/60 p-4">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Share Your Form</h3>
                   
                   {/* Direct URL */}
                   <div>
-                    <Label htmlFor="form-url">Direct Form URL</Label>
+                    <Label htmlFor="form-url" className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Direct Form URL</Label>
                     <div className="flex space-x-2 mt-1">
                       <Input
                         id="form-url"
-                        value={`${window.location.origin}/f/${user?.id || 'account'}/${configureForm.slug}`}
+                        value={`${window.location.origin}${getDirectFormPath(configureForm)}`}
                         readOnly
-                        className="font-mono text-sm"
+                        className="font-mono text-sm rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                       />
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => copyFormUrl(configureForm)}
+                        className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/10"
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -641,13 +662,13 @@ export default function CustomForms() {
 
                   {/* Embed Code */}
                   <div>
-                    <Label htmlFor="embed-code">Embed Code (iframe)</Label>
+                    <Label htmlFor="embed-code" className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Embed Code (iframe)</Label>
                     <div className="flex space-x-2 mt-1">
                       <Textarea
                         id="embed-code"
-                        value={`<iframe src="${window.location.origin}/f/${user?.id || 'account'}/${configureForm.slug}?embed=1" width="600" height="800" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></iframe>`}
+                        value={`<iframe src="${window.location.origin}${getDirectFormPath(configureForm, { embed: true })}" width="600" height="800" frameborder="0" style="border: none; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"></iframe>`}
                         readOnly
-                        className="font-mono text-sm resize-none"
+                        className="font-mono text-sm resize-none rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                         rows={4}
                       />
                       <div className="flex flex-col space-y-1">
@@ -655,6 +676,7 @@ export default function CustomForms() {
                           variant="outline"
                           size="sm"
                           onClick={() => copyEmbedCode(configureForm)}
+                          className="rounded-xl border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/10"
                         >
                           <Copy className="w-4 h-4" />
                         </Button>
@@ -667,44 +689,45 @@ export default function CustomForms() {
                 </div>
 
                 {/* Form Details */}
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold text-lg mb-3">Form Details</h3>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="rounded-2xl border border-gray-200/70 dark:border-gray-700/50 bg-white/75 dark:bg-gray-800/60 p-4">
+                  <h3 className="font-semibold text-lg mb-3 text-gray-900 dark:text-white">Form Details</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
                     <div>
-                      <span className="font-medium text-gray-700">Status:</span>
+                      <span className="font-medium">Status:</span>
                       <Badge variant={configureForm.enabled ? "default" : "secondary"} className="ml-2">
                         {configureForm.enabled ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Services:</span>
+                      <span className="font-medium">Services:</span>
                       <span className="ml-2">{configureForm.serviceIds.length} selected</span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Created:</span>
+                      <span className="font-medium">Created:</span>
                       <span className="ml-2">{new Date(configureForm.createdAt!).toLocaleDateString()}</span>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-700">Last Updated:</span>
+                      <span className="font-medium">Last Updated:</span>
                       <span className="ml-2">{new Date(configureForm.updatedAt!).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="border-t pt-4 flex justify-between">
+                <div className="pt-1 flex justify-between">
                   <div className="flex space-x-2">
                     <Button
                       variant="outline"
                       onClick={() => {
-                        window.open(`/f/${user?.id || 'account'}/${configureForm.slug}`, '_blank');
+                        window.open(getDirectFormPath(configureForm), '_blank');
                       }}
+                      className="rounded-full border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/10"
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Preview Form
                     </Button>
                   </div>
-                  <Button onClick={() => setConfigureForm(null)}>
+                  <Button onClick={() => setConfigureForm(null)} className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20">
                     Close
                   </Button>
                 </div>

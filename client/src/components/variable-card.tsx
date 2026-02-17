@@ -153,7 +153,7 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
             const label = e.target.value;
             const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
             const optionId = baseValue || `option_${index}`;
-            onUpdate(index, { label, value: optionId, id: optionId });
+            onUpdate(index, { label, value: optionId });
           }}
           className="h-9 text-sm"
         />
@@ -625,13 +625,17 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
   const handleConditionalLogicChange = (updates: Partial<NonNullable<Variable['conditionalLogic']>>) => {
     if (!onUpdate) return;
-    const currentLogic = variable.conditionalLogic || { enabled: false };
-    onUpdate(variable.id, { conditionalLogic: { ...currentLogic, ...updates } });
+    const currentLogic: NonNullable<Variable['conditionalLogic']> = variable.conditionalLogic || {
+      enabled: false,
+      operator: 'AND',
+      conditions: [],
+    };
+    onUpdate(variable.id, { conditionalLogic: { ...currentLogic, ...updates } as NonNullable<Variable['conditionalLogic']> });
   };
 
   const toggleConditionalLogic = (enabled: boolean) => {
     if (!enabled) {
-      onUpdate?.(variable.id, { conditionalLogic: { enabled: false } });
+      onUpdate?.(variable.id, { conditionalLogic: { enabled: false, operator: 'AND', conditions: [] } });
     } else {
       onUpdate?.(variable.id, {
         conditionalLogic: {

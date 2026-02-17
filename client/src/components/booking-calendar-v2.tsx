@@ -340,7 +340,7 @@ export default function BookingCalendarV2({
                       {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                         <div
                           key={day}
-                          className="ab-calendar-day-header text-center text-xs font-medium text-gray-500 py-2"
+                          className="ab-calendar-day-header text-center text-xs font-medium py-2"
                         >
                           {day}
                         </div>
@@ -372,8 +372,10 @@ export default function BookingCalendarV2({
                                 isSelected
                                   ? "selected border-2 border-blue-600 bg-blue-600 text-white shadow-lg scale-105"
                                   : isAvailable && !isPast
-                                    ? "border-2 border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50"
-                                    : "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    ? "ab-calendar-date-available border-2 border-blue-200 bg-white hover:border-blue-400 hover:bg-blue-50"
+                                    : isPast
+                                      ? "ab-calendar-date-past border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                                      : "ab-calendar-date-unavailable border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
                               }
                             `}
                             data-testid={`button-select-date-${date}`}
@@ -384,7 +386,7 @@ export default function BookingCalendarV2({
                               </span>
                               {isAvailable && !isPast && availableCount <= 3 && (
                                 <span
-                                  className={`text-[10px] ${isSelected ? "text-blue-100" : "text-blue-600"}`}
+                                  className={`ab-calendar-date-meta text-[10px] ${isSelected ? "text-blue-100" : "text-blue-600"}`}
                                 >
                                   {availableCount} left
                                 </span>
@@ -393,6 +395,21 @@ export default function BookingCalendarV2({
                           </button>
                         );
                       })}
+                    </div>
+
+                    <div className="ab-calendar-legend mt-3 flex flex-wrap items-center gap-3 text-[11px]">
+                      <div className="ab-calendar-legend-item flex items-center gap-1.5">
+                        <span className="ab-calendar-legend-swatch ab-calendar-legend-swatch-available h-3 w-3 rounded-sm border-2 border-blue-300 bg-blue-50" />
+                        <span className="ab-calendar-legend-label">Available</span>
+                      </div>
+                      <div className="ab-calendar-legend-item flex items-center gap-1.5">
+                        <span className="ab-calendar-legend-swatch ab-calendar-legend-swatch-selected h-3 w-3 rounded-sm border-2 border-blue-600 bg-blue-600" />
+                        <span className="ab-calendar-legend-label">Selected</span>
+                      </div>
+                      <div className="ab-calendar-legend-item flex items-center gap-1.5">
+                        <span className="ab-calendar-legend-swatch ab-calendar-legend-swatch-unavailable h-3 w-3 rounded-sm border border-gray-300 bg-gray-100" />
+                        <span className="ab-calendar-legend-label">Unavailable / Past</span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -411,7 +428,7 @@ export default function BookingCalendarV2({
                       <Button
                         key={`${slot.date}_${slot.startTime}`}
                         variant="outline"
-                        className="ab-time-slot flex items-center justify-center p-3 h-auto hover:bg-green-50 hover:border-green-300"
+                        className="ab-time-slot ab-time-slot-available flex items-center justify-center p-3 h-auto"
                         onClick={() => bookSlot.mutate({
                           date: selectedDate,
                           startTime: slot.startTime,
@@ -427,7 +444,7 @@ export default function BookingCalendarV2({
                               {formatTime(slot.startTime)}
                             </span>
                           </div>
-                          <span className="text-xs text-gray-500">
+                          <span className="ab-time-slot-meta text-xs text-gray-500">
                             {formatTime(slot.endTime)}
                           </span>
                         </div>

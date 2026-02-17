@@ -42,7 +42,10 @@ import {
   insertDudaTemplateMetadataSchema,
   insertDudaTemplateTagAssignmentSchema,
   insertDfyServiceSchema,
-  insertDfyServicePurchaseSchema
+  insertDfyServicePurchaseSchema,
+  stylingOptionsSchema,
+  insertCallBookingSchema,
+  insertCallAvailabilitySlotSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateIcon, generateIconVariations, refineIcon, generateBulkIcons } from "./icon-generator";
@@ -723,7 +726,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const extraComputations = extra_computations === 'BUILDING_AND_ENTRANCES' ? ['BUILDING_AND_ENTRANCES'] : undefined;
+      const extraComputations: 'BUILDING_AND_ENTRANCES'[] | undefined =
+        extra_computations === 'BUILDING_AND_ENTRANCES' ? ['BUILDING_AND_ENTRANCES'] : undefined;
 
       const result = await geocodeAddress(address, extraComputations);
       
@@ -1189,7 +1193,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update lead to add the image URL to uploadedImages array
       // Try regular lead first, then multi-service lead
-      let lead = await storage.getLead(parseInt(leadId));
+      let lead:
+        | Awaited<ReturnType<typeof storage.getLead>>
+        | Awaited<ReturnType<typeof storage.getMultiServiceLead>> =
+        await storage.getLead(parseInt(leadId));
       let isMultiService = false;
       
       if (!lead) {
@@ -1198,7 +1205,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isMultiService = true;
       }
       
-      if (!lead || (lead.userId !== effectiveUserId && (lead as any).businessOwnerId !== effectiveUserId)) {
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      const leadOwnerId = "businessOwnerId" in lead ? lead.businessOwnerId : lead.userId;
+      if (leadOwnerId !== effectiveUserId) {
         return res.status(404).json({ message: "Lead not found" });
       }
 
@@ -1226,7 +1237,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { leadId, imageIndex } = req.params;
       
       // Try regular lead first, then multi-service lead
-      let lead = await storage.getLead(parseInt(leadId));
+      let lead:
+        | Awaited<ReturnType<typeof storage.getLead>>
+        | Awaited<ReturnType<typeof storage.getMultiServiceLead>> =
+        await storage.getLead(parseInt(leadId));
       let isMultiService = false;
       
       if (!lead) {
@@ -1235,7 +1249,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isMultiService = true;
       }
       
-      if (!lead || (lead.userId !== effectiveUserId && (lead as any).businessOwnerId !== effectiveUserId)) {
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      const leadOwnerId = "businessOwnerId" in lead ? lead.businessOwnerId : lead.userId;
+      if (leadOwnerId !== effectiveUserId) {
         return res.status(404).json({ message: "Lead not found" });
       }
 
@@ -1476,7 +1494,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (customFormId) {
         try {
-          customForm = await storage.getCustomFormById(customFormId as string);
+          const customFormIdNumber = Number(customFormId);
+          if (Number.isFinite(customFormIdNumber)) {
+            customForm = await storage.getCustomFormById(customFormIdNumber);
+          }
         } catch (e) {
           console.error('[calculator-data] getCustomFormById failed:', e);
         }
@@ -1503,9 +1524,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('[calculator-data] activeFormulas count after filter:', activeFormulas.length);
 
       // If this is a custom form, filter to only selected services
-      if (customForm && customForm.selectedServices) {
+      const rawServiceIds =
+        (customForm as any)?.serviceIds ??
+        (customForm as any)?.selectedServices ??
+        [];
+
+      let customFormServiceIds: any[] = [];
+      if (Array.isArray(rawServiceIds)) {
+        customFormServiceIds = rawServiceIds;
+      } else if (typeof rawServiceIds === "string") {
+        try {
+          const parsed = JSON.parse(rawServiceIds);
+          customFormServiceIds = Array.isArray(parsed) ? parsed : rawServiceIds.split(",").map((v) => v.trim());
+        } catch {
+          customFormServiceIds = rawServiceIds.split(",").map((v) => v.trim());
+        }
+      }
+
+      if (customForm && customFormServiceIds.length > 0) {
+        const normalizedServiceIds = customFormServiceIds
+          .map((id: any) => Number(id))
+          .filter((id: number) => Number.isFinite(id));
+
         activeFormulas = activeFormulas.filter(formula => 
-          customForm.selectedServices.includes(formula.id)
+          normalizedServiceIds.includes(Number(formula.id))
         );
       }
 
@@ -2198,6 +2240,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Fetch design settings and user in parallel
+      if (!formula.userId) {
+        return res.status(500).json({ message: "Calculator is missing an owner" });
+      }
+
       const [designSettings, user] = await Promise.all([
         storage.getDesignSettingsByUserId(formula.userId),
         storage.getUser(formula.userId)
@@ -2270,18 +2316,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply template's complete design settings (colors, borders, shadows, etc.) to user's design settings
       if (template.templateStyling || template.templateComponentStyles) {
         const currentDesignSettings = await storage.getDesignSettingsByUserId(userId);
+        const templateStyling = template.templateStyling || currentDesignSettings?.styling || stylingOptionsSchema.parse({});
         
         const updatedDesignSettings = {
           userId,
-          styling: template.templateStyling || currentDesignSettings?.styling || {},
+          styling: templateStyling,
           componentStyles: template.templateComponentStyles || currentDesignSettings?.componentStyles || {},
           deviceView: currentDesignSettings?.deviceView || 'desktop'
         };
 
         if (currentDesignSettings) {
-          await storage.updateDesignSettings(currentDesignSettings.id, updatedDesignSettings);
+          await storage.updateDesignSettings(currentDesignSettings.id, updatedDesignSettings as any);
         } else {
-          await storage.createDesignSettings(updatedDesignSettings);
+          await storage.createDesignSettings(updatedDesignSettings as any);
         }
       }
 
@@ -2294,7 +2341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bulletPoints: template.bulletPoints,
         variables: template.variables,
         formula: template.formula,
-        styling: {}, // Keep empty - design is handled separately
+        styling: template.templateStyling || stylingOptionsSchema.parse({}),
         guideVideoUrl: template.guideVideoUrl,
         iconUrl: template.iconUrl,
         iconId: template.iconId,
@@ -2310,7 +2357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         embedId
       };
 
-      const formula = await storage.createFormula(newFormula);
+      const formula = await storage.createFormula(newFormula as any);
       
       // Increment template usage count
       await storage.incrementTemplateUsage(templateId);
@@ -2462,25 +2509,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If user already has formulas with names matching these templates, skip prepopulation
       const existingNames = new Set(existingFormulas.map(f => f.name));
       const templatesToCreate = templates.filter(t => !existingNames.has(t.name));
+      const userDesignSettings = await storage.getDesignSettingsByUserId(userId);
+      const fallbackStyling = userDesignSettings?.styling || stylingOptionsSchema.parse({});
       
       // Create formulas from each template that doesn't already exist
       const createdFormulas = [];
       for (const template of templatesToCreate) {
         // Apply template's design settings to user's design settings (only first template)
         if (createdFormulas.length === 0 && (template.templateStyling || template.templateComponentStyles)) {
-          const currentDesignSettings = await storage.getDesignSettingsByUserId(userId);
+          const currentDesignSettings = userDesignSettings;
+          const templateStyling = template.templateStyling || currentDesignSettings?.styling || fallbackStyling;
           
           const updatedDesignSettings = {
             userId,
-            styling: template.templateStyling || currentDesignSettings?.styling || {},
+            styling: templateStyling,
             componentStyles: template.templateComponentStyles || currentDesignSettings?.componentStyles || {},
             deviceView: currentDesignSettings?.deviceView || 'desktop'
           };
 
           if (currentDesignSettings) {
-            await storage.updateDesignSettings(currentDesignSettings.id, updatedDesignSettings);
+            await storage.updateDesignSettings(currentDesignSettings.id, updatedDesignSettings as any);
           } else {
-            await storage.createDesignSettings(updatedDesignSettings);
+            await storage.createDesignSettings(updatedDesignSettings as any);
           }
         }
 
@@ -2493,7 +2543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bulletPoints: template.bulletPoints,
           variables: template.variables,
           formula: template.formula,
-          styling: {},
+          styling: template.templateStyling || fallbackStyling,
           guideVideoUrl: template.guideVideoUrl,
           iconUrl: template.iconUrl,
           iconId: template.iconId,
@@ -2509,7 +2559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           embedId
         };
 
-        const formula = await storage.createFormula(newFormula);
+        const formula = await storage.createFormula(newFormula as any);
         createdFormulas.push(formula);
         
         // Increment template usage count
@@ -3178,10 +3228,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate distance-based pricing if enabled and address provided
-      let distanceAdjustedPrice = validatedData.calculatedPrice;
+      const baseCalculatedPrice = validatedData.calculatedPrice ?? 0;
+      let distanceAdjustedPrice = baseCalculatedPrice;
       let distanceInfo = null;
-      let addressLatitude: string | null = null;
-      let addressLongitude: string | null = null;
+      let addressLatitude: number | null = null;
+      let addressLongitude: number | null = null;
       let distanceFromBusiness: number | null = null;
       
       if (validatedData.address) {
@@ -3203,8 +3254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Distance pricing enabled for single service, calculating for customer address: ${validatedData.address}`);
             
             // Geocode business address if not already done
-            let businessLat = businessSettings.businessLatitude;
-            let businessLng = businessSettings.businessLongitude;
+            let businessLat = businessSettings.businessLatitude ? Number(businessSettings.businessLatitude) : null;
+            let businessLng = businessSettings.businessLongitude ? Number(businessSettings.businessLongitude) : null;
             
             if (!businessLat || !businessLng) {
               const businessGeocode = await geocodeAddress(businessSettings.businessAddress);
@@ -3213,10 +3264,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 businessLng = businessGeocode.longitude;
                 
                 // Update business settings with coordinates
-                await storage.updateBusinessSettings(businessSettings.userId, {
-                  businessLatitude: businessLat,
-                  businessLongitude: businessLng
-                });
+                if (businessSettings.userId) {
+                  await storage.updateBusinessSettings(businessSettings.id, {
+                    businessLatitude: String(businessLat),
+                    businessLongitude: String(businessLng)
+                  });
+                }
               }
             }
             
@@ -3225,8 +3278,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const distance = calculateDistance(
                 businessLat, 
                 businessLng,
-                parseFloat(addressLatitude),
-                parseFloat(addressLongitude)
+                addressLatitude,
+                addressLongitude
               );
               
               distanceFromBusiness = Math.round(distance);
@@ -3245,10 +3298,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   distanceFee = Math.round((pricingRate / 100) * excessDistance);
                 } else {
                   // Percentage of quote per mile (stored as basis points)
-                  distanceFee = Math.round(validatedData.calculatedPrice * (pricingRate / 10000) * excessDistance);
+                  distanceFee = Math.round(baseCalculatedPrice * (pricingRate / 10000) * excessDistance);
                 }
                 
-                distanceAdjustedPrice = validatedData.calculatedPrice + distanceFee;
+                distanceAdjustedPrice = baseCalculatedPrice + distanceFee;
                 distanceInfo = {
                   distance: Math.round(distance * 100) / 100, // Round to 2 decimals
                   serviceRadius,
@@ -3277,8 +3330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...validatedData,
         calculatedPrice: distanceAdjustedPrice,
         ipAddress: clientIp,
-        ...(addressLatitude && { addressLatitude }),
-        ...(addressLongitude && { addressLongitude }),
+        ...(addressLatitude !== null && { addressLatitude: String(addressLatitude) }),
+        ...(addressLongitude !== null && { addressLongitude: String(addressLongitude) }),
         ...(distanceFromBusiness !== null && { distanceFromBusiness }),
         ...(distanceInfo && { distanceInfo }),
         ...(validatedData.appliedDiscounts && { appliedDiscounts: validatedData.appliedDiscounts }),
@@ -3354,7 +3407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
             status: "draft"
           };
-          createdEstimate = await storage.createEstimate(estimateData);
+          createdEstimate = await storage.createEstimate(estimateData as any);
           console.log(`Created pre-estimate ${estimateNumber} for lead ${lead.id}`);
         } catch (estimateError) {
           console.error('Failed to create pre-estimate for lead:', estimateError);
@@ -3375,23 +3428,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Create BidRequest for business owner review
           if (businessOwnerId && businessOwnerId !== "default_owner") {
+            const appliedDiscounts = (lead.appliedDiscounts || []).map((discount: any) => ({
+              name: discount?.name || "Discount",
+              type: (discount?.type || "percentage") as "percentage" | "fixed",
+              value: Number(discount?.value ?? discount?.percentage ?? 0),
+              amount: Number(discount?.amount ?? 0),
+            }));
+            const selectedUpsells = (lead.selectedUpsells || []).map((upsell: any) => ({
+              id: String(upsell?.id || ""),
+              name: String(upsell?.name || "Upsell"),
+              description: String(upsell?.description || ""),
+              price: Number(upsell?.price ?? upsell?.amount ?? 0),
+            }));
             const bidRequest = await storage.createBidRequest({
               customerName: lead.name,
               customerEmail: lead.email,
               customerPhone: lead.phone || null,
               businessOwnerId,
-              autoPrice: lead.calculatedPrice,
+              autoPrice: lead.calculatedPrice ?? 0,
               finalPrice: null,
               address: lead.address || null,
               services: [{
                 formulaId: lead.formulaId,
-                calculatedPrice: lead.calculatedPrice,
+                calculatedPrice: lead.calculatedPrice ?? 0,
                 formulaName,
-                variables: lead.variables,
+                variables: lead.variables || {},
                 description: formula?.description || undefined,
                 category: undefined,
-                appliedDiscounts: lead.appliedDiscounts || [],
-                selectedUpsells: lead.selectedUpsells || []
+                appliedDiscounts,
+                selectedUpsells
               }],
               bidStatus: "pending",
               magicToken: `bid_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -3448,12 +3513,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
               address: lead.address || undefined,
               notes: lead.notes || undefined,
               serviceName: formulaName,
-              totalPrice: lead.calculatedPrice, // Keep in cents for proper conversion in email template
+              totalPrice: lead.calculatedPrice ?? 0, // Keep in cents for proper conversion in email template
               variables: lead.variables,
               calculatedAt: new Date(),
               createdAt: lead.createdAt,
               appliedDiscounts: lead.appliedDiscounts || [],
-              selectedUpsells: lead.selectedUpsells || []
+              selectedUpsells: (lead.selectedUpsells || []).map((upsell: any) => ({
+                id: String(upsell?.id || ""),
+                name: String(upsell?.name || "Upsell"),
+                description: String(upsell?.description || ""),
+                percentageOfMain: Number(upsell?.percentageOfMain ?? 0),
+                amount: Number(upsell?.amount ?? upsell?.price ?? 0),
+                category: upsell?.category ? String(upsell.category) : undefined,
+              }))
             });
             
             console.log(`New lead notification sent to ${ownerEmail}`);
@@ -3480,7 +3552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name: lead.name,
             email: lead.email,
             phone: lead.phone || undefined,
-            calculatedPrice: lead.calculatedPrice,
+            calculatedPrice: lead.calculatedPrice ?? undefined,
             stage: lead.stage,
             source: lead.source || undefined,
             estimateNumber: latestEstimate?.estimateNumber,
@@ -3561,13 +3633,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (lead.userId !== effectiveUserId) {
         return res.status(403).json({ message: "Access denied" });
       }
-      const { email, phone, address, howDidYouHear, source } = req.body;
+      const { email, phone, address, source } = req.body;
       
       const updatedLead = await storage.updateLead(id, {
         email,
         phone,
         address,
-        howDidYouHear,
         source,
       });
       
@@ -3619,7 +3690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: updatedLead.name,
           email: updatedLead.email,
           phone: updatedLead.phone || undefined,
-          calculatedPrice: updatedLead.calculatedPrice,
+          calculatedPrice: updatedLead.calculatedPrice ?? undefined,
           stage: updatedLead.stage,
           source: updatedLead.source || undefined,
         }
@@ -4676,11 +4747,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const payloadForValidation = { ...req.body };
       delete (payloadForValidation as any).submissionId;
       const validatedData = insertMultiServiceLeadSchema.parse(payloadForValidation);
+      const validatedOwnerId = validatedData.businessOwnerId || (req as any).currentUser?.id;
       if (submissionId) {
         cleanupRecentMultiServiceSubmissions();
         const ownerKey =
-          validatedData.businessOwnerId ||
-          validatedData.userId ||
+          validatedOwnerId ||
           (req as any).currentUser?.id ||
           "unknown";
         const dedupeKey = `${ownerKey}:${submissionId}`;
@@ -4707,20 +4778,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientIp = getClientIpAddress(req);
 
       // Check if IP is blocked before processing
-      if (validatedData.userId && clientIp) {
+      if (validatedOwnerId && clientIp) {
         const [blockedIp] = await db
           .select()
           .from(blockedIps)
           .where(
             and(
-              eq(blockedIps.userId, validatedData.userId),
+              eq(blockedIps.userId, validatedOwnerId),
               eq(blockedIps.ipAddress, clientIp)
             )
           )
           .limit(1);
 
         if (blockedIp) {
-          console.log(`Blocked IP ${clientIp} attempted to submit multi-service lead for user ${validatedData.userId}`);
+          console.log(`Blocked IP ${clientIp} attempted to submit multi-service lead for user ${validatedOwnerId}`);
           return res.status(403).json({
             error: "Access denied",
             message: "We're sorry, but we're unable to process your submission at this time. Please contact the business owner if you believe this is an error.",
@@ -4730,8 +4801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check monthly lead limit for the business owner
-      if (validatedData.userId) {
-        const leadLimitCheck = await checkMonthlyLeadLimit(validatedData.userId);
+      if (validatedOwnerId) {
+        const leadLimitCheck = await checkMonthlyLeadLimit(validatedOwnerId);
         if (!leadLimitCheck.allowed) {
           return res.status(402).json({
             error: "Monthly lead limit reached",
@@ -4744,10 +4815,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate distance-based pricing if enabled and address provided
-      let distanceAdjustedPrice = validatedData.totalPrice;
+      const baseTotalPrice = validatedData.totalPrice ?? 0;
+      let distanceAdjustedPrice = baseTotalPrice;
       let distanceInfo = null;
-      let addressLatitude: string | null = null;
-      let addressLongitude: string | null = null;
+      let addressLatitude: number | null = null;
+      let addressLongitude: number | null = null;
       let distanceFromBusiness: number | null = null;
       
       if (validatedData.address) {
@@ -4769,8 +4841,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`Distance pricing enabled, calculating for customer address: ${validatedData.address}`);
             
             // Geocode business address if not already done
-            let businessLat = businessSettings.businessLatitude;
-            let businessLng = businessSettings.businessLongitude;
+            let businessLat = businessSettings.businessLatitude ? Number(businessSettings.businessLatitude) : null;
+            let businessLng = businessSettings.businessLongitude ? Number(businessSettings.businessLongitude) : null;
             
             if (!businessLat || !businessLng) {
               const businessGeocode = await geocodeAddress(businessSettings.businessAddress);
@@ -4779,10 +4851,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 businessLng = businessGeocode.longitude;
                 
                 // Update business settings with coordinates
-                await storage.updateBusinessSettings(businessSettings.userId, {
-                  businessLatitude: businessLat,
-                  businessLongitude: businessLng
-                });
+                if (businessSettings.userId) {
+                  await storage.updateBusinessSettings(businessSettings.id, {
+                    businessLatitude: String(businessLat),
+                    businessLongitude: String(businessLng)
+                  });
+                }
               }
             }
             
@@ -4791,8 +4865,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const distance = calculateDistance(
                 businessLat, 
                 businessLng,
-                parseFloat(addressLatitude),
-                parseFloat(addressLongitude)
+                addressLatitude,
+                addressLongitude
               );
               
               distanceFromBusiness = Math.round(distance);
@@ -4811,10 +4885,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   distanceFee = Math.round((pricingRate / 100) * excessDistance);
                 } else {
                   // Percentage of quote per mile (stored as basis points)
-                  distanceFee = Math.round(validatedData.totalPrice * (pricingRate / 10000) * excessDistance);
+                  distanceFee = Math.round(baseTotalPrice * (pricingRate / 10000) * excessDistance);
                 }
                 
-                distanceAdjustedPrice = validatedData.totalPrice + distanceFee;
+                distanceAdjustedPrice = baseTotalPrice + distanceFee;
                 distanceInfo = {
                   distance: Math.round(distance * 100) / 100, // Round to 2 decimals
                   serviceRadius,
@@ -4842,21 +4916,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leadData = {
         ...validatedData,
         totalPrice: distanceAdjustedPrice,
-        totalDistanceFee: distanceInfo ? distanceInfo.distanceFee : (validatedData.distanceInfo?.fee || 0),
+        totalDistanceFee: distanceInfo ? distanceInfo.distanceFee : (validatedData.distanceInfo?.distanceFee || 0),
         ipAddress: clientIp,
-        ...(addressLatitude && { addressLatitude }),
-        ...(addressLongitude && { addressLongitude }),
+        ...(addressLatitude !== null && { addressLatitude: String(addressLatitude) }),
+        ...(addressLongitude !== null && { addressLongitude: String(addressLongitude) }),
         ...(distanceFromBusiness !== null && { distanceFromBusiness }),
         ...(distanceInfo && { distanceInfo })
       };
       
       const lead = await storage.createMultiServiceLead(leadData);
       if (submissionId) {
-        const ownerKey =
-          validatedData.businessOwnerId ||
-          validatedData.userId ||
-          (req as any).currentUser?.id ||
-          "unknown";
+          const ownerKey =
+            validatedData.businessOwnerId ||
+            validatedOwnerId ||
+            (req as any).currentUser?.id ||
+            "unknown";
         const dedupeKey = `${ownerKey}:${submissionId}`;
         recentMultiServiceSubmissions.set(dedupeKey, { leadId: lead.id, createdAt: Date.now() });
       }
@@ -4902,7 +4976,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             category: "Service"
           }));
 
-          const distanceFee = lead.totalDistanceFee || lead.distanceFee || 0;
+          const distanceFee = lead.totalDistanceFee || 0;
           const existingTaxAmount = lead.taxAmount || 0;
           const existingDiscounts = (lead.bundleDiscountAmount || 0) +
             (lead.appliedDiscounts?.reduce((sum: any, d: any) => sum + (d.amount || 0), 0) || 0);
@@ -4938,7 +5012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "draft"
           };
 
-          createdEstimate = await storage.createEstimate(estimateData);
+          createdEstimate = await storage.createEstimate(estimateData as any);
           console.log(`Created pre-estimate ${estimateNumber} for multi-service lead ${lead.id}`);
         } catch (estimateError) {
           console.error('Failed to create pre-estimate for multi-service lead:', estimateError);
@@ -4956,8 +5030,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (businessOwnerId && businessOwnerId !== "default_owner") {
           // Calculate pricing breakdown for bid request
           const serviceSubtotal = lead.services.reduce((sum: number, service: any) => sum + service.calculatedPrice, 0);
-          const bundleDiscount = lead.bundleDiscount || lead.bundleDiscountAmount || 0;
+          const bundleDiscount = lead.bundleDiscountAmount || 0;
           const taxAmount = lead.taxAmount || 0;
+          const bidLevelDiscounts = (lead.appliedDiscounts || []).map((discount: any) => ({
+            name: discount?.name || "Discount",
+            type: (discount?.type || "percentage") as "percentage" | "fixed",
+            value: Number(discount?.value ?? discount?.percentage ?? 0),
+            amount: Number(discount?.amount ?? 0),
+          }));
+          const bidLevelUpsells = (lead.selectedUpsells || []).map((upsell: any) => ({
+            id: String(upsell?.id || ""),
+            name: String(upsell?.name || "Upsell"),
+            description: String(upsell?.description || ""),
+            price: Number(upsell?.price ?? upsell?.amount ?? 0),
+          }));
           
           const bidRequest = await storage.createBidRequest({
             customerName: lead.name,
@@ -4974,11 +5060,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               variables: service.variables,
               description: undefined,
               category: undefined,
-              appliedDiscounts: service.appliedDiscounts || [],
-              selectedUpsells: service.selectedUpsells || []
+              appliedDiscounts: (service.appliedDiscounts || []).map((discount: any) => ({
+                name: discount?.name || "Discount",
+                type: (discount?.type || "percentage") as "percentage" | "fixed",
+                value: Number(discount?.value ?? discount?.percentage ?? 0),
+                amount: Number(discount?.amount ?? 0),
+              })),
+              selectedUpsells: (service.selectedUpsells || []).map((upsell: any) => ({
+                id: String(upsell?.id || ""),
+                name: String(upsell?.name || "Upsell"),
+                description: String(upsell?.description || ""),
+                price: Number(upsell?.price ?? upsell?.amount ?? 0),
+              }))
             })),
-            appliedDiscounts: lead.appliedDiscounts || [],
-            selectedUpsells: lead.selectedUpsells || [],
+            appliedDiscounts: bidLevelDiscounts,
+            selectedUpsells: bidLevelUpsells,
             bundleDiscount: bundleDiscount,
             taxAmount: taxAmount,
             subtotal: serviceSubtotal,
@@ -5043,16 +5139,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: service.formulaName || 'Service',
               price: service.calculatedPrice, // Keep in cents for proper conversion in email template
               variables: service.variables,
-              appliedDiscounts: service.appliedDiscounts || [],
-              selectedUpsells: service.selectedUpsells || []
+              appliedDiscounts: ((service as any).appliedDiscounts || []).map((discount: any) => ({
+                id: String(discount?.id || ""),
+                name: String(discount?.name || "Discount"),
+                percentage: Number(discount?.percentage ?? discount?.value ?? 0),
+                amount: Number(discount?.amount ?? 0),
+              })),
+              selectedUpsells: ((service as any).selectedUpsells || []).map((upsell: any) => ({
+                id: String(upsell?.id || ""),
+                name: String(upsell?.name || "Upsell"),
+                description: upsell?.description ? String(upsell.description) : undefined,
+                percentageOfMain: Number(upsell?.percentageOfMain ?? 0),
+                amount: Number(upsell?.amount ?? upsell?.price ?? 0),
+                category: upsell?.category ? String(upsell.category) : undefined,
+              }))
             })),
             totalPrice: lead.totalPrice, // Keep in cents for proper conversion in email template
-            subtotal: lead.subtotal,
-            taxAmount: lead.taxAmount,
-            bundleDiscountAmount: lead.bundleDiscountAmount,
-            distanceFee: lead.totalDistanceFee || lead.distanceFee || 0,
-            appliedDiscounts: lead.appliedDiscounts || [],
-            selectedUpsells: lead.selectedUpsells || [],
+            subtotal: lead.subtotal ?? undefined,
+            taxAmount: lead.taxAmount ?? undefined,
+            bundleDiscountAmount: lead.bundleDiscountAmount ?? undefined,
+            distanceFee: lead.totalDistanceFee || 0,
+            appliedDiscounts: (lead.appliedDiscounts || []).map((discount: any) => ({
+              id: String(discount?.id || ""),
+              name: String(discount?.name || "Discount"),
+              percentage: Number(discount?.percentage ?? discount?.value ?? 0),
+              amount: Number(discount?.amount ?? 0),
+            })),
+            selectedUpsells: (lead.selectedUpsells || []).map((upsell: any) => ({
+              id: String(upsell?.id || ""),
+              name: String(upsell?.name || "Upsell"),
+              description: upsell?.description ? String(upsell.description) : undefined,
+              percentageOfMain: Number(upsell?.percentageOfMain ?? 0),
+              amount: Number(upsell?.amount ?? upsell?.price ?? 0),
+              category: upsell?.category ? String(upsell.category) : undefined,
+            })),
             createdAt: lead.createdAt
           });
           
@@ -5296,7 +5416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subtotal: lead.subtotal ? Number(lead.subtotal) : null,
         taxAmount: lead.taxAmount ? Number(lead.taxAmount) : null,
         bundleDiscountAmount: lead.bundleDiscountAmount ? Number(lead.bundleDiscountAmount) : null,
-        distanceFee: lead.distanceFee ? Number(lead.distanceFee) : null,
+        distanceFee: lead.totalDistanceFee ? Number(lead.totalDistanceFee) : null,
         services: lead.services.map(service => ({
           ...service,
           calculatedPrice: Number(service.calculatedPrice)
@@ -5539,7 +5659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           blogCtaUrl: ''
         };
         
-        settings = await storage.createBusinessSettings(defaultSettings);
+        settings = await storage.createBusinessSettings(defaultSettings as any);
       }
       
       res.json(settings);
@@ -5656,7 +5776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           blogCtaUrl: ''
         };
         
-        existingSettings = await storage.createBusinessSettings(defaultSettings);
+        existingSettings = await storage.createBusinessSettings(defaultSettings as any);
       }
       
       // For stripeConfig, we don't need complex validation since it's just a JSON object
@@ -5860,8 +5980,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Get lead information for customer and business owner emails
           // Note: For now, we'll skip lead lookup since the booking system doesn't directly link to leads
-          const lead = null;
-          const multiServiceLead = null;
+          const lead: any = null;
+          const multiServiceLead: any = null;
           
           if (lead || multiServiceLead) {
             const customerInfo = lead || multiServiceLead;
@@ -5889,7 +6009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   appointmentTime: bookingDetails.startTime,
                   businessName: businessSettings?.businessName,
                   businessPhone: businessSettings?.businessPhone || '',
-                  businessEmail: businessSettings?.businessEmail,
+                  businessEmail: businessSettings?.businessEmail || undefined,
                   address: slot.notes || '',
                   notes: customerInfo.notes,
                   businessOwnerId: userId
@@ -5904,8 +6024,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 customerName: customerInfo.name,
                 customerEmail: customerInfo.email,
                 customerPhone: customerInfo.phone || undefined,
-                bookingDetails,
-                leadId: slot.bookedBy
+                service: bookingDetails.service || 'Service Appointment',
+                appointmentDate: new Date(bookingDetails.date),
+                appointmentTime: bookingDetails.startTime,
+                notes: customerInfo.notes
               });
               console.log(`New booking notification sent to owner: ${ownerEmail}`);
             }
@@ -6045,6 +6167,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching lead bookings:", error);
       res.status(500).json({ message: "Failed to fetch lead bookings" });
+    }
+  });
+
+  app.patch("/api/calendar-events/:id", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      const userId = (req as any).currentUser?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const event = await storage.getCalendarEvent(eventId);
+      if (!event || event.userId !== userId) {
+        return res.status(404).json({ message: "Calendar event not found" });
+      }
+
+      const allowedFields = ["startsAt", "endsAt", "title", "notes", "status"] as const;
+      const updates: any = {};
+
+      for (const field of allowedFields) {
+        if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+          updates[field] = req.body[field];
+        }
+      }
+
+      if (Object.prototype.hasOwnProperty.call(updates, "startsAt")) {
+        updates.startsAt = new Date(updates.startsAt);
+      }
+      if (Object.prototype.hasOwnProperty.call(updates, "endsAt")) {
+        updates.endsAt = new Date(updates.endsAt);
+      }
+
+      const updated = await storage.updateCalendarEvent(eventId, updates);
+      if (!updated) {
+        return res.status(404).json({ message: "Calendar event not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating calendar event:", error);
+      res.status(500).json({ message: "Failed to update calendar event" });
+    }
+  });
+
+  app.delete("/api/calendar-events/:id", requireAuth, requirePermission("canManageCalendar"), async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      const userId = (req as any).currentUser?.id;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      const success = await storage.deleteCalendarEvent(userId, eventId);
+      if (!success) {
+        return res.status(404).json({ message: "Calendar event not found" });
+      }
+
+      res.json({ message: "Calendar event deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting calendar event:", error);
+      res.status(500).json({ message: "Failed to delete calendar event" });
     }
   });
 
@@ -6928,16 +7113,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: customerName || '',
           email: customerEmail || '',
           phone: customerPhone || '',
+          bookingDate: date,
+          bookingStartTime: startTime,
+          bookingEndTime: endTime,
+          bookingTitle: title || 'Service Appointment',
+          bookingNotes: notes || '',
         },
         leadId: leadId || undefined,
-        multiServiceLeadId: leadId || undefined,
-        bookingData: {
-          date,
-          startTime,
-          endTime,
-          title: title || 'Service Appointment',
-          notes: notes || '',
-        }
+        multiServiceLeadId: leadId || undefined
       }).catch(error => {
         console.error('Failed to trigger pre-booking automations:', error);
       });
@@ -7604,7 +7787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Update user's plan in database
         await storage.updateUser(userId, {
-          plan: planId as 'starter' | 'professional' | 'enterprise',
+          plan: (planId === 'starter' ? 'standard' : planId) as 'standard' | 'plus' | 'plus_seo',
           billingPeriod: billingPeriod as 'monthly' | 'yearly',
           subscriptionStatus: 'active'
         });
@@ -7689,7 +7872,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Send welcome email
-      await sendWelcomeEmail(email, firstName, businessInfo?.businessName);
+      await sendWelcomeEmail(email, firstName);
 
       // Track signup conversion with Facebook CAPI
       const clientIp = getClientIpAddress(req);
@@ -7787,11 +7970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send completion email
       const user = await storage.getUserById(userId);
       if (user && user.email) {
-        await sendOnboardingCompleteEmail(
-          user.email,
-          user.firstName || 'User',
-          user.businessInfo?.businessName
-        );
+        await sendOnboardingCompleteEmail(user.email, user.firstName || 'User');
       }
 
       res.json({ message: "Onboarding completed successfully", user: updatedUser });
@@ -7914,7 +8093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               <p style="color:#555;font-size:16px;margin-bottom:20px">Hi ${displayName},</p>
               
               <p style="color:#555;font-size:16px;margin-bottom:25px">
-                Congratulations! Your website "${websiteName}" has been created and is ready for you to customize. 
+                Congratulations! Your website has been created and is ready for you to customize. 
                 Click the button below to start building your site right away!
               </p>
               
@@ -7941,7 +8120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const textBody = `Hi ${displayName},
 
-Congratulations! Your website "${websiteName}" has been created and is ready for you to customize.
+Congratulations! Your website has been created and is ready for you to customize.
 
 Click this link to start building your website:
 ${emailLink}
@@ -7979,9 +8158,9 @@ The Autobidder Team`;
         userId,
         siteName: dudaWebsite.site_name,
         accountName: dudaWebsite.account_name || '',
-        siteDomain: dudaWebsite.site_domain,
-        previewUrl: dudaWebsite.preview_url,
-        status: dudaWebsite.status as 'active' | 'draft' | 'published',
+        siteDomain: (dudaWebsite as any).site_domain || null,
+        previewUrl: (dudaWebsite as any).preview_url || null,
+        status: ((dudaWebsite as any).status || 'draft') as 'active' | 'draft' | 'published',
         templateId: validatedData.template_id ? String(validatedData.template_id) : undefined,
         dudaSiteId: dudaWebsite.site_name,
         dudaAccountName: dudaAccount.account_name,
@@ -8700,7 +8879,7 @@ The Autobidder Team`;
       }
       
       // Check if user has publishing permissions (Professional or Enterprise plan)
-      const canPublish = user.plan === 'professional' || user.plan === 'enterprise';
+      const canPublish = getPlanLimits(user.plan || 'free').canAccessWebsites;
       if (!canPublish) {
         return res.status(403).json({ 
           message: "Publishing requires Professional plan", 
@@ -9209,7 +9388,7 @@ The Autobidder Team`;
           res.json({ 
             message: 'Subscription will be canceled at the end of the current billing period',
             cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
-            currentPeriodEnd: updatedSubscription.current_period_end
+            currentPeriodEnd: updatedSubscription.items.data[0]?.current_period_end ?? null
           });
         } catch (subscriptionError: any) {
           console.error('Error canceling subscription:', subscriptionError);
@@ -9278,8 +9457,9 @@ The Autobidder Team`;
       });
       
       if (session.payment_status === 'paid' && session.metadata?.userId === userId) {
-        const planId = session.metadata.planId;
-        const billingPeriod = session.metadata.billingPeriod;
+        const metadata = session.metadata || {};
+        const planId = metadata.planId;
+        const billingPeriod = metadata.billingPeriod;
         
         console.log('Payment verified, updating user subscription:', { userId, planId, billingPeriod, subscriptionId: session.subscription });
         
@@ -9343,13 +9523,15 @@ The Autobidder Team`;
         const subscription = subscriptions.data[0];
         const priceId = subscription.items.data[0]?.price.id;
         const interval = subscription.items.data[0]?.price.recurring?.interval;
+        const currentPeriodStart = subscription.items.data[0]?.current_period_start || subscription.billing_cycle_anchor;
+        const currentPeriodEnd = subscription.items.data[0]?.current_period_end;
         
         console.log('Found active subscription:', {
           id: subscription.id,
           status: subscription.status,
           priceId,
           interval,
-          currentPeriodEnd: subscription.current_period_end
+          currentPeriodEnd
         });
         
         // Get the price amount to determine the correct plan
@@ -9385,11 +9567,11 @@ The Autobidder Team`;
         };
         
         // Add billing dates if available
-        if (subscription.current_period_start) {
-          updates.billingStart = new Date(subscription.current_period_start * 1000);
+        if (currentPeriodStart) {
+          updates.billingStart = new Date(currentPeriodStart * 1000);
         }
-        if (subscription.current_period_end) {
-          updates.billingEnd = new Date(subscription.current_period_end * 1000);
+        if (currentPeriodEnd) {
+          updates.billingEnd = new Date(currentPeriodEnd * 1000);
         }
         
         const updatedUser = await storage.updateUser(userId, updates);
@@ -9495,6 +9677,7 @@ The Autobidder Team`;
         expand: ['customer', 'items.data.price']
       });
       const customer = await stripe.customers.retrieve(user.stripeCustomerId!);
+      const customerDetails = customer as { id: string; email?: string | null; invoice_settings?: { default_payment_method?: unknown }; deleted?: boolean };
       
       // Get period dates from the first subscription item since they're not at the top level
       const firstItem = subscription.items.data[0];
@@ -9518,9 +9701,9 @@ The Autobidder Team`;
           }))
         },
         customer: {
-          id: customer.id,
-          email: customer.email,
-          defaultPaymentMethod: customer.invoice_settings?.default_payment_method
+          id: customerDetails.id,
+          email: !('deleted' in customerDetails) ? customerDetails.email : null,
+          defaultPaymentMethod: !('deleted' in customerDetails) ? customerDetails.invoice_settings?.default_payment_method : null
         }
       };
 
@@ -9535,7 +9718,7 @@ The Autobidder Team`;
         const userId = (req as any).currentUser.id;
         try {
           await storage.updateUserSubscription(userId, {
-            stripeSubscriptionId: null,
+            stripeSubscriptionId: undefined,
             subscriptionStatus: 'canceled'
           });
         } catch (updateError) {
@@ -9553,6 +9736,9 @@ The Autobidder Team`;
     try {
       const userId = (req as any).currentUser.id;
       const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
       
       if (!user?.stripeCustomerId || user.stripeCustomerId.startsWith('cus_test_')) {
         // Return mock invoices for test customers
@@ -9609,7 +9795,7 @@ The Autobidder Team`;
         status: invoice.status,
         total: invoice.total,
         subtotal: invoice.subtotal,
-        tax: invoice.tax,
+        tax: (invoice as any).tax ?? 0,
         amountPaid: invoice.amount_paid,
         amountDue: invoice.amount_due,
         currency: invoice.currency,
@@ -9941,20 +10127,20 @@ The Autobidder Team`;
       const clientIp = getClientIpAddress(req);
 
       // Check if IP is blocked before processing
-      if (form.userId && clientIp) {
+      if (form.accountId && clientIp) {
         const [blockedIp] = await db
           .select()
           .from(blockedIps)
           .where(
             and(
-              eq(blockedIps.userId, form.userId),
+              eq(blockedIps.userId, form.accountId),
               eq(blockedIps.ipAddress, clientIp)
             )
           )
           .limit(1);
 
         if (blockedIp) {
-          console.log(`Blocked IP ${clientIp} attempted to submit custom form lead for user ${form.userId}`);
+          console.log(`Blocked IP ${clientIp} attempted to submit custom form lead for user ${form.accountId}`);
           return res.status(403).json({
             error: "Access denied",
             message: "We're sorry, but we're unable to process your submission at this time. Please contact the business owner if you believe this is an error.",
@@ -9964,8 +10150,8 @@ The Autobidder Team`;
       }
 
       // Check monthly lead limit for the form owner
-      if (form.userId) {
-        const leadLimitCheck = await checkMonthlyLeadLimit(form.userId);
+      if (form.accountId) {
+        const leadLimitCheck = await checkMonthlyLeadLimit(form.accountId);
         if (!leadLimitCheck.allowed) {
           return res.status(402).json({
             error: "Monthly lead limit reached",
@@ -10250,8 +10436,8 @@ The Autobidder Team`;
             
             if (geocode) {
               await storage.updateLead(lead.id, {
-                addressLatitude: geocode.latitude,
-                addressLongitude: geocode.longitude
+                addressLatitude: String(geocode.latitude),
+                addressLongitude: String(geocode.longitude)
               });
               updatedCount++;
               console.log(`Geocoded lead ${lead.id}: ${lead.address}`);
@@ -10272,8 +10458,8 @@ The Autobidder Team`;
             
             if (geocode) {
               await storage.updateMultiServiceLead(lead.id, {
-                addressLatitude: geocode.latitude,
-                addressLongitude: geocode.longitude
+                addressLatitude: String(geocode.latitude),
+                addressLongitude: String(geocode.longitude)
               });
               updatedCount++;
               console.log(`Geocoded multi-service lead ${lead.id}: ${lead.address}`);
@@ -10933,10 +11119,13 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       const shouldMarkViewed = !alreadyViewed && estimate.status !== 'accepted' && estimate.status !== 'rejected';
 
       if (shouldMarkViewed) {
-        updatedEstimate = await storage.updateEstimate(estimate.id, {
+        const nextEstimate = await storage.updateEstimate(estimate.id, {
           viewedByCustomerAt: new Date(),
           status: 'viewed',
         });
+        if (nextEstimate) {
+          updatedEstimate = nextEstimate;
+        }
 
         if (estimate.userId) {
           // Trigger automations for estimate viewed (non-blocking)
@@ -11048,6 +11237,29 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
     }
   });
 
+  const promoteLinkedLeadToEstimateApproved = async (estimate: any, changedByUserId: string, notes?: string) => {
+    const promotableStages = new Set(["new", "pre_estimate", "open"]);
+    const stagePayload = {
+      stage: "estimate_approved",
+      changedBy: changedByUserId,
+      notes,
+    };
+
+    if (estimate.leadId) {
+      const linkedLead = await storage.getLead(estimate.leadId);
+      if (linkedLead && promotableStages.has(linkedLead.stage)) {
+        await storage.updateLeadStage(estimate.leadId, stagePayload);
+      }
+    }
+
+    if (estimate.multiServiceLeadId) {
+      const linkedMultiLead = await storage.getMultiServiceLead(estimate.multiServiceLeadId);
+      if (linkedMultiLead && promotableStages.has(linkedMultiLead.stage)) {
+        await storage.updateMultiServiceLeadStage(estimate.multiServiceLeadId, stagePayload);
+      }
+    }
+  };
+
   app.patch("/api/estimates/:id", requireAuth, requirePermission("canManageLeads"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -11074,6 +11286,24 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       if (!estimate) {
         return res.status(404).json({ message: "Estimate not found" });
       }
+
+      const hasPricingAdjustment = [
+        "services",
+        "subtotal",
+        "totalAmount",
+        "discountAmount",
+        "taxAmount",
+        "distanceFee",
+      ].some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
+
+      if (hasPricingAdjustment) {
+        await promoteLinkedLeadToEstimateApproved(
+          estimate,
+          currentUser.id,
+          "Auto-updated after business owner adjusted estimate pricing"
+        );
+      }
+
       res.json(estimate);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -11128,6 +11358,12 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       if (!estimate) {
         return res.status(500).json({ message: "Failed to approve estimate" });
       }
+
+      await promoteLinkedLeadToEstimateApproved(
+        estimate,
+        userId,
+        "Auto-updated after business owner confirmed estimate"
+      );
 
       // Trigger automations for bid confirmed by owner (manual trigger)
       let pendingRunIds: number[] = [];
@@ -11231,6 +11467,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         status: 'accepted',
         customerResponseAt: new Date(),
       });
+      if (!updatedEstimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
       
       // Trigger automations for customer accepted bid (non-blocking)
       automationService.triggerAutomations('estimate_customer_accepted', {
@@ -11326,8 +11565,8 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         workOrderData: {
           id: workOrder.id,
           title: workOrder.title,
-          description: workOrder.description || undefined,
-          scheduledDate: workOrder.scheduledDate || undefined,
+          description: undefined,
+          scheduledDate: workOrder.scheduledDate ? new Date(workOrder.scheduledDate) : undefined,
           status: workOrder.status,
         },
         leadData: {
@@ -11381,6 +11620,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         status: 'accepted',
         customerResponseAt: new Date(),
       });
+      if (!updatedEstimate) {
+        return res.status(404).json({ message: "Estimate not found" });
+      }
 
       // Send Zapier webhook notification for estimate accepted (public endpoint)
       if (estimate.userId) {
@@ -11475,6 +11717,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         return res.status(404).json({ message: "Lead not found" });
       }
 
+      if (!lead.formulaId) {
+        return res.status(400).json({ message: "Lead is missing an associated formula" });
+      }
       const formula = await storage.getFormula(lead.formulaId);
       if (!formula) {
         return res.status(404).json({ message: "Formula not found" });
@@ -11517,7 +11762,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         status: "draft"
       };
 
-      const estimate = await storage.createEstimate(estimateData);
+      const estimate = await storage.createEstimate(estimateData as any);
       res.status(201).json(estimate);
     } catch (error) {
       console.error('Error creating estimate from lead:', error);
@@ -11554,7 +11799,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       }));
 
       // Get existing fees from the lead
-      const distanceFee = lead.totalDistanceFee || lead.distanceFee || 0;
+      const distanceFee = lead.totalDistanceFee || 0;
       const existingTaxAmount = lead.taxAmount || 0;
       const existingDiscounts = (lead.bundleDiscountAmount || 0) +
         (lead.appliedDiscounts?.reduce((sum: any, d: any) => sum + (d.amount || 0), 0) || 0);
@@ -11610,7 +11855,10 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       console.log(`[confirm-bid] Starting for leadId: ${leadId}, userId: ${userId}`);
 
       // Try to get single-service lead first
-      let lead = await storage.getLead(leadId);
+      let lead:
+        | Awaited<ReturnType<typeof storage.getLead>>
+        | Awaited<ReturnType<typeof storage.getMultiServiceLead>> =
+        await storage.getLead(leadId);
       let isMultiService = false;
 
       // If not found, try multi-service lead
@@ -11776,6 +12024,12 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         console.error(`[confirm-bid] Failed to create estimate:`, createError);
         return res.status(500).json({ message: `Failed to create estimate: ${createError.message}` });
       }
+
+      await promoteLinkedLeadToEstimateApproved(
+        estimate,
+        userId,
+        "Auto-updated after business owner confirmed estimate"
+      );
 
       // Trigger automations for bid confirmed by owner (manual trigger)
       let pendingRunIds: number[] = [];
@@ -12995,11 +13249,11 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         },
         stripeConfig: businessSettings?.stripeConfig || "Not configured"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Stripe test error:', error);
       res.status(500).json({
         success: false,
-        error: error.message,
+        error: error?.message || "Unknown Stripe test error",
         message: "Stripe integration test failed"
       });
     }
@@ -13032,11 +13286,11 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
           clientSecret: paymentIntent.client_secret
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Test payment error:', error);
       res.status(500).json({
         success: false,
-        error: error.message,
+        error: error?.message || "Unknown payment error",
         message: "Test payment creation failed"
       });
     }
@@ -13061,9 +13315,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         console.log('Failed to send test email');
         res.status(500).json({ message: "Failed to send test email" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending test email:', error);
-      res.status(500).json({ message: "Error sending test email", error: error.message });
+      res.status(500).json({ message: "Error sending test email", error: error?.message || "Unknown error" });
     }
   });
 
@@ -13093,9 +13347,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         success: true, 
         message: "Subscription activated via webhook simulation" 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error simulating webhook:', error);
-      res.status(500).json({ message: "Failed to simulate webhook", error: error.message });
+      res.status(500).json({ message: "Failed to simulate webhook", error: error?.message || "Unknown error" });
     }
   });
 
@@ -13136,7 +13390,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       console.log('User billingPeriod:', user.billingPeriod);
 
       // For fresh test environment, don't reconnect to old subscriptions
-      let activeStripeSubscription = null;
+      let activeStripeSubscription: any = null;
 
       // Handle trial users upgrading to paid plans  
       if (!user.stripeSubscriptionId && !activeStripeSubscription) {
@@ -13151,7 +13405,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
           // For fresh test environment, always create new customer instead of searching old ones
           console.log('Creating new Stripe customer for fresh test environment');
           const customer = await stripe.customers.create({
-            email: user.email,
+            email: user.email || undefined,
             name: currentUser?.firstName && currentUser?.lastName 
               ? `${currentUser.firstName} ${currentUser.lastName}` 
               : undefined,
@@ -13288,7 +13542,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         // Handle upgrades with immediate proration
         try {
           // Use modern Stripe API approach: retrieve upcoming invoice to preview proration
-          const upcomingInvoice = await stripe.invoices.upcoming({
+          const upcomingInvoice = await (stripe.invoices as any).upcoming({
             customer: subscription.customer as string,
             subscription: subscription.id,
             subscription_items: [{
@@ -13331,8 +13585,8 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
           console.error('Full error details:', JSON.stringify(previewError, null, 2));
           
           // Try an alternative approach: calculate proration manually based on subscription timing
-          const currentPeriodStart = subscription.current_period_start;
-          const currentPeriodEnd = subscription.current_period_end;
+          const currentPeriodStart = (subscription as any).current_period_start;
+          const currentPeriodEnd = (subscription as any).current_period_end;
           const currentTime = Math.floor(Date.now() / 1000);
           
           let remainingRatio = 1.0; // Default to full amount if we can't determine period
@@ -13376,9 +13630,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
           });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error changing subscription:', error);
-      res.status(500).json({ message: "Failed to change subscription", error: error.message });
+      res.status(500).json({ message: "Failed to change subscription", error: error?.message || "Unknown error" });
     }
   });
 
@@ -13399,7 +13653,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       }
 
       // Check if user has active subscription in Stripe
-      let activeStripeSubscription = null;
+      let activeStripeSubscription: any = null;
       if (user.stripeCustomerId) {
         const subscriptions = await stripe.subscriptions.list({
           customer: user.stripeCustomerId,
@@ -13442,6 +13696,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         isDowngrade
       });
 
+      let newPriceId = "";
       // Create dynamic price for plan change (Customer Portal handles pricing automatically)
       {
         const planPricing: Record<string, { monthly: number; yearly: number }> = {
@@ -13460,7 +13715,6 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
           recurring: { interval: interval },
           product_data: {
             name: `Autobidder ${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} Plan`,
-            description: `${newPlanId.charAt(0).toUpperCase() + newPlanId.slice(1)} subscription - ${newBillingPeriod}`,
           },
         });
         
@@ -13485,18 +13739,18 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
             scheduled_downgrade: 'true',
             scheduled_plan: newPlanId,
             scheduled_billing: newBillingPeriod,
-            scheduled_date: subscription.current_period_end?.toString() || '0'
+            scheduled_date: (subscription as any).current_period_end?.toString() || '0'
           }
         });
 
         // Don't update the user's plan in database yet - they keep current plan until period end
-        console.log('Downgrade scheduled at period end for user:', user.id, 'effective:', subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : 'unknown');
+        console.log('Downgrade scheduled at period end for user:', user.id, 'effective:', (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000) : 'unknown');
         
         res.json({ 
           success: true,
-          message: `Downgrade scheduled successfully. Your plan will change to ${newPlanId} on ${subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toLocaleDateString() : 'next billing cycle'} and you'll keep all current features until then.`,
+          message: `Downgrade scheduled successfully. Your plan will change to ${newPlanId} on ${(subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toLocaleDateString() : 'next billing cycle'} and you'll keep all current features until then.`,
           isDowngrade: true,
-          effectiveDate: subscription.current_period_end ? new Date(subscription.current_period_end * 1000) : null
+          effectiveDate: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000) : null
         });
       } else {
         // Execute immediate upgrade with proration
@@ -13555,12 +13809,12 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
               
               // Finalize the invoice if it's in draft
               if (invoice.status === 'draft') {
-                await stripe.invoices.finalizeInvoice(invoice.id);
+                await stripe.invoices.finalizeInvoice(invoice.id as string);
                 console.log('Proration invoice finalized:', invoice.id);
               }
               
               // Pay the invoice immediately
-              const paidInvoice = await stripe.invoices.pay(invoice.id);
+              const paidInvoice = await stripe.invoices.pay(invoice.id as string);
               console.log('Proration invoice paid successfully:', {
                 invoiceId: paidInvoice.id,
                 amountPaid: paidInvoice.amount_paid / 100,
@@ -13585,8 +13839,8 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
           } else if (prorationInvoices.length === 0) {
             console.log('No proration invoice found - upgrade may have been free or no proration needed');
           }
-        } catch (invoiceError) {
-          console.error('Could not process proration invoice:', invoiceError.message);
+        } catch (invoiceError: any) {
+          console.error('Could not process proration invoice:', invoiceError?.message || "Unknown invoice error");
         }
 
         // Update user's plan in database immediately for upgrades
@@ -13605,9 +13859,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         });
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error confirming subscription change:', error);
-      res.status(500).json({ message: "Failed to update subscription", error: error.message });
+      res.status(500).json({ message: "Failed to update subscription", error: error?.message || "Unknown error" });
     }
   });
 
@@ -13648,9 +13902,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         message: "Subscription will be canceled at the end of current billing period",
         cancelAtPeriodEnd: subscription.cancel_at_period_end 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error canceling subscription:', error);
-      res.status(500).json({ message: "Failed to cancel subscription", error: error.message });
+      res.status(500).json({ message: "Failed to cancel subscription", error: error?.message || "Unknown error" });
     }
   });
 
@@ -13669,7 +13923,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       // Filter sessions by user email
       const userSessions = sessions.data.filter(session => 
         session.customer_email === user.email || 
-        (session.customer && typeof session.customer === 'object' && session.customer.email === user.email)
+        (session.customer && typeof session.customer === 'object' && (session.customer as any).email === user.email)
       );
 
       res.json({ 
@@ -13682,9 +13936,9 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
           created: session.created
         }))
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting checkout sessions:', error);
-      res.status(500).json({ message: "Failed to get checkout sessions", error: error.message });
+      res.status(500).json({ message: "Failed to get checkout sessions", error: error?.message || "Unknown error" });
     }
   });
 
@@ -13843,7 +14097,8 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         }
       };
 
-      const priceId = priceIds[mappedPlanId]?.[billingPeriod];
+      const normalizedBilling = billingPeriod as "monthly" | "yearly";
+      const priceId = priceIds[mappedPlanId]?.[normalizedBilling];
       if (!priceId) {
         return res.status(400).json({ message: "Price ID not found for the selected plan" });
       }
@@ -14591,7 +14846,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       }
 
       // Check daily limit based on business owner's plan
-      const dailyLimit = getPhotoMeasurementDailyLimit(user.plan);
+      const dailyLimit = getPhotoMeasurementDailyLimit(user.plan || 'free');
 
       // Count measurements from today for this business owner
       const today = new Date();
@@ -15062,7 +15317,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
 
       await storage.updateSeoCycle(task.cycleId, {
         completionPercentage: Math.min(100, Math.round(totalPercentage)),
-      });
+      } as any);
 
       res.json(updatedTask);
     } catch (error) {
@@ -15715,8 +15970,11 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(403).json({ message: "Access denied" });
       }
       
-      const validatedData = insertWorkOrderSchema.partial().parse(req.body);
-      const workOrder = await storage.updateWorkOrder(id, validatedData);
+      const validatedData: any = insertWorkOrderSchema.partial().parse(req.body);
+      const workOrder: any = await storage.updateWorkOrder(id, validatedData);
+      if (!workOrder) {
+        return res.status(404).json({ message: "Work order not found" });
+      }
       
       // Check if status changed to 'scheduled' or 'completed' to trigger automations
       const statusChanged = validatedData.status && validatedData.status !== existing.status;
@@ -15732,8 +15990,8 @@ This booking was created on ${new Date().toLocaleString()}.
             workOrderData: {
               id: workOrder.id,
               title: workOrder.title,
-              description: workOrder.description || undefined,
-              scheduledDate: workOrder.scheduledDate || undefined,
+              description: undefined,
+              scheduledDate: workOrder.scheduledDate ? new Date(workOrder.scheduledDate) : undefined,
               status: workOrder.status,
             }
           }).catch(error => {
@@ -15747,8 +16005,8 @@ This booking was created on ${new Date().toLocaleString()}.
             workOrderData: {
               id: workOrder.id,
               title: workOrder.title,
-              description: workOrder.description || undefined,
-              scheduledDate: workOrder.scheduledDate || undefined,
+              description: undefined,
+              scheduledDate: workOrder.scheduledDate ? new Date(workOrder.scheduledDate) : undefined,
               status: workOrder.status,
             }
           }).catch(error => {
@@ -15818,7 +16076,7 @@ This booking was created on ${new Date().toLocaleString()}.
         workOrderData: {
           id: existing.id,
           title: existing.title,
-          description: existing.description || undefined,
+          description: undefined,
           status: existing.status,
         }
       }).catch(error => {
@@ -16022,6 +16280,9 @@ This booking was created on ${new Date().toLocaleString()}.
       
       const validatedData = insertInvoiceSchema.partial().parse(req.body);
       const invoice = await storage.updateInvoice(id, validatedData);
+      if (!invoice) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
       
       // Check if status changed to 'paid' to trigger automation
       const statusChanged = validatedData.status && validatedData.status !== existing.status;
@@ -16070,7 +16331,7 @@ This booking was created on ${new Date().toLocaleString()}.
         sentViaZapier: true,
         zapierSentAt: new Date(),
         status: 'sent'
-      });
+      } as any);
       
       res.json(invoice);
     } catch (error) {
@@ -16752,11 +17013,17 @@ This booking was created on ${new Date().toLocaleString()}.
         : await storage.getLead(leadId);
       
       if (lead) {
+        const tag = await storage.getLeadTag(tagId);
+
         // Trigger automations for tag assignment (non-blocking)
         automationService.triggerAutomations('lead_tag_assigned', {
           userId,
           leadId: isMultiService ? undefined : leadId,
           multiServiceLeadId: isMultiService ? leadId : undefined,
+          tagData: tag ? {
+            id: tag.id,
+            name: tag.displayName || tag.name,
+          } : undefined,
           leadData: {
             name: lead.name,
             email: lead.email,
@@ -16769,7 +17036,6 @@ This booking was created on ${new Date().toLocaleString()}.
         });
 
         // Send Zapier webhook notification for lead tagged
-        const tag = await storage.getLeadTag(tagId);
         if (tag) {
           // Get formula name for comprehensive data
           let formulaName = '';
@@ -18830,7 +19096,7 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const [area] = await db
         .insert(directoryServiceAreas)
-        .values(validatedData)
+        .values(validatedData as any)
         .returning();
 
       // Trigger cache update
@@ -18881,18 +19147,19 @@ This booking was created on ${new Date().toLocaleString()}.
       const slug = generateSlug(name);
 
       // Check if already exists
-      const [existing] = await db
+      const existingRows: any = await db
         .select()
         .from(directoryCategories)
         .where(eq(directoryCategories.slug, slug))
         .limit(1);
+      const existing = existingRows?.[0];
 
       if (existing) {
         return res.json(existing); // Return existing category
       }
 
       // Create as pending
-      const [category] = await db
+      const categoryRows: any = await db
         .insert(directoryCategories)
         .values({
           name,
@@ -18900,8 +19167,9 @@ This booking was created on ${new Date().toLocaleString()}.
           description,
           status: "pending",
           displayOrder: 999, // Will be adjusted when approved
-        })
+        } as any)
         .returning();
+      const category = categoryRows?.[0];
 
       res.status(201).json(category);
     } catch (error) {
@@ -18933,10 +19201,11 @@ This booking was created on ${new Date().toLocaleString()}.
         slug: generateSlug(req.body.name),
       });
 
-      const [category] = await db
+      const categoryRows: any = await db
         .insert(directoryCategories)
-        .values(validatedData)
+        .values(validatedData as any)
         .returning();
+      const category = categoryRows?.[0];
 
       res.status(201).json(category);
     } catch (error) {
@@ -20963,7 +21232,7 @@ This booking was created on ${new Date().toLocaleString()}.
   app.get("/api/landing-page/me", requireAuth, async (req, res) => {
     try {
       const userId = getEffectiveOwnerId((req as any).currentUser);
-      let [page] = await db
+      let [page]: any = await db
         .select()
         .from(landingPages)
         .where(eq(landingPages.userId, userId))
@@ -20972,7 +21241,7 @@ This booking was created on ${new Date().toLocaleString()}.
       if (!page) {
         const user = await storage.getUserById(userId);
         if (user) {
-          page = await storage.ensureLandingPageForUser(user);
+          page = await storage.ensureLandingPageForUser(user as any);
         }
       }
 
@@ -21022,9 +21291,13 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Landing page not found" });
       }
 
-      const basicErrors = validateLandingPageBasics(page);
+      const basicErrors = validateLandingPageBasics(page as any);
       if (basicErrors.length > 0) {
         return res.status(400).json({ message: basicErrors[0], errors: basicErrors });
+      }
+
+      if (!page.primaryServiceId) {
+        return res.status(400).json({ message: "Primary calculator is not connected or inactive." });
       }
 
       const [primaryFormula] = await db

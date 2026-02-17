@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
@@ -96,8 +97,8 @@ const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementT
           >
             <GoogleMapsLoader>
               <MeasureMapTerraImproved
-                measurementType={measurementType}
-                unit={unit}
+                measurementType={measurementType as "area" | "distance"}
+                unit={unit as "sqft" | "sqm" | "ft" | "m"}
                 onMeasurementComplete={onMeasurementComplete}
               />
             </GoogleMapsLoader>
@@ -505,10 +506,15 @@ export default function StyledCalculator(props: any = {}) {
   const search = useSearch();
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
+  const { toast } = useToast();
 
   // Get URL parameters first
   const searchParams = new URLSearchParams(search);
   const userId = searchParams.get('userId');
+  const queryServiceIds = searchParams.get('serviceIds');
+  const customFormServiceFilterIds = queryServiceIds
+    ? queryServiceIds.split(',').map((id) => Number(id.trim())).filter((id) => Number.isFinite(id))
+    : [];
   const isPublicAccess = !!userId;
 
   // Debug: Log auth state
@@ -662,13 +668,17 @@ export default function StyledCalculator(props: any = {}) {
 
   // Filter to single service if in single service embed mode
   const formulas = useMemo(() => {
+    if (customFormServiceFilterIds.length > 0) {
+      const filtered = allFormulas.filter((f: Formula) => customFormServiceFilterIds.includes(Number(f.id)));
+      return filtered.length > 0 ? filtered : allFormulas;
+    }
     if (isSingleServiceMode && singleServiceId) {
       const serviceIdNum = parseInt(singleServiceId, 10);
       const filtered = allFormulas.filter((f: Formula) => f.id === serviceIdNum);
       return filtered.length > 0 ? filtered : allFormulas;
     }
     return allFormulas;
-  }, [allFormulas, isSingleServiceMode, singleServiceId]);
+  }, [allFormulas, customFormServiceFilterIds, isSingleServiceMode, singleServiceId]);
   const businessSettings = useAuthenticatedData
     ? (authenticatedData?.businessSettings || null)
     : (calculatorData?.businessSettings || null);
@@ -870,6 +880,7 @@ export default function StyledCalculator(props: any = {}) {
       }>;
       taxAmount?: number;
       subtotal?: number;
+      photoMeasurements?: any[];
       submissionId?: string;
     }) => {
       const payload = {
@@ -977,16 +988,13 @@ export default function StyledCalculator(props: any = {}) {
     },
     onError: (error: any) => {
       console.error("Failed to submit quote request:", error);
-
-      // Check if this is a blocked IP error
       if (error?.message?.includes("Access denied") || error?.message?.includes("unable to process")) {
-        // Show blocked message
-        setIsBlocked(true);
+        toast({
+          title: "Unable to process request",
+          description: "Please contact support if this continues.",
+          variant: "destructive",
+        });
       }
-      isSubmittingLeadRef.current = false;
-      submissionIdRef.current = null;
-    },
-    onError: () => {
       isSubmittingLeadRef.current = false;
       submissionIdRef.current = null;
     },
@@ -1193,7 +1201,7 @@ export default function StyledCalculator(props: any = {}) {
 
     // Helper function to check if a service is complete
     const isServiceComplete = (serviceId: number) => {
-      const service = formulas?.find(f => f.id === serviceId);
+      const service = formulas?.find((f: any) => f.id === serviceId);
       if (!service) return false;
       const variables = serviceVariables[serviceId] || {};
       const { isCompleted } = areAllVisibleVariablesCompleted(service.variables, variables);
@@ -1258,8 +1266,8 @@ export default function StyledCalculator(props: any = {}) {
 
       // Get applied discounts
       const appliedDiscountData = businessSettings?.discounts
-        ?.filter(d => d.isActive && selectedDiscounts.includes(d.id))
-        ?.map(discount => ({
+        ?.filter((d: any) => d.isActive && selectedDiscounts.includes(d.id))
+        ?.map((discount: any) => ({
           id: discount.id,
           name: discount.name,
           percentage: discount.percentage,
@@ -1268,7 +1276,7 @@ export default function StyledCalculator(props: any = {}) {
 
       // Get upsell amounts
       const allUpsells = cartServiceIds.reduce((acc: any[], serviceId) => {
-        const service = formulas?.find(f => f.id === serviceId);
+        const service = formulas?.find((f: any) => f.id === serviceId);
         if (service?.upsellItems) {
           acc.push(...service.upsellItems);
         }
@@ -1284,7 +1292,7 @@ export default function StyledCalculator(props: any = {}) {
           amount: Math.round(subtotal * (upsell.percentageOfMain / 100) * 100)
         })) || [];
 
-      const customerDiscountAmount = appliedDiscountData.reduce((sum, d) => sum + d.amount, 0) / 100;
+      const customerDiscountAmount = appliedDiscountData.reduce((sum: number, d: any) => sum + d.amount, 0) / 100;
       const upsellTotal = selectedUpsellData.reduce((sum, u) => sum + u.amount, 0) / 100;
       const discountedSubtotal = subtotal - bundleDiscount - customerDiscountAmount + upsellTotal;
 
@@ -1367,7 +1375,7 @@ export default function StyledCalculator(props: any = {}) {
           border-width: var(--ab-service-selector-border-width, 2px);
         }
         
-        #autobidder-form .ab-service-card:hover:not(.selected) {
+        #autobidder-form .ab-service-card:hover:where(:not(.selected)) {
           background-color: var(--ab-service-selector-hover-bg, #F3F4F6);
           border-color: var(--ab-service-selector-hover-border-color, #D1D5DB);
         }
@@ -2083,7 +2091,7 @@ export default function StyledCalculator(props: any = {}) {
 
   // Check if a service has all required variables filled
   const isServiceComplete = (serviceId: number) => {
-    const service = formulas?.find(f => f.id === serviceId);
+    const service = formulas?.find((f: any) => f.id === serviceId);
     if (!service) return false;
 
     const variables = serviceVariables[serviceId] || {};
@@ -2105,7 +2113,7 @@ export default function StyledCalculator(props: any = {}) {
   };
 
   const calculateServicePrice = (serviceId: number) => {
-    const service = formulas?.find(f => f.id === serviceId);
+    const service = formulas?.find((f: any) => f.id === serviceId);
     if (!service) return 0;
 
     try {
@@ -2113,7 +2121,7 @@ export default function StyledCalculator(props: any = {}) {
       const variables = serviceVariables[serviceId] || {};
       
       // First, replace individual option references for multiple-choice with allowMultipleSelection
-      service.variables.forEach((variable) => {
+      service.variables.forEach((variable: any) => {
         if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
           const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
           
@@ -2136,7 +2144,7 @@ export default function StyledCalculator(props: any = {}) {
         }
       });
       
-      service.variables.forEach((variable) => {
+      service.variables.forEach((variable: any) => {
         // For multiple-choice with allowMultipleSelection, also handle the variable ID itself (sum of selected values)
         // This is needed when the formula uses variableId directly instead of variableId_optionId
         if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
@@ -2170,22 +2178,22 @@ export default function StyledCalculator(props: any = {}) {
             const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
             value = defaultValue ? checkedVal : uncheckedVal;
           } else if (variable.type === 'select' && variable.options) {
-            const option = variable.options.find(opt => opt.value === defaultValue);
+            const option = variable.options.find((opt: any) => opt.value === defaultValue);
             value = option?.multiplier || option?.numericValue || 0;
           } else if (variable.type === 'dropdown' && variable.options) {
-            const option = variable.options.find(opt => opt.value === defaultValue);
+            const option = variable.options.find((opt: any) => opt.value === defaultValue);
             value = option?.numericValue || 0;
           } else if (variable.type === 'multiple-choice' && variable.options) {
             // For multiple-choice, handle both array and single value defaults
             if (Array.isArray(defaultValue)) {
               // Sum up numericValue for each selected option in the array
               value = defaultValue.reduce((total: number, selectedValue: any) => {
-                const option = variable.options?.find(opt => opt.value.toString() === selectedValue.toString());
+                const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue.toString());
                 return total + (option?.numericValue || 0);
               }, 0);
             } else {
               // Try to find option by value first
-              const option = variable.options.find(opt => opt.value === defaultValue);
+              const option = variable.options.find((opt: any) => opt.value === defaultValue);
               if (option) {
                 value = option.numericValue || 0;
               } else {
@@ -2205,20 +2213,20 @@ export default function StyledCalculator(props: any = {}) {
           }
           
           if (variable.type === 'select' && variable.options) {
-            const option = variable.options.find(opt => opt.value === value);
+            const option = variable.options.find((opt: any) => opt.value === value);
             value = option?.multiplier || option?.numericValue || 0;
           } else if (variable.type === 'dropdown' && variable.options) {
-            const option = variable.options.find(opt => opt.value === value);
+            const option = variable.options.find((opt: any) => opt.value === value);
             value = option?.numericValue || 0;
           } else if (variable.type === 'multiple-choice' && variable.options) {
             if (Array.isArray(value)) {
               value = value.reduce((total: number, selectedValue: string) => {
-                const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
+                const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue);
                 return total + (option?.numericValue || 0);
               }, 0);
             } else if (value !== undefined && value !== null && value !== '') {
               // Defensive fallback: handle scalar values (e.g. legacy/state-preloaded data)
-              const option = variable.options.find(opt => opt.value.toString() === value.toString());
+              const option = variable.options.find((opt: any) => opt.value.toString() === value.toString());
               value = option?.numericValue || Number(value) || 0;
             } else {
               value = 0;
@@ -2292,7 +2300,7 @@ export default function StyledCalculator(props: any = {}) {
     const allMissingVariables: string[] = [];
 
     for (const serviceId of selectedServices) {
-      const service = formulas?.find(f => f.id === serviceId);
+      const service = formulas?.find((f: any) => f.id === serviceId);
       if (!service) continue;
 
       const serviceVars = serviceVariables[serviceId] || {};
@@ -2328,7 +2336,7 @@ export default function StyledCalculator(props: any = {}) {
       
       // Add data attributes to missing fields to help with styling
       for (const serviceId of selectedServices) {
-        const service = formulas?.find(f => f.id === serviceId);
+        const service = formulas?.find((f: any) => f.id === serviceId);
         if (!service) continue;
         
         const serviceVars = serviceVariables[serviceId] || {};
@@ -2336,7 +2344,7 @@ export default function StyledCalculator(props: any = {}) {
         
         missingVariables.forEach(varName => {
           // Find the variable by name and add visual indicator
-          const variable = service.variables.find(v => v.name === varName);
+          const variable = service.variables.find((v: any) => v.name === varName);
           if (variable) {
             // Find the input element and add visual indicator
             const fieldElement = document.querySelector(`[data-variable-id="${variable.id}"]`);
@@ -2465,13 +2473,13 @@ export default function StyledCalculator(props: any = {}) {
       return 0;
     }
 
-    const activeDiscounts = businessSettings.discounts.filter(d => 
+    const activeDiscounts = businessSettings.discounts.filter((d: any) => 
       d.isActive && selectedDiscounts.includes(d.id)
     );
 
     if (businessSettings.allowDiscountStacking) {
       // Stack all selected discounts
-      return activeDiscounts.reduce((total, discount) => {
+      return activeDiscounts.reduce((total: number, discount: any) => {
         return total + (subtotal * (discount.percentage / 100));
       }, 0);
     } else {
@@ -2515,7 +2523,7 @@ export default function StyledCalculator(props: any = {}) {
 
     // Use cart services for submission when cart is enabled
     const services: ServiceCalculation[] = cartServiceIds.map(serviceId => {
-      const service = formulas?.find(f => f.id === serviceId);
+      const service = formulas?.find((f: any) => f.id === serviceId);
       return {
         formulaId: serviceId,
         formulaName: service?.name || service?.title || 'Unknown Service',
@@ -2550,8 +2558,8 @@ export default function StyledCalculator(props: any = {}) {
 
     // Prepare discount information for submission
     const appliedDiscountData = businessSettings?.discounts
-      ?.filter(d => d.isActive && selectedDiscounts.includes(d.id))
-      ?.map(discount => ({
+      ?.filter((d: any) => d.isActive && selectedDiscounts.includes(d.id))
+      ?.map((discount: any) => ({
         id: discount.id,
         name: discount.name,
         percentage: discount.percentage,
@@ -2560,7 +2568,7 @@ export default function StyledCalculator(props: any = {}) {
 
     // Prepare upsell information for submission - collect from all cart services
     const allUpsellsForSubmission = cartServiceIds.reduce((acc: any[], serviceId) => {
-      const service = formulas?.find(f => f.id === serviceId);
+      const service = formulas?.find((f: any) => f.id === serviceId);
       if (service?.upsellItems) {
         acc.push(...service.upsellItems);
       }
@@ -2990,7 +2998,7 @@ export default function StyledCalculator(props: any = {}) {
             )}
             
             {selectedServices.map((serviceId, index) => {
-              const service = formulas?.find(f => f.id === serviceId);
+              const service = formulas?.find((f: any) => f.id === serviceId);
               if (!service) return null;
               
               const isExpanded = expandedServices.has(serviceId) || selectedServices.length === 1;
@@ -3205,7 +3213,7 @@ export default function StyledCalculator(props: any = {}) {
                         </div>
                       )}
                     >
-                      {service.variables.map((variable) => (
+                      {service.variables.map((variable: any) => (
                         <EnhancedVariableInput
                           key={variable.id}
                           variable={variable}
@@ -3574,7 +3582,7 @@ export default function StyledCalculator(props: any = {}) {
                   <Suspense fallback={<Skeleton className="h-12 w-full" />}>
                     <GoogleMapsLoader>
                       <GooglePlacesAutocomplete
-                        value={leadForm.address}
+                        value={leadForm.address || ""}
                         onChange={(newAddress) => {
                           setLeadForm(prev => ({ ...prev, address: newAddress }));
                           // Calculate distance when address changes (with debounce)
@@ -3633,7 +3641,7 @@ export default function StyledCalculator(props: any = {}) {
                     className="ab-select w-full"
                   >
                     <option value="">Select an option...</option>
-                    {(businessSettings?.styling?.howDidYouHearOptions || []).map((option, index) => (
+                    {(businessSettings?.styling?.howDidYouHearOptions || []).map((option: string, index: number) => (
                       <option key={index} value={option}>{option}</option>
                     ))}
                   </select>
@@ -3685,9 +3693,9 @@ export default function StyledCalculator(props: any = {}) {
                   {/* Display uploaded images */}
                   {(leadForm.uploadedImages || []).length > 0 && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium mb-2">Uploaded Images ({leadForm.uploadedImages.length})</p>
+                      <p className="text-sm font-medium mb-2">Uploaded Images ({(leadForm.uploadedImages || []).length})</p>
                       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                        {leadForm.uploadedImages.map((image, index) => (
+                        {(leadForm.uploadedImages || []).map((image: string, index: number) => (
                           <div key={index} className="relative group">
                             <img
                               src={image}
@@ -3760,7 +3768,7 @@ export default function StyledCalculator(props: any = {}) {
         
         // Calculate upsell amount from all selected services
         const allUpsellsForPricing = selectedServices.reduce((acc: any[], serviceId) => {
-          const service = formulas?.find(f => f.id === serviceId);
+          const service = formulas?.find((f: any) => f.id === serviceId);
           if (service?.upsellItems) {
             acc.push(...service.upsellItems);
           }
@@ -3842,7 +3850,7 @@ export default function StyledCalculator(props: any = {}) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {selectedServices.map((serviceId) => {
-                    const service = formulas?.find(f => f.id === serviceId);
+                    const service = formulas?.find((f: any) => f.id === serviceId);
                     const servicePrice = serviceCalculations[serviceId] || 0;
                     const serviceVars = serviceVariables[serviceId] || {};
 
@@ -3861,18 +3869,18 @@ export default function StyledCalculator(props: any = {}) {
                     const serviceFeatures = Object.entries(serviceVars)
                       .filter(([key, value]) => {
                         if (!value || value === '') return false;
-                        const variable = service.variables?.find(v => v.id === key);
+                        const variable = service.variables?.find((v: any) => v.id === key);
                         return variable && variable.type !== 'text'; // Exclude basic text inputs
                       })
                       .map(([key, value]) => {
-                        const variable = service.variables?.find(v => v.id === key);
+                        const variable = service.variables?.find((v: any) => v.id === key);
                         if (!variable) return null;
 
                         let displayValue = value;
                         if (typeof value === 'boolean') {
                           displayValue = value ? 'Yes' : 'No';
                         } else if (variable.type === 'multiple-choice' || variable.type === 'dropdown') {
-                          const option = variable.options?.find(opt => opt.value === value);
+                          const option = variable.options?.find((opt: any) => opt.value === value);
                           if (option) displayValue = option.label;
                         }
 
@@ -3969,7 +3977,7 @@ export default function StyledCalculator(props: any = {}) {
                 {/* Individual Service Line Items */}
                 <div className="space-y-3">
                   {cartServiceIds.map(serviceId => {
-                    const service = formulas?.find(f => f.id === serviceId);
+                    const service = formulas?.find((f: any) => f.id === serviceId);
                     const price = Math.max(0, serviceCalculations[serviceId] || 0);
                     
                     // Use formula name first, then title as fallback, then service ID
@@ -4030,7 +4038,7 @@ export default function StyledCalculator(props: any = {}) {
                 {/* Customer Discounts */}
                 {customerDiscountAmount > 0 && (
                   <div className="ab-discount-lines space-y-2">
-                    {businessSettings?.discounts?.filter(d => d.isActive && selectedDiscounts.includes(d.id)).map((discount) => (
+                    {businessSettings?.discounts?.filter((d: any) => d.isActive && selectedDiscounts.includes(d.id)).map((discount: any) => (
                       <div key={discount.id} className="ab-discount-line flex justify-between items-center">
                         <span className="ab-discount-line-label text-lg text-green-600">
                           {discount.name} ({discount.percentage}%):
@@ -4064,9 +4072,9 @@ export default function StyledCalculator(props: any = {}) {
                 {(() => {
                   // Collect all upsells from cart services for line items
                   const allUpsellsForLineItems = cartServiceIds.reduce((acc, serviceId) => {
-                    const service = formulas?.find(f => f.id === serviceId);
+                    const service = formulas?.find((f: any) => f.id === serviceId);
                     if (service?.upsellItems) {
-                      const serviceUpsells = service.upsellItems.map(upsell => ({
+                      const serviceUpsells = service.upsellItems.map((upsell: any) => ({
                         ...upsell,
                         serviceId: service.id,
                         serviceName: service.name
@@ -4138,7 +4146,7 @@ export default function StyledCalculator(props: any = {}) {
               </div>
 
               {/* Discount Selection */}
-              {businessSettings?.discounts && businessSettings.discounts.filter(d => d.isActive).length > 0 && (
+              {businessSettings?.discounts && businessSettings.discounts.filter((d: any) => d.isActive).length > 0 && (
                 <div className="ab-discount-section mt-6 p-6 bg-blue-50 rounded-lg border border-blue-200">
                   <h3
                     className="ab-discount-title text-lg font-semibold mb-4"
@@ -4153,7 +4161,7 @@ export default function StyledCalculator(props: any = {}) {
                     }
                   </p>
                   <div className="ab-discount-grid grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {businessSettings.discounts.filter(d => d.isActive).map((discount) => (
+                    {businessSettings.discounts.filter((d: any) => d.isActive).map((discount: any) => (
                       <div
                         key={discount.id}
                         onClick={() => handleDiscountToggle(discount.id)}
@@ -4193,7 +4201,7 @@ export default function StyledCalculator(props: any = {}) {
                   {selectedDiscounts.length > 0 && (
                     <div className="ab-discount-savings mt-4 p-3 bg-green-100 rounded-lg border border-green-300">
                       <div className="ab-discount-savings-title text-sm font-medium text-green-800 mb-2">Discount Savings Applied:</div>
-                      {businessSettings.discounts.filter(d => selectedDiscounts.includes(d.id)).map((discount) => (
+                      {businessSettings.discounts.filter((d: any) => selectedDiscounts.includes(d.id)).map((discount: any) => (
                         <div key={discount.id} className="ab-discount-savings-row flex justify-between items-center text-sm">
                           <span className="ab-discount-savings-label text-green-700">{discount.name} ({discount.percentage}%):</span>
                           <span className="ab-discount-savings-value font-medium text-green-600">
@@ -4214,11 +4222,11 @@ export default function StyledCalculator(props: any = {}) {
               {/* Upsell Items */}
               {(() => {
                 // Collect all upsells from cart services
-                const allUpsells = cartServiceIds.reduce((acc, serviceId) => {
-                  const service = formulas?.find(f => f.id === serviceId);
-                  if (service?.upsellItems) {
-                    // Add service context to each upsell for better identification
-                    const serviceUpsells = service.upsellItems.map(upsell => ({
+                  const allUpsells = cartServiceIds.reduce((acc, serviceId) => {
+                    const service = formulas?.find((f: any) => f.id === serviceId);
+                    if (service?.upsellItems) {
+                      // Add service context to each upsell for better identification
+                      const serviceUpsells = service.upsellItems.map((upsell: any) => ({
                       ...upsell,
                       serviceId: service.id,
                       serviceName: service.name
@@ -4548,7 +4556,10 @@ export default function StyledCalculator(props: any = {}) {
                   serviceName={
                     formulas
                       ? selectedServices
-                          .map(id => formulas.find(f => f.id === id)?.serviceName)
+                          .map((id: number) => {
+                            const service = formulas.find((f: any) => f.id === id);
+                            return service?.name || service?.title || "";
+                          })
                           .filter(Boolean)
                           .join(', ')
                       : undefined

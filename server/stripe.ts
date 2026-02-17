@@ -292,7 +292,8 @@ export async function validateCoupon(couponCode: string) {
       
       if (promoCodes.data.length > 0) {
         const promoCode = promoCodes.data[0];
-        const coupon = await stripe.coupons.retrieve(promoCode.coupon as string);
+        const couponId = typeof promoCode.coupon === "string" ? promoCode.coupon : promoCode.coupon.id;
+        const coupon = await stripe.coupons.retrieve(couponId);
         return {
           valid: coupon.valid && promoCode.active,
           percentOff: coupon.percent_off,

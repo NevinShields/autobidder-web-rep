@@ -146,7 +146,7 @@ export default function BidEmailTemplatesPage() {
   const { toast } = useToast();
 
   // Fetch templates
-  const { data: templates = [], isLoading } = useQuery({
+  const { data: templates = [], isLoading } = useQuery<BidEmailTemplate[]>({
     queryKey: ['/api/bid-email-templates'],
     queryFn: () => apiRequest('GET', '/api/bid-email-templates').then(res => res.json()),
   });

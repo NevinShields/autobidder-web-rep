@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,46 @@ export default function Dashboard() {
     queryKey: ["/api/profile"],
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const upgraded = params.get("upgrade");
+    const sessionId = params.get("session_id");
+
+    if (upgraded !== "success" || !sessionId) return;
+
+    apiRequest("GET", `/api/verify-checkout/${sessionId}`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data?.success) {
+          toast({
+            title: "Upgrade verification failed",
+            description: data?.message || "We could not verify your payment yet. Please refresh shortly.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/subscription-details"] });
+
+        const cleanPath = window.location.pathname;
+        window.history.replaceState({}, "", cleanPath);
+
+        toast({
+          title: "Upgrade activated",
+          description: `Your ${data.plan} plan is now active.`,
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Upgrade verification error",
+          description: "We could not verify your upgrade yet. Please refresh shortly.",
+          variant: "destructive",
+        });
+      });
+  }, [queryClient, toast]);
 
   const totalCalculators = formulaList.length;
   const totalLeads = leadList.length + multiLeadList.length;

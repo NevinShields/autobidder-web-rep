@@ -1,15 +1,16 @@
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/dashboard-layout";
 import FormulaBuilderComponent from "@/components/formula-builder";
 import CalculatorPreview from "@/components/calculator-preview";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
-import { TemplateLibraryButton } from "@/components/template-library";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Calculator } from "lucide-react";
 import { Formula } from "@shared/schema";
 
 export default function FormulaBuilder() {
@@ -37,7 +38,7 @@ export default function FormulaBuilder() {
     if (formula && !currentFormula && id !== "new") {
       setCurrentFormula(formula as Formula);
     } else if (id === "new" && !currentFormula) {
-      const defaultFormula: Formula = {
+      const defaultFormula = {
         id: 0,
         userId: null,
         name: "New Formula",
@@ -92,7 +93,7 @@ export default function FormulaBuilder() {
           serviceSelectorBackgroundColor: '#FFFFFF',
           serviceSelectorBorderWidth: 0,
           serviceSelectorBorderColor: '#E5E7EB',
-          serviceSelectorHoverBgColor: '#F8FAFC',
+          serviceSelectorHoverBackgroundColor: '#F8FAFC',
           serviceSelectorHoverBorderColor: '#C7D2FE',
           serviceSelectorSelectedBgColor: '#EFF6FF',
           serviceSelectorSelectedBorderColor: '#2563EB',
@@ -174,7 +175,7 @@ export default function FormulaBuilder() {
         distancePricingType: "per_mile",
         distancePricingRate: 0,
         serviceRadius: 50,
-      };
+      } as unknown as Formula;
       setCurrentFormula(defaultFormula);
     }
   }, [formula, currentFormula, id]);
@@ -230,8 +231,11 @@ export default function FormulaBuilder() {
   if (isLoading && id !== "new") {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Skeleton className="h-96 w-full" />
+        <div className="p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="max-w-7xl mx-auto space-y-6">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-[600px] w-full rounded-2xl" />
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -240,12 +244,14 @@ export default function FormulaBuilder() {
   if (!currentFormula && id !== "new") {
     return (
       <DashboardLayout>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Card>
+        <div className="p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+          <div className="max-w-7xl mx-auto">
+            <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70">
             <CardContent className="p-6">
-              <p className="text-gray-500">Formula not found</p>
+                <p className="text-slate-500 dark:text-slate-400">Formula not found</p>
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -253,39 +259,72 @@ export default function FormulaBuilder() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {currentFormula && (
-          <>
-            <FormulaBuilderComponent
-              formula={currentFormula}
-              onUpdate={handleUpdate}
-              onSave={handleSave}
-              onPreview={() => setShowSingleServicePreview(true)}
-              isSaving={saveFormulaMutation.isPending}
-              allFormulas={allFormulas}
-            />
-
-            {/* Single Service Preview Modal */}
-            <SingleServicePreviewModal
-              isOpen={showSingleServicePreview}
-              onClose={() => setShowSingleServicePreview(false)}
-              formula={currentFormula}
-            />
-
-            {/* Full Calculator Preview (keep for reference) */}
-            {showPreview && (
-              <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Full Calculator Preview</h2>
-                  <p className="text-sm text-gray-500">Preview the complete customer experience with contact forms</p>
+      <style>{`
+        .formula-builder-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.028'/%3E%3C/svg%3E");
+        }
+      `}</style>
+      <div className="p-4 sm:p-6 lg:p-8 formula-builder-grain" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="relative overflow-hidden rounded-2xl border border-amber-200/40 dark:border-amber-500/10 bg-gradient-to-br from-amber-50 via-white to-orange-50 dark:from-gray-800/80 dark:via-gray-800/60 dark:to-gray-900/80 p-6 sm:p-8">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-amber-200/30 to-transparent dark:from-amber-500/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-orange-200/20 to-transparent dark:from-orange-500/10 rounded-full translate-y-1/2 -translate-x-1/4 blur-xl" />
+            <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-white/80 dark:bg-white/5 border border-white/80 dark:border-white/10 rounded-xl backdrop-blur-sm">
+                    <Calculator className="h-5 w-5 text-amber-700 dark:text-amber-300" />
+                  </div>
+                  <h1 className="text-3xl sm:text-4xl text-slate-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                    {id === "new" ? "Create Calculator" : "Edit Calculator"}
+                  </h1>
                 </div>
-                <div className="p-6">
-                  <CalculatorPreview formula={currentFormula} />
-                </div>
+                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300">
+                  {currentFormula?.name || "New Formula"}: configure variables, pricing logic, and media settings.
+                </p>
               </div>
-            )}
-          </>
-        )}
+              <Link href="/formulas">
+                <Button variant="outline" className="h-10 rounded-full px-5 border-slate-300/80 bg-white/80 hover:bg-white text-slate-800 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-100 dark:hover:bg-slate-900/70">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Library
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {currentFormula && (
+            <>
+              <FormulaBuilderComponent
+                formula={currentFormula}
+                onUpdate={handleUpdate}
+                onSave={handleSave}
+                onPreview={() => setShowSingleServicePreview(true)}
+                isSaving={saveFormulaMutation.isPending}
+                allFormulas={allFormulas}
+              />
+
+              {/* Single Service Preview Modal */}
+              <SingleServicePreviewModal
+                isOpen={showSingleServicePreview}
+                onClose={() => setShowSingleServicePreview(false)}
+                formula={currentFormula}
+              />
+
+              {/* Full Calculator Preview (keep for reference) */}
+              {showPreview && (
+                <div className="mt-8 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
+                  <div className="px-6 py-4 border-b border-slate-200/80 dark:border-slate-700/70">
+                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Full Calculator Preview</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Preview the complete customer experience with contact forms</p>
+                  </div>
+                  <div className="p-6">
+                    <CalculatorPreview formula={currentFormula} />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );

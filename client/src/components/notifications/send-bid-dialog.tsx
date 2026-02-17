@@ -30,6 +30,8 @@ type EstimatePageDefaults = {
   defaultAttachments?: Array<{ url: string; name?: string; type: "image" | "pdf" | "file"; category?: "terms" | "insurance" | "custom" }>;
   defaultVideoUrl?: string;
   defaultIncludeAttachments?: boolean;
+  defaultMessage?: string;
+  defaultShowVideo?: boolean;
 };
 
 interface BidEmailTemplate {

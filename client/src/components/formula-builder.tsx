@@ -187,7 +187,7 @@ export default function FormulaBuilderComponent({
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
-  const [selectedAIProvider, setSelectedAIProvider] = useState("openai");
+  const [selectedAIProvider, setSelectedAIProvider] = useState("gpt5");
   const [showAIEditor, setShowAIEditor] = useState(false);
   const [aiEditInstructions, setAiEditInstructions] = useState("");
   const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
@@ -483,12 +483,12 @@ export default function FormulaBuilderComponent({
     <div className="max-w-7xl mx-auto">
       {/* Formula Builder */}
       <div className="w-full">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
+        <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200/80 dark:border-slate-700/70">
             <div className="flex flex-col gap-4">
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">Formula Builder</h2>
-                <p className="text-sm text-gray-500 truncate">{formula.name}</p>
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">Formula Builder</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{formula.name}</p>
               </div>
               <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                 <TemplateLibraryButton />
@@ -496,7 +496,7 @@ export default function FormulaBuilderComponent({
                   <Button 
                     variant="outline" 
                     onClick={() => setShowSaveAsTemplateModal(true)}
-                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 text-xs sm:text-sm px-2 sm:px-3"
+                    className="bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-900/40 text-xs sm:text-sm px-2 sm:px-3"
                   >
                     <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     <span className="hidden sm:inline">Save as Template</span>
@@ -506,7 +506,7 @@ export default function FormulaBuilderComponent({
                 <Button 
                   onClick={onSave} 
                   disabled={isSaving}
-                  className="text-xs sm:text-sm px-3 sm:px-4 bg-blue-600 hover:bg-blue-700"
+                  className="text-xs sm:text-sm px-3 sm:px-4 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900"
                 >
                   <Save className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                   {isSaving ? (
@@ -522,13 +522,13 @@ export default function FormulaBuilderComponent({
           {/* AI Formula Generator - Show for new formulas */}
           {(!formula.variables.length && !formula.formula) && (
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-blue-900">
-                    <Sparkles className="w-5 h-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+                    <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-300" />
                     Create Formula with AI
                   </CardTitle>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
                     Describe your service and let AI create the calculation formula, variables, and pricing logic for you.
                   </p>
                 </CardHeader>
@@ -544,21 +544,20 @@ export default function FormulaBuilderComponent({
                   ) : (
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="ai-provider" className="text-blue-900 font-medium">
+                        <Label htmlFor="ai-provider" className="text-blue-900 dark:text-blue-100 font-medium">
                           AI Provider
                         </Label>
                         <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
-                          <SelectTrigger className="mt-2 border-blue-200 focus:border-blue-500">
+                          <SelectTrigger className="mt-2 border-blue-200 focus:border-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                             <SelectValue placeholder="Choose AI provider" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
                             <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="ai-description" className="text-blue-900 font-medium">
+                        <Label htmlFor="ai-description" className="text-blue-900 dark:text-blue-100 font-medium">
                           Describe your service
                         </Label>
                         <Textarea
@@ -566,9 +565,9 @@ export default function FormulaBuilderComponent({
                           value={aiDescription}
                           onChange={(e) => setAiDescription(e.target.value)}
                           placeholder="e.g., 'Create a bathroom renovation calculator that includes square footage, fixtures, tile type, and labor costs'"
-                          className="mt-2 min-h-[100px] border-blue-200 focus:border-blue-500"
+                          className="mt-2 min-h-[100px] border-blue-200 focus:border-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                         />
-                        <p className="text-xs text-blue-600 mt-1">
+                        <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
                           Be specific about the factors that affect pricing (materials, size, complexity, etc.)
                         </p>
                       </div>
@@ -608,33 +607,32 @@ export default function FormulaBuilderComponent({
           {/* AI Formula Editor - Show when user wants to edit existing formula */}
           {showAIEditor && (
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+              <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-purple-900">
-                    <Sparkles className="w-5 h-5 text-purple-600" />
+                  <CardTitle className="flex items-center gap-2 text-purple-900 dark:text-purple-100">
+                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-300" />
                     Edit Formula with AI
                   </CardTitle>
-                  <p className="text-sm text-purple-700">
+                  <p className="text-sm text-purple-700 dark:text-purple-300">
                     Tell AI how to modify your formula. It can add/remove variables, update descriptions, adjust pricing logic, and create conditional questions that show/hide based on previous answers.
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="ai-provider-edit" className="text-purple-900 font-medium">
+                    <Label htmlFor="ai-provider-edit" className="text-purple-900 dark:text-purple-100 font-medium">
                       AI Provider
                     </Label>
                     <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
-                      <SelectTrigger className="mt-2 border-purple-200 focus:border-purple-500">
+                      <SelectTrigger className="mt-2 border-purple-200 focus:border-purple-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
                         <SelectValue placeholder="Choose AI provider" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="openai">OpenAI (GPT-4o) - Advanced</SelectItem>
                         <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="ai-edit-instructions" className="text-purple-900 font-medium">
+                    <Label htmlFor="ai-edit-instructions" className="text-purple-900 dark:text-purple-100 font-medium">
                       What changes would you like to make?
                     </Label>
                     <Textarea
@@ -642,9 +640,9 @@ export default function FormulaBuilderComponent({
                       value={aiEditInstructions}
                       onChange={(e) => setAiEditInstructions(e.target.value)}
                       placeholder="e.g., 'Add a checkbox asking if the house has a detached garage, and if yes, show a follow-up question asking for the garage size with options: 1-car, 2-car, 3-car'"
-                      className="mt-2 min-h-[100px] border-purple-200 focus:border-purple-500"
+                      className="mt-2 min-h-[100px] border-purple-200 focus:border-purple-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                     />
-                    <p className="text-xs text-purple-600 mt-1">
+                    <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">
                       You can add variables, conditional questions (that show based on previous answers), update pricing, or modify descriptions.
                     </p>
                   </div>
@@ -1355,7 +1353,7 @@ export default function FormulaBuilderComponent({
               <Label>Template Icon</Label>
               <div className="mt-1">
                 <IconSelector
-                  selectedIconId={templateIconId}
+                  selectedIconId={templateIconId ?? undefined}
                   onIconSelect={(iconId, iconUrl) => {
                     setTemplateIconId(iconId);
                     setTemplateIconUrl(iconUrl);

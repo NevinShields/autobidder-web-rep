@@ -24,7 +24,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { generateCSSVariables } from "@shared/css-variables";
 import type { BusinessSettings, StylingOptions } from "@shared/schema";
 
-const defaultStyling: StylingOptions = {
+const defaultStyling = {
   containerWidth: 700,
   containerHeight: 850,
   containerBorderRadius: 16,
@@ -147,7 +147,7 @@ const defaultStyling: StylingOptions = {
   imageUploadHelperText: 'Upload clear photos showing the area or items that need service. This helps us provide more accurate pricing.',
   enableDisclaimer: false,
   disclaimerText: 'Prices are estimates and may vary based on specific requirements. Final pricing will be confirmed after consultation.',
-};
+} as StylingOptions;
 
 export default function DesignDashboard() {
   const [businessName, setBusinessName] = useState("");
@@ -2997,14 +2997,16 @@ export default function DesignDashboard() {
                             transition: 'all 0.2s ease-in-out'
                           }}
                           onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = styling.buttonHoverBackgroundColor || '#1d4ed8';
-                            e.target.style.color = styling.buttonHoverTextColor || '#FFFFFF';
-                            e.target.style.borderColor = styling.buttonHoverBorderColor || '#1d4ed8';
+                            const target = e.target as HTMLElement;
+                            target.style.backgroundColor = styling.buttonHoverBackgroundColor || '#1d4ed8';
+                            target.style.color = styling.buttonHoverTextColor || '#FFFFFF';
+                            target.style.borderColor = styling.buttonHoverBorderColor || '#1d4ed8';
                           }}
                           onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = styling.buttonBackgroundColor || '#2563EB';
-                            e.target.style.color = styling.buttonTextColor || '#FFFFFF';
-                            e.target.style.borderColor = styling.buttonBorderColor || '#2563EB';
+                            const target = e.target as HTMLElement;
+                            target.style.backgroundColor = styling.buttonBackgroundColor || '#2563EB';
+                            target.style.color = styling.buttonTextColor || '#FFFFFF';
+                            target.style.borderColor = styling.buttonBorderColor || '#2563EB';
                           }}
                         >
                           Get Quote
@@ -3190,7 +3192,7 @@ export default function DesignDashboard() {
 
                       <div>
                         <Label className="text-sm font-medium">Icon/Image Size</Label>
-                        <Select value={styling.multiChoiceImageSize} onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}>
+                        <Select value={typeof styling.multiChoiceImageSize === 'string' ? styling.multiChoiceImageSize : 'lg'} onValueChange={(value) => handleStylingChange('multiChoiceImageSize', value)}>
                           <SelectTrigger className="mt-2 h-10">
                             <SelectValue />
                           </SelectTrigger>

@@ -113,6 +113,10 @@ import {
   type BidEmailTemplate,
   type InsertBidEmailTemplate,
   type Icon,
+  type IconTag,
+  type InsertIconTag,
+  type IconTagAssignment,
+  type InsertIconTagAssignment,
   zapierApiKeys,
   zapierWebhooks,
   type ZapierApiKey,
@@ -779,7 +783,7 @@ export class DatabaseStorage implements IStorage {
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {
     const [formula] = await db
       .insert(formulas)
-      .values(insertFormula)
+      .values(insertFormula as any)
       .returning();
     return formula;
   }
@@ -790,7 +794,7 @@ export class DatabaseStorage implements IStorage {
     
     const [formula] = await db
       .update(formulas)
-      .set(cleanUpdateData)
+      .set(cleanUpdateData as any)
       .where(eq(formulas.id, id))
       .returning();
     return formula || undefined;
@@ -826,7 +830,7 @@ export class DatabaseStorage implements IStorage {
   async createFormulaTemplate(insertTemplate: InsertFormulaTemplate): Promise<FormulaTemplate> {
     const [template] = await db
       .insert(formulaTemplates)
-      .values(insertTemplate)
+      .values(insertTemplate as any)
       .returning();
     return template;
   }
@@ -841,7 +845,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         ...cleanUpdateData,
         updatedAt: new Date()
-      })
+      } as any)
       .where(eq(formulaTemplates.id, id))
       .returning();
     return template || undefined;
@@ -961,7 +965,7 @@ export class DatabaseStorage implements IStorage {
     )
     .orderBy(desc(leads.createdAt));
 
-    return userLeads as Lead[];
+    return userLeads as unknown as Lead[];
   }
 
   async getLeadByDudaSubmissionId(dudaSubmissionId: string): Promise<Lead | undefined> {
@@ -975,7 +979,7 @@ export class DatabaseStorage implements IStorage {
   async createLead(insertLead: InsertLead): Promise<Lead> {
     const [lead] = await db
       .insert(leads)
-      .values(insertLead)
+      .values(insertLead as any)
       .returning();
     return lead;
   }
@@ -986,7 +990,7 @@ export class DatabaseStorage implements IStorage {
     
     const [lead] = await db
       .update(leads)
-      .set(cleanUpdateData)
+      .set(cleanUpdateData as any)
       .where(eq(leads.id, id))
       .returning();
     return lead || undefined;
@@ -1213,7 +1217,7 @@ export class DatabaseStorage implements IStorage {
   async createMultiServiceLead(insertLead: InsertMultiServiceLead): Promise<MultiServiceLead> {
     const [lead] = await db
       .insert(multiServiceLeads)
-      .values(insertLead)
+      .values(insertLead as any)
       .returning();
     return lead;
   }
@@ -1224,7 +1228,7 @@ export class DatabaseStorage implements IStorage {
     
     const [lead] = await db
       .update(multiServiceLeads)
-      .set(cleanUpdateData)
+      .set(cleanUpdateData as any)
       .where(eq(multiServiceLeads.id, id))
       .returning();
     return lead || undefined;
@@ -1371,7 +1375,7 @@ export class DatabaseStorage implements IStorage {
   async createEstimate(insertEstimate: InsertEstimate): Promise<Estimate> {
     const [estimate] = await db
       .insert(estimates)
-      .values(insertEstimate)
+      .values(insertEstimate as any)
       .returning();
     return estimate;
   }
@@ -1386,7 +1390,7 @@ export class DatabaseStorage implements IStorage {
       .set({
         ...cleanUpdateData,
         updatedAt: new Date()
-      })
+      } as any)
       .where(eq(estimates.id, id))
       .returning();
     return estimate || undefined;
@@ -1474,9 +1478,9 @@ export class DatabaseStorage implements IStorage {
     const encryptedSettings = this.encryptTwilioToken(insertSettings) as InsertBusinessSettings;
     const [settings] = await db
       .insert(businessSettings)
-      .values(encryptedSettings)
+      .values(encryptedSettings as any)
       .returning();
-    return this.decryptTwilioToken(settings);
+    return this.decryptTwilioToken(settings) as BusinessSettings;
   }
 
   async updateBusinessSettings(id: number, updateData: Partial<InsertBusinessSettings>): Promise<BusinessSettings | undefined> {
@@ -1491,7 +1495,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [settings] = await db
         .update(businessSettings)
-        .set(encryptedData)
+        .set(encryptedData as any)
         .where(eq(businessSettings.id, id))
         .returning();
       return this.decryptTwilioToken(settings || undefined);
@@ -1656,7 +1660,7 @@ export class DatabaseStorage implements IStorage {
   async createAvailabilitySlot(slot: InsertAvailabilitySlot): Promise<AvailabilitySlot> {
     const [newSlot] = await db
       .insert(availabilitySlots)
-      .values(slot)
+      .values(slot as any)
       .returning();
     return newSlot;
   }
@@ -1664,7 +1668,7 @@ export class DatabaseStorage implements IStorage {
   async updateAvailabilitySlot(id: number, slot: Partial<InsertAvailabilitySlot>): Promise<AvailabilitySlot | undefined> {
     const [updatedSlot] = await db
       .update(availabilitySlots)
-      .set(slot)
+      .set(slot as any)
       .where(eq(availabilitySlots.id, id))
       .returning();
     return updatedSlot || undefined;
@@ -1715,7 +1719,7 @@ export class DatabaseStorage implements IStorage {
   async createRecurringAvailability(availability: InsertRecurringAvailability): Promise<RecurringAvailability> {
     const [newAvailability] = await db
       .insert(recurringAvailability)
-      .values(availability)
+      .values(availability as any)
       .returning();
     return newAvailability;
   }
@@ -1723,7 +1727,7 @@ export class DatabaseStorage implements IStorage {
   async updateRecurringAvailability(id: number, availability: Partial<InsertRecurringAvailability>): Promise<RecurringAvailability | undefined> {
     const [updatedAvailability] = await db
       .update(recurringAvailability)
-      .set(availability)
+      .set(availability as any)
       .where(eq(recurringAvailability.id, id))
       .returning();
     return updatedAvailability || undefined;
@@ -1936,7 +1940,7 @@ export class DatabaseStorage implements IStorage {
         onboardingCompleted: userData.onboardingCompleted ?? false,
         onboardingStep: userData.onboardingStep ?? 1,
         permissions: normalizePermissions(permissions),
-      })
+      } as any)
       .returning();
     await this.ensureLandingPageForUser(user);
     return user;
@@ -2059,7 +2063,7 @@ export class DatabaseStorage implements IStorage {
         inviteToken: employee.inviteToken,
         inviteTokenExpires: employee.inviteTokenExpires,
         permissions,
-      })
+      } as any)
       .returning();
     return user;
   }
@@ -2080,7 +2084,7 @@ export class DatabaseStorage implements IStorage {
     
     const [user] = await db
       .update(users)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(users.id, id))
       .returning();
     return user;
@@ -2108,18 +2112,10 @@ export class DatabaseStorage implements IStorage {
       .set({ 
         ...subscriptionData, 
         updatedAt: new Date() 
-      })
+      } as any)
       .where(eq(users.id, userId))
       .returning();
     return updatedUser;
-  }
-
-  async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.stripeSubscriptionId, subscriptionId));
-    return user;
   }
 
   // Website operations
@@ -2167,22 +2163,13 @@ export class DatabaseStorage implements IStorage {
   async getCustomWebsiteTemplate(id: number): Promise<CustomWebsiteTemplate | undefined> {
     const [template] = await db.select().from(customWebsiteTemplates).where(eq(customWebsiteTemplates.id, id));
     if (!template) return undefined;
-    
-    // Map database structure to expected interface
-    return {
-      ...template,
-      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
-    };
+    return template as any;
   }
 
   async getAllCustomWebsiteTemplates(): Promise<CustomWebsiteTemplate[]> {
     const results = await db.select().from(customWebsiteTemplates).orderBy(customWebsiteTemplates.displayOrder, customWebsiteTemplates.name);
     
-    // Map database structure to expected interface
-    return results.map(template => ({
-      ...template,
-      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
-    }));
+    return results as any;
   }
 
   async getActiveCustomWebsiteTemplates(): Promise<CustomWebsiteTemplate[]> {
@@ -2190,11 +2177,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(customWebsiteTemplates.isActive, true))
       .orderBy(customWebsiteTemplates.displayOrder, customWebsiteTemplates.name);
     
-    // Map database structure to expected interface
-    return results.map(template => ({
-      ...template,
-      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
-    }));
+    return results as any;
   }
 
   async getCustomWebsiteTemplatesByIndustry(industry: string): Promise<CustomWebsiteTemplate[]> {
@@ -2205,60 +2188,37 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(customWebsiteTemplates.displayOrder, customWebsiteTemplates.name);
     
-    // Map database structure to expected interface
-    return results.map(template => ({
-      ...template,
-      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
-    }));
+    return results as any;
   }
 
   async createCustomWebsiteTemplate(templateData: InsertCustomWebsiteTemplate): Promise<CustomWebsiteTemplate> {
-    // Convert status to isActive if needed
     const dbData = {
       ...templateData,
-      isActive: templateData.status === 'active',
       createdAt: new Date(),
       updatedAt: new Date()
     };
-    delete (dbData as any).status; // Remove status field for database insert
 
     const [template] = await db
       .insert(customWebsiteTemplates)
-      .values(dbData)
+      .values(dbData as any)
       .returning();
-    
-    // Map back to expected interface
-    return {
-      ...template,
-      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
-    };
+    return template as any;
   }
 
   async updateCustomWebsiteTemplate(id: number, templateData: Partial<InsertCustomWebsiteTemplate>): Promise<CustomWebsiteTemplate | undefined> {
-    // Convert status to isActive if needed
     const dbData: any = {
       ...templateData,
       updatedAt: new Date()
     };
-    
-    if (templateData.status !== undefined) {
-      dbData.isActive = templateData.status === 'active';
-      delete dbData.status; // Remove status field for database update
-    }
 
     const [template] = await db
       .update(customWebsiteTemplates)
-      .set(dbData)
+      .set(dbData as any)
       .where(eq(customWebsiteTemplates.id, id))
       .returning();
     
     if (!template) return undefined;
-    
-    // Map back to expected interface
-    return {
-      ...template,
-      status: template.isActive ? 'active' : 'inactive' as 'active' | 'inactive'
-    };
+    return template as any;
   }
 
   async deleteCustomWebsiteTemplate(id: number): Promise<boolean> {
@@ -2417,7 +2377,7 @@ export class DatabaseStorage implements IStorage {
       isActive: users.isActive,
       isBetaTester: users.isBetaTester,
       createdAt: users.createdAt,
-    }).from(users).orderBy(desc(users.createdAt));
+    }).from(users).orderBy(desc(users.createdAt)) as any;
   }
 
   async getAllLeadsForAdmin(): Promise<Array<{
@@ -2468,7 +2428,7 @@ export class DatabaseStorage implements IStorage {
       })),
     ];
 
-    return allLeads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return allLeads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) as any;
   }
 
   async getAllWebsitesForAdmin(): Promise<Array<{
@@ -2489,7 +2449,7 @@ export class DatabaseStorage implements IStorage {
     })
     .from(websites)
     .leftJoin(users, eq(websites.userId, users.id))
-    .orderBy(desc(websites.createdDate));
+    .orderBy(desc(websites.createdDate)) as any;
   }
 
   // Custom Forms operations - updated for new schema
@@ -2574,7 +2534,7 @@ export class DatabaseStorage implements IStorage {
   async createCustomFormLead(leadData: InsertCustomFormLead): Promise<CustomFormLead> {
     const [lead] = await db
       .insert(customFormLeads)
-      .values(leadData)
+      .values(leadData as any)
       .returning();
     return lead;
   }
@@ -2627,7 +2587,7 @@ export class DatabaseStorage implements IStorage {
   async createTicketMessage(messageData: InsertTicketMessage): Promise<TicketMessage> {
     const [message] = await db
       .insert(ticketMessages)
-      .values(messageData)
+      .values(messageData as any)
       .returning();
 
     // Update the ticket's lastResponseAt timestamp
@@ -3139,7 +3099,7 @@ export class DatabaseStorage implements IStorage {
   async createDfyService(service: InsertDfyService): Promise<DfyService> {
     const [newService] = await db
       .insert(dfyServices)
-      .values(service)
+      .values(service as any)
       .returning();
     return newService;
   }
@@ -3147,7 +3107,7 @@ export class DatabaseStorage implements IStorage {
   async updateDfyService(id: number, service: Partial<InsertDfyService>): Promise<DfyService | undefined> {
     const [updatedService] = await db
       .update(dfyServices)
-      .set({ ...service, updatedAt: new Date() })
+      .set({ ...service, updatedAt: new Date() } as any)
       .where(eq(dfyServices.id, id))
       .returning();
     return updatedService;
@@ -3304,16 +3264,6 @@ export class DatabaseStorage implements IStorage {
       ));
   }
 
-  async getUserSlotsByDateRange(userId: string, startDate: string, endDate: string): Promise<AvailabilitySlot[]> {
-    return await db.select()
-      .from(availabilitySlots)
-      .where(and(
-        eq(availabilitySlots.userId, userId),
-        sql`${availabilitySlots.date} >= ${startDate}`,
-        sql`${availabilitySlots.date} <= ${endDate}`
-      ));
-  }
-
   async getUserSlotsWithLeadsByDateRange(userId: string, startDate: string, endDate: string): Promise<any[]> {
     const slots = await db.select({
       id: availabilitySlots.id,
@@ -3440,22 +3390,6 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async createAvailabilitySlot(data: InsertAvailabilitySlot): Promise<AvailabilitySlot> {
-    const [newSlot] = await db
-      .insert(availabilitySlots)
-      .values(data)
-      .returning();
-    return newSlot;
-  }
-
-  async createRecurringAvailability(data: InsertRecurringAvailability): Promise<RecurringAvailability> {
-    const [newAvailability] = await db
-      .insert(recurringAvailability)
-      .values(data)
-      .returning();
-    return newAvailability;
-  }
-
   async saveUserWeeklySchedule(userId: string, schedule: Record<number, { enabled: boolean; startTime: string; endTime: string; slotDuration: number }>): Promise<RecurringAvailability[]> {
     // First, clear all existing availability for this user
     await this.clearUserRecurringAvailability(userId);
@@ -3562,7 +3496,7 @@ export class DatabaseStorage implements IStorage {
       .from(calendarEvents)
       .where(and(
         eq(calendarEvents.userId, userId),
-        eq(calendarEvents.type, type)
+        eq(calendarEvents.type, type as any)
       ))
       .orderBy(calendarEvents.startsAt);
   }
@@ -3581,7 +3515,7 @@ export class DatabaseStorage implements IStorage {
   async createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent> {
     const [newEvent] = await db
       .insert(calendarEvents)
-      .values(event)
+      .values(event as any)
       .returning();
     return newEvent;
   }
@@ -3589,7 +3523,7 @@ export class DatabaseStorage implements IStorage {
   async updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined> {
     const [updatedEvent] = await db
       .update(calendarEvents)
-      .set({ ...event, updatedAt: new Date() })
+      .set({ ...event, updatedAt: new Date() } as any)
       .where(eq(calendarEvents.id, id))
       .returning();
     return updatedEvent;
@@ -3619,7 +3553,7 @@ export class DatabaseStorage implements IStorage {
   async createProposal(proposal: InsertProposal): Promise<Proposal> {
     const [newProposal] = await db
       .insert(proposals)
-      .values(proposal)
+      .values(proposal as any)
       .returning();
     return newProposal;
   }
@@ -3627,7 +3561,7 @@ export class DatabaseStorage implements IStorage {
   async updateUserProposal(userId: string, id: number, data: Partial<InsertProposal>): Promise<Proposal | undefined> {
     const [updatedProposal] = await db
       .update(proposals)
-      .set({ ...data, updatedAt: new Date() })
+      .set({ ...data, updatedAt: new Date() } as any)
       .where(and(
         eq(proposals.id, id),
         eq(proposals.userId, userId)
@@ -4050,7 +3984,7 @@ export class DatabaseStorage implements IStorage {
   async createSeoCycle(cycle: InsertSeoCycle): Promise<SeoCycle> {
     const [newCycle] = await db
       .insert(seoCycles)
-      .values(cycle)
+      .values(cycle as any)
       .returning();
     return newCycle;
   }
@@ -4058,7 +3992,7 @@ export class DatabaseStorage implements IStorage {
   async updateSeoCycle(id: number, updateData: Partial<InsertSeoCycle>): Promise<SeoCycle | undefined> {
     const [cycle] = await db
       .update(seoCycles)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(seoCycles.id, id))
       .returning();
     return cycle || undefined;
@@ -4255,7 +4189,7 @@ export class DatabaseStorage implements IStorage {
     
     const [newSettings] = await db
       .insert(crmSettings)
-      .values(processedSettings)
+      .values(processedSettings as any)
       .returning();
     return newSettings;
   }
@@ -4283,7 +4217,7 @@ export class DatabaseStorage implements IStorage {
     
     const [settings] = await db
       .update(crmSettings)
-      .set({ ...processedData, updatedAt: new Date() })
+      .set({ ...processedData, updatedAt: new Date() } as any)
       .where(eq(crmSettings.userId, userId))
       .returning();
     return settings || undefined;
@@ -4341,7 +4275,7 @@ export class DatabaseStorage implements IStorage {
   async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
     const [newWorkOrder] = await db
       .insert(workOrders)
-      .values(workOrder)
+      .values(workOrder as any)
       .returning();
     return newWorkOrder;
   }
@@ -4349,7 +4283,7 @@ export class DatabaseStorage implements IStorage {
   async updateWorkOrder(id: number, updateData: Partial<InsertWorkOrder>): Promise<WorkOrder | undefined> {
     const [workOrder] = await db
       .update(workOrders)
-      .set({ ...updateData, updatedAt: new Date() })
+      .set({ ...updateData, updatedAt: new Date() } as any)
       .where(eq(workOrders.id, id))
       .returning();
     return workOrder || undefined;
@@ -4396,7 +4330,7 @@ export class DatabaseStorage implements IStorage {
   async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
     const [newInvoice] = await db
       .insert(invoices)
-      .values(invoice)
+      .values(invoice as any)
       .returning();
     return newInvoice;
   }
@@ -4404,7 +4338,7 @@ export class DatabaseStorage implements IStorage {
   async updateInvoice(id: number, updateData: Partial<InsertInvoice>): Promise<Invoice | undefined> {
     const [invoice] = await db
       .update(invoices)
-      .set({ ...updateData, updatedAt: new Date() })
+      .set({ ...updateData, updatedAt: new Date() } as any)
       .where(eq(invoices.id, id))
       .returning();
     return invoice || undefined;
@@ -4463,7 +4397,7 @@ export class DatabaseStorage implements IStorage {
 
     const workOrderNumber = `WO-${nanoid(10)}`;
     
-    const workOrderData: InsertWorkOrder = {
+    const workOrderData: any = {
       userId,
       title: `Work Order for ${estimate.customerName}`,
       leadId: estimate.leadId || null,
@@ -4532,7 +4466,7 @@ export class DatabaseStorage implements IStorage {
 
     await db
       .update(workOrders)
-      .set({ status: 'completed', completedAt: new Date(), updatedAt: new Date() })
+      .set({ status: 'completed', completedDate: new Date(), updatedAt: new Date() } as any)
       .where(eq(workOrders.id, workOrderId));
 
     return invoice;
@@ -4551,7 +4485,7 @@ export class DatabaseStorage implements IStorage {
 
     const workOrderNumber = `WO-${nanoid(10)}`;
     
-    const workOrderData: InsertWorkOrder = {
+    const workOrderData: any = {
       userId,
       title: `Work Order for ${invoice.customerName}`,
       leadId: invoice.leadId || null,
@@ -4618,7 +4552,7 @@ export class DatabaseStorage implements IStorage {
   async createCrmAutomation(automation: InsertCrmAutomation): Promise<CrmAutomation> {
     const [newAutomation] = await db
       .insert(crmAutomations)
-      .values(automation)
+      .values(automation as any)
       .returning();
     return newAutomation;
   }
@@ -4626,7 +4560,7 @@ export class DatabaseStorage implements IStorage {
   async updateCrmAutomation(id: number, updateData: Partial<InsertCrmAutomation>): Promise<CrmAutomation | undefined> {
     const [automation] = await db
       .update(crmAutomations)
-      .set({ ...updateData, updatedAt: new Date() })
+      .set({ ...updateData, updatedAt: new Date() } as any)
       .where(eq(crmAutomations.id, id))
       .returning();
     return automation || undefined;
@@ -4649,7 +4583,7 @@ export class DatabaseStorage implements IStorage {
   async createCrmAutomationStep(step: InsertCrmAutomationStep): Promise<CrmAutomationStep> {
     const [newStep] = await db
       .insert(crmAutomationSteps)
-      .values(step)
+      .values(step as any)
       .returning();
     return newStep;
   }
@@ -4657,7 +4591,7 @@ export class DatabaseStorage implements IStorage {
   async updateCrmAutomationStep(id: number, updateData: Partial<InsertCrmAutomationStep>): Promise<CrmAutomationStep | undefined> {
     const [step] = await db
       .update(crmAutomationSteps)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(crmAutomationSteps.id, id))
       .returning();
     return step || undefined;
@@ -4707,7 +4641,7 @@ export class DatabaseStorage implements IStorage {
   async createCrmAutomationRun(run: InsertCrmAutomationRun): Promise<CrmAutomationRun> {
     const [newRun] = await db
       .insert(crmAutomationRuns)
-      .values(run)
+      .values(run as any)
       .returning();
     return newRun;
   }
@@ -4715,7 +4649,7 @@ export class DatabaseStorage implements IStorage {
   async updateCrmAutomationRun(id: number, updateData: Partial<InsertCrmAutomationRun>): Promise<CrmAutomationRun | undefined> {
     const [run] = await db
       .update(crmAutomationRuns)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(crmAutomationRuns.id, id))
       .returning();
     return run || undefined;
@@ -4733,7 +4667,7 @@ export class DatabaseStorage implements IStorage {
   async createCrmAutomationStepRun(stepRun: InsertCrmAutomationStepRun): Promise<CrmAutomationStepRun> {
     const [newStepRun] = await db
       .insert(crmAutomationStepRuns)
-      .values(stepRun)
+      .values(stepRun as any)
       .returning();
     return newStepRun;
   }
@@ -4741,7 +4675,7 @@ export class DatabaseStorage implements IStorage {
   async updateCrmAutomationStepRun(id: number, updateData: Partial<InsertCrmAutomationStepRun>): Promise<CrmAutomationStepRun | undefined> {
     const [stepRun] = await db
       .update(crmAutomationStepRuns)
-      .set(updateData)
+      .set(updateData as any)
       .where(eq(crmAutomationStepRuns.id, id))
       .returning();
     return stepRun || undefined;
@@ -5168,7 +5102,7 @@ export class DatabaseStorage implements IStorage {
   async createPropertySnapshot(snapshot: InsertPropertySnapshot): Promise<PropertySnapshot> {
     const [newSnapshot] = await db
       .insert(propertySnapshots)
-      .values(snapshot)
+      .values(snapshot as any)
       .returning();
     return newSnapshot;
   }

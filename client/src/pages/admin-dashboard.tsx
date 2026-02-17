@@ -3501,7 +3501,7 @@ export default function AdminDashboard() {
                     <Label>Template Icon</Label>
                     <div className="mt-1">
                       <IconSelector
-                        selectedIconId={editTemplateIconId}
+                        selectedIconId={editTemplateIconId ?? undefined}
                         onIconSelect={(iconId, iconUrl) => {
                           setEditTemplateIconId(iconId);
                           setEditTemplateIconUrl(iconUrl);
@@ -4490,7 +4490,7 @@ function EmailManagementSection() {
       if (!response.ok) {
         throw new Error('Failed to fetch email statistics');
       }
-      return response.json() as Array<{ emailType: string; count: number }>;
+      return await response.json() as Array<{ emailType: string; count: number }>;
     }
   });
 
@@ -5630,7 +5630,7 @@ function CallBookingsManagement() {
                             {slot.startTime} - {slot.endTime}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            {slot.teamMember} • {slot.duration} min
+                            {(slot as any).teamMember || "Team"} • {(slot as any).duration ?? 0} min
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
                             Bookings: {slot.currentBookings} / {slot.maxBookings}

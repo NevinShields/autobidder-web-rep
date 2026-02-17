@@ -71,7 +71,7 @@ export default function ProposalsPage() {
   const [formData, setFormData] = useState<ProposalFormData>(defaultFormData);
 
   // Fetch existing proposal
-  const { data: proposal, isLoading } = useQuery({
+  const { data: proposal, isLoading } = useQuery<Proposal | null>({
     queryKey: ["/api/proposals"],
     retry: false,
   });

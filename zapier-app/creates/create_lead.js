@@ -113,9 +113,10 @@ module.exports = {
       {
         key: 'formulaId',
         label: 'Calculator ID',
-        type: 'string',
+        type: 'integer',
         required: false,
         helpText: 'The ID of the calculator used to generate this lead.',
+        dynamic: 'new_calculator.id.name',
       },
       {
         key: 'variables',

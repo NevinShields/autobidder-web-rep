@@ -10,8 +10,8 @@ const performList = async (z, bundle) => {
     },
   });
 
-  // Extract the data field from each wrapped response
-  return response.data.map(item => item.data);
+  // Keep backward-compatible wrapped keys while preserving top-level fields.
+  return response.data.map(item => normalizeNewLeadPayload(item));
 };
 
 const performSubscribe = async (z, bundle) => {
@@ -58,18 +58,30 @@ const getSample = async (z, bundle) => {
     },
   });
 
-  // Extract the data field from each wrapped sample response
-  return response.data.map(item => item.data);
+  // Keep backward-compatible wrapped keys while preserving top-level fields.
+  return response.data.map(item => normalizeNewLeadPayload(item));
 };
 
 // Handle webhook data - extract the data field from webhook payload
 const performWebhook = (z, bundle) => {
-  if (bundle.cleanedRequest && bundle.cleanedRequest.data) {
-    // Return the data field from webhook payload
-    return [bundle.cleanedRequest.data];
+  if (bundle.cleanedRequest) {
+    return [normalizeNewLeadPayload(bundle.cleanedRequest)];
   }
   // Fallback to empty array if no data
   return [];
+};
+
+const normalizeNewLeadPayload = (item) => {
+  const data = item?.data || item || {};
+  const event = item?.event || 'new_lead';
+  const timestamp = item?.timestamp || data?.createdAt || new Date().toISOString();
+
+  return {
+    ...data,
+    event,
+    timestamp,
+    data,
+  };
 };
 
 module.exports = {
@@ -86,6 +98,23 @@ module.exports = {
     perform: performWebhook, // Use webhook-specific handler for instant triggers
     performList: performList, // Use polling handler for polling
     sample: {
+      event: "new_lead",
+      timestamp: "2023-12-01T12:00:00Z",
+      data: {
+        id: "1",
+        name: "John Doe",
+        email: "john@example.com",
+        phone: "555-123-4567",
+        address: "123 Main St",
+        serviceType: "Roof Cleaning",
+        totalPrice: 250,
+        status: "new",
+        createdAt: "2023-12-01T12:00:00Z",
+        selectedUpsells: [],
+        appliedDiscounts: [],
+        notes: "Please call before arrival",
+        source: "Calculator Form",
+      },
       id: "1",
       name: "John Doe",
       email: "john@example.com",
@@ -105,6 +134,25 @@ module.exports = {
       source: "Calculator Form"
     },
     outputFields: [
+      { key: 'event', label: 'Event', type: 'string' },
+      { key: 'timestamp', label: 'Timestamp', type: 'datetime' },
+      { key: 'data.id', label: 'Legacy Lead ID', type: 'string' },
+      { key: 'data.name', label: 'Legacy Customer Name', type: 'string' },
+      { key: 'data.email', label: 'Legacy Customer Email', type: 'string' },
+      { key: 'data.phone', label: 'Legacy Customer Phone', type: 'string' },
+      { key: 'data.address', label: 'Legacy Service Address', type: 'string' },
+      { key: 'data.source', label: 'Legacy Lead Source', type: 'string' },
+      { key: 'data.totalPrice', label: 'Legacy Total Price', type: 'integer' },
+      { key: 'data.selectedUpsells', label: 'Legacy Selected Upsells' },
+      { key: 'data.appliedDiscounts', label: 'Legacy Applied Discounts' },
+      { key: 'data.notes', label: 'Legacy Notes', type: 'string' },
+      { key: 'data.services', label: 'Legacy Services' },
+      { key: 'data.status', label: 'Legacy Status', type: 'string' },
+      { key: 'data.bundleDiscountAmount', label: 'Legacy Bundle Discount', type: 'integer' },
+      { key: 'data.taxAmount', label: 'Legacy Tax Amount', type: 'integer' },
+      { key: 'data.createdAt', label: 'Legacy Created At', type: 'datetime' },
+      { key: 'data.howDidYouHear', label: 'Legacy How Did You Hear', type: 'string' },
+      { key: 'data.subtotal', label: 'Legacy Subtotal', type: 'integer' },
       { key: 'id', label: 'Lead ID', type: 'string' },
       { key: 'name', label: 'Customer Name', type: 'string' },
       { key: 'email', label: 'Customer Email', type: 'string' },

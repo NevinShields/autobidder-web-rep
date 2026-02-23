@@ -130,6 +130,13 @@ const buildThemeCss = (t: CssThemeTokens) => `
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
 }
 
+.ab-calendar-container {
+  background: ${t.surfaceBg};
+  border: 1px solid ${t.border};
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
 .ab-button,
 .ab-button-primary {
   background: ${t.primary};
@@ -870,6 +877,7 @@ const CSS_THEME_PRESETS: CssThemePreset[] = [
     }) + `
 #autobidder-form,
 #autobidder-form .ab-question-card,
+#autobidder-form .ab-calendar-container,
 #autobidder-form .ab-pricing-card,
 #autobidder-form .ab-input,
 #autobidder-form .ab-select,
@@ -923,6 +931,7 @@ const CSS_THEME_PRESETS: CssThemePreset[] = [
       error: "#be123c",
     }) + `
 #autobidder-form .ab-question-card,
+#autobidder-form .ab-calendar-container,
 #autobidder-form .ab-pricing-card,
 #autobidder-form .ab-input,
 #autobidder-form .ab-select,
@@ -1144,6 +1153,16 @@ const previewScaffoldCSS = `
 /* Question card styles */
 #design-css-preview #autobidder-form .ab-question-card {
   background-color: var(--ab-question-card-bg, #FFFFFF);
+  border-radius: var(--ab-question-card-border-radius, 12px);
+  border-color: var(--ab-question-card-border-color, #E5E7EB);
+  border-width: var(--ab-question-card-border-width, 1px);
+  border-style: solid;
+  padding: var(--ab-question-card-padding, 24px);
+  box-shadow: var(--ab-question-card-shadow, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
+}
+
+#design-css-preview #autobidder-form .ab-calendar-container {
+  background-color: var(--ab-calendar-container-bg, var(--ab-question-card-bg, #FFFFFF));
   border-radius: var(--ab-question-card-border-radius, 12px);
   border-color: var(--ab-question-card-border-color, #E5E7EB);
   border-width: var(--ab-question-card-border-width, 1px);
@@ -3725,7 +3744,10 @@ ${generateCSSVariables(styling)}
 
                                     <div className="preview-stage">
                                       <p className="preview-stage-title">Stage 6 · Booking + Final CTA</p>
-                                      <div className="ab-question-card space-y-4">
+                                      <div
+                                        className="ab-calendar-container space-y-4"
+                                        {...previewTargetAttributes('.ab-calendar-container', 'Calendar container')}
+                                      >
                                         <div>
                                           <h4 className="text-sm font-medium mb-4">Select Date</h4>
                                           <div className="space-y-3">
@@ -4209,6 +4231,7 @@ ${generateCSSVariables(styling)}
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-nav-next</span> - Next button</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-month-title</span> - Month title</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-day-header</span> - Day headers</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-container</span> - Calendar wrapper card</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-calendar-date</span> - Date buttons</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-time-slot</span> - Time slots</div>
                               </div>

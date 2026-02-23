@@ -182,6 +182,8 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
 
     submitLeadMutation.mutate({
       formulaId: formula.id,
+      // Ensure public/single-service submissions are attributed to the calculator owner.
+      userId: (formula as any).userId,
       name: leadForm.name,
       email: leadForm.email,
       phone: leadForm.phone,

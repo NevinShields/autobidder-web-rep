@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
@@ -41,7 +51,7 @@ import type { Formula } from "@shared/schema";
 function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onToggleActive, getServiceIcon }: {
   formula: Formula;
   onPreview: (formula: Formula) => void;
-  onDelete: (id: number) => void;
+  onDelete: (formula: Formula) => void;
   onCopyEmbed: (embedId: string) => void;
   onToggleActive: (id: number, isActive: boolean) => void;
   getServiceIcon: (formula: Formula) => any;
@@ -66,7 +76,7 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
     <Card
       ref={setNodeRef}
       style={style}
-      className={`group rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur hover:shadow-md transition-shadow duration-200 ${
+      className={`group rounded-2xl border border-slate-300 dark:border-slate-700/70 bg-white dark:bg-slate-900/70 shadow-md shadow-slate-200/60 dark:shadow-none backdrop-blur hover:shadow-lg hover:shadow-slate-200/70 dark:hover:shadow-none transition-shadow duration-200 ${
         isDragging ? 'ring-2 ring-amber-300 dark:ring-amber-500/50 shadow-2xl scale-105' : ''
       }`}
       data-testid={`formula-card-${formula.id}`}
@@ -133,10 +143,10 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
               </Button>
             </Link>
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
-              onClick={() => onDelete(formula.id)}
-              className="flex-1"
+              onClick={() => onDelete(formula)}
+              className="flex-1 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
             >
               <Trash2 className="w-3 h-3 mr-1.5" />
               Delete
@@ -154,6 +164,7 @@ export default function FormulasPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [formulaToDelete, setFormulaToDelete] = useState<Formula | null>(null);
 
   // Fetch formulas
   const { data: formulas = [], isLoading } = useQuery<Formula[]>({
@@ -389,7 +400,7 @@ export default function FormulasPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[...Array(6)].map((_, i) => (
-              <Card key={i} className="animate-pulse rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70">
+              <Card key={i} className="animate-pulse rounded-2xl border border-slate-300 dark:border-slate-700/70 bg-white dark:bg-slate-900/70 shadow-md shadow-slate-200/60 dark:shadow-none">
                 <CardHeader>
                   <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
                 </CardHeader>
@@ -403,7 +414,7 @@ export default function FormulasPage() {
             ))}
           </div>
         ) : formulas.length === 0 ? (
-          <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/90 dark:bg-slate-900/70 shadow-sm backdrop-blur text-center py-12">
+          <Card className="rounded-2xl border border-slate-300 dark:border-slate-700/70 bg-white dark:bg-slate-900/70 shadow-md shadow-slate-200/60 dark:shadow-none backdrop-blur text-center py-12">
             <CardContent>
               <Calculator className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Formulas Yet</h3>
@@ -439,7 +450,7 @@ export default function FormulasPage() {
                       setSelectedFormula(formula);
                       setShowPreviewModal(true);
                     }}
-                    onDelete={(id) => deleteFormulaMutation.mutate(id)}
+                    onDelete={(formula) => setFormulaToDelete(formula)}
                     onCopyEmbed={copyEmbedUrl}
                     onToggleActive={(id, isActive) => toggleFormulaMutation.mutate({ id, isActive })}
                     getServiceIcon={getServiceIcon}
@@ -459,7 +470,7 @@ export default function FormulasPage() {
               }}
             >
               {activeId ? (
-                <Card className="rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-white/95 dark:bg-slate-900/80 shadow-2xl rotate-3 scale-105 opacity-90 backdrop-blur">
+                <Card className="rounded-2xl border border-slate-300 dark:border-slate-700/70 bg-white dark:bg-slate-900/80 shadow-2xl shadow-slate-300/60 dark:shadow-none rotate-3 scale-105 opacity-90 backdrop-blur">
                   <CardHeader className="pb-3">
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -496,6 +507,40 @@ export default function FormulasPage() {
             formula={selectedFormula}
           />
         )}
+
+        <AlertDialog
+          open={!!formulaToDelete}
+          onOpenChange={(open) => {
+            if (!open) setFormulaToDelete(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this formula?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {formulaToDelete
+                  ? `This will permanently delete "${formulaToDelete.name}" and cannot be undone.`
+                  : "This action cannot be undone."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteFormulaMutation.isPending}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (!formulaToDelete) return;
+                  deleteFormulaMutation.mutate(formulaToDelete.id);
+                  setFormulaToDelete(null);
+                }}
+                disabled={deleteFormulaMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteFormulaMutation.isPending ? "Deleting..." : "Delete Formula"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         </div>
       </div>
     </DashboardLayout>

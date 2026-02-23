@@ -263,7 +263,7 @@ export default function ServiceCardDisplay({
         {selectedServices.map((service, index) => (
           <div
             key={service.formula.id}
-            className={`ab-pricing-card pricing-card relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-300 hover:shadow-xl hover:scale-105 group`}
+            className={`ab-pricing-card pricing-card relative ${shadowClasses[styling.pricingCardShadow] || 'shadow-lg'} transition-all duration-300 hover:shadow-xl group`}
             style={hasCustomCSS ? {} : {
               borderRadius: `${styling.pricingCardBorderRadius || 12}px`,
               backgroundColor: styling.pricingCardBackgroundColor || '#FFFFFF',

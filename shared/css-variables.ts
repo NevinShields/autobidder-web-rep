@@ -178,6 +178,7 @@ export function generateCSSVariables(styling: StylingOptions): string {
     '--ab-pricing-card-shadow': getShadowValue(styling.pricingCardShadow || 'lg'),
     '--ab-pricing-text-color': styling.pricingTextColor || '#1F2937',
     '--ab-pricing-accent-color': styling.pricingAccentColor || '#2563EB',
+    '--ab-calendar-container-bg': styling.questionCardBackgroundColor || '#FFFFFF',
   };
 
   // Convert to CSS string
@@ -388,6 +389,7 @@ export function generateCustomCSSExamples(): string {
  * .ab-question-label - Question/field labels
  *
  * BOOKING CALENDAR:
+ * .ab-calendar-container - Calendar card container wrapper
  * .ab-calendar-nav - Calendar navigation buttons (prev/next month)
  * .ab-calendar-nav-prev - Previous month button
  * .ab-calendar-nav-next - Next month button

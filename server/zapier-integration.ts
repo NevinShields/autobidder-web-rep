@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { zapierWebhooks, zapierApiKeys, leads, formulas, type ZapierWebhook, type ZapierApiKey } from "@shared/schema";
+import { zapierWebhooks, zapierApiKeys, leads, formulas, estimates, type ZapierWebhook, type ZapierApiKey } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import type { Request, Response } from "express";
 
@@ -209,7 +209,7 @@ export class ZapierIntegrationService {
         const allLeads = await db.select()
           .from(leads)
           .leftJoin(formulas, eq(leads.formulaId, formulas.id))
-          .where(eq(formulas.userId, userId))
+          .where(eq(leads.userId, userId))
           .orderBy(desc(leads.createdAt))
           .limit(limit);
         
@@ -290,8 +290,8 @@ export class ZapierIntegrationService {
           formulaName: formula?.name || 'Unknown',
           totalPrice: lead.calculatedPrice || 0,
           serviceType: formula?.name || 'Service',
-          status: 'new',
-          source: 'Website Calculator',
+          status: lead.stage || 'new',
+          source: lead.source || 'Website Calculator',
           createdAt: lead.createdAt,
           notes: lead.notes
         }));
@@ -363,7 +363,7 @@ export class ZapierIntegrationService {
         const updatedLeads = await db.select()
           .from(leads)
           .leftJoin(formulas, eq(leads.formulaId, formulas.id))
-          .where(eq(formulas.userId, userId))
+          .where(eq(leads.userId, userId))
           .orderBy(desc(leads.createdAt))
           .limit(limit);
 
@@ -401,7 +401,7 @@ export class ZapierIntegrationService {
         const stageChangedLeads = await db.select()
           .from(leads)
           .leftJoin(formulas, eq(leads.formulaId, formulas.id))
-          .where(eq(formulas.userId, userId))
+          .where(eq(leads.userId, userId))
           .orderBy(desc(leads.createdAt))
           .limit(limit);
 
@@ -476,7 +476,7 @@ export class ZapierIntegrationService {
         const taggedLeads = await db.select()
           .from(leads)
           .leftJoin(formulas, eq(leads.formulaId, formulas.id))
-          .where(eq(formulas.userId, userId))
+          .where(eq(leads.userId, userId))
           .orderBy(desc(leads.createdAt))
           .limit(limit);
 
@@ -562,13 +562,32 @@ export class ZapierIntegrationService {
       case 'estimate_sent':
       case 'estimate_viewed':
       case 'estimate_accepted':
-        // For estimate events, return sample estimate data
+        // Pull real estimates first for this account, then fallback to defaults if none exist.
         const statusMap: Record<string, string> = {
           'estimate_created': 'draft',
           'estimate_sent': 'sent',
           'estimate_viewed': 'viewed',
           'estimate_accepted': 'accepted'
         };
+
+        const recentEstimates = await db.select()
+          .from(estimates)
+          .where(eq(estimates.userId, userId))
+          .orderBy(desc(estimates.createdAt))
+          .limit(limit);
+
+        if (recentEstimates.length > 0) {
+          return recentEstimates.map((estimate) => ({
+            id: estimate.id,
+            estimateNumber: estimate.estimateNumber,
+            customerName: estimate.customerName,
+            customerEmail: estimate.customerEmail,
+            customerPhone: estimate.customerPhone,
+            totalAmount: estimate.totalAmount,
+            status: estimate.status || statusMap[event],
+            createdAt: estimate.createdAt,
+          }));
+        }
 
         return [
           {

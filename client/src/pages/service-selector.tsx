@@ -823,7 +823,18 @@ export default function ServiceSelector() {
                         type="text"
                         placeholder="e.g., 123 Main St, Springfield, IL 62701"
                         value={propertyAddress}
-                        onChange={(e) => setPropertyAddress(e.target.value)}
+                        onChange={(e) => {
+                          const nextAddress = e.target.value;
+                          setPropertyAddress(nextAddress);
+                          setLeadForm(prev => {
+                            // Keep contact address synced from ATTOM input,
+                            // but preserve a manually-entered different contact address.
+                            if (prev.address && prev.address.trim() && prev.address.trim() !== propertyAddress.trim()) {
+                              return prev;
+                            }
+                            return { ...prev, address: nextAddress };
+                          });
+                        }}
                         className="w-full"
                       />
                     </div>
@@ -954,6 +965,12 @@ export default function ServiceSelector() {
                       <button
                         onClick={() => {
                           if (settings.enableLeadCapture) {
+                            if (propertyAddress.trim()) {
+                              setLeadForm(prev => {
+                                if (prev.address && prev.address.trim()) return prev;
+                                return { ...prev, address: propertyAddress.trim() };
+                              });
+                            }
                             setCurrentStep('contact');
                           } else {
                             setCurrentStep('pricing');

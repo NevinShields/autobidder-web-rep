@@ -16,8 +16,8 @@ const performList = async (z, bundle) => {
     params,
   });
 
-  // Extract the data field from each wrapped response
-  return response.data.map(item => item.data);
+  // Extract and normalize the data field from each wrapped response.
+  return response.data.map(item => normalizeLeadPayload(item.data));
 };
 
 const performSubscribe = async (z, bundle) => {
@@ -73,19 +73,26 @@ const getSample = async (z, bundle) => {
     },
   });
 
-  // Extract the data field from each wrapped sample response
-  return response.data.map(item => item.data);
+  // Extract and normalize the data field from each wrapped sample response.
+  return response.data.map(item => normalizeLeadPayload(item.data));
 };
 
 // Handle webhook data - extract the data field from webhook payload
 const performWebhook = (z, bundle) => {
   if (bundle.cleanedRequest && bundle.cleanedRequest.data) {
-    // Return the data field from webhook payload
-    return [bundle.cleanedRequest.data];
+    // Return normalized data field from webhook payload.
+    return [normalizeLeadPayload(bundle.cleanedRequest.data)];
   }
   // Fallback to empty array if no data
   return [];
 };
+
+const normalizeLeadPayload = (lead) => ({
+  ...lead,
+  variables: typeof lead?.variables === 'string' ? lead.variables : JSON.stringify(lead?.variables ?? {}),
+  appliedDiscounts: typeof lead?.appliedDiscounts === 'string' ? lead.appliedDiscounts : JSON.stringify(lead?.appliedDiscounts ?? []),
+  selectedUpsells: typeof lead?.selectedUpsells === 'string' ? lead.selectedUpsells : JSON.stringify(lead?.selectedUpsells ?? []),
+});
 
 module.exports = {
   key: 'lead_tagged',
@@ -124,9 +131,9 @@ module.exports = {
       source: "Calculator Form",
       formulaId: 1,
       formulaName: "Roof Cleaning Calculator",
-      variables: {},
-      appliedDiscounts: [],
-      selectedUpsells: [],
+      variables: "{}",
+      appliedDiscounts: "[]",
+      selectedUpsells: "[]",
       tagId: 1,
       tagName: "Hot Lead",
       tagColor: "#ff0000",
@@ -148,9 +155,9 @@ module.exports = {
       { key: 'source', label: 'Lead Source', type: 'string' },
       { key: 'formulaId', label: 'Calculator ID', type: 'integer' },
       { key: 'formulaName', label: 'Calculator Name', type: 'string' },
-      { key: 'variables', label: 'Calculator Variables' },
-      { key: 'appliedDiscounts', label: 'Applied Discounts' },
-      { key: 'selectedUpsells', label: 'Selected Upsells' },
+      { key: 'variables', label: 'Calculator Variables', type: 'string' },
+      { key: 'appliedDiscounts', label: 'Applied Discounts', type: 'string' },
+      { key: 'selectedUpsells', label: 'Selected Upsells', type: 'string' },
       { key: 'tagId', label: 'Tag ID', type: 'integer' },
       { key: 'tagName', label: 'Tag Name', type: 'string' },
       { key: 'tagColor', label: 'Tag Color', type: 'string' },

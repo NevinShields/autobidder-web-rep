@@ -1434,6 +1434,10 @@ export default function StyledCalculator(props: any = {}) {
           padding: var(--ab-question-card-padding, 24px);
           box-shadow: var(--ab-question-card-shadow, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
         }
+
+        #autobidder-form .ab-calendar-container {
+          background-color: var(--ab-calendar-container-bg, var(--ab-question-card-bg, #FFFFFF));
+        }
         
         /* Form container styles */
         #autobidder-form.ab-form-container {
@@ -1479,8 +1483,8 @@ export default function StyledCalculator(props: any = {}) {
           padding: var(--ab-pricing-card-padding, 10px);
         }
         
-        #autobidder-form .ab-pricing-card:hover {
-          transform: var(--ab-pricing-card-hover-transform, scale(1.05));
+        #autobidder-form .ab-pricing-card.pricing-card:hover {
+          transform: var(--ab-pricing-card-hover-transform, none);
         }
         
         /* Pricing card child element styles */
@@ -2920,7 +2924,17 @@ export default function StyledCalculator(props: any = {}) {
                 <GoogleMapsLoader>
                   <GooglePlacesAutocomplete
                     value={propertyAddress}
-                    onChange={(newAddress) => setPropertyAddress(newAddress)}
+                    onChange={(newAddress) => {
+                      setPropertyAddress(newAddress);
+                      setLeadForm(prev => {
+                        // Keep the contact address synced from ATTOM input,
+                        // but don't overwrite a different address the user already entered.
+                        if (prev.address && prev.address.trim() && prev.address.trim() !== propertyAddress.trim()) {
+                          return prev;
+                        }
+                        return { ...prev, address: newAddress };
+                      });
+                    }}
                     placeholder="e.g., 123 Main St, Springfield, IL 62701"
                     className="w-full"
                     styling={styling}
@@ -3355,7 +3369,14 @@ export default function StyledCalculator(props: any = {}) {
                                     onClick={() => {
                                       setSelectedCallScreenLeadId(null);
                                       setSelectedCallScreenLeadType("single");
-                                      setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                                      setLeadForm(prev => ({
+                                        name: "",
+                                        email: "",
+                                        phone: "",
+                                        address: prev.address?.trim() || propertyAddress.trim(),
+                                        notes: "",
+                                        howDidYouHear: ""
+                                      }));
                                     }}
                                     className="text-gray-400 hover:text-gray-600"
                                   >
@@ -3481,7 +3502,14 @@ export default function StyledCalculator(props: any = {}) {
                   } else if (selectedLeadOption === "new") {
                     // Switch to showing the normal contact form
                     setCallScreenLeadMode("new");
-                    setLeadForm({ name: "", email: "", phone: "", address: "", notes: "", howDidYouHear: "" });
+                    setLeadForm(prev => ({
+                      name: "",
+                      email: "",
+                      phone: "",
+                      address: prev.address?.trim() || propertyAddress.trim(),
+                      notes: "",
+                      howDidYouHear: ""
+                    }));
                   }
                 }}
                 disabled={selectedLeadOption === "existing" && !selectedCallScreenLeadId}
@@ -3896,7 +3924,7 @@ export default function StyledCalculator(props: any = {}) {
                     return (
                       <div
                         key={serviceId}
-                        className="ab-pricing-card pricing-card relative overflow-hidden transition-all duration-300 hover:scale-105"
+                        className="ab-pricing-card pricing-card relative overflow-hidden transition-all duration-300"
                         style={hasCustomCSS ? {} : {
                           borderRadius: `${componentStyles.pricingCard?.borderRadius || 16}px`,
                           backgroundColor: hexToRgba(

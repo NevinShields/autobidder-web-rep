@@ -218,7 +218,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
   }
 
   return (
-    <Card>
+    <Card className="ab-calendar-container">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Calendar className="w-5 h-5" />

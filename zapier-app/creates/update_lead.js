@@ -33,6 +33,7 @@ module.exports = {
         type: 'string',
         required: true,
         helpText: 'The ID of the lead to update.',
+        dynamic: 'new_lead.id.name',
       },
       {
         key: 'status',

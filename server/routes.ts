@@ -3227,6 +3227,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Resolve owner context from payload first (public embeds), then authenticated user.
+      const targetOwnerIdForLead = validatedData.userId || (req as any).currentUser?.id;
+
       // Calculate distance-based pricing if enabled and address provided
       const baseCalculatedPrice = validatedData.calculatedPrice ?? 0;
       let distanceAdjustedPrice = baseCalculatedPrice;
@@ -3237,8 +3240,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (validatedData.address) {
         try {
-          // Get business settings
-          const businessSettings = await storage.getBusinessSettings();
+          // Get owner-specific business settings when available.
+          const businessSettings = targetOwnerIdForLead
+            ? await storage.getBusinessSettingsByUserId(targetOwnerIdForLead)
+            : await storage.getBusinessSettings();
           
           // Geocode customer address for map display (always)
           const customerGeocode = await geocodeAddress(validatedData.address);
@@ -3340,14 +3345,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lead = await storage.createLead(leadData);
       
-      // Determine owner email and ID - prefer current user, then business settings
+      // Determine owner email and ID. Prefer payload owner, then authenticated user, then settings fallback.
+      let businessOwnerId = targetOwnerIdForLead;
       let ownerEmail = (req as any).currentUser?.email;
-      let businessOwnerId = (req as any).currentUser?.id;
-      
+
+      if (businessOwnerId && !ownerEmail) {
+        const businessOwner = await storage.getUserById(businessOwnerId);
+        ownerEmail = businessOwner?.email;
+      }
+
+      if (!ownerEmail && businessOwnerId) {
+        const ownerSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+        ownerEmail = ownerSettings?.businessEmail;
+        if (ownerEmail) {
+          const businessOwner = await storage.getUserByEmail(ownerEmail);
+          businessOwnerId = businessOwner?.id || businessOwnerId;
+        }
+      }
+
+      // Final safety fallback for legacy contexts with no owner info.
       if (!ownerEmail) {
-        const businessSettings = await storage.getBusinessSettings();
-        ownerEmail = businessSettings?.businessEmail;
-        // Get the actual business owner from users table
+        const fallbackSettings = await storage.getBusinessSettings();
+        ownerEmail = fallbackSettings?.businessEmail;
         if (ownerEmail) {
           const businessOwner = await storage.getUserByEmail(ownerEmail);
           businessOwnerId = businessOwner?.id || businessOwnerId;
@@ -4814,6 +4833,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Resolve owner context from payload first (public embeds), then authenticated user.
+      const targetOwnerIdForMultiLead = validatedData.businessOwnerId || (req as any).currentUser?.id;
+
       // Calculate distance-based pricing if enabled and address provided
       const baseTotalPrice = validatedData.totalPrice ?? 0;
       let distanceAdjustedPrice = baseTotalPrice;
@@ -4824,8 +4846,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (validatedData.address) {
         try {
-          // Get business settings
-          const businessSettings = await storage.getBusinessSettings();
+          // Get owner-specific settings when available.
+          const businessSettings = targetOwnerIdForMultiLead
+            ? await storage.getBusinessSettingsByUserId(targetOwnerIdForMultiLead)
+            : await storage.getBusinessSettings();
           
           // Geocode customer address for map display (always)
           const customerGeocode = await geocodeAddress(validatedData.address);
@@ -4928,16 +4952,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (submissionId) {
           const ownerKey =
             validatedData.businessOwnerId ||
-            validatedOwnerId ||
+            targetOwnerIdForMultiLead ||
             (req as any).currentUser?.id ||
             "unknown";
         const dedupeKey = `${ownerKey}:${submissionId}`;
         recentMultiServiceSubmissions.set(dedupeKey, { leadId: lead.id, createdAt: Date.now() });
       }
       
-      // Determine owner email and ID - prefer businessOwnerId from payload, then current user, then business settings
+      // Determine owner email and ID - prefer payload owner, then current user, then owner settings, then global fallback.
       let ownerEmail = (req as any).currentUser?.email;
-      let businessOwnerId = validatedData.businessOwnerId || (req as any).currentUser?.id;
+      let businessOwnerId = targetOwnerIdForMultiLead;
       
       // If businessOwnerId provided but no email, get owner from users table
       if (businessOwnerId && !ownerEmail) {
@@ -4945,14 +4969,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ownerEmail = businessOwner?.email;
       }
       
-      // Fallback to business settings if no owner found
-      if (!ownerEmail) {
-        const businessSettings = await storage.getBusinessSettings();
-        ownerEmail = businessSettings?.businessEmail;
-        // Get the actual business owner from users table
+      // Try owner-specific business settings before global fallback.
+      if (!ownerEmail && businessOwnerId) {
+        const ownerSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+        ownerEmail = ownerSettings?.businessEmail;
         if (ownerEmail) {
           const businessOwner = await storage.getUserByEmail(ownerEmail);
           businessOwnerId = businessOwner?.id || businessOwnerId;
+        }
+      }
+
+      // Last-resort fallback for malformed/legacy public payloads without owner IDs.
+      if (!ownerEmail) {
+        const fallbackSettings = await storage.getBusinessSettings();
+        ownerEmail = fallbackSettings?.businessEmail;
+        if (ownerEmail) {
+          const businessOwner = await storage.getUserByEmail(ownerEmail);
+          businessOwnerId = businessOwner?.id || businessOwnerId;
+          console.warn(
+            `[lead-owner-resolution] multi-service fallback used leadId=${lead.id} ownerEmail=${ownerEmail} ownerId=${businessOwnerId ?? 'unknown'}`
+          );
+        } else {
+          console.warn(
+            `[lead-owner-resolution] multi-service failed leadId=${lead.id} incomingOwnerId=${targetOwnerIdForMultiLead ?? 'none'}`
+          );
         }
       }
       

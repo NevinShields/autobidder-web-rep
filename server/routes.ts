@@ -9649,20 +9649,56 @@ The Autobidder Team`;
   app.get('/api/subscription-details', requireAuth, async (req: any, res) => {
     try {
       const userId = (req as any).currentUser.id;
-      const user = await storage.getUserById(userId);
+      let user = await storage.getUserById(userId);
       
       console.log('Subscription details request for user:', userId, 'stripeSubscriptionId:', user?.stripeSubscriptionId);
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Recovery path: if Stripe customer exists but subscription ID is missing,
+      // attempt to recover the latest active/trialing subscription from Stripe.
+      if (!user.stripeSubscriptionId && user.stripeCustomerId) {
+        try {
+          const fallbackStatuses = ['active', 'trialing', 'past_due', 'incomplete'];
+          let recoveredSubscription: any = null;
+
+          for (const status of fallbackStatuses) {
+            const list = await stripe.subscriptions.list({
+              customer: user.stripeCustomerId,
+              status: status as any,
+              limit: 1,
+            });
+            if (list.data.length > 0) {
+              recoveredSubscription = list.data[0];
+              break;
+            }
+          }
+
+          if (recoveredSubscription) {
+            const interval = recoveredSubscription.items.data[0]?.price?.recurring?.interval;
+            const recoveredBillingPeriod = interval === 'year' ? 'yearly' : 'monthly';
+
+            await storage.updateUser(userId, {
+              stripeSubscriptionId: recoveredSubscription.id,
+              subscriptionStatus: recoveredSubscription.status,
+              billingPeriod: recoveredBillingPeriod as 'monthly' | 'yearly'
+            });
+            user = await storage.getUserById(userId);
+          }
+        } catch (recoveryError) {
+          console.warn('Failed to recover missing subscription ID from Stripe:', recoveryError);
+        }
+      }
       
       if (!user?.stripeSubscriptionId) {
         return res.json({ hasSubscription: false });
       }
 
-      // Check if subscription status allows showing subscription details
-      // Include 'canceling' to allow users to see subscription until their billing period ends
-      const validStatuses = ['active', 'trialing', 'incomplete', 'past_due', 'canceling'];
-      if (user.subscriptionStatus && !validStatuses.includes(user.subscriptionStatus)) {
-        return res.json({ hasSubscription: false });
-      }
+      // Do not trust local subscriptionStatus to decide visibility.
+      // It can become stale (e.g. manual admin edits or missed webhooks).
+      // We verify against Stripe directly below.
 
       // Check if it's a test subscription (fake ID)
       if (user.stripeSubscriptionId.startsWith('sub_test_')) {
@@ -9746,6 +9782,29 @@ The Autobidder Team`;
           defaultPaymentMethod: !('deleted' in customerDetails) ? customerDetails.invoice_settings?.default_payment_method : null
         }
       };
+
+      // Keep local subscription fields in sync with Stripe to avoid stale UI state.
+      try {
+        const firstInterval = subscription.items.data[0]?.price?.recurring?.interval;
+        const stripeBillingPeriod = firstInterval === 'year' ? 'yearly' : 'monthly';
+
+        const syncUpdates: any = {};
+        if (user.subscriptionStatus !== subscription.status) {
+          syncUpdates.subscriptionStatus = subscription.status;
+        }
+        if (!user.stripeCustomerId && customerDetails.id) {
+          syncUpdates.stripeCustomerId = customerDetails.id;
+        }
+        if (user.billingPeriod !== stripeBillingPeriod) {
+          syncUpdates.billingPeriod = stripeBillingPeriod;
+        }
+
+        if (Object.keys(syncUpdates).length > 0) {
+          await storage.updateUser(userId, syncUpdates);
+        }
+      } catch (syncError) {
+        console.warn('Failed to sync local subscription fields from Stripe:', syncError);
+      }
 
       
       res.json(realSubscription);
@@ -10569,6 +10628,18 @@ The Autobidder Team`;
       for (const field of allowedFields) {
         if (updates[field] !== undefined) {
           filteredUpdates[field] = updates[field];
+        }
+      }
+
+      // If admin changes only plan, keep subscription status aligned to avoid stale billing state.
+      if (filteredUpdates.plan !== undefined && filteredUpdates.subscriptionStatus === undefined) {
+        const paidPlans = new Set(['standard', 'plus', 'plus_seo']);
+        if (paidPlans.has(filteredUpdates.plan)) {
+          filteredUpdates.subscriptionStatus = 'active';
+        } else if (filteredUpdates.plan === 'free') {
+          filteredUpdates.subscriptionStatus = 'inactive';
+        } else if (filteredUpdates.plan === 'trial') {
+          filteredUpdates.subscriptionStatus = 'trialing';
         }
       }
       

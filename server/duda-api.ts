@@ -366,7 +366,6 @@ export class DudaApiService {
       'EDIT',
       'ADD_FLEX',
       'E_COMMERCE',
-      'PUBLISH',
       'REPUBLISH',
       'DEV_MODE',
       'INSITE',

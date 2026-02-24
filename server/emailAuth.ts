@@ -579,8 +579,17 @@ export function setupEmailAuth(app: Express) {
       if (!req.session.user) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      
-      const user = req.session.user;
+
+      let user: any = req.session.user as any;
+
+      // Keep session user in sync with DB so plan/subscription updates are reflected immediately.
+      const dbUser = await storage.getUserById(user.id);
+      if (!dbUser) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      user = dbUser as any;
+      req.session.user = user;
+
       const trialStatus = getTrialStatus(user);
       const isImpersonating = (req.session as any).isImpersonating || false;
       

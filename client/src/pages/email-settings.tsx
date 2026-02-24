@@ -12,29 +12,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Settings, FileText, Plus, Edit, Trash2, Save, Bell, User, Building2, Phone, MapPin, DollarSign, Calendar, Clock } from "lucide-react";
+import { Mail, Settings, FileText, Plus, Save, User, Building2, Phone, MapPin } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { EmailSettings, EmailTemplate, BusinessSettings } from "@shared/schema";
 import DashboardLayout from "@/components/dashboard-layout";
 
-// Dynamic variables that users can insert
+// Dynamic variables that are currently wired for customer data
 const DYNAMIC_VARIABLES = [
   { name: 'Customer Name', variable: '{{customerName}}', icon: User },
   { name: 'Customer Email', variable: '{{customerEmail}}', icon: Mail },
   { name: 'Customer Phone', variable: '{{customerPhone}}', icon: Phone },
   { name: 'Customer Address', variable: '{{customerAddress}}', icon: MapPin },
-  { name: 'Service Name', variable: '{{serviceName}}', icon: Plus },
-  { name: 'Total Price', variable: '{{totalPrice}}', icon: DollarSign },
-  { name: 'Original Price', variable: '{{originalPrice}}', icon: DollarSign },
-  { name: 'Revised Price', variable: '{{revisedPrice}}', icon: DollarSign },
-  { name: 'Price Change', variable: '{{priceChange}}', icon: DollarSign },
-  { name: 'Estimate Link', variable: '{{estimateLink}}', icon: FileText },
-  { name: 'Appointment Date', variable: '{{appointmentDate}}', icon: Calendar },
-  { name: 'Appointment Time', variable: '{{appointmentTime}}', icon: Clock },
-  { name: 'Current Date', variable: '{{currentDate}}', icon: Calendar },
-  { name: 'Business Name', variable: '{{businessName}}', icon: Plus },
-  { name: 'Business Phone', variable: '{{businessPhone}}', icon: Phone },
-  { name: 'Business Email', variable: '{{businessEmail}}', icon: Mail },
 ];
 
 const DEFAULT_TEMPLATES = [

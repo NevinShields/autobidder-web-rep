@@ -762,11 +762,10 @@ export default function EstimatePageSettings() {
                         allowedFileTypes={logoAllowedFileTypes}
                         onGetUploadParameters={(file) => getLogoUploadParameters(file.name)}
                         onComplete={handleLogoUploadComplete}
+                        buttonClassName="rounded-xl h-9 px-3 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800"
                       >
-                        <Button variant="outline" size="sm" className="rounded-xl border-gray-300 h-9">
-                          <Upload className="h-3.5 w-3.5 mr-2" />
-                          Upload Logo
-                        </Button>
+                        <Upload className="h-3.5 w-3.5 mr-2" />
+                        Upload Logo
                       </ObjectUploader>
                     </div>
                   </div>
@@ -805,10 +804,10 @@ export default function EstimatePageSettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="bg-blue-50/50 dark:bg-blue-900/20 p-5 rounded-2xl border border-blue-100 dark:border-blue-800/40 flex items-center justify-between gap-4">
+                  <div className="p-1 flex items-center justify-between gap-4">
                     <div>
-                      <Label className="text-blue-900 dark:text-blue-100 font-bold">Default Attachments</Label>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                      <Label className="text-gray-900 dark:text-gray-100 font-bold">Default Attachments</Label>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
                         Enable to auto-attach files to all new estimates.
                       </p>
                     </div>
@@ -834,11 +833,10 @@ export default function EstimatePageSettings() {
                               allowedFileTypes={attachmentAllowedFileTypes}
                               onGetUploadParameters={(file) => getUploadParameters(file.name)}
                               onComplete={handleUploadComplete(category)}
+                              buttonClassName="rounded-xl h-8 px-3 text-[10px] uppercase font-bold tracking-widest bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
-                              <Button variant="outline" size="sm" className="rounded-xl h-8 px-3 text-[10px] uppercase font-bold tracking-widest bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                                <Upload className="h-3 w-3 mr-1.5" />
-                                Upload
-                              </Button>
+                              <Upload className="h-3 w-3 mr-1.5" />
+                              Upload
                             </ObjectUploader>
                           )}
                         </div>
@@ -857,11 +855,10 @@ export default function EstimatePageSettings() {
                               onGetUploadParameters={(file) => getUploadParameters(file.name)}
                               onComplete={handleUploadComplete("custom", customAttachmentName)}
                               disabled={!customAttachmentName.trim()}
+                              buttonClassName="rounded-xl h-9 px-4 text-xs font-bold bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                             >
-                              <Button variant="outline" size="sm" className="rounded-xl h-9 px-4 text-xs font-bold bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800" disabled={!customAttachmentName.trim()}>
-                                <Plus className="h-3.5 w-3.5 mr-1.5" />
-                                Add
-                              </Button>
+                              <Plus className="h-3.5 w-3.5 mr-1.5" />
+                              Add
                             </ObjectUploader>
                           </div>
                         )}

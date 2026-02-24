@@ -77,7 +77,7 @@ interface Website {
 
 
 export default function Website() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isCreatingWebsite, setIsCreatingWebsite] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
@@ -90,8 +90,15 @@ export default function Website() {
   const [welcomeLink, setWelcomeLink] = useState<string | null>(null);
   const [welcomeEmailSent, setWelcomeEmailSent] = useState(false);
 
+  const normalizePlan = (rawPlan: string | undefined): string => {
+    if (!rawPlan) return 'free';
+    if (rawPlan === 'plusSeo') return 'plus_seo';
+    if (rawPlan === 'starter') return 'standard';
+    return rawPlan;
+  };
+
   // Check if user has access to websites
-  const userPlan = (user as any)?.plan || 'free';
+  const userPlan = normalizePlan((user as any)?.plan);
   const hasWebsiteAccess = WEBSITES_ALLOWED_PLANS.includes(userPlan);
 
   // SEO Tracker state
@@ -103,8 +110,8 @@ export default function Website() {
   const [showSetupChecklist, setShowSetupChecklist] = useState(true);
 
   // Check if user can publish websites ($97 Plus or $297 Plus SEO plan)
-  const canPublishWebsite = (user as any)?.plan === 'plus' || (user as any)?.plan === 'plusSeo';
-  const needsUpgradeForPublishing = (user as any)?.plan === 'standard';
+  const canPublishWebsite = userPlan === 'plus' || userPlan === 'plus_seo';
+  const needsUpgradeForPublishing = userPlan === 'standard';
 
   // Fetch existing websites
   const { data: websites = [], isLoading: websitesLoading, refetch: refetchWebsites } = useQuery<Website[]>({
@@ -422,7 +429,19 @@ export default function Website() {
   // Check if user already has a website
   const hasExistingWebsite = websites && websites.length > 0;
 
-  // Show upgrade prompt for free users
+  if (authLoading) {
+    return (
+      <DashboardLayout>
+        <div className="p-6">
+          <div className="max-w-2xl mx-auto mt-20 text-center text-gray-600 dark:text-gray-400">
+            Loading account...
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show upgrade prompt for users without website access
   if (!hasWebsiteAccess) {
     return (
       <DashboardLayout>

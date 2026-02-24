@@ -80,7 +80,7 @@ const BookingTest = lazy(() => import("@/pages/booking-test"));
 const SeoTrackerTest = lazy(() => import("@/pages/seo-tracker-test"));
 const MeasureMapTool = lazy(() => import("@/pages/measure-map-tool"));
 const FAQPage = lazy(() => import("@/pages/faq"));
-const BookCall = lazy(() => import("@/pages/book-call"));
+const CallScheduling = lazy(() => import("@/pages/call-scheduling"));
 const AcceptInvitePage = lazy(() => import("@/pages/accept-invite"));
 const CrmSettings = lazy(() => import("@/pages/crm-settings"));
 const CrmAutomations = lazy(() => import("@/pages/crm-automations"));
@@ -196,7 +196,8 @@ function Router() {
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/faq" component={FAQPage} />
-        <Route path="/book-call" component={BookCall} />
+        <Route path="/book-call" component={CallScheduling} />
+        <Route path="/schedule-call" component={CallScheduling} />
         <Route path="/accept-invite" component={AcceptInvitePage} />
         {/* Public routes for embed forms */}
         <Route path="/embed/:embedId" component={EmbedCalculator} />
@@ -296,7 +297,8 @@ function Router() {
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/faq" component={FAQPage} />
-        <Route path="/book-call" component={BookCall} />
+        <Route path="/book-call" component={CallScheduling} />
+        <Route path="/schedule-call" component={CallScheduling} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/upgrade" component={UpgradePage} />
         <Route path="/payment-confirmation" component={PaymentConfirmation} />

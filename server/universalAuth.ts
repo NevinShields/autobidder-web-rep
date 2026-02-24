@@ -14,8 +14,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     if (!req.session?.user) {
       return res.status(401).json({ success: false, message: "Authentication required" });
     }
-    
-    const user = req.session.user;
+
+    let user: any = req.session.user as any;
+
+    // Always refresh from DB so webhook/admin updates are reflected in active sessions.
+    const latestUser = await storage.getUserById(user.id);
+    if (!latestUser) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+    user = latestUser as any;
+    req.session.user = user;
     
     // Check if user is still active
     if (!user.isActive) {
@@ -28,31 +36,31 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       '/api/create-portal-session',
       '/api/subscription-details',
       '/api/stripe-webhook',
+      '/api/stripe/webhook',
       '/api/sync-subscription'
     ];
     
-    // Check trial status for trial users, but skip if they are a beta tester or accessing payment routes
-    if (user.plan === "trial" && user.trialEndDate && !user.isBetaTester && !trialBypassRoutes.includes(req.path)) {
+    // Check trial status for trial users, but skip if they are a beta tester,
+    // accessing payment routes, or already linked to a Stripe subscription.
+    if (user.plan === "trial" && user.trialEndDate && !user.isBetaTester && !user.stripeSubscriptionId && !trialBypassRoutes.includes(req.path)) {
       const now = new Date();
       const trialEnd = new Date(user.trialEndDate);
       
       if (now > trialEnd) {
         // Convert expired trial to free plan so users can continue with free-tier features
         try {
-          await storage.updateUser(user.id, {
+          const downgradedUser = await storage.updateUser(user.id, {
             plan: "free",
             subscriptionStatus: "inactive",
           });
 
-          const updatedUser = { ...user, plan: "free", subscriptionStatus: "inactive" };
-          req.session.user = updatedUser as any;
-          (req as any).currentUser = { ...updatedUser, isImpersonating: (req.session as any).isImpersonating || false };
+          user = (downgradedUser || { ...user, plan: "free", subscriptionStatus: "inactive" }) as any;
+          req.session.user = user;
         } catch (updateError) {
           console.error("Error updating expired trial user in auth middleware:", updateError);
           // Fall back to allowing access but treat as free plan in-memory
-          const updatedUser = { ...user, plan: "free", subscriptionStatus: "inactive" };
-          req.session.user = updatedUser as any;
-          (req as any).currentUser = { ...updatedUser, isImpersonating: (req.session as any).isImpersonating || false };
+          user = { ...user, plan: "free", subscriptionStatus: "inactive" };
+          req.session.user = user as any;
         }
       }
     }

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow, Image, Moon, Sun, Video, Layers, Briefcase, ChevronsLeft } from "lucide-react";
+import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow, Image, Moon, Sun, Video, Layers, Briefcase, ChevronsLeft, BookOpen } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -138,9 +138,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       items: [
         { name: "Profile", href: "/profile", icon: User },
         { name: "Integrations", href: "/integrations", icon: Zap },
+        { name: "Knowledge Base", href: "/knowledge-base", icon: BookOpen },
         ...(isSuperAdmin ? [
           { name: "Admin Dashboard", href: "/admin", icon: Shield },
           { name: "Support Videos", href: "/admin/support-videos", icon: Video },
+          { name: "KB Admin", href: "/admin/knowledge-base", icon: BookOpen },
         ] : []),
       ]
     }

@@ -1079,7 +1079,7 @@ export default function BlogPostEditorPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
         </div>
       </DashboardLayout>
     );
@@ -1091,19 +1091,19 @@ export default function BlogPostEditorPage() {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold mb-4">What type of blog post do you want to create?</h2>
+              <h2 className="text-xl font-semibold mb-4" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>What type of blog post do you want to create?</h2>
               <RadioGroup value={blogType} onValueChange={setBlogType} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {BLOG_TYPES.map(type => (
                   <Label
                     key={type.value}
                     className={`flex items-start gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      blogType === type.value ? 'border-blue-600 bg-blue-50' : 'hover:border-gray-300'
+                      blogType === type.value ? 'border-amber-500 bg-amber-50/70' : 'hover:border-amber-300'
                     }`}
                   >
                     <RadioGroupItem value={type.value} className="mt-1" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <type.icon className="h-5 w-5 text-blue-600" />
+                        <type.icon className="h-5 w-5 text-amber-600" />
                         <span className="font-medium">{type.label}</span>
                       </div>
                       <p className="text-sm text-gray-500 mt-1">{type.description}</p>
@@ -1121,7 +1121,7 @@ export default function BlogPostEditorPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-semibold">Blog Strategy</h2>
+                  <h2 className="text-xl font-semibold" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Blog Strategy</h2>
                   <p className="text-sm text-gray-500">Choose any target keyword, then let AI suggest talking points and context.</p>
                 </div>
                 <Button
@@ -1202,7 +1202,7 @@ export default function BlogPostEditorPage() {
                     <Label
                       key={g.value}
                       className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer ${
-                        goal === g.value ? 'border-blue-600 bg-blue-50' : 'hover:border-gray-300'
+                        goal === g.value ? 'border-amber-500 bg-amber-50/70' : 'hover:border-amber-300'
                       }`}
                     >
                       <RadioGroupItem value={g.value} />
@@ -1216,9 +1216,9 @@ export default function BlogPostEditorPage() {
               </div>
 
               {(suggestedTalkingPoints.length > 0 || suggestedAngles.length > 0 || suggestedContext) && (
-                <Card className="bg-blue-50 border-blue-100">
+                <Card className="bg-amber-50/70 border-amber-100">
                   <CardContent className="pt-5 space-y-4">
-                    <div className="flex items-center gap-2 text-blue-700">
+                    <div className="flex items-center gap-2 text-amber-700">
                       <Sparkles className="h-4 w-4" />
                       <span className="font-medium text-sm">AI Suggestions</span>
                     </div>
@@ -1344,7 +1344,7 @@ export default function BlogPostEditorPage() {
                 </div>
 
                 <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-amber-400 transition-colors cursor-pointer"
                   onClick={() => document.getElementById('blog-image-upload')?.click()}
                   onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
                   onDrop={e => {
@@ -1518,8 +1518,8 @@ export default function BlogPostEditorPage() {
                     key={template.id}
                     className={`cursor-pointer transition-all ${
                       selectedTemplate?.id === template.id
-                        ? 'ring-2 ring-blue-600 border-blue-600'
-                        : 'hover:border-gray-300'
+                        ? 'ring-2 ring-amber-500 border-amber-500'
+                        : 'hover:border-amber-300'
                     }`}
                     onClick={() => {
                       setSelectedTemplate(template);
@@ -1529,7 +1529,7 @@ export default function BlogPostEditorPage() {
                     <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
                         {selectedTemplate?.id === template.id && (
-                          <CheckCircle className="h-5 w-5 text-blue-600" />
+                          <CheckCircle className="h-5 w-5 text-amber-600" />
                         )}
                         {template.name}
                       </CardTitle>
@@ -1541,7 +1541,7 @@ export default function BlogPostEditorPage() {
                       <div className="space-y-1">
                         {(template.sections as any[])?.map((section, i) => (
                           <div key={i} className="text-sm flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${section.required ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                            <div className={`w-2 h-2 rounded-full ${section.required ? 'bg-amber-600' : 'bg-gray-300'}`} />
                             <span>{section.label}</span>
                             {section.required && <Badge variant="outline" className="text-xs">Required</Badge>}
                           </div>
@@ -1559,7 +1559,7 @@ export default function BlogPostEditorPage() {
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Edit Content</h2>
+              <h2 className="text-xl font-semibold" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Edit Content</h2>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setShowPreview(!showPreview)}>
                   <Eye className="h-4 w-4 mr-2" />
@@ -1692,7 +1692,7 @@ export default function BlogPostEditorPage() {
       case 3: // SEO Review
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold">SEO Review</h2>
+            <h2 className="text-xl font-semibold" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>SEO Review</h2>
 
             {seoScore !== null && (
               <Card>
@@ -1731,8 +1731,8 @@ export default function BlogPostEditorPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="border rounded-lg p-4 bg-white">
-                  <div className="text-blue-600 text-sm truncate">{targetCity} | Your Business</div>
-                  <div className="text-lg font-medium text-blue-800 hover:underline cursor-pointer truncate">
+                  <div className="text-amber-600 text-sm truncate">{targetCity} | Your Business</div>
+                  <div className="text-lg font-medium text-amber-800 hover:underline cursor-pointer truncate">
                     {metaTitle || title}
                   </div>
                   <div className="text-sm text-gray-600 line-clamp-2">
@@ -1747,7 +1747,7 @@ export default function BlogPostEditorPage() {
       case 4: // Publish
         return (
           <div className="space-y-6">
-            <h2 className="text-xl font-semibold">Publish Settings</h2>
+            <h2 className="text-xl font-semibold" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Publish Settings</h2>
 
             <div className="space-y-4">
               <div>
@@ -1771,7 +1771,7 @@ export default function BlogPostEditorPage() {
               <div>
                 <Label className="mb-2 block">Featured Image</Label>
                 <div
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-amber-400 transition-colors cursor-pointer"
                   onClick={() => document.getElementById("featured-image-upload")?.click()}
                 >
                   {featuredImageUploading ? (
@@ -2202,18 +2202,37 @@ export default function BlogPostEditorPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <style>{`
+        .blog-editor-grain {
+          position: relative;
+          background:
+            radial-gradient(circle at 0% 0%, rgba(245, 158, 11, 0.12) 0%, transparent 38%),
+            radial-gradient(circle at 100% 0%, rgba(234, 88, 12, 0.09) 0%, transparent 32%),
+            linear-gradient(180deg, #fffef9 0%, #ffffff 28%, #ffffff 100%);
+        }
+        .blog-editor-grain::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background-image: radial-gradient(rgba(148, 163, 184, 0.08) 0.6px, transparent 0.6px);
+          background-size: 4px 4px;
+          opacity: 0.32;
+        }
+      `}</style>
+      <div className="blog-editor-grain relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         {/* Page Header */}
-        <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 via-white to-orange-50 p-5 sm:p-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <p className="text-xs uppercase tracking-[0.2em] text-amber-600/80 font-semibold mb-1">Content Studio</p>
+            <h1 className="text-3xl text-gray-900 leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
               {isEditing ? "Edit Blog Post" : "Create Blog Post"}
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-600 mt-1">
               {isEditing ? title : "Generate SEO-optimized content for your website"}
             </p>
           </div>
-          <Button variant="ghost" onClick={() => navigate("/blog-posts")}>
+          <Button variant="outline" onClick={() => navigate("/blog-posts")} className="border-amber-200 hover:bg-amber-50">
             Back to Blog Posts
           </Button>
         </div>
@@ -2225,15 +2244,15 @@ export default function BlogPostEditorPage() {
             <div
               key={step.id}
               className={`flex items-center gap-2 cursor-pointer ${
-                index <= currentStep ? 'text-blue-600' : 'text-gray-400'
+                index <= currentStep ? 'text-amber-700' : 'text-gray-400'
               }`}
               onClick={() => index < currentStep && setCurrentStep(index)}
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 index === currentStep
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/30'
                   : index < currentStep
-                  ? 'bg-blue-100 text-blue-600'
+                  ? 'bg-amber-100 text-amber-700'
                   : 'bg-gray-100'
               }`}>
                 {index < currentStep ? (
@@ -2246,17 +2265,17 @@ export default function BlogPostEditorPage() {
             </div>
           ))}
         </div>
-        <Progress value={((currentStep + 1) / WIZARD_STEPS.length) * 100} className="h-1" />
+        <Progress value={((currentStep + 1) / WIZARD_STEPS.length) * 100} className="h-1 bg-slate-200 [&>div]:bg-gradient-to-r [&>div]:from-amber-500 [&>div]:to-orange-600" />
       </div>
 
       {/* Step content */}
-      <Card>
+      <Card className="border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm">
         <CardContent className="pt-6">
           {generateMutation.isPending ? (
             <div className="flex flex-col items-center justify-center py-16">
-              <Sparkles className="h-12 w-12 text-blue-600 animate-pulse mb-4" />
+              <Sparkles className="h-12 w-12 text-amber-600 animate-pulse mb-4" />
               <p className="text-lg font-medium">Generating your blog content...</p>
-              <p className="text-gray-500">This may take a moment</p>
+              <p className="text-slate-500">This may take a moment</p>
             </div>
           ) : (
             renderStepContent()

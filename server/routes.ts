@@ -7,8 +7,8 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection } from "@shared/schema";
-import { eq, desc, and, gte, sql, inArray } from "drizzle-orm";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection, knowledgeBaseCategories, knowledgeBaseTags, knowledgeBaseArticles, knowledgeBaseArticleTags, insertKbCategorySchema, insertKbTagSchema, insertKbArticleSchema } from "@shared/schema";
+import { eq, desc, and, gte, sql, inArray, ilike, or, asc } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
@@ -21949,6 +21949,555 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("[PropertyAttributes] Error:", error);
       res.status(500).json({ error: "Failed to get property attributes" });
+    }
+  });
+
+  // ============================================================
+  // Knowledge Base API Routes
+  // ============================================================
+
+  // Helper: get tags for an article
+  async function getArticleTags(articleId: number) {
+    const rows = await db
+      .select({ id: knowledgeBaseTags.id, name: knowledgeBaseTags.name, slug: knowledgeBaseTags.slug })
+      .from(knowledgeBaseArticleTags)
+      .innerJoin(knowledgeBaseTags, eq(knowledgeBaseArticleTags.tagId, knowledgeBaseTags.id))
+      .where(eq(knowledgeBaseArticleTags.articleId, articleId));
+    return rows;
+  }
+
+  // Helper: slugify
+  function kbSlugify(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  // PUBLIC: GET /api/kb/categories
+  app.get("/api/kb/categories", async (req, res) => {
+    try {
+      const categories = await db
+        .select()
+        .from(knowledgeBaseCategories)
+        .orderBy(asc(knowledgeBaseCategories.sortOrder), asc(knowledgeBaseCategories.name));
+
+      // Get article counts per category
+      const counts = await db
+        .select({ categoryId: knowledgeBaseArticles.categoryId, count: sql<number>`count(*)::int` })
+        .from(knowledgeBaseArticles)
+        .where(eq(knowledgeBaseArticles.status, "published"))
+        .groupBy(knowledgeBaseArticles.categoryId);
+
+      const countMap = new Map(counts.map(c => [c.categoryId, c.count]));
+      const result = categories.map(c => ({ ...c, articleCount: countMap.get(c.id) || 0 }));
+      res.json(result);
+    } catch (error) {
+      console.error("[KB] Error fetching categories:", error);
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  // PUBLIC: GET /api/kb/categories/:slug
+  app.get("/api/kb/categories/:slug", async (req, res) => {
+    try {
+      const [category] = await db
+        .select()
+        .from(knowledgeBaseCategories)
+        .where(eq(knowledgeBaseCategories.slug, req.params.slug));
+      if (!category) return res.status(404).json({ error: "Category not found" });
+
+      const { sort = "newest", tag } = req.query as Record<string, string>;
+
+      let query = db
+        .select()
+        .from(knowledgeBaseArticles)
+        .where(and(
+          eq(knowledgeBaseArticles.categoryId, category.id),
+          eq(knowledgeBaseArticles.status, "published")
+        ));
+
+      let articles = await query;
+
+      // Filter by tag if provided
+      if (tag) {
+        const taggedIds = await db
+          .select({ articleId: knowledgeBaseArticleTags.articleId })
+          .from(knowledgeBaseArticleTags)
+          .innerJoin(knowledgeBaseTags, eq(knowledgeBaseArticleTags.tagId, knowledgeBaseTags.id))
+          .where(eq(knowledgeBaseTags.slug, tag));
+        const ids = taggedIds.map(t => t.articleId);
+        articles = articles.filter(a => ids.includes(a.id));
+      }
+
+      // Sort
+      if (sort === "views") {
+        articles.sort((a, b) => b.viewCount - a.viewCount);
+      } else if (sort === "az") {
+        articles.sort((a, b) => a.title.localeCompare(b.title));
+      } else {
+        articles.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      }
+
+      const articlesWithTags = await Promise.all(articles.map(async a => ({
+        ...a,
+        tags: await getArticleTags(a.id),
+      })));
+
+      res.json({ category, articles: articlesWithTags });
+    } catch (error) {
+      console.error("[KB] Error fetching category:", error);
+      res.status(500).json({ error: "Failed to fetch category" });
+    }
+  });
+
+  // PUBLIC: GET /api/kb/tags
+  app.get("/api/kb/tags", async (req, res) => {
+    try {
+      const tags = await db.select().from(knowledgeBaseTags).orderBy(asc(knowledgeBaseTags.name));
+      res.json(tags);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tags" });
+    }
+  });
+
+  // PUBLIC: GET /api/kb/articles/popular
+  app.get("/api/kb/articles/popular", async (req, res) => {
+    try {
+      const limit = Math.min(parseInt((req.query.limit as string) || "6"), 20);
+      const articles = await db
+        .select()
+        .from(knowledgeBaseArticles)
+        .where(eq(knowledgeBaseArticles.status, "published"))
+        .orderBy(desc(knowledgeBaseArticles.viewCount))
+        .limit(limit);
+      const result = await Promise.all(articles.map(async a => ({ ...a, tags: await getArticleTags(a.id) })));
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch popular articles" });
+    }
+  });
+
+  // PUBLIC: GET /api/kb/articles/recent
+  app.get("/api/kb/articles/recent", async (req, res) => {
+    try {
+      const limit = Math.min(parseInt((req.query.limit as string) || "6"), 20);
+      const articles = await db
+        .select()
+        .from(knowledgeBaseArticles)
+        .where(eq(knowledgeBaseArticles.status, "published"))
+        .orderBy(desc(knowledgeBaseArticles.updatedAt))
+        .limit(limit);
+      const result = await Promise.all(articles.map(async a => ({ ...a, tags: await getArticleTags(a.id) })));
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch recent articles" });
+    }
+  });
+
+  // PUBLIC: GET /api/kb/search?q=...
+  app.get("/api/kb/search", async (req, res) => {
+    try {
+      const { q = "" } = req.query as Record<string, string>;
+      const query = q.trim();
+      if (!query) return res.json([]);
+
+      const pattern = `%${query}%`;
+
+      const articles = await db
+        .select()
+        .from(knowledgeBaseArticles)
+        .where(and(
+          eq(knowledgeBaseArticles.status, "published"),
+          or(
+            ilike(knowledgeBaseArticles.title, pattern),
+            ilike(knowledgeBaseArticles.summary, pattern),
+            ilike(knowledgeBaseArticles.content, pattern)
+          )
+        ))
+        .orderBy(desc(knowledgeBaseArticles.viewCount))
+        .limit(20);
+
+      // Also search by tags
+      const tagMatches = await db
+        .select({ articleId: knowledgeBaseArticleTags.articleId })
+        .from(knowledgeBaseArticleTags)
+        .innerJoin(knowledgeBaseTags, eq(knowledgeBaseArticleTags.tagId, knowledgeBaseTags.id))
+        .where(ilike(knowledgeBaseTags.name, pattern));
+
+      const tagMatchIds = tagMatches.map(t => t.articleId);
+      let extraArticles: typeof articles = [];
+      if (tagMatchIds.length > 0) {
+        extraArticles = await db
+          .select()
+          .from(knowledgeBaseArticles)
+          .where(and(
+            eq(knowledgeBaseArticles.status, "published"),
+            inArray(knowledgeBaseArticles.id, tagMatchIds)
+          ));
+      }
+
+      // Merge and deduplicate
+      const seen = new Set(articles.map(a => a.id));
+      const merged = [...articles, ...extraArticles.filter(a => !seen.has(a.id))];
+
+      // Rank: title matches first, then tag matches, then content
+      const ql = query.toLowerCase();
+      const ranked = merged.sort((a, b) => {
+        const aTitle = a.title.toLowerCase().includes(ql) ? 3 : 0;
+        const bTitle = b.title.toLowerCase().includes(ql) ? 3 : 0;
+        const aTag = tagMatchIds.includes(a.id) ? 2 : 0;
+        const bTag = tagMatchIds.includes(b.id) ? 2 : 0;
+        const aViews = a.viewCount;
+        const bViews = b.viewCount;
+        return (bTitle + bTag + bViews * 0.01) - (aTitle + aTag + aViews * 0.01);
+      });
+
+      const result = await Promise.all(ranked.slice(0, 20).map(async a => ({ ...a, tags: await getArticleTags(a.id) })));
+      res.json(result);
+    } catch (error) {
+      console.error("[KB] Search error:", error);
+      res.status(500).json({ error: "Search failed" });
+    }
+  });
+
+  // PUBLIC: GET /api/kb/articles/:slug
+  app.get("/api/kb/articles/:slug", async (req, res) => {
+    try {
+      const [article] = await db
+        .select()
+        .from(knowledgeBaseArticles)
+        .where(and(
+          eq(knowledgeBaseArticles.slug, req.params.slug),
+          eq(knowledgeBaseArticles.status, "published")
+        ));
+      if (!article) return res.status(404).json({ error: "Article not found" });
+
+      // Increment view count
+      await db
+        .update(knowledgeBaseArticles)
+        .set({ viewCount: article.viewCount + 1 })
+        .where(eq(knowledgeBaseArticles.id, article.id));
+
+      const [category] = article.categoryId
+        ? await db.select().from(knowledgeBaseCategories).where(eq(knowledgeBaseCategories.id, article.categoryId))
+        : [null];
+
+      const tags = await getArticleTags(article.id);
+
+      // Related articles: same category or shared tags
+      let related: typeof knowledgeBaseArticles.$inferSelect[] = [];
+      const tagIds = tags.map(t => t.id);
+      if (article.categoryId) {
+        related = await db
+          .select()
+          .from(knowledgeBaseArticles)
+          .where(and(
+            eq(knowledgeBaseArticles.status, "published"),
+            eq(knowledgeBaseArticles.categoryId, article.categoryId),
+            sql`${knowledgeBaseArticles.id} != ${article.id}`
+          ))
+          .orderBy(desc(knowledgeBaseArticles.viewCount))
+          .limit(4);
+      }
+      if (related.length < 4 && tagIds.length > 0) {
+        const tagRelated = await db
+          .select({ articleId: knowledgeBaseArticleTags.articleId })
+          .from(knowledgeBaseArticleTags)
+          .where(and(
+            inArray(knowledgeBaseArticleTags.tagId, tagIds),
+            sql`${knowledgeBaseArticleTags.articleId} != ${article.id}`
+          ));
+        const tagRelatedIds = [...new Set(tagRelated.map(t => t.articleId))].filter(
+          id => !related.find(r => r.id === id)
+        );
+        if (tagRelatedIds.length > 0) {
+          const extra = await db
+            .select()
+            .from(knowledgeBaseArticles)
+            .where(and(
+              eq(knowledgeBaseArticles.status, "published"),
+              inArray(knowledgeBaseArticles.id, tagRelatedIds)
+            ))
+            .limit(4 - related.length);
+          related = [...related, ...extra];
+        }
+      }
+
+      res.json({ ...article, viewCount: article.viewCount + 1, category, tags, related });
+    } catch (error) {
+      console.error("[KB] Error fetching article:", error);
+      res.status(500).json({ error: "Failed to fetch article" });
+    }
+  });
+
+  // ADMIN: GET /api/admin/kb/articles
+  app.get("/api/admin/kb/articles", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const { status, category, search } = req.query as Record<string, string>;
+      let conditions: any[] = [];
+      if (status) conditions.push(eq(knowledgeBaseArticles.status, status));
+      if (category) conditions.push(eq(knowledgeBaseArticles.categoryId, parseInt(category)));
+      if (search) {
+        conditions.push(or(
+          ilike(knowledgeBaseArticles.title, `%${search}%`),
+          ilike(knowledgeBaseArticles.summary, `%${search}%`)
+        ));
+      }
+      const articles = await db
+        .select()
+        .from(knowledgeBaseArticles)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(knowledgeBaseArticles.updatedAt));
+
+      const result = await Promise.all(articles.map(async a => ({ ...a, tags: await getArticleTags(a.id) })));
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch articles" });
+    }
+  });
+
+  // ADMIN: GET /api/admin/kb/articles/:id
+  app.get("/api/admin/kb/articles/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const [article] = await db
+        .select()
+        .from(knowledgeBaseArticles)
+        .where(eq(knowledgeBaseArticles.id, parseInt(req.params.id)));
+      if (!article) return res.status(404).json({ error: "Article not found" });
+      const tags = await getArticleTags(article.id);
+      res.json({ ...article, tags });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch article" });
+    }
+  });
+
+  // ADMIN: POST /api/admin/kb/articles
+  app.post("/api/admin/kb/articles", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const { title, summary, content, categoryId, status, publishedAt, tagIds } = req.body;
+      const slug = req.body.slug || kbSlugify(title || "");
+      const resolvedStatus = status || "draft";
+      const resolvedPublishedAt = resolvedStatus === "published" && !publishedAt ? new Date()
+        : publishedAt ? new Date(publishedAt) : null;
+
+      const [article] = await db.insert(knowledgeBaseArticles).values({
+        title: title || "",
+        slug,
+        summary: summary || null,
+        content: content || "",
+        categoryId: categoryId ? Number(categoryId) : null,
+        status: resolvedStatus,
+        publishedAt: resolvedPublishedAt,
+      }).returning();
+
+      if (tagIds && Array.isArray(tagIds) && tagIds.length > 0) {
+        await db.insert(knowledgeBaseArticleTags).values(tagIds.map((tid: number) => ({ articleId: article.id, tagId: tid })));
+      }
+
+      const tags = await getArticleTags(article.id);
+      res.json({ ...article, tags });
+    } catch (error: any) {
+      console.error("[KB] Create article error:", error);
+      if (error?.code === "23505") return res.status(409).json({ error: "Slug already exists" });
+      res.status(500).json({ error: "Failed to create article" });
+    }
+  });
+
+  // ADMIN: PATCH /api/admin/kb/articles/:id
+  app.patch("/api/admin/kb/articles/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title, summary, content, categoryId, status, publishedAt, tagIds } = req.body;
+      const slug = req.body.slug;
+      const updateData: Record<string, any> = { updatedAt: new Date() };
+      if (title !== undefined) updateData.title = title;
+      if (slug !== undefined) updateData.slug = slug;
+      if (summary !== undefined) updateData.summary = summary || null;
+      if (content !== undefined) updateData.content = content;
+      if (categoryId !== undefined) updateData.categoryId = categoryId ? Number(categoryId) : null;
+      if (status !== undefined) {
+        updateData.status = status;
+        if (status === "published" && !publishedAt) updateData.publishedAt = new Date();
+      }
+      if (publishedAt !== undefined) updateData.publishedAt = publishedAt ? new Date(publishedAt) : null;
+
+      const [article] = await db
+        .update(knowledgeBaseArticles)
+        .set(updateData)
+        .where(eq(knowledgeBaseArticles.id, id))
+        .returning();
+
+      if (!article) return res.status(404).json({ error: "Article not found" });
+
+      if (tagIds !== undefined && Array.isArray(tagIds)) {
+        await db.delete(knowledgeBaseArticleTags).where(eq(knowledgeBaseArticleTags.articleId, id));
+        if (tagIds.length > 0) {
+          await db.insert(knowledgeBaseArticleTags).values(tagIds.map((tid: number) => ({ articleId: id, tagId: tid })));
+        }
+      }
+
+      const tags = await getArticleTags(article.id);
+      res.json({ ...article, tags });
+    } catch (error: any) {
+      if (error?.code === "23505") return res.status(409).json({ error: "Slug already exists" });
+      res.status(500).json({ error: "Failed to update article" });
+    }
+  });
+
+  // ADMIN: DELETE /api/admin/kb/articles/:id
+  app.delete("/api/admin/kb/articles/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await db.delete(knowledgeBaseArticleTags).where(eq(knowledgeBaseArticleTags.articleId, id));
+      await db.delete(knowledgeBaseArticles).where(eq(knowledgeBaseArticles.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete article" });
+    }
+  });
+
+  // ADMIN: POST /api/admin/kb/articles/:id/duplicate
+  app.post("/api/admin/kb/articles/:id/duplicate", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const [orig] = await db.select().from(knowledgeBaseArticles).where(eq(knowledgeBaseArticles.id, id));
+      if (!orig) return res.status(404).json({ error: "Article not found" });
+
+      const newSlug = `${orig.slug}-copy-${Date.now()}`;
+      const [dup] = await db.insert(knowledgeBaseArticles).values({
+        title: `${orig.title} (Copy)`,
+        slug: newSlug,
+        summary: orig.summary,
+        content: orig.content,
+        categoryId: orig.categoryId,
+        status: "draft",
+        publishedAt: null,
+      }).returning();
+
+      const origTags = await getArticleTags(id);
+      if (origTags.length > 0) {
+        await db.insert(knowledgeBaseArticleTags).values(origTags.map(t => ({ articleId: dup.id, tagId: t.id })));
+      }
+      const tags = await getArticleTags(dup.id);
+      res.json({ ...dup, tags });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to duplicate article" });
+    }
+  });
+
+  // ADMIN: GET /api/admin/kb/categories
+  app.get("/api/admin/kb/categories", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const categories = await db
+        .select()
+        .from(knowledgeBaseCategories)
+        .orderBy(asc(knowledgeBaseCategories.sortOrder), asc(knowledgeBaseCategories.name));
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  // ADMIN: POST /api/admin/kb/categories
+  app.post("/api/admin/kb/categories", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      if (!data.slug) data.slug = kbSlugify(data.name || "");
+      const [cat] = await db.insert(knowledgeBaseCategories).values(data).returning();
+      res.json(cat);
+    } catch (error: any) {
+      if (error?.code === "23505") return res.status(409).json({ error: "Slug already exists" });
+      res.status(500).json({ error: "Failed to create category" });
+    }
+  });
+
+  // ADMIN: PATCH /api/admin/kb/categories/:id
+  app.patch("/api/admin/kb/categories/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = { ...req.body, updatedAt: new Date() };
+      const [cat] = await db
+        .update(knowledgeBaseCategories)
+        .set(data)
+        .where(eq(knowledgeBaseCategories.id, id))
+        .returning();
+      if (!cat) return res.status(404).json({ error: "Category not found" });
+      res.json(cat);
+    } catch (error: any) {
+      if (error?.code === "23505") return res.status(409).json({ error: "Slug already exists" });
+      res.status(500).json({ error: "Failed to update category" });
+    }
+  });
+
+  // ADMIN: DELETE /api/admin/kb/categories/:id
+  app.delete("/api/admin/kb/categories/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const [hasArticles] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(knowledgeBaseArticles)
+        .where(eq(knowledgeBaseArticles.categoryId, id));
+      if (hasArticles.count > 0) {
+        return res.status(400).json({ error: "Cannot delete category with existing articles" });
+      }
+      await db.delete(knowledgeBaseCategories).where(eq(knowledgeBaseCategories.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete category" });
+    }
+  });
+
+  // ADMIN: GET /api/admin/kb/tags
+  app.get("/api/admin/kb/tags", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const tags = await db.select().from(knowledgeBaseTags).orderBy(asc(knowledgeBaseTags.name));
+      res.json(tags);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tags" });
+    }
+  });
+
+  // ADMIN: POST /api/admin/kb/tags
+  app.post("/api/admin/kb/tags", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      if (!data.slug) data.slug = kbSlugify(data.name || "");
+      const [tag] = await db.insert(knowledgeBaseTags).values(data).returning();
+      res.json(tag);
+    } catch (error: any) {
+      if (error?.code === "23505") return res.status(409).json({ error: "Slug already exists" });
+      res.status(500).json({ error: "Failed to create tag" });
+    }
+  });
+
+  // ADMIN: PATCH /api/admin/kb/tags/:id
+  app.patch("/api/admin/kb/tags/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = req.body;
+      const [tag] = await db
+        .update(knowledgeBaseTags)
+        .set(data)
+        .where(eq(knowledgeBaseTags.id, id))
+        .returning();
+      if (!tag) return res.status(404).json({ error: "Tag not found" });
+      res.json(tag);
+    } catch (error: any) {
+      if (error?.code === "23505") return res.status(409).json({ error: "Slug already exists" });
+      res.status(500).json({ error: "Failed to update tag" });
+    }
+  });
+
+  // ADMIN: DELETE /api/admin/kb/tags/:id
+  app.delete("/api/admin/kb/tags/:id", requireAuth, requireSuperAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await db.delete(knowledgeBaseArticleTags).where(eq(knowledgeBaseArticleTags.tagId, id));
+      await db.delete(knowledgeBaseTags).where(eq(knowledgeBaseTags.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete tag" });
     }
   });
 

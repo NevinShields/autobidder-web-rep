@@ -3413,6 +3413,98 @@ export const blogSectionLockRelations = relations(blogSectionLocks, ({ one }) =>
   }),
 }));
 
+// ============================================================
+// Knowledge Base Tables
+// ============================================================
+
+export const knowledgeBaseCategories = pgTable("knowledge_base_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  description: text("description"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => [
+  index("kb_categories_slug_idx").on(table.slug),
+]);
+
+export const knowledgeBaseTags = pgTable("knowledge_base_tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => [
+  index("kb_tags_slug_idx").on(table.slug),
+]);
+
+export const knowledgeBaseArticles = pgTable("knowledge_base_articles", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  summary: text("summary"),
+  content: text("content").notNull().default(""),
+  categoryId: integer("category_id").references(() => knowledgeBaseCategories.id),
+  status: text("status").notNull().default("draft"), // draft | published | archived
+  viewCount: integer("view_count").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  publishedAt: timestamp("published_at"),
+}, (table) => [
+  index("kb_articles_slug_idx").on(table.slug),
+  index("kb_articles_status_idx").on(table.status),
+  index("kb_articles_category_idx").on(table.categoryId),
+  index("kb_articles_view_count_idx").on(table.viewCount),
+]);
+
+export const knowledgeBaseArticleTags = pgTable("knowledge_base_article_tags", {
+  articleId: integer("article_id").notNull().references(() => knowledgeBaseArticles.id, { onDelete: "cascade" }),
+  tagId: integer("tag_id").notNull().references(() => knowledgeBaseTags.id, { onDelete: "cascade" }),
+}, (table) => [
+  index("kb_article_tags_article_idx").on(table.articleId),
+  index("kb_article_tags_tag_idx").on(table.tagId),
+]);
+
+// KB Relations
+export const knowledgeBaseCategoryRelations = relations(knowledgeBaseCategories, ({ many }) => ({
+  articles: many(knowledgeBaseArticles),
+}));
+
+export const knowledgeBaseTagRelations = relations(knowledgeBaseTags, ({ many }) => ({
+  articleTags: many(knowledgeBaseArticleTags),
+}));
+
+export const knowledgeBaseArticleRelations = relations(knowledgeBaseArticles, ({ one, many }) => ({
+  category: one(knowledgeBaseCategories, {
+    fields: [knowledgeBaseArticles.categoryId],
+    references: [knowledgeBaseCategories.id],
+  }),
+  articleTags: many(knowledgeBaseArticleTags),
+}));
+
+export const knowledgeBaseArticleTagRelations = relations(knowledgeBaseArticleTags, ({ one }) => ({
+  article: one(knowledgeBaseArticles, {
+    fields: [knowledgeBaseArticleTags.articleId],
+    references: [knowledgeBaseArticles.id],
+  }),
+  tag: one(knowledgeBaseTags, {
+    fields: [knowledgeBaseArticleTags.tagId],
+    references: [knowledgeBaseTags.id],
+  }),
+}));
+
+// KB Insert Schemas
+export const insertKbCategorySchema = createInsertSchema(knowledgeBaseCategories).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertKbTagSchema = createInsertSchema(knowledgeBaseTags).omit({ id: true, createdAt: true });
+export const insertKbArticleSchema = createInsertSchema(knowledgeBaseArticles).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+
+export type KbCategory = typeof knowledgeBaseCategories.$inferSelect;
+export type InsertKbCategory = z.infer<typeof insertKbCategorySchema>;
+export type KbTag = typeof knowledgeBaseTags.$inferSelect;
+export type InsertKbTag = z.infer<typeof insertKbTagSchema>;
+export type KbArticle = typeof knowledgeBaseArticles.$inferSelect;
+export type InsertKbArticle = z.infer<typeof insertKbArticleSchema>;
+
 // Property Snapshots - cached property data from ATTOM API
 export const propertySnapshots = pgTable("property_snapshots", {
   id: serial("id").primaryKey(),

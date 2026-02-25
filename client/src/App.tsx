@@ -102,6 +102,12 @@ const LandingPageEditor = lazy(() => import("@/pages/landing-page-editor"));
 const BlogPostsPage = lazy(() => import("@/pages/blog-posts"));
 const BlogPostEditorPage = lazy(() => import("@/pages/blog-post-editor"));
 
+// Knowledge Base pages
+const KnowledgeBaseHome = lazy(() => import("@/pages/knowledge-base-home"));
+const KnowledgeBaseCategoryPage = lazy(() => import("@/pages/knowledge-base-category"));
+const KnowledgeBaseArticlePage = lazy(() => import("@/pages/knowledge-base-article"));
+const AdminKnowledgeBase = lazy(() => import("@/pages/admin-knowledge-base"));
+
 // Directory pages
 const DirectoryHome = lazy(() => import("@/pages/directory/directory-home"));
 const DirectoryCategoryPage = lazy(() => import("@/pages/directory/category-page"));
@@ -226,6 +232,10 @@ function Router() {
         <Route path="/prices/:categorySlug" component={DirectoryCategoryPage} />
         <Route path="/directory/company/:companySlug" component={DirectoryCompanyPage} />
         <Route path="/l/:slug" component={LandingPagePublic} />
+        {/* Knowledge Base - public */}
+        <Route path="/knowledge-base" component={KnowledgeBaseHome} />
+        <Route path="/knowledge-base/category/:slug" component={KnowledgeBaseCategoryPage} />
+        <Route path="/knowledge-base/article/:slug" component={KnowledgeBaseArticlePage} />
         <Route component={Landing} />
       </Switch>
       </Suspense>
@@ -287,6 +297,12 @@ function Router() {
         <Route path="/blog-posts" component={BlogPostsPage} />
         <Route path="/blog-posts/new" component={BlogPostEditorPage} />
         <Route path="/blog-posts/:id/edit" component={BlogPostEditorPage} />
+
+        {/* Knowledge Base */}
+        <Route path="/knowledge-base" component={KnowledgeBaseHome} />
+        <Route path="/knowledge-base/category/:slug" component={KnowledgeBaseCategoryPage} />
+        <Route path="/knowledge-base/article/:slug" component={KnowledgeBaseArticlePage} />
+        <Route path="/admin/knowledge-base" component={AdminKnowledgeBase} />
 
         <Route path="/admin/website-templates" component={AdminWebsiteTemplatesPage} />
 

@@ -434,8 +434,11 @@ export default function EnhancedVariableInput({
             boxShadow: (inputStyle as React.CSSProperties).boxShadow,
           };
 
-      const displayLength = Math.max(2, Math.min(5, String(normalizedValue).length));
-      const inputChWidth = `calc(${displayLength}ch + 28px)`;
+      const minDigits = String(minValue).length;
+      const maxDigits = String(maxValue).length;
+      const currentDigits = String(normalizedValue).length;
+      const displayLength = Math.max(2, Math.min(10, Math.max(minDigits, maxDigits, currentDigits)));
+      const inputChWidth = `clamp(4.5rem, calc(${displayLength}ch + 1rem), 100%)`;
       const rawHeight = (inputStyle as React.CSSProperties).height;
       const stepperHeight = typeof rawHeight === 'number'
         ? rawHeight
@@ -446,34 +449,36 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
               <div
-                className="inline-flex items-center overflow-hidden border border-gray-200 rounded-md"
+                className="inline-flex w-full max-w-full items-center overflow-hidden border border-gray-200 rounded-md sm:w-auto"
                 style={stepperContainerStyle}
                 data-testid={`stepper-${variable.id}`}
               >
                 <button
                   type="button"
                   onClick={() => handleStep('down')}
-                  className="w-9 h-full flex items-center justify-center text-gray-600 hover:text-gray-800"
+                  className="w-10 h-full flex flex-none items-center justify-center text-gray-600 hover:text-gray-800 sm:w-9"
                   aria-label={`Decrease ${variable.name}`}
                 >
                   <Minus className="w-4 h-4" />
                 </button>
                 <div className="h-full w-px bg-gray-200" />
-                <div className="h-full flex items-center justify-center px-2">
+                <div className="h-full min-w-0 flex flex-1 items-center justify-center px-1.5 sm:flex-none sm:px-2">
                   <Input
                     id={variable.id}
                     type="number"
                     value={normalizedValue}
                     min={minValue}
                     max={maxValue}
+                    inputMode="numeric"
                     onChange={(e) => handleInputChange(e.target.value)}
                     className="ab-input ab-number-input text-input border-0 bg-transparent text-center font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 h-full px-2 leading-none no-spinner"
                     style={{
                       ...inputStyleWithoutWidth,
                       width: inputChWidth,
+                      maxWidth: '100%',
                       paddingTop: inputVerticalPadding,
                       paddingBottom: inputVerticalPadding,
                       lineHeight: 1.1,
@@ -486,7 +491,7 @@ export default function EnhancedVariableInput({
                 <button
                   type="button"
                   onClick={() => handleStep('up')}
-                  className="w-9 h-full flex items-center justify-center text-gray-600 hover:text-gray-800"
+                  className="w-10 h-full flex flex-none items-center justify-center text-gray-600 hover:text-gray-800 sm:w-9"
                   aria-label={`Increase ${variable.name}`}
                 >
                   <Plus className="w-4 h-4" />

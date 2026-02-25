@@ -3066,13 +3066,13 @@ export default function StyledCalculator(props: any = {}) {
                       {!showCollapsible && (
                         <>
                           <h3 
-                            className="text-xl font-semibold mb-2"
+                            className="ab-service-accordion-text text-xl font-semibold mb-2"
                             style={{ color: styling.textColor || '#1F2937' }}
                           >
                             {service.name}
                           </h3>
                           {service.description && (
-                            <p className="text-sm text-gray-600 mb-4 leading-relaxed">{service.description}</p>
+                            <p className="ab-service-accordion-text text-sm text-gray-600 mb-4 leading-relaxed">{service.description}</p>
                           )}
                         </>
                       )}

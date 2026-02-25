@@ -180,7 +180,10 @@ function ArticleContent() {
   const [activeToc, setActiveToc] = useState<string>("");
   const contentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const { isAuthenticated, isSuperAdmin } = useAuth();
+  // Fixed: handle case where useAuth might be called in a context where it's not available or returns undefined
+  const auth = useAuth();
+  const isAuthenticated = auth?.isAuthenticated;
+  const isSuperAdmin = auth?.isSuperAdmin;
 
   const { data: article, isLoading, error } = useQuery<KbArticle>({
     queryKey: ["/api/kb/articles", slug],

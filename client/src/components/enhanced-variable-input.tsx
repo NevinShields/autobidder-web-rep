@@ -670,7 +670,9 @@ export default function EnhancedVariableInput({
         boxShadow: getShadowValue(styling?.multiChoiceImageShadow || 'sm')
       };
 
-      const layoutClass = styling?.multiChoiceLayout === 'grid' 
+      const resolvedMultiChoiceLayout = styling?.multiChoiceLayout || 'grid';
+      const isGridLayout = resolvedMultiChoiceLayout === 'grid';
+      const layoutClass = isGridLayout
         ? 'grid gap-2 sm:gap-3 grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-fr'
         : 'flex flex-col space-y-3';
 
@@ -699,7 +701,7 @@ export default function EnhancedVariableInput({
                       ? 'cursor-pointer transition-all' 
                       : 'border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm'
                   } ${
-                    styling?.multiChoiceLayout === 'grid' ? 'p-2 sm:p-3 text-center flex flex-col h-full min-h-[120px] justify-center' : 'p-3'
+                    isGridLayout ? 'p-2 sm:p-3 text-center flex flex-col h-full min-h-[120px] justify-center' : 'p-3'
                   } ${isSelected ? 'selected' : ''}`}
                   style={hasCustomCSS ? {} : {
                     ...multiChoiceCardStyle,
@@ -729,7 +731,7 @@ export default function EnhancedVariableInput({
                   )}
                 >
                   <div className={`flex items-center justify-center text-center flex-col w-full h-full ${
-                    styling?.multiChoiceLayout === 'grid' ? 'space-y-1 sm:space-y-2' : 'space-y-2'
+                    isGridLayout ? 'space-y-1 sm:space-y-2' : 'space-y-2'
                   }`}>
                     {(() => {
                       const imageSize = getImageSize(styling?.multiChoiceImageSize || 'md');
@@ -768,7 +770,7 @@ export default function EnhancedVariableInput({
                     <div className="text-center">
                       <div 
                         className={`ab-multiple-choice-label font-medium ${
-                          styling?.multiChoiceLayout === 'grid' ? 'text-xs sm:text-sm' : 'text-sm'
+                          isGridLayout ? 'text-xs sm:text-sm' : 'text-sm'
                         } line-clamp-2`}
                         style={hasCustomCSS ? {} : {
                           color: isSelected

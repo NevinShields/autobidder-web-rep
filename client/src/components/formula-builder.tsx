@@ -178,6 +178,49 @@ export default function FormulaBuilderComponent({
   isSaving,
   allFormulas = []
 }: FormulaBuilderProps) {
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
+  const ensureUniqueOptionIds = (options: Array<any>) => {
+    const used = new Set<string>();
+    const withUniqueIds = options.map((option, index) => {
+      const baseId = toOptionId(option?.id ?? option?.value ?? option?.label, index + 1);
+      let uniqueId = baseId;
+      let suffix = 2;
+      while (used.has(uniqueId)) {
+        uniqueId = `${baseId}_${suffix}`;
+        suffix += 1;
+      }
+      used.add(uniqueId);
+      return {
+        ...option,
+        id: uniqueId,
+      };
+    });
+
+    const usedValues = new Set<string>();
+    return withUniqueIds.map((option) => {
+      const baseValue = String(option?.value ?? '').trim() || option.id;
+      let uniqueValue = baseValue;
+      let suffix = 2;
+      while (usedValues.has(uniqueValue)) {
+        uniqueValue = `${baseValue}_${suffix}`;
+        suffix += 1;
+      }
+      usedValues.add(uniqueValue);
+      return {
+        ...option,
+        value: uniqueValue,
+      };
+    });
+  };
+
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [formulaExpression, setFormulaExpression] = useState(formula.formula);
   const [minPriceDollars, setMinPriceDollars] = useState(formula.minPrice ? (formula.minPrice / 100).toString() : '');
@@ -378,9 +421,19 @@ export default function FormulaBuilderComponent({
     try {
       console.log('Updating variable with ID:', oldId, 'Updates:', updates);
       
-      const updatedVariables = formula.variables.map(v => 
-        v.id === oldId ? { ...v, ...updates } : v
-      );
+      const updatedVariables = formula.variables.map((v) => {
+        if (v.id !== oldId) return v;
+
+        const merged = { ...v, ...updates } as Variable;
+        if (merged.type === 'multiple-choice' && merged.allowMultipleSelection && Array.isArray(merged.options)) {
+          return {
+            ...merged,
+            options: ensureUniqueOptionIds(merged.options),
+          };
+        }
+
+        return merged;
+      });
       
       console.log('Updated variables array:', updatedVariables);
       onUpdate({ variables: updatedVariables });
@@ -1211,19 +1264,17 @@ export default function FormulaBuilderComponent({
                       
                       return (
                         <div key={variable.id} className="contents">
-                          {/* Show base ID only if NOT a multi-select multiple-choice */}
-                          {!isMultiSelect && (
-                            <code
-                              className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 text-xs rounded cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
-                              onClick={() => insertVariable(variable.id)}
-                            >
-                              {variable.id}
-                            </code>
-                          )}
+                          {/* Always show base variable ID */}
+                          <code
+                            className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 text-xs rounded cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
+                            onClick={() => insertVariable(variable.id)}
+                          >
+                            {variable.id}
+                          </code>
 
                           {/* Show individual option IDs for multi-select multiple-choice */}
                           {isMultiSelect && variable.options?.map((option, optIndex) => {
-                            const optionId = option.id || option.value || `option_${optIndex}`;
+                            const optionId = toOptionId(option.id ?? option.value ?? option.label, optIndex + 1);
                             return (
                               <code
                                 key={`${variable.id}_${optionId}`}

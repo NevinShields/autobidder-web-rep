@@ -147,20 +147,20 @@ function renderContent(content: string): string {
 
 function PublicHeader() {
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/">
             <div className="flex items-center gap-3 cursor-pointer">
               <img src={autobidderLogo} alt="Autobidder" className="h-8 w-8" />
-              <span className="text-[15px] font-bold text-gray-900 tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+              <span className="text-[15px] font-bold text-gray-900 dark:text-white tracking-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                 Autobidder
               </span>
             </div>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-gray-600 hover:text-gray-900">Sign In</Button>
+              <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Sign In</Button>
             </Link>
             <Link href="/signup">
               <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0">
@@ -229,7 +229,7 @@ function ArticleContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
       </div>
     );
@@ -237,12 +237,12 @@ function ArticleContent() {
 
   if (error || !article) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <div className="text-center">
-          <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Article not found</h2>
+          <BookOpen className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Article not found</h2>
           <Link href="/knowledge-base">
-            <Button variant="ghost" className="text-amber-600">← Back to Knowledge Base</Button>
+            <Button variant="ghost" className="text-amber-600 dark:text-amber-400">← Back to Knowledge Base</Button>
           </Link>
         </div>
       </div>
@@ -250,24 +250,24 @@ function ArticleContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-2 text-sm text-gray-400 flex-wrap">
+          <nav className="flex items-center gap-2 text-sm text-gray-400 dark:text-gray-500 flex-wrap">
             <Link href="/knowledge-base">
-              <span className="hover:text-amber-600 cursor-pointer transition-colors">Knowledge Base</span>
+              <span className="hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer transition-colors">Knowledge Base</span>
             </Link>
             {article.category && (
               <>
                 <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
                 <Link href={`/knowledge-base/category/${article.category.slug}`}>
-                  <span className="hover:text-amber-600 cursor-pointer transition-colors">{article.category.name}</span>
+                  <span className="hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer transition-colors">{article.category.name}</span>
                 </Link>
               </>
             )}
             <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="text-gray-700 font-medium line-clamp-1">{article.title}</span>
+            <span className="text-gray-700 dark:text-gray-300 font-medium line-clamp-1">{article.title}</span>
           </nav>
         </div>
       </div>
@@ -277,10 +277,10 @@ function ArticleContent() {
           {/* Main Article */}
           <div className="flex-1 min-w-0">
             {/* Article Header */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 mb-6">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 mb-6">
               {article.category && (
                 <Link href={`/knowledge-base/category/${article.category.slug}`}>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold mb-4 cursor-pointer hover:bg-amber-200 transition-colors">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-semibold mb-4 cursor-pointer hover:bg-amber-200 dark:hover:bg-amber-900/60 transition-colors">
                     <BookOpen className="w-3 h-3" />
                     {article.category.name}
                   </span>
@@ -288,12 +288,12 @@ function ArticleContent() {
               )}
 
               <div className="flex items-start justify-between gap-4">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                   {article.title}
                 </h1>
                 {isSuperAdmin && (
                   <Link href={`/admin/knowledge-base?edit=${article.id}`}>
-                    <Button variant="outline" size="sm" className="flex-shrink-0 gap-1.5 text-gray-500 hover:text-amber-600 hover:border-amber-300 rounded-xl">
+                    <Button variant="outline" size="sm" className="flex-shrink-0 gap-1.5 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-300 dark:hover:border-amber-600 dark:border-gray-600 dark:bg-transparent rounded-xl">
                       <Edit className="w-3.5 h-3.5" />
                       Edit
                     </Button>
@@ -302,10 +302,10 @@ function ArticleContent() {
               </div>
 
               {article.summary && (
-                <p className="text-lg text-gray-500 mt-3 leading-relaxed">{article.summary}</p>
+                <p className="text-lg text-gray-500 dark:text-gray-400 mt-3 leading-relaxed">{article.summary}</p>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 mt-5 text-sm text-gray-400 pt-5 border-t border-gray-100">
+              <div className="flex flex-wrap items-center gap-4 mt-5 text-sm text-gray-400 dark:text-gray-500 pt-5 border-t border-gray-100 dark:border-gray-700">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" />
                   Updated {formatDate(article.updatedAt)}
@@ -324,7 +324,7 @@ function ArticleContent() {
                 <div className="flex flex-wrap gap-1.5 mt-4">
                   {article.tags.map(tag => (
                     <Link key={tag.id} href={`/knowledge-base/category/${article.category?.slug || ""}?tag=${tag.slug}`}>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 hover:bg-amber-100 hover:text-amber-700 text-xs text-gray-500 cursor-pointer transition-colors">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:text-amber-700 dark:hover:text-amber-400 text-xs text-gray-500 dark:text-gray-400 cursor-pointer transition-colors">
                         <Tag className="w-2.5 h-2.5" />
                         {tag.name}
                       </span>
@@ -334,25 +334,25 @@ function ArticleContent() {
               )}
             </div>
 
-            {/* Article Content */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-10 mb-6">
+            {/* Article Content — dark mode handled via .kb-article-content CSS in index.css */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 sm:p-10 mb-6">
               <div
                 ref={contentRef}
-                className="prose prose-gray max-w-none"
+                className="prose prose-gray max-w-none kb-article-content"
                 dangerouslySetInnerHTML={{ __html: renderContent(article.content) }}
               />
             </div>
 
             {/* Feedback */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 text-center">
               {helpful === null ? (
                 <>
-                  <p className="text-sm font-medium text-gray-700 mb-4">Was this article helpful?</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Was this article helpful?</p>
                   <div className="flex items-center justify-center gap-3">
                     <Button
                       variant="outline"
                       onClick={() => handleFeedback(true)}
-                      className="gap-2 rounded-xl hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+                      className="gap-2 rounded-xl dark:border-gray-600 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-300 dark:hover:border-emerald-700 hover:text-emerald-700 dark:hover:text-emerald-400"
                     >
                       <ThumbsUp className="w-4 h-4" />
                       Yes, helpful
@@ -360,7 +360,7 @@ function ArticleContent() {
                     <Button
                       variant="outline"
                       onClick={() => handleFeedback(false)}
-                      className="gap-2 rounded-xl hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
+                      className="gap-2 rounded-xl dark:border-gray-600 dark:text-gray-300 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-700 dark:hover:text-rose-400"
                     >
                       <ThumbsDown className="w-4 h-4" />
                       Not helpful
@@ -370,11 +370,11 @@ function ArticleContent() {
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   {helpful ? (
-                    <span className="text-emerald-600 font-medium text-sm flex items-center gap-1.5">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium text-sm flex items-center gap-1.5">
                       <ThumbsUp className="w-4 h-4" /> Thanks for the positive feedback!
                     </span>
                   ) : (
-                    <span className="text-gray-600 font-medium text-sm flex items-center gap-1.5">
+                    <span className="text-gray-600 dark:text-gray-400 font-medium text-sm flex items-center gap-1.5">
                       <ThumbsDown className="w-4 h-4" /> Thanks — we'll improve this article.
                     </span>
                   )}
@@ -385,19 +385,19 @@ function ArticleContent() {
             {/* Related Articles */}
             {article.related.length > 0 && (
               <div className="mt-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                   Related Articles
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {article.related.map(rel => (
                     <Link key={rel.id} href={`/knowledge-base/article/${rel.slug}`}>
-                      <div className="group flex items-start gap-3 p-4 bg-white rounded-xl border border-gray-200/80 hover:border-amber-200 hover:shadow-sm cursor-pointer transition-all">
-                        <BookMarked className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                      <div className="group flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-200 dark:hover:border-amber-700 hover:shadow-sm cursor-pointer transition-all">
+                        <BookMarked className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 group-hover:text-amber-700 transition-colors line-clamp-2">{rel.title}</p>
-                          {rel.summary && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{rel.summary}</p>}
+                          <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-2">{rel.title}</p>
+                          {rel.summary && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{rel.summary}</p>}
                         </div>
-                        <ArrowRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                        <ArrowRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </Link>
                   ))}
@@ -405,9 +405,9 @@ function ArticleContent() {
               </div>
             )}
 
-            <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
               <Link href={article.category ? `/knowledge-base/category/${article.category.slug}` : "/knowledge-base"}>
-                <Button variant="ghost" className="text-gray-500 hover:text-amber-600 gap-2">
+                <Button variant="ghost" className="text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 gap-2">
                   <ArrowLeft className="w-4 h-4" />
                   {article.category ? `Back to ${article.category.name}` : "Back to Knowledge Base"}
                 </Button>
@@ -418,8 +418,8 @@ function ArticleContent() {
           {/* Table of Contents Sidebar */}
           {toc.length > 2 && (
             <aside className="hidden xl:block w-56 flex-shrink-0 sticky top-24">
-              <div className="bg-white rounded-2xl border border-gray-200 p-4">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
                   <List className="w-3.5 h-3.5" />
                   On this page
                 </h3>
@@ -432,8 +432,8 @@ function ArticleContent() {
                         item.level === 1 ? "font-semibold" : item.level === 2 ? "pl-2" : item.level === 3 ? "pl-4" : "pl-6"
                       } ${
                         activeToc === item.id
-                          ? "text-amber-600 font-medium"
-                          : "text-gray-500 hover:text-amber-600"
+                          ? "text-amber-600 dark:text-amber-400 font-medium"
+                          : "text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400"
                       }`}
                     >
                       {item.text}
@@ -454,7 +454,7 @@ export default function KnowledgeBaseArticlePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
       </div>
     );

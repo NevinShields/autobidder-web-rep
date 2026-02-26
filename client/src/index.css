@@ -196,6 +196,19 @@
   --ring: hsl(20, 14.3%, 4.1%) !important;
 }
 
+/* Knowledge Base article rendered content — dark mode overrides for dangerouslySetInnerHTML */
+.dark .kb-article-content h1,
+.dark .kb-article-content h2,
+.dark .kb-article-content h3,
+.dark .kb-article-content h4 { color: #f9fafb; }
+.dark .kb-article-content p { color: #d1d5db; }
+.dark .kb-article-content li { color: #d1d5db; }
+.dark .kb-article-content blockquote { color: #9ca3af; border-left-color: #d97706; }
+.dark .kb-article-content hr { border-color: #374151; }
+.dark .kb-article-content code { background: #374151; color: #e5e7eb; }
+.dark .kb-article-content a { color: #fbbf24; }
+.dark .kb-article-content a:hover { color: #f59e0b; }
+
 /* Font Family Classes for Design System */
 .font-inter { font-family: 'Inter', sans-serif; }
 .font-roboto { font-family: 'Roboto', sans-serif; }

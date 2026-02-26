@@ -68,6 +68,7 @@ import {
   type InsertMultiServiceLead, 
   type BusinessSettings, 
   type InsertBusinessSettings,
+  type StylingOptions,
   type DesignSettings,
   type InsertDesignSettings,
   type AvailabilitySlot,
@@ -191,6 +192,7 @@ import {
   propertySnapshots,
   type PropertySnapshot,
   type InsertPropertySnapshot,
+  stylingOptionsSchema,
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { slugifyLandingPage } from "./landing-page-utils";
@@ -233,6 +235,209 @@ const PERMISSION_LIMITS = [
   "maxWebsites",
   "maxTeamMembers",
 ];
+
+const STARTER_STYLE_PRESETS: Array<{
+  id: string;
+  styling: Partial<StylingOptions>;
+}> = [
+  {
+    id: "modern",
+    styling: {
+      fontFamily: "inter",
+      primaryColor: "#2563EB",
+      buttonBackgroundColor: "#2563EB",
+      buttonBorderColor: "#2563EB",
+      buttonHoverBackgroundColor: "#1D4ED8",
+      buttonHoverBorderColor: "#1D4ED8",
+      inputFocusColor: "#2563EB",
+      backgroundColor: "#FFFFFF",
+      textColor: "#1F2937",
+      multiChoiceSelectedColor: "#2563EB",
+      multiChoiceSelectedBgColor: "#EFF6FF",
+    },
+  },
+  {
+    id: "professional",
+    styling: {
+      fontFamily: "roboto",
+      primaryColor: "#4B5563",
+      buttonStyle: "square",
+      buttonBackgroundColor: "#4B5563",
+      buttonBorderColor: "#4B5563",
+      buttonHoverBackgroundColor: "#374151",
+      buttonHoverBorderColor: "#374151",
+      inputFocusColor: "#4B5563",
+      backgroundColor: "#F9FAFB",
+      textColor: "#374151",
+      multiChoiceSelectedColor: "#4B5563",
+      multiChoiceSelectedBgColor: "#F3F4F6",
+    },
+  },
+  {
+    id: "vibrant",
+    styling: {
+      fontFamily: "montserrat",
+      primaryColor: "#8B5CF6",
+      buttonBackgroundColor: "#8B5CF6",
+      buttonBorderColor: "#8B5CF6",
+      buttonHoverBackgroundColor: "#7C3AED",
+      buttonHoverBorderColor: "#7C3AED",
+      inputFocusColor: "#8B5CF6",
+      backgroundColor: "#FEFEFE",
+      textColor: "#1F2937",
+      multiChoiceSelectedColor: "#8B5CF6",
+      multiChoiceSelectedBgColor: "#F3E8FF",
+    },
+  },
+  {
+    id: "minimal",
+    styling: {
+      fontFamily: "open-sans",
+      primaryColor: "#10B981",
+      buttonStyle: "square",
+      buttonBackgroundColor: "#10B981",
+      buttonBorderColor: "#10B981",
+      buttonHoverBackgroundColor: "#059669",
+      buttonHoverBorderColor: "#059669",
+      inputFocusColor: "#10B981",
+      backgroundColor: "#FFFFFF",
+      textColor: "#374151",
+      multiChoiceSelectedColor: "#10B981",
+      multiChoiceSelectedBgColor: "#ECFDF5",
+      multiChoiceLayout: "list",
+    },
+  },
+  {
+    id: "elegant",
+    styling: {
+      fontFamily: "lato",
+      primaryColor: "#D97706",
+      buttonBackgroundColor: "#D97706",
+      buttonBorderColor: "#D97706",
+      buttonHoverBackgroundColor: "#B45309",
+      buttonHoverBorderColor: "#B45309",
+      inputFocusColor: "#D97706",
+      backgroundColor: "#FFFBEB",
+      textColor: "#92400E",
+      multiChoiceSelectedColor: "#D97706",
+      multiChoiceSelectedBgColor: "#FEF3C7",
+    },
+  },
+  {
+    id: "dark",
+    styling: {
+      fontFamily: "inter",
+      primaryColor: "#F59E0B",
+      buttonBackgroundColor: "#F59E0B",
+      buttonBorderColor: "#F59E0B",
+      buttonHoverBackgroundColor: "#D97706",
+      buttonHoverBorderColor: "#D97706",
+      inputFocusColor: "#F59E0B",
+      inputBackgroundColor: "#1F2937",
+      inputTextColor: "#F9FAFB",
+      inputBorderColor: "#374151",
+      backgroundColor: "#111827",
+      textColor: "#F9FAFB",
+      multiChoiceSelectedColor: "#F59E0B",
+      multiChoiceSelectedBgColor: "#1F2937",
+      questionCardBackgroundColor: "#1F2937",
+      questionCardBorderColor: "#374151",
+      pricingCardBackgroundColor: "#1F2937",
+      pricingTextColor: "#F9FAFB",
+      pricingAccentColor: "#F59E0B",
+    },
+  },
+];
+
+const getRandomStarterStyling = (): StylingOptions => {
+  const base = stylingOptionsSchema.parse({});
+  const preset = STARTER_STYLE_PRESETS[Math.floor(Math.random() * STARTER_STYLE_PRESETS.length)];
+  return {
+    ...base,
+    ...preset.styling,
+  };
+};
+
+const DEFAULT_STARTER_COMPONENT_STYLES = {
+  serviceSelector: {
+    borderColor: "#E5E7EB",
+    borderWidth: 0,
+    backgroundColor: "#FFFFFF",
+    activeBackgroundColor: "#3B82F6",
+    activeBorderColor: "#2563EB",
+    hoverBackgroundColor: "#F8FAFC",
+    hoverBorderColor: "#D1D5DB",
+    shadow: "xl",
+    height: 120,
+    width: "full",
+    padding: 16,
+    margin: 8,
+    borderRadius: 16,
+    iconPosition: "left",
+    iconSize: 48,
+    showImage: true,
+  },
+  textInput: {
+    borderColor: "#E5E7EB",
+    borderWidth: 2,
+    backgroundColor: "#F9FAFB",
+    shadow: "sm",
+    height: 40,
+    width: "full",
+    padding: 12,
+    margin: 4,
+    borderRadius: 10,
+  },
+  dropdown: {
+    borderColor: "#E5E7EB",
+    borderWidth: 2,
+    backgroundColor: "#F9FAFB",
+    shadow: "sm",
+    height: 40,
+    width: "full",
+    padding: 12,
+    margin: 4,
+    borderRadius: 10,
+  },
+  multipleChoice: {
+    borderColor: "#E5E7EB",
+    borderWidth: 1,
+    backgroundColor: "#FFFFFF",
+    activeBackgroundColor: "#3B82F6",
+    activeBorderColor: "#2563EB",
+    hoverBackgroundColor: "#F3F4F6",
+    hoverBorderColor: "#D1D5DB",
+    shadow: "sm",
+    height: 80,
+    width: "full",
+    padding: 12,
+    margin: 4,
+    borderRadius: 12,
+    showImage: true,
+  },
+  pricingCard: {
+    borderColor: "#E5E7EB",
+    borderWidth: 1,
+    backgroundColor: "#FFFFFF",
+    shadow: "sm",
+    height: 120,
+    width: "full",
+    padding: 16,
+    margin: 8,
+    borderRadius: 12,
+  },
+  questionCard: {
+    borderColor: "#E5E7EB",
+    borderWidth: 1,
+    backgroundColor: "#FFFFFF",
+    shadow: "sm",
+    height: 100,
+    width: "full",
+    padding: 16,
+    margin: 8,
+    borderRadius: 12,
+  },
+};
 
 async function generateUniqueLandingSlug(base: string): Promise<string> {
   const slugBase = slugifyLandingPage(base);
@@ -1843,6 +2048,8 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+
+    await this.ensureStarterDesignForUser(user);
     return user;
   }
 
@@ -1942,8 +2149,52 @@ export class DatabaseStorage implements IStorage {
         permissions: normalizePermissions(permissions),
       } as any)
       .returning();
+    await this.ensureStarterDesignForUser(user);
     await this.ensureLandingPageForUser(user);
     return user;
+  }
+
+  private async ensureStarterDesignForUser(user: User): Promise<void> {
+    if (user.userType !== "owner") {
+      return;
+    }
+
+    const [existingBusinessSettings, existingDesignSettings] = await Promise.all([
+      this.getBusinessSettingsByUserId(user.id),
+      this.getDesignSettingsByUserId(user.id),
+    ]);
+
+    if (existingBusinessSettings && existingDesignSettings) {
+      return;
+    }
+
+    const starterStyling = getRandomStarterStyling();
+
+    if (!existingBusinessSettings) {
+      const businessName =
+        user.businessInfo?.businessName ||
+        user.organizationName ||
+        [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+        "My Business";
+
+      await this.createBusinessSettings({
+        userId: user.id,
+        businessName,
+        businessEmail: user.email || undefined,
+        styling: starterStyling,
+        enableLeadCapture: true,
+        enableBooking: true,
+      });
+    }
+
+    if (!existingDesignSettings) {
+      await this.createDesignSettings({
+        userId: user.id,
+        styling: starterStyling,
+        componentStyles: DEFAULT_STARTER_COMPONENT_STYLES,
+        deviceView: "desktop",
+      });
+    }
   }
 
   async ensureLandingPageForUser(user: User): Promise<LandingPage | null> {
@@ -2389,6 +2640,9 @@ export class DatabaseStorage implements IStorage {
     stage: string;
     createdAt: Date;
     formulaName: string;
+    ownerUserId: string | null;
+    ownerEmail: string | null;
+    ownerName: string | null;
   }>> {
     const singleLeads = await db.select({
       id: leads.id,
@@ -2399,6 +2653,7 @@ export class DatabaseStorage implements IStorage {
       stage: leads.stage,
       createdAt: leads.createdAt,
       formulaName: formulas.name,
+      ownerUserId: sql<string | null>`COALESCE(NULLIF(${leads.userId}, ''), NULLIF(${formulas.userId}, ''))`,
     })
     .from(leads)
     .leftJoin(formulas, eq(leads.formulaId, formulas.id))
@@ -2412,19 +2667,55 @@ export class DatabaseStorage implements IStorage {
       calculatedPrice: multiServiceLeads.totalPrice,
       stage: multiServiceLeads.stage,
       createdAt: multiServiceLeads.createdAt,
+      ownerUserId: sql<string | null>`NULLIF(${multiServiceLeads.businessOwnerId}, '')`,
     })
     .from(multiServiceLeads)
     .orderBy(desc(multiServiceLeads.createdAt));
+
+    const ownerIds = new Set<string>();
+    singleLeads.forEach((lead) => {
+      const ownerUserId = lead.ownerUserId?.trim();
+      if (ownerUserId) ownerIds.add(ownerUserId);
+    });
+    multiLeads.forEach((lead) => {
+      const ownerUserId = lead.ownerUserId?.trim();
+      if (ownerUserId) ownerIds.add(ownerUserId);
+    });
+
+    const ownerList = ownerIds.size > 0
+      ? await db.select({
+          id: users.id,
+          email: users.email,
+          firstName: users.firstName,
+          lastName: users.lastName,
+        })
+        .from(users)
+        .where(inArray(users.id, Array.from(ownerIds)))
+      : [];
+
+    const ownersById = new Map(ownerList.map((owner) => [owner.id, owner]));
+
+    const getOwnerName = (ownerUserId: string | null): string | null => {
+      if (!ownerUserId) return null;
+      const owner = ownersById.get(ownerUserId);
+      if (!owner) return null;
+      const fullName = `${owner.firstName || ''} ${owner.lastName || ''}`.trim();
+      return fullName || owner.email || null;
+    };
 
     // Combine and sort both types of leads
     const allLeads = [
       ...singleLeads.map(lead => ({
         ...lead,
         formulaName: lead.formulaName || 'Unknown',
+        ownerEmail: lead.ownerUserId?.trim() ? (ownersById.get(lead.ownerUserId.trim())?.email || null) : null,
+        ownerName: getOwnerName(lead.ownerUserId?.trim() || null),
       })),
       ...multiLeads.map(lead => ({
         ...lead,
         formulaName: 'Multi-Service',
+        ownerEmail: lead.ownerUserId?.trim() ? (ownersById.get(lead.ownerUserId.trim())?.email || null) : null,
+        ownerName: getOwnerName(lead.ownerUserId?.trim() || null),
       })),
     ];
 

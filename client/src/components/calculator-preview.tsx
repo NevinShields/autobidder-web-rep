@@ -30,6 +30,15 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
   const [contactSubmitted, setContactSubmitted] = useState(false);
   const { toast } = useToast();
 
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
   // Track calculator session when component mounts
   useEffect(() => {
     const trackSession = async () => {
@@ -93,8 +102,43 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
       // In a real app, you'd want a more robust formula parser
       let formulaExpression = formula.formula;
       
+      // First pass: resolve option-level references for multi-select multiple-choice variables.
+      formula.variables.forEach((variable) => {
+        if (variable.type !== 'multiple-choice' || !variable.allowMultipleSelection || !variable.options) return;
+
+        const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
+        variable.options.forEach((option, optionIndex) => {
+          const optionId = toOptionId(option.id ?? option.value, optionIndex + 1);
+          if (!optionId) return;
+
+          const optionReference = `${variable.id}_${optionId}`;
+          const isSelected = selectedValues.some((val: any) => val?.toString() === option.value?.toString());
+          const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
+          const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${optionReference}\\b`, 'g'),
+            String(optionValue)
+          );
+        });
+      });
+
       // Replace variable names with their values
       formula.variables.forEach((variable) => {
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
+          const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
+          const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
+            const option = variable.options?.find(opt => opt.value?.toString() === selectedValue?.toString());
+            return total + (option?.numericValue || 0);
+          }, 0);
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(sumOfSelected)
+          );
+          return;
+        }
+
         let value = values[variable.id];
         
         if (variable.type === 'select' && variable.options) {
@@ -110,6 +154,9 @@ export default function CalculatorPreview({ formula, onLeadSubmitted }: Calculat
               const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
               return total + (option?.numericValue || 0);
             }, 0);
+          } else if (value !== undefined && value !== null && value !== '') {
+            const option = variable.options.find(opt => opt.value.toString() === value.toString());
+            value = option?.numericValue || Number(value) || 0;
           } else {
             value = 0;
           }

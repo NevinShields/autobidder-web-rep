@@ -127,6 +127,9 @@ interface AdminLead {
   stage: string;
   createdAt: string;
   formulaName?: string;
+  ownerUserId?: string | null;
+  ownerEmail?: string | null;
+  ownerName?: string | null;
 }
 
 interface AdminIcon {
@@ -411,7 +414,9 @@ export default function AdminDashboard() {
   const filteredLeads = leads?.filter(lead =>
     lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     lead.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    lead.phone?.toLowerCase().includes(searchQuery.toLowerCase())
+    lead.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.ownerEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    lead.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const filteredIcons = icons?.filter(icon => {
@@ -1540,6 +1545,7 @@ export default function AdminDashboard() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Contact</TableHead>
+                          <TableHead>Owner</TableHead>
                           <TableHead>Formula</TableHead>
                           <TableHead>Price</TableHead>
                           <TableHead>Stage</TableHead>
@@ -1551,6 +1557,7 @@ export default function AdminDashboard() {
                         {leadsLoading ? (
                           [...Array(5)].map((_, i) => (
                             <TableRow key={i}>
+                              <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
                               <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
@@ -1571,6 +1578,16 @@ export default function AdminDashboard() {
                                       <Phone className="h-3 w-3" />
                                       {lead.phone}
                                     </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium text-gray-900">
+                                    {lead.ownerName || (lead.ownerUserId ? `Owner ID: ${lead.ownerUserId}` : 'Unknown owner')}
+                                  </div>
+                                  {lead.ownerEmail && (
+                                    <div className="text-sm text-gray-500">{lead.ownerEmail}</div>
                                   )}
                                 </div>
                               </TableCell>

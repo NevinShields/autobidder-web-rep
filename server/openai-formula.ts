@@ -19,11 +19,15 @@ interface Variable {
   type: 'number' | 'select' | 'text' | 'multiple-choice' | 'dropdown';
   unit?: string;
   options?: Array<{
+    id?: string;
     label: string;
     value: string | number;
     numericValue?: number;
+    defaultUnselectedValue?: number;
   }>;
-  defaultValue?: string | number | boolean;
+  defaultValue?: string | number | boolean | Array<string | number>;
+  allowMultipleSelection?: boolean;
+  conditionalLogic?: any;
 }
 
 export interface AIFormulaResponse {
@@ -1011,12 +1015,13 @@ export async function generateFormula(description: string): Promise<AIFormulaRes
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Use realistic contractor pricing (research actual market rates)
-4. Include 3-8 relevant variables that affect pricing
-5. Use appropriate units (sq ft, linear ft, hours, etc.)
-6. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
-7. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
-8. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
+3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+4. Use realistic contractor pricing (research actual market rates)
+5. Include 3-8 relevant variables that affect pricing
+6. Use appropriate units (sq ft, linear ft, hours, etc.)
+7. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
+8. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
+9. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
 
 *** CRITICAL FORMULA REQUIREMENT ***
 The formula field MUST be simple arithmetic using ONLY:
@@ -1159,7 +1164,8 @@ VARIABLE STRUCTURE:
   "name": "Display Name",
   "type": "number|multiple-choice|dropdown|select",
   "unit": "optional unit",
-  "options": [{"label": "Option", "value": "value", "numericValue": 123}],
+  "allowMultipleSelection": true, // OPTIONAL for multiple-choice when options can be toggled independently
+  "options": [{"id": "option_id", "label": "Option", "value": "value", "numericValue": 123, "defaultUnselectedValue": 0}],
   "defaultValue": "optional default",
   "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
     "enabled": true,
@@ -1213,6 +1219,99 @@ Create realistic pricing that reflects actual market rates for contractors.`;
   } catch (error) {
     console.error('AI formula generation error:', error);
     throw new Error('Failed to generate formula with AI: ' + (error as Error).message);
+  }
+}
+
+export async function editFormula(
+  currentFormula: AIFormulaResponse,
+  editInstructions: string
+): Promise<AIFormulaResponse> {
+  try {
+    const client = getOpenAI();
+
+    const systemPrompt = `You are an expert contractor pricing consultant. Edit an existing pricing calculator based on the user's instructions.
+
+IMPORTANT RULES:
+1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
+2. Formula must use ONLY variable IDs (not variable names)
+3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+4. Use realistic contractor pricing
+5. Use simple arithmetic formulas with + and * only
+6. Preserve unchanged parts of the current calculator unless user asks otherwise
+7. For multi-select multiple-choice variables, use:
+   - "allowMultipleSelection": true
+   - option-level IDs in options[].id (snake_case)
+   - formula references like variableId_optionId when needed
+8. Every dropdown/multiple-choice option must include numericValue
+9. If multi-select options are used in multiplication, include defaultUnselectedValue: 1 for those options
+
+RESPONSE FORMAT: Return valid JSON with these fields:
+{
+  "name": "Service Name",
+  "title": "Customer-facing calculator title",
+  "description": "2-3 sentence description",
+  "bulletPoints": ["Benefit 1", "Benefit 2", "Benefit 3", "Benefit 4"],
+  "formula": "simple_formula_using_ids",
+  "variables": [
+    {
+      "id": "camelCaseId",
+      "name": "Display Name",
+      "type": "number|multiple-choice|dropdown|select",
+      "unit": "optional unit",
+      "allowMultipleSelection": true,
+      "options": [
+        {
+          "id": "option_id",
+          "label": "Option",
+          "value": "option_value",
+          "numericValue": 123,
+          "defaultUnselectedValue": 0
+        }
+      ],
+      "defaultValue": "optional default",
+      "conditionalLogic": {
+        "enabled": true
+      }
+    }
+  ],
+  "iconUrl": "emoji_or_url"
+}`;
+
+    const currentFormulaJson = JSON.stringify(currentFormula, null, 2);
+    const response = await client.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: `Current Formula:\n${currentFormulaJson}\n\nEdit Instructions:\n${editInstructions}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.25,
+    });
+
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error('Empty response from OpenAI');
+    }
+
+    const result = JSON.parse(content);
+    if (!result.name || !result.title || !result.formula || !Array.isArray(result.variables)) {
+      throw new Error('Invalid AI response structure');
+    }
+
+    result.description = result.description || '';
+    result.bulletPoints = Array.isArray(result.bulletPoints) ? result.bulletPoints : [];
+    result.iconUrl = result.iconUrl || '';
+
+    return result as AIFormulaResponse;
+  } catch (error) {
+    console.error('AI formula edit error:', error);
+    throw new Error('Failed to edit formula with AI: ' + (error as Error).message);
   }
 }
 

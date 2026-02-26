@@ -49,7 +49,7 @@ import {
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateIcon, generateIconVariations, refineIcon, generateBulkIcons } from "./icon-generator";
-import { generateFormula as generateFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS, editCustomCSS } from "./openai-formula";
+import { generateFormula as generateFormulaOpenAI, editFormula as editFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS, editCustomCSS } from "./openai-formula";
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
@@ -1889,6 +1889,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
+  const ensureUniqueOptionIds = (options: Array<any>) => {
+    const used = new Set<string>();
+    const withUniqueIds = options.map((option, index) => {
+      const baseId = toOptionId(option?.id ?? option?.value ?? option?.label, index + 1);
+      let uniqueId = baseId;
+      let suffix = 2;
+      while (used.has(uniqueId)) {
+        uniqueId = `${baseId}_${suffix}`;
+        suffix += 1;
+      }
+      used.add(uniqueId);
+      return {
+        ...option,
+        id: uniqueId,
+      };
+    });
+
+    const usedValues = new Set<string>();
+    return withUniqueIds.map((option) => {
+      const baseValue = String(option?.value ?? '').trim() || option.id;
+      let uniqueValue = baseValue;
+      let suffix = 2;
+      while (usedValues.has(uniqueValue)) {
+        uniqueValue = `${baseValue}_${suffix}`;
+        suffix += 1;
+      }
+      usedValues.add(uniqueValue);
+      return {
+        ...option,
+        value: uniqueValue,
+      };
+    });
+  };
+
+  const normalizeAiFormula = (formulaPayload: any) => {
+    if (!formulaPayload || !Array.isArray(formulaPayload.variables)) return formulaPayload;
+
+    const formulaText = typeof formulaPayload.formula === 'string' ? formulaPayload.formula : '';
+    const variables = formulaPayload.variables.map((variable: any) => {
+      if (!variable || variable.type !== 'multiple-choice') return variable;
+
+      const normalizedOptions = Array.isArray(variable.options)
+        ? ensureUniqueOptionIds(variable.options)
+        : variable.options;
+
+      const formulaUsesOptionRefs = Array.isArray(normalizedOptions)
+        ? normalizedOptions.some((option: any) => formulaText.includes(`${variable.id}_${option.id}`))
+        : false;
+
+      return {
+        ...variable,
+        allowMultipleSelection: variable.allowMultipleSelection ?? formulaUsesOptionRefs,
+        options: normalizedOptions,
+      };
+    });
+
+    return {
+      ...formulaPayload,
+      variables,
+    };
+  };
+
   // AI Formula Generation - Support for OpenAI, Gemini, and Claude
   app.post("/api/formulas/generate", async (req, res) => {
     try {
@@ -1940,7 +2011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json(aiFormula);
+      res.json(normalizeAiFormula(aiFormula));
     } catch (error) {
       console.error('AI formula generation error (all providers failed):', error);
       res.status(500).json({ message: "Failed to generate formula with AI" });
@@ -1959,15 +2030,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const requestedProvider = provider?.toLowerCase();
 
       // If specific provider requested, try that first
-      if (requestedProvider === 'claude') {
+      if (requestedProvider === 'gpt5' || requestedProvider === 'openai') {
+        try {
+          console.log('Attempting formula editing with OpenAI...');
+          editedFormula = await editFormulaOpenAI(currentFormula, editInstructions);
+          console.log('OpenAI formula editing successful');
+        } catch (openaiError) {
+          console.warn('OpenAI formula editing failed, trying Claude:', openaiError);
+          try {
+            editedFormula = await editFormulaClaude(currentFormula, editInstructions);
+            console.log('Claude fallback successful');
+          } catch (claudeError) {
+            console.warn('Claude formula editing failed, falling back to Gemini:', claudeError);
+            editedFormula = await editFormulaGemini(currentFormula, editInstructions);
+            console.log('Gemini final fallback successful');
+          }
+        }
+      } else if (requestedProvider === 'claude') {
         try {
           console.log('Attempting formula editing with Claude...');
           editedFormula = await editFormulaClaude(currentFormula, editInstructions);
           console.log('Claude formula editing successful');
         } catch (claudeError) {
-          console.warn('Claude formula editing failed, falling back to Gemini:', claudeError);
-          editedFormula = await editFormulaGemini(currentFormula, editInstructions);
-          console.log('Gemini fallback successful');
+          console.warn('Claude formula editing failed, falling back to OpenAI:', claudeError);
+          editedFormula = await editFormulaOpenAI(currentFormula, editInstructions);
+          console.log('OpenAI fallback successful');
         }
       } else {
         // Default: use Gemini for editing (most stable for this task)
@@ -1976,13 +2063,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           editedFormula = await editFormulaGemini(currentFormula, editInstructions);
           console.log('Gemini formula editing successful');
         } catch (geminiError) {
-          console.warn('Gemini formula editing failed, trying Claude:', geminiError);
-          editedFormula = await editFormulaClaude(currentFormula, editInstructions);
-          console.log('Claude fallback successful');
+          console.warn('Gemini formula editing failed, trying OpenAI:', geminiError);
+          try {
+            editedFormula = await editFormulaOpenAI(currentFormula, editInstructions);
+            console.log('OpenAI fallback successful');
+          } catch (openaiError) {
+            console.warn('OpenAI formula editing failed, trying Claude:', openaiError);
+            editedFormula = await editFormulaClaude(currentFormula, editInstructions);
+            console.log('Claude final fallback successful');
+          }
         }
       }
 
-      res.json(editedFormula);
+      res.json(normalizeAiFormula(editedFormula));
     } catch (error) {
       console.error('AI formula edit error (all providers failed):', error);
       res.status(500).json({ message: "Failed to edit formula with AI" });

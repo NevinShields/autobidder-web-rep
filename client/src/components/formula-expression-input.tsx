@@ -25,6 +25,15 @@ export default function FormulaExpressionInput({
   const highlightRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
 
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
   // Sync scroll between textarea and highlight overlay
   const syncScroll = () => {
     if (textareaRef.current && highlightRef.current) {
@@ -48,7 +57,7 @@ export default function FormulaExpressionInput({
       // For multi-select variables, also add individual option IDs
       if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
         variable.options.forEach((option: any, optIndex: number) => {
-          const optionId = option.id || option.value || `option_${optIndex}`;
+          const optionId = toOptionId(option.id ?? option.value, optIndex + 1);
           allVariableIds.push(`${variable.id}_${optionId}`);
         });
       }

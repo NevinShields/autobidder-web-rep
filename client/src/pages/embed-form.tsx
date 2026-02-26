@@ -175,6 +175,15 @@ export default function EmbedForm() {
   const businessSettings = settings as BusinessSettings;
   const styling = businessSettings?.styling || {} as StylingOptions;
 
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
   // Get connected variables across selected services
   const getConnectedVariables = () => {
     if (!availableFormulas || selectedServices.length === 0) return [];
@@ -361,11 +370,13 @@ export default function EmbedForm() {
           if (variable?.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
             const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
             
-            variable.options.forEach((option: any) => {
-              if (option.id) {
-                const optionReference = `${variable.id}_${option.id}`;
+            variable.options.forEach((option: any, optionIndex: number) => {
+              const optionId = toOptionId(option.id ?? option.value, optionIndex + 1);
+              if (optionId) {
+                const optionReference = `${variable.id}_${optionId}`;
                 const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
-                const optionValue = isSelected ? (option.numericValue || 0) : 0;
+                const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
+                const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
                 
                 formulaExpression = formulaExpression.replace(
                   new RegExp(`\\b${optionReference}\\b`, 'g'),
@@ -379,9 +390,19 @@ export default function EmbedForm() {
         
         // Then ensure all formula variables have default values
         formula.variables.forEach((variable: any) => {
-          // Skip multiple-choice with allowMultipleSelection since we already handled individual options
           if (variable?.type === 'multiple-choice' && variable.allowMultipleSelection) {
-            return; // Skip this variable, options already replaced
+            const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
+            const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
+              const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue.toString());
+              return total + (option?.numericValue || 0);
+            }, 0);
+
+            formulaExpression = formulaExpression.replace(
+              new RegExp(`\\b${variable.id}\\b`, 'g'),
+              String(sumOfSelected)
+            );
+            console.log(`🔄 Replaced ${variable.id} (multi-select sum) with ${sumOfSelected}`);
+            return;
           }
           
           const regex = new RegExp(`\\b${variable.id}\\b`, 'g');

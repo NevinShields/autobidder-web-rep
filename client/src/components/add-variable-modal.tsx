@@ -70,6 +70,49 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
     return candidate;
   };
 
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 30);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
+  const ensureUniqueOptionIds = (inputOptions: Array<any>) => {
+    const used = new Set<string>();
+    const withUniqueIds = inputOptions.map((option, index) => {
+      const baseId = toOptionId(option?.id ?? option?.value ?? option?.label, index + 1);
+      let uniqueId = baseId;
+      let suffix = 2;
+      while (used.has(uniqueId)) {
+        uniqueId = `${baseId}_${suffix}`;
+        suffix += 1;
+      }
+      used.add(uniqueId);
+      return {
+        ...option,
+        id: uniqueId,
+      };
+    });
+
+    const usedValues = new Set<string>();
+    return withUniqueIds.map((option) => {
+      const baseValue = String(option?.value ?? '').trim() || option.id;
+      let uniqueValue = baseValue;
+      let suffix = 2;
+      while (usedValues.has(uniqueValue)) {
+        uniqueValue = `${baseValue}_${suffix}`;
+        suffix += 1;
+      }
+      usedValues.add(uniqueValue);
+      return {
+        ...option,
+        value: uniqueValue,
+      };
+    });
+  };
+
   // Build list of linkable variables from other services
   const linkableVariables = useMemo(() => {
     const variables: LinkableVariable[] = [];
@@ -211,19 +254,20 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
       unit: unit || undefined,
       allowMultipleSelection: type === 'multiple-choice' ? allowMultipleSelection : undefined,
       options: (type === 'select' || type === 'dropdown' || type === 'multiple-choice')
-        ? options.filter(opt => opt.label.trim()).map(opt => {
-            const optionId = (type === 'multiple-choice' && allowMultipleSelection)
-              ? opt.label.trim().toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 30)
-              : undefined;
-
-            return {
-              id: optionId,
+        ? (() => {
+            const mappedOptions = options.filter(opt => opt.label.trim()).map(opt => ({
               label: opt.label.trim(),
               value: opt.value || opt.label.trim(),
               numericValue: opt.numericValue || 0,
               image: opt.image || undefined
-            };
-          })
+            }));
+
+            if (type === 'multiple-choice' && allowMultipleSelection) {
+              return ensureUniqueOptionIds(mappedOptions);
+            }
+
+            return mappedOptions as any;
+          })()
         : undefined,
       min: type === 'slider' || type === 'stepper' ? min : undefined,
       max: type === 'slider' || type === 'stepper' ? max : undefined,

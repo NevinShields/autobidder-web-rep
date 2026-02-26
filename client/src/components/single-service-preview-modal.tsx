@@ -17,6 +17,15 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
 
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
   const handleVariableChange = (variableId: string, value: any) => {
     const newValues = { ...variableValues, [variableId]: value };
     setVariableValues(newValues);
@@ -29,7 +38,42 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
     try {
       let formulaExpression = formula.formula;
       
+      // First pass: resolve option-level references for multi-select multiple-choice variables.
       formula.variables.forEach((variable) => {
+        if (variable.type !== 'multiple-choice' || !variable.allowMultipleSelection || !variable.options) return;
+
+        const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
+        variable.options.forEach((option, optionIndex) => {
+          const optionId = toOptionId(option.id ?? option.value, optionIndex + 1);
+          if (!optionId) return;
+
+          const optionReference = `${variable.id}_${optionId}`;
+          const isSelected = selectedValues.some((val: any) => val?.toString() === option.value?.toString());
+          const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
+          const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${optionReference}\\b`, 'g'),
+            String(optionValue)
+          );
+        });
+      });
+
+      formula.variables.forEach((variable) => {
+        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
+          const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
+          const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
+            const option = variable.options?.find((opt) => opt.value?.toString() === selectedValue?.toString());
+            return total + (option?.numericValue || 0);
+          }, 0);
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(sumOfSelected)
+          );
+          return;
+        }
+
         let variableValue = values[variable.id];
         
         // Handle case where single-select values are accidentally stored as arrays
@@ -49,6 +93,9 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
               const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
               return total + (option?.numericValue || 0);
             }, 0);
+          } else if (variableValue !== undefined && variableValue !== null && variableValue !== '') {
+            const option = variable.options.find(opt => opt.value.toString() === variableValue.toString());
+            variableValue = option?.numericValue || Number(variableValue) || 0;
           } else {
             variableValue = 0;
           }

@@ -2120,6 +2120,15 @@ export default function StyledCalculator(props: any = {}) {
     const service = formulas?.find((f: any) => f.id === serviceId);
     if (!service) return 0;
 
+    const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+      const base = String(rawValue ?? '').trim().toLowerCase();
+      const normalized = base
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 40);
+      return normalized || `option_${fallbackIndex}`;
+    };
+
     try {
       let formulaExpression = service.formula;
       const variables = serviceVariables[serviceId] || {};
@@ -2129,9 +2138,8 @@ export default function StyledCalculator(props: any = {}) {
         if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
           const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
           
-          variable.options.forEach((option: any) => {
-            // Use option.id if available, otherwise fall back to option.value for formula references
-            const optionId = option.id || option.value?.toString();
+          variable.options.forEach((option: any, optionIndex: number) => {
+            const optionId = toOptionId(option.id ?? option.value, optionIndex + 1);
             if (optionId) {
               const optionReference = `${variable.id}_${optionId}`;
               const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());

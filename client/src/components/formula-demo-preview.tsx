@@ -12,6 +12,15 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
   const [values, setValues] = useState<Record<string, any>>({});
   const [calculatedPrice, setCalculatedPrice] = useState<number | null>(null);
 
+  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
+    const base = String(rawValue ?? '').trim().toLowerCase();
+    const normalized = base
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 40);
+    return normalized || `option_${fallbackIndex}`;
+  };
+
   const handleVariableChange = (variableId: string, value: any) => {
     setValues(prev => ({
       ...prev,
@@ -27,31 +36,42 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
 
       let formulaExpression = formula.formula;
       
-      // First, replace individual option references for multiple-choice with allowMultipleSelection
+      // First, replace individual option references for multi-select multiple-choice variables.
       formula.variables.forEach((variable) => {
-        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
-          const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
-          
-          variable.options.forEach((option) => {
-            if (option.id) {
-              const optionReference = `${variable.id}_${option.id}`;
-              const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
-              const optionValue = isSelected ? (option.numericValue || 0) : 0;
-              
-              formulaExpression = formulaExpression.replace(
-                new RegExp(`\\b${optionReference}\\b`, 'g'),
-                String(optionValue)
-              );
-            }
-          });
-        }
+        if (variable.type !== 'multiple-choice' || !variable.allowMultipleSelection || !variable.options) return;
+
+        const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
+        variable.options.forEach((option, optionIndex) => {
+          const optionId = toOptionId(option.id ?? option.value, optionIndex + 1);
+          if (!optionId) return;
+
+          const optionReference = `${variable.id}_${optionId}`;
+          const isSelected = selectedValues.some((val: any) => val?.toString() === option.value?.toString());
+          const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
+          const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${optionReference}\\b`, 'g'),
+            String(optionValue)
+          );
+        });
       });
       
       // Then replace variable names with their values
       formula.variables.forEach((variable) => {
-        // Skip multiple-choice with allowMultipleSelection since we already handled individual options
+        // For multi-select, still replace base variable ID with sum of selected options.
         if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
-          return; // Skip this variable, options already replaced
+          const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
+          const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
+            const option = variable.options?.find((opt) => opt.value?.toString() === selectedValue?.toString());
+            return total + (option?.numericValue || 0);
+          }, 0);
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(sumOfSelected)
+          );
+          return;
         }
         
         let value = values[variable.id];
@@ -63,12 +83,14 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
           const option = variable.options.find(opt => opt.value === value);
           value = option?.numericValue || 0;
         } else if (variable.type === 'multiple-choice' && variable.options) {
-          // For multiple-choice without allowMultipleSelection, or as fallback
           if (Array.isArray(value)) {
             value = value.reduce((total: number, selectedValue: string) => {
               const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
               return total + (option?.numericValue || 0);
             }, 0);
+          } else if (value !== undefined && value !== null && value !== '') {
+            const option = variable.options.find(opt => opt.value.toString() === value.toString());
+            value = option?.numericValue || Number(value) || 0;
           } else {
             value = 0;
           }

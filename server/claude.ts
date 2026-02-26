@@ -19,11 +19,15 @@ interface Variable {
   type: 'number' | 'select' | 'text' | 'multiple-choice' | 'dropdown';
   unit?: string;
   options?: Array<{
+    id?: string;
     label: string;
     value: string | number;
     numericValue?: number;
+    defaultUnselectedValue?: number;
   }>;
-  defaultValue?: string | number | boolean;
+  defaultValue?: string | number | boolean | Array<string | number>;
+  allowMultipleSelection?: boolean;
+  conditionalLogic?: any;
 }
 
 export interface AIFormulaResponse {
@@ -44,12 +48,13 @@ export async function generateFormula(description: string): Promise<AIFormulaRes
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Use realistic contractor pricing (research actual market rates)
-4. Include 3-8 relevant variables that affect pricing
-5. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
-6. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
-7. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
-8. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
+3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+4. Use realistic contractor pricing (research actual market rates)
+5. Include 3-8 relevant variables that affect pricing
+6. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
+7. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
+8. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
+9. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
 
 *** CRITICAL FORMULA REQUIREMENT ***
 The formula field MUST be simple arithmetic using ONLY:
@@ -181,7 +186,8 @@ Response format (JSON):
       "type": "number|multiple-choice|dropdown",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
-      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}], // only for dropdown/multiple-choice
+      "allowMultipleSelection": true, // OPTIONAL for multiple-choice when options should be independently toggled
+      "options": [{"id": "option_id", "label": "Option Name", "value": "option_value", "numericValue": 123, "defaultUnselectedValue": 0}], // only for dropdown/multiple-choice
       "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
         "enabled": true,
         "operator": "AND",
@@ -252,12 +258,13 @@ export async function editFormula(
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Use realistic contractor pricing (research actual market rates)
-4. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
-5. EVERY dropdown/multiple-choice option MUST have a numericValue field
-6. You can add, remove, or modify variables as needed
-7. Update descriptions and bullet points to reflect changes
-8. Maintain service quality and professionalism
+3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+4. Use realistic contractor pricing (research actual market rates)
+5. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
+6. EVERY dropdown/multiple-choice option MUST have a numericValue field
+7. You can add, remove, or modify variables as needed
+8. Update descriptions and bullet points to reflect changes
+9. Maintain service quality and professionalism
 
 *** CRITICAL FORMULA REQUIREMENT ***
 The formula field MUST be simple arithmetic using ONLY:
@@ -385,7 +392,8 @@ Response format (JSON):
       "type": "number|multiple-choice|dropdown",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
-      "options": [{"label": "Option Name", "value": "option_value", "numericValue": 123}], // only for dropdown/multiple-choice
+      "allowMultipleSelection": true, // OPTIONAL for multiple-choice when options should be independently toggled
+      "options": [{"id": "option_id", "label": "Option Name", "value": "option_value", "numericValue": 123, "defaultUnselectedValue": 0}], // only for dropdown/multiple-choice
       "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
         "enabled": true,
         "operator": "AND",

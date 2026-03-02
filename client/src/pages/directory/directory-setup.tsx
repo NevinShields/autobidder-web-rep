@@ -571,7 +571,7 @@ export default function DirectorySetup() {
               ) : activeFormulas.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>You haven't created any pricing calculators yet.</p>
-                  <Link href="/formula-builder">
+                  <Link href="/formula-builder/new">
                     <Button className="mt-4">Create Your First Calculator</Button>
                   </Link>
                 </div>

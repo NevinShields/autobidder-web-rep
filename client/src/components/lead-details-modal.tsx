@@ -88,6 +88,8 @@ interface Lead {
     message: string;
   };
   totalDistanceFee?: number; // Travel fee in cents
+  distanceFee?: number; // Travel fee in cents (single-service / legacy)
+  subtotal?: number; // Services subtotal in cents (multi-service)
   selectedUpsells?: Array<{
     id: string;
     name: string;
@@ -1011,6 +1013,21 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
   };
 
   const calculatedTaxAmount = calculateTaxAmount();
+  const parsedSubtotalCents = Number((processedLead as any)?.subtotal || 0);
+  const parsedTotalCents = Math.round(Number(processedLead?.calculatedPrice || 0) * 100);
+  const parsedDiscountCents = Number(processedLead?.bundleDiscountAmount || 0) +
+    Number(processedLead?.appliedDiscounts?.reduce((sum, discount) => sum + (discount.amount || 0), 0) || 0);
+  const parsedTaxCents = Number(processedLead?.taxAmount || 0);
+  const derivedTravelFeeCents = processedLead?.type === 'multi' && parsedSubtotalCents > 0
+    ? Math.max(0, Math.round(parsedTotalCents - parsedSubtotalCents + parsedDiscountCents - parsedTaxCents))
+    : 0;
+  const normalizedTravelFeeCents = Math.max(
+    Number((processedLead as any)?.distanceFee || 0),
+    Number(processedLead?.totalDistanceFee || 0),
+    Number((processedLead as any)?.distanceInfo?.distanceFee || 0),
+    Number((processedLead as any)?.distanceInfo?.fee || 0),
+    derivedTravelFeeCents
+  );
 
   const toDateTimeLocal = (isoDate: string) => {
     const dt = new Date(isoDate);
@@ -1734,7 +1751,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                               const discounts = (processedLead.bundleDiscountAmount || 0) +
                                 (processedLead.appliedDiscounts?.reduce((sum, d) => sum + d.amount, 0) || 0);
                               const upsells = processedLead.selectedUpsells?.reduce((sum, u) => sum + u.amount, 0) || 0;
-                              const travelFee = processedLead.totalDistanceFee || 0;
+                              const travelFee = normalizedTravelFeeCents;
                               const tax = processedLead.taxAmount || 0;
                               // Total in cents = service + upsells + travel - discounts + tax
                               // Service = Total - upsells - travel + discounts - tax
@@ -1756,7 +1773,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       ))}
 
                       {/* Travel Fee */}
-                      {processedLead.totalDistanceFee && processedLead.totalDistanceFee > 0 && (
+                      {normalizedTravelFeeCents > 0 && (
                         <div className="flex justify-between items-center text-sm">
                           <span className="text-orange-700 dark:text-orange-400">
                             Travel Fee
@@ -1767,7 +1784,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             )}:
                           </span>
                           <span className="font-medium text-orange-600 dark:text-orange-400">
-                            +${(processedLead.totalDistanceFee / 100).toLocaleString()}
+                            +${(normalizedTravelFeeCents / 100).toLocaleString()}
                           </span>
                         </div>
                       )}
@@ -2216,13 +2233,13 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         }
 
                         // Add travel fee
-                        if (processedLead.totalDistanceFee && processedLead.totalDistanceFee > 0) {
+                        if (normalizedTravelFeeCents > 0) {
                           lineItems.push({
                             name: 'Travel Fee',
                             description: processedLead.distanceInfo?.distance
                               ? `${processedLead.distanceInfo.distance.toFixed(1)} miles`
                               : 'Distance-based fee',
-                            price: processedLead.totalDistanceFee / 100
+                            price: normalizedTravelFeeCents / 100
                           });
                         }
 

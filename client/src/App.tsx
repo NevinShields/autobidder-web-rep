@@ -33,6 +33,7 @@ const LandingExteriorCleaning = lazy(() => import("@/pages/landing-exterior-clea
 const LandingSplitTest = lazy(() => import("@/pages/landing-split-test"));
 const LandingDfySetup = lazy(() => import("@/pages/landing-dfy-setup"));
 const LandingBrutalist = lazy(() => import("@/pages/landing-brutalist"));
+const DemosPage = lazy(() => import("@/pages/demos"));
 const ForgotPassword = lazy(() => import("@/pages/forgot-password"));
 const ResetPassword = lazy(() => import("@/pages/reset-password"));
 const Pricing = lazy(() => import("@/pages/pricing"));
@@ -188,6 +189,7 @@ function Router() {
         <Route path="/split-test" component={LandingSplitTest} />
         <Route path="/dfy-setup" component={LandingDfySetup} />
         <Route path="/brutalist" component={LandingBrutalist} />
+        <Route path="/demos" component={DemosPage} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
         <Route path="/forgot-password" component={ForgotPassword} />
@@ -326,6 +328,7 @@ function Router() {
         <Route path="/split-test" component={LandingSplitTest} />
         <Route path="/dfy-setup" component={LandingDfySetup} />
         <Route path="/brutalist" component={LandingBrutalist} />
+        <Route path="/demos" component={DemosPage} />
 
         <Route path="/subscription-test" component={SubscriptionTest} />
         {/* Public routes still accessible when authenticated */}

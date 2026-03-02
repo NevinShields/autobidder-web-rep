@@ -14,7 +14,8 @@ import { ArrowLeft, Calculator } from "lucide-react";
 import { Formula } from "@shared/schema";
 
 export default function FormulaBuilder() {
-  const { id } = useParams<{ id: string }>();
+  const { id: routeId } = useParams<{ id?: string }>();
+  const formulaId = routeId ?? "new";
   const [, setLocation] = useLocation();
   const [showPreview, setShowPreview] = useState(false);
   const [showSingleServicePreview, setShowSingleServicePreview] = useState(false);
@@ -22,8 +23,8 @@ export default function FormulaBuilder() {
   const queryClient = useQueryClient();
 
   const { data: formula, isLoading } = useQuery({
-    queryKey: ["/api/formulas", id],
-    enabled: id !== "new",
+    queryKey: ["/api/formulas", formulaId],
+    enabled: formulaId !== "new",
   });
 
   // Fetch all formulas to allow linking variables across services
@@ -35,9 +36,12 @@ export default function FormulaBuilder() {
 
   // Update currentFormula when formula data is loaded or when creating new
   useEffect(() => {
-    if (formula && !currentFormula && id !== "new") {
-      setCurrentFormula(formula as Formula);
-    } else if (id === "new" && !currentFormula) {
+    if (formulaId !== "new" && formula && !Array.isArray(formula)) {
+      const loadedFormula = formula as Formula;
+      if (!currentFormula || currentFormula.id !== loadedFormula.id) {
+        setCurrentFormula(loadedFormula);
+      }
+    } else if (formulaId === "new" && (!currentFormula || currentFormula.id !== 0)) {
       const defaultFormula = {
         id: 0,
         userId: null,
@@ -178,12 +182,12 @@ export default function FormulaBuilder() {
       } as unknown as Formula;
       setCurrentFormula(defaultFormula);
     }
-  }, [formula, currentFormula, id]);
+  }, [formula, currentFormula, formulaId]);
 
   const saveFormulaMutation = useMutation({
     mutationFn: async (formulaData: any) => {
-      const method = id === "new" ? "POST" : "PATCH";
-      const url = id === "new" ? "/api/formulas" : `/api/formulas/${id}`;
+      const method = formulaId === "new" ? "POST" : "PATCH";
+      const url = formulaId === "new" ? "/api/formulas" : `/api/formulas/${formulaId}`;
       console.log('Saving formula:', { url, method, dataSize: JSON.stringify(formulaData).length });
       const response = await apiRequest(method, url, formulaData);
       if (!response.ok) {
@@ -201,7 +205,7 @@ export default function FormulaBuilder() {
       queryClient.invalidateQueries({ queryKey: ["/api/formulas"] });
 
       // Redirect to the new formula's URL after creation to prevent duplicate saves
-      if (id === "new" && data.id) {
+      if (formulaId === "new" && data.id) {
         setLocation(`/formula-builder/${data.id}`, { replace: true });
       }
     },
@@ -228,7 +232,7 @@ export default function FormulaBuilder() {
 
 
 
-  if (isLoading && id !== "new") {
+  if (isLoading && formulaId !== "new") {
     return (
       <DashboardLayout>
         <div className="p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -241,7 +245,7 @@ export default function FormulaBuilder() {
     );
   }
 
-  if (!currentFormula && id !== "new") {
+  if (!currentFormula && formulaId !== "new") {
     return (
       <DashboardLayout>
         <div className="p-4 sm:p-6 lg:p-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -276,7 +280,7 @@ export default function FormulaBuilder() {
                     <Calculator className="h-5 w-5 text-amber-700 dark:text-amber-300" />
                   </div>
                   <h1 className="text-3xl sm:text-4xl text-slate-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
-                    {id === "new" ? "Create Calculator" : "Edit Calculator"}
+                    {formulaId === "new" ? "Create Calculator" : "Edit Calculator"}
                   </h1>
                 </div>
                 <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300">

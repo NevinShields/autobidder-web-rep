@@ -57,7 +57,7 @@ import { attomApi } from "./attom-api";
 import { resolvePropertyData } from "./property-resolver";
 import { PROPERTY_ATTRIBUTE_LABELS, PROPERTY_ATTRIBUTE_GROUPS } from "@shared/schema";
 import { DudaFormMapper } from "./duda-form-mapper";
-import { calculateDistance, geocodeAddress } from "./location-utils";
+import { calculateDistance, calculateDistanceFee, geocodeAddress } from "./location-utils";
 import { ZapierIntegrationService } from "./zapier-integration";
 import { automationService } from "./automation-execution";
 import { stripe, createCheckoutSession, createPortalSession, updateSubscription, SUBSCRIPTION_PLANS } from "./stripe";
@@ -122,6 +122,122 @@ function getRequestBaseUrl(req: any): string {
   const proto = xfProto || req.protocol || "http";
   const host = req.get?.("host") || req.headers?.host || "localhost";
   return `${proto}://${host}`;
+}
+
+function parseNumberLike(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function sumDiscountAmountsCents(discounts: unknown): number {
+  if (!Array.isArray(discounts)) {
+    return 0;
+  }
+
+  return discounts.reduce((sum: number, discount: any) => {
+    const amount = parseNumberLike(discount?.amount) ?? 0;
+    return sum + Math.max(0, Math.round(amount));
+  }, 0);
+}
+
+function deriveTravelFeeFromTotalsCents({
+  totalPrice,
+  subtotal,
+  taxAmount,
+  bundleDiscountAmount,
+  appliedDiscounts,
+}: {
+  totalPrice: unknown;
+  subtotal: unknown;
+  taxAmount?: unknown;
+  bundleDiscountAmount?: unknown;
+  appliedDiscounts?: unknown;
+}): number | null {
+  const parsedTotalPrice = parseNumberLike(totalPrice);
+  const parsedSubtotal = parseNumberLike(subtotal);
+
+  if (parsedTotalPrice === null || parsedSubtotal === null) {
+    return null;
+  }
+
+  const parsedTaxAmount = parseNumberLike(taxAmount) ?? 0;
+  const parsedBundleDiscount = parseNumberLike(bundleDiscountAmount) ?? 0;
+  const parsedAppliedDiscounts = sumDiscountAmountsCents(appliedDiscounts);
+
+  return Math.max(
+    0,
+    Math.round(
+      parsedTotalPrice -
+      parsedSubtotal +
+      parsedBundleDiscount +
+      parsedAppliedDiscounts -
+      parsedTaxAmount
+    )
+  );
+}
+
+function resolveTravelFeeCents(leadLike: {
+  distanceFee?: unknown;
+  totalDistanceFee?: unknown;
+  distanceInfo?: unknown;
+  totalPrice?: unknown;
+  calculatedPrice?: unknown;
+  subtotal?: unknown;
+  taxAmount?: unknown;
+  bundleDiscountAmount?: unknown;
+  appliedDiscounts?: unknown;
+}): number {
+  const candidates: number[] = [];
+
+  const pushCandidate = (value: unknown) => {
+    const parsed = parseNumberLike(value);
+    if (parsed !== null) {
+      candidates.push(Math.max(0, Math.round(parsed)));
+    }
+  };
+
+  pushCandidate(leadLike.distanceFee);
+  pushCandidate(leadLike.totalDistanceFee);
+
+  const distanceInfo = leadLike.distanceInfo as any;
+  if (distanceInfo && typeof distanceInfo === "object") {
+    pushCandidate(distanceInfo.distanceFee);
+    pushCandidate(distanceInfo.fee); // Legacy key (historically cents in some payloads)
+
+    // Legacy dollar-mode payloads occasionally persisted fee in dollars without distanceFee.
+    const legacyFee = parseNumberLike(distanceInfo.fee);
+    const hasCanonicalDistanceFee = parseNumberLike(distanceInfo.distanceFee) !== null;
+    const pricingType = typeof distanceInfo.pricingType === "string"
+      ? distanceInfo.pricingType.toLowerCase()
+      : "";
+    if (!hasCanonicalDistanceFee && legacyFee !== null && pricingType === "dollar" && legacyFee > 0 && legacyFee < 1000) {
+      candidates.push(Math.round(legacyFee * 100));
+    }
+  }
+
+  const totalPriceForDerivation = leadLike.totalPrice ?? leadLike.calculatedPrice;
+  const derivedTravelFee = deriveTravelFeeFromTotalsCents({
+    totalPrice: totalPriceForDerivation,
+    subtotal: leadLike.subtotal,
+    taxAmount: leadLike.taxAmount,
+    bundleDiscountAmount: leadLike.bundleDiscountAmount,
+    appliedDiscounts: leadLike.appliedDiscounts,
+  });
+  if (derivedTravelFee !== null) {
+    candidates.push(derivedTravelFee);
+  }
+
+  return candidates.length > 0 ? Math.max(...candidates) : 0;
 }
 
 const SITEMAP_URL_LIMIT = 25000;
@@ -3236,6 +3352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const normalizedLeads = await Promise.all(
         leads.map(async (lead) => ({
           ...lead,
+          distanceFee: resolveTravelFeeCents(lead as any),
           uploadedImages: await migrateLegacyUploadPaths({
             leadId: lead.id,
             isMultiService: false,
@@ -3325,6 +3442,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate distance-based pricing if enabled and address provided
       const baseCalculatedPrice = validatedData.calculatedPrice ?? 0;
+      const submittedDistanceInfo: any = req.body?.distanceInfo;
+      const submittedDistanceFeeFromDistanceFee = parseNumberLike(submittedDistanceInfo?.distanceFee);
+      const submittedDistanceFeeFromFee = parseNumberLike(submittedDistanceInfo?.fee);
+      const submittedDistanceFeeCandidates = [
+        submittedDistanceFeeFromDistanceFee,
+        submittedDistanceFeeFromFee,
+      ]
+        .filter((value): value is number => value !== null)
+        .map((value) => Math.max(0, Math.round(value)));
+      const submittedDistanceFeeCents = submittedDistanceFeeCandidates.length > 0
+        ? Math.max(...submittedDistanceFeeCandidates)
+        : 0;
+      const hasSubmittedDistanceFee = submittedDistanceFeeCents > 0;
       let distanceAdjustedPrice = baseCalculatedPrice;
       let distanceInfo = null;
       let addressLatitude: number | null = null;
@@ -3390,16 +3520,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const pricingRate = businessSettings.distancePricingRate || 0;
                 const pricingType = businessSettings.distancePricingType || 'dollar';
                 
-                let distanceFee = 0;
-                if (pricingType === 'dollar') {
-                  // Dollar amount per mile (stored as cents)
-                  distanceFee = Math.round((pricingRate / 100) * excessDistance);
-                } else {
-                  // Percentage of quote per mile (stored as basis points)
-                  distanceFee = Math.round(baseCalculatedPrice * (pricingRate / 10000) * excessDistance);
-                }
-                
-                distanceAdjustedPrice = baseCalculatedPrice + distanceFee;
+                const basePriceForDistanceCalculation = pricingType === 'dollar'
+                  ? Math.max(baseCalculatedPrice - submittedDistanceFeeCents, 0)
+                  : baseCalculatedPrice;
+                const computedDistanceFee = calculateDistanceFee(
+                  distance,
+                  serviceRadius,
+                  pricingType,
+                  pricingRate,
+                  basePriceForDistanceCalculation
+                );
+                const distanceFee = pricingType === "dollar"
+                  ? Math.max(computedDistanceFee, submittedDistanceFeeCents)
+                  : hasSubmittedDistanceFee
+                    ? submittedDistanceFeeCents
+                    : computedDistanceFee;
+
+                distanceAdjustedPrice = pricingType === "dollar"
+                  ? basePriceForDistanceCalculation + distanceFee
+                  : hasSubmittedDistanceFee
+                    ? baseCalculatedPrice
+                    : basePriceForDistanceCalculation + distanceFee;
                 distanceInfo = {
                   distance: Math.round(distance * 100) / 100, // Round to 2 decimals
                   serviceRadius,
@@ -3409,7 +3550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   pricingRate
                 };
                 
-                console.log(`Single service distance fee applied: $${distanceFee} for ${excessDistance.toFixed(2)} excess miles`);
+                console.log(`Single service distance fee applied: $${(distanceFee / 100).toFixed(2)} for ${excessDistance.toFixed(2)} excess miles`);
               } else {
                 console.log(`Single service customer within service radius of ${serviceRadius} miles`);
               }
@@ -3423,10 +3564,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      const resolvedDistanceFeeCents = distanceInfo?.distanceFee ?? submittedDistanceFeeCents;
+
       // Create lead with adjusted pricing, coordinates, and discount/upsell data
       const leadData = {
         ...validatedData,
         calculatedPrice: distanceAdjustedPrice,
+        distanceFee: resolvedDistanceFeeCents,
         ipAddress: clientIp,
         ...(addressLatitude !== null && { addressLatitude: String(addressLatitude) }),
         ...(addressLongitude !== null && { addressLongitude: String(addressLongitude) }),
@@ -4060,7 +4204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           else geographicMetrics.byDistance.far++;
 
           // Distance fees
-          const fee = lead.distanceFee || lead.totalDistanceFee || 0;
+          const fee = resolveTravelFeeCents(lead as any);
           geographicMetrics.totalDistanceFees += fee;
         }
       });
@@ -4825,6 +4969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const normalizedLeads = await Promise.all(
         leads.map(async (lead) => ({
           ...lead,
+          totalDistanceFee: resolveTravelFeeCents(lead as any),
           uploadedImages: await migrateLegacyUploadPaths({
             leadId: lead.id,
             isMultiService: true,
@@ -4931,6 +5076,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate distance-based pricing if enabled and address provided
       const baseTotalPrice = validatedData.totalPrice ?? 0;
+      const submittedDistanceInfo: any = req.body?.distanceInfo;
+      const submittedDistanceFeeFromDistanceFee = parseNumberLike(submittedDistanceInfo?.distanceFee);
+      const submittedDistanceFeeFromFee = parseNumberLike(submittedDistanceInfo?.fee);
+      const derivedDistanceFeeFromTotalsCents = deriveTravelFeeFromTotalsCents({
+        totalPrice: baseTotalPrice,
+        subtotal: validatedData.subtotal,
+        taxAmount: validatedData.taxAmount,
+        bundleDiscountAmount: validatedData.bundleDiscountAmount,
+        appliedDiscounts: validatedData.appliedDiscounts,
+      });
+      const submittedDistanceFeeCandidates = [
+        submittedDistanceFeeFromDistanceFee,
+        submittedDistanceFeeFromFee,
+        derivedDistanceFeeFromTotalsCents,
+      ]
+        .filter((value): value is number => value !== null)
+        .map((value) => Math.max(0, Math.round(value)));
+      const submittedDistanceFeeCents = submittedDistanceFeeCandidates.length > 0
+        ? Math.max(...submittedDistanceFeeCandidates)
+        : 0;
+      const hasSubmittedDistanceFee = submittedDistanceFeeCents > 0;
       let distanceAdjustedPrice = baseTotalPrice;
       let distanceInfo = null;
       let addressLatitude: number | null = null;
@@ -4996,16 +5162,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const pricingRate = businessSettings.distancePricingRate || 0;
                 const pricingType = businessSettings.distancePricingType || 'dollar';
                 
-                let distanceFee = 0;
-                if (pricingType === 'dollar') {
-                  // Dollar amount per mile (stored as cents)
-                  distanceFee = Math.round((pricingRate / 100) * excessDistance);
-                } else {
-                  // Percentage of quote per mile (stored as basis points)
-                  distanceFee = Math.round(baseTotalPrice * (pricingRate / 10000) * excessDistance);
-                }
-                
-                distanceAdjustedPrice = baseTotalPrice + distanceFee;
+                const basePriceForDistanceCalculation = pricingType === 'dollar'
+                  ? Math.max(baseTotalPrice - submittedDistanceFeeCents, 0)
+                  : baseTotalPrice;
+                const computedDistanceFee = calculateDistanceFee(
+                  distance,
+                  serviceRadius,
+                  pricingType,
+                  pricingRate,
+                  basePriceForDistanceCalculation
+                );
+                const distanceFee = pricingType === "dollar"
+                  ? Math.max(computedDistanceFee, submittedDistanceFeeCents)
+                  : hasSubmittedDistanceFee
+                    ? submittedDistanceFeeCents
+                    : computedDistanceFee;
+
+                distanceAdjustedPrice = pricingType === "dollar"
+                  ? basePriceForDistanceCalculation + distanceFee
+                  : hasSubmittedDistanceFee
+                    ? baseTotalPrice
+                    : basePriceForDistanceCalculation + distanceFee;
                 distanceInfo = {
                   distance: Math.round(distance * 100) / 100, // Round to 2 decimals
                   serviceRadius,
@@ -5015,7 +5192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   pricingRate
                 };
                 
-                console.log(`Distance fee applied: $${distanceFee} for ${excessDistance.toFixed(2)} excess miles`);
+                console.log(`Distance fee applied: $${(distanceFee / 100).toFixed(2)} for ${excessDistance.toFixed(2)} excess miles`);
               } else {
                 console.log(`Customer within service radius of ${serviceRadius} miles`);
               }
@@ -5029,11 +5206,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      const resolvedDistanceFeeCents = distanceInfo?.distanceFee ?? submittedDistanceFeeCents;
+
       // Create lead with adjusted pricing and coordinates
       const leadData = {
         ...validatedData,
         totalPrice: distanceAdjustedPrice,
-        totalDistanceFee: distanceInfo ? distanceInfo.distanceFee : (validatedData.distanceInfo?.distanceFee || 0),
+        totalDistanceFee: resolvedDistanceFeeCents,
         ipAddress: clientIp,
         ...(addressLatitude !== null && { addressLatitude: String(addressLatitude) }),
         ...(addressLongitude !== null && { addressLongitude: String(addressLongitude) }),
@@ -5109,7 +5288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             category: "Service"
           }));
 
-          const distanceFee = lead.totalDistanceFee || 0;
+          const distanceFee = resolveTravelFeeCents(lead as any);
           const existingTaxAmount = lead.taxAmount || 0;
           const existingDiscounts = (lead.bundleDiscountAmount || 0) +
             (lead.appliedDiscounts?.reduce((sum: any, d: any) => sum + (d.amount || 0), 0) || 0);
@@ -5260,6 +5439,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only send email if we have a valid owner email
         if (ownerEmail) {
+          const normalizedDistanceFeeForEmail = resolveTravelFeeCents(lead as any);
+
           await sendNewMultiServiceLeadNotification(ownerEmail, {
             id: lead.id.toString(),
             customerName: lead.name,
@@ -5291,7 +5472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subtotal: lead.subtotal ?? undefined,
             taxAmount: lead.taxAmount ?? undefined,
             bundleDiscountAmount: lead.bundleDiscountAmount ?? undefined,
-            distanceFee: lead.totalDistanceFee || 0,
+            distanceFee: normalizedDistanceFeeForEmail,
             appliedDiscounts: (lead.appliedDiscounts || []).map((discount: any) => ({
               id: String(discount?.id || ""),
               name: String(discount?.name || "Discount"),
@@ -5543,13 +5724,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Convert BigInt fields to numbers for JSON serialization
+      const normalizedDistanceFeeForResponse = resolveTravelFeeCents(lead as any);
       const serializedLead = {
         ...lead,
         totalPrice: Number(lead.totalPrice),
         subtotal: lead.subtotal ? Number(lead.subtotal) : null,
         taxAmount: lead.taxAmount ? Number(lead.taxAmount) : null,
         bundleDiscountAmount: lead.bundleDiscountAmount ? Number(lead.bundleDiscountAmount) : null,
-        distanceFee: lead.totalDistanceFee ? Number(lead.totalDistanceFee) : null,
+        distanceFee: normalizedDistanceFeeForResponse || null,
         services: lead.services.map(service => ({
           ...service,
           calculatedPrice: Number(service.calculatedPrice)
@@ -5755,8 +5937,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requireContactFirst: false,
             showProgressGuide: true,
             enableBooking: true,
+            enableName: true,
             requireName: true,
             nameLabel: 'Full Name',
+            enableEmail: true,
             requireEmail: true,
             emailLabel: 'Email Address',
             enablePhone: true,
@@ -5872,8 +6056,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             requireContactFirst: false,
             showProgressGuide: true,
             enableBooking: true,
+            enableName: true,
             requireName: true,
             nameLabel: 'Full Name',
+            enableEmail: true,
             requireEmail: true,
             emailLabel: 'Email Address',
             enablePhone: true,
@@ -7764,7 +7950,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      res.json(lead);
+      res.json({
+        ...lead,
+        totalDistanceFee: resolveTravelFeeCents(lead as any),
+      });
     } catch (error) {
       console.error("Error fetching lead:", error);
       res.status(500).json({ message: "Failed to fetch lead" });
@@ -10800,8 +10989,10 @@ The Autobidder Team`;
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Store original admin user in session before impersonating
-      (req.session as any).originalAdminUser = adminUser;
+      // Store only the original admin ID to avoid stale/oversized session payloads.
+      (req.session as any).originalAdminUserId = adminUser.id;
+      // Keep legacy key for in-flight sessions that may still rely on it.
+      (req.session as any).originalAdminUser = { id: adminUser.id };
       
       // Switch the session to the impersonated user
       (req.session as any).user = {
@@ -10825,16 +11016,24 @@ The Autobidder Team`;
       // Log the impersonation for security audit
       console.log(`Admin impersonation: ${adminUser.email} accessing user ${userId} (${user.email}) at ${new Date().toISOString()}`);
       
-      res.json({ 
-        success: true,
-        message: "Impersonation activated",
-        user: {
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          organizationName: user.organizationName
+      // Ensure session write completes before frontend redirects.
+      req.session.save((saveError) => {
+        if (saveError) {
+          console.error("Error saving impersonation session:", saveError);
+          return res.status(500).json({ message: "Failed to persist impersonation session" });
         }
+
+        res.json({ 
+          success: true,
+          message: "Impersonation activated",
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            organizationName: user.organizationName
+          }
+        });
       });
     } catch (error) {
       console.error('Error creating impersonation session:', error);
@@ -10843,25 +11042,48 @@ The Autobidder Team`;
   });
 
   // End impersonation and return to admin account
-  app.post("/api/admin/end-impersonation", async (req, res) => {
+  app.post("/api/admin/end-impersonation", requireAuth, async (req, res) => {
     try {
-      const originalAdmin = (req.session as any).originalAdminUser;
+      const originalAdminId =
+        (req.session as any).originalAdminUserId ||
+        (req.session as any).originalAdminUser?.id;
       
-      if (!originalAdmin) {
+      if (!originalAdminId) {
         return res.status(400).json({ message: "Not currently impersonating" });
+      }
+
+      const originalAdmin = await storage.getUserById(originalAdminId);
+      if (!originalAdmin) {
+        return res.status(404).json({ message: "Original admin account not found" });
       }
       
       // Restore the original admin user
       (req.session as any).user = originalAdmin;
+      delete (req.session as any).originalAdminUserId;
       delete (req.session as any).originalAdminUser;
       delete (req.session as any).isImpersonating;
       
       console.log(`Admin impersonation ended: ${originalAdmin.email} returned to their account`);
-      
-      res.json({ 
-        success: true,
-        message: "Impersonation ended",
-        user: originalAdmin
+
+      // Ensure session write completes before frontend redirects.
+      req.session.save((saveError) => {
+        if (saveError) {
+          console.error("Error saving ended impersonation session:", saveError);
+          return res.status(500).json({ message: "Failed to persist impersonation end state" });
+        }
+
+        res.json({ 
+          success: true,
+          message: "Impersonation ended",
+          user: {
+            id: originalAdmin.id,
+            email: originalAdmin.email,
+            firstName: originalAdmin.firstName,
+            lastName: originalAdmin.lastName,
+            organizationName: originalAdmin.organizationName,
+            userType: originalAdmin.userType,
+          },
+        });
       });
     } catch (error) {
       console.error('Error ending impersonation:', error);
@@ -12003,7 +12225,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       }));
 
       // Get existing fees from the lead
-      const distanceFee = lead.totalDistanceFee || 0;
+      const distanceFee = resolveTravelFeeCents(lead as any);
       const existingTaxAmount = lead.taxAmount || 0;
       const existingDiscounts = (lead.bundleDiscountAmount || 0) +
         (lead.appliedDiscounts?.reduce((sum: any, d: any) => sum + (d.amount || 0), 0) || 0);
@@ -12117,7 +12339,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         const taxAmount = (lead as any).taxAmount || 0;
 
         // Get travel/distance fee
-        const distanceFee = (lead as any).totalDistanceFee || (lead as any).distanceFee || 0;
+        const distanceFee = resolveTravelFeeCents(lead as any);
 
         // Calculate total: subtotal + travel fee - discounts + tax
         const totalAmount = subtotal + distanceFee - discountAmount + taxAmount;
@@ -18593,22 +18815,36 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Category not found" });
       }
 
-      // Get cities from cache with at least one listing
+      // Get cities from live listings to avoid stale/missing cache entries
       const cities = await db
         .select({
-          city: directoryIndexCache.city,
-          state: directoryIndexCache.state,
-          citySlug: directoryIndexCache.citySlug,
-          profileCount: directoryIndexCache.profileCount,
+          city: directoryProfiles.city,
+          state: directoryProfiles.state,
+          profileCount: sql<number>`count(distinct ${directoryProfiles.id})`,
         })
-        .from(directoryIndexCache)
+        .from(directoryServiceListings)
+        .innerJoin(directoryProfiles, eq(directoryServiceListings.directoryProfileId, directoryProfiles.id))
+        .innerJoin(directoryCategories, eq(directoryServiceListings.categoryId, directoryCategories.id))
         .where(and(
-          eq(directoryIndexCache.categoryId, category.id),
-          sql`${directoryIndexCache.profileCount} > 0`
+          eq(directoryServiceListings.categoryId, category.id),
+          eq(directoryServiceListings.isActive, true),
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved"),
+          eq(directoryCategories.status, "approved")
         ))
-        .orderBy(desc(directoryIndexCache.profileCount));
+        .groupBy(directoryProfiles.city, directoryProfiles.state)
+        .orderBy(desc(sql<number>`count(distinct ${directoryProfiles.id})`));
 
-      res.json({ category, cities });
+      res.json({
+        category,
+        cities: cities.map((row) => ({
+          city: row.city,
+          state: row.state,
+          citySlug: generateSlug(`${row.city}-${row.state}`),
+          profileCount: row.profileCount,
+        })),
+      });
     } catch (error) {
       console.error("[Directory] Error fetching cities:", error);
       res.status(500).json({ message: "Failed to fetch cities" });
@@ -18754,7 +18990,7 @@ This booking was created on ${new Date().toLocaleString()}.
         city: resultCity,
         state: resultState,
         listings: resultProfiles,
-        isIndexable: cacheEntry?.isIndexable || false
+        isIndexable: resultProfiles.length > 0
       });
     } catch (error) {
       console.error("[Directory] Error fetching listings:", error);
@@ -19554,13 +19790,6 @@ This booking was created on ${new Date().toLocaleString()}.
         return;
       }
 
-      const [landingPage] = await db
-        .select({ status: landingPages.status })
-        .from(landingPages)
-        .where(eq(landingPages.userId, profile.userId))
-        .limit(1);
-      const profileIndexable = landingPage?.status === "published";
-
       // Get service listings with categories
       const services = await db
         .select({
@@ -19699,13 +19928,11 @@ This booking was created on ${new Date().toLocaleString()}.
               const indexableProfiles = await db
                 .select({ id: directoryProfiles.id })
                 .from(directoryProfiles)
-                .innerJoin(landingPages, eq(landingPages.userId, directoryProfiles.userId))
                 .where(and(
                   inArray(directoryProfiles.id, newIds),
                   eq(directoryProfiles.isActive, true),
                   eq(directoryProfiles.showOnDirectory, true),
-                  eq(directoryProfiles.status, "approved"),
-                  eq(landingPages.status, "published")
+                  eq(directoryProfiles.status, "approved")
                 ));
               await db
                 .update(directoryIndexCache)
@@ -19729,7 +19956,7 @@ This booking was created on ${new Date().toLocaleString()}.
                 citySlug: cityInfo.citySlug,
                 profileIds: [profileId],
                 profileCount: 1,
-                isIndexable: profileIndexable,
+                isIndexable: true,
               });
           }
         }
@@ -21676,6 +21903,55 @@ This booking was created on ${new Date().toLocaleString()}.
   });
 
   // Sitemap index + child sitemaps for directory pages
+  async function getLiveIndexedCityRows() {
+    const rows = await db
+      .select({
+        categorySlug: directoryCategories.slug,
+        city: directoryProfiles.city,
+        state: directoryProfiles.state,
+        profileUpdatedAt: directoryProfiles.updatedAt,
+        categoryUpdatedAt: directoryCategories.updatedAt,
+      })
+      .from(directoryServiceListings)
+      .innerJoin(directoryProfiles, eq(directoryServiceListings.directoryProfileId, directoryProfiles.id))
+      .innerJoin(directoryCategories, eq(directoryServiceListings.categoryId, directoryCategories.id))
+      .where(and(
+        eq(directoryServiceListings.isActive, true),
+        eq(directoryProfiles.isActive, true),
+        eq(directoryProfiles.showOnDirectory, true),
+        eq(directoryProfiles.status, "approved"),
+        eq(directoryCategories.status, "approved")
+      ));
+
+    const deduped = new Map<string, { categorySlug: string; citySlug: string; lastUpdatedAt: Date | null }>();
+    for (const row of rows) {
+      const citySlug = generateSlug(`${row.city}-${row.state}`);
+      const key = `${row.categorySlug}|${citySlug}`;
+      const candidateDate = row.profileUpdatedAt || row.categoryUpdatedAt || null;
+      const existing = deduped.get(key);
+      if (!existing) {
+        deduped.set(key, {
+          categorySlug: row.categorySlug,
+          citySlug,
+          lastUpdatedAt: candidateDate,
+        });
+        continue;
+      }
+      if (candidateDate && (!existing.lastUpdatedAt || candidateDate > existing.lastUpdatedAt)) {
+        deduped.set(key, {
+          categorySlug: existing.categorySlug,
+          citySlug: existing.citySlug,
+          lastUpdatedAt: candidateDate,
+        });
+      }
+    }
+
+    return Array.from(deduped.values()).sort((a, b) => {
+      if (a.categorySlug === b.categorySlug) return a.citySlug.localeCompare(b.citySlug);
+      return a.categorySlug.localeCompare(b.categorySlug);
+    });
+  }
+
   app.get("/sitemap.xml", async (req, res) => {
     const baseUrl = getRequestBaseUrl(req);
     const cacheKey = `${baseUrl}|/sitemap.xml`;
@@ -21702,17 +21978,7 @@ This booking was created on ${new Date().toLocaleString()}.
         ))
         .groupBy(directoryCategories.id, directoryCategories.slug, directoryCategories.updatedAt);
 
-      const cityPages = await db
-        .select({
-          lastUpdatedAt: directoryIndexCache.lastUpdatedAt,
-        })
-        .from(directoryIndexCache)
-        .innerJoin(directoryCategories, eq(directoryIndexCache.categoryId, directoryCategories.id))
-        .where(and(
-          eq(directoryCategories.status, "approved"),
-          eq(directoryIndexCache.isIndexable, true),
-          sql`${directoryIndexCache.profileCount} > 0`
-        ));
+      const cityPages = await getLiveIndexedCityRows();
 
       const companies = await db
         .select({
@@ -21736,7 +22002,7 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const cityLastmod = cityPages.reduce<Date | null>((acc, c) => {
         if (!c.lastUpdatedAt) return acc;
-        if (!acc || new Date(c.lastUpdatedAt) > acc) return new Date(c.lastUpdatedAt);
+        if (!acc || c.lastUpdatedAt > acc) return c.lastUpdatedAt;
         return acc;
       }, null);
 
@@ -21854,20 +22120,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
 
     try {
-      const cityRows = await db
-        .select({
-          categorySlug: directoryIndexCache.categorySlug,
-          citySlug: directoryIndexCache.citySlug,
-          lastUpdatedAt: directoryIndexCache.lastUpdatedAt,
-        })
-        .from(directoryIndexCache)
-        .innerJoin(directoryCategories, eq(directoryIndexCache.categoryId, directoryCategories.id))
-        .where(and(
-          eq(directoryCategories.status, "approved"),
-          eq(directoryIndexCache.isIndexable, true),
-          sql`${directoryIndexCache.profileCount} > 0`
-        ))
-        .orderBy(directoryIndexCache.categorySlug, directoryIndexCache.citySlug);
+      const cityRows = await getLiveIndexedCityRows();
 
       const totalPages = Math.max(1, Math.ceil(cityRows.length / SITEMAP_URL_LIMIT));
       if (page > totalPages) {

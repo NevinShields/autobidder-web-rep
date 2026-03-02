@@ -56,7 +56,9 @@ export default function FormSettings() {
     businessDescription: "Professional services with competitive pricing and quality guarantee.",
     
     // Contact intake settings
+    enableName: true,
     requireName: true,
+    enableEmail: true,
     requireEmail: true,
     requirePhone: false,
     enablePhone: true,
@@ -162,7 +164,9 @@ export default function FormSettings() {
         businessDescription: "Professional services with competitive pricing and quality guarantee.",
         
         // Contact intake settings
+        enableName: businessSettings.styling.enableName ?? true,
         requireName: businessSettings.styling.requireName ?? true,
+        enableEmail: businessSettings.styling.enableEmail ?? true,
         requireEmail: businessSettings.styling.requireEmail ?? true,
         requirePhone: businessSettings.styling.requirePhone || false,
         enablePhone: businessSettings.styling.enablePhone ?? true,
@@ -258,7 +262,9 @@ export default function FormSettings() {
           salesTaxRate: updatedSettings.salesTaxRate,
           
           // Contact intake settings
+          enableName: updatedSettings.enableName,
           requireName: updatedSettings.requireName,
+          enableEmail: updatedSettings.enableEmail,
           requireEmail: updatedSettings.requireEmail,
           requirePhone: updatedSettings.requirePhone,
           enablePhone: updatedSettings.enablePhone,
@@ -718,7 +724,9 @@ export default function FormSettings() {
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white">Lead Collection Status</h4>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {(formSettings.requireName || formSettings.requireEmail || formSettings.requirePhone || 
+                      {((formSettings.enableName && formSettings.requireName) ||
+                        (formSettings.enableEmail && formSettings.requireEmail) ||
+                        (formSettings.enablePhone && formSettings.requirePhone) ||
                         (formSettings.enableAddress && formSettings.requireAddress)) 
                         ? "Contact information will be collected before showing prices"
                         : "Customers can see prices without providing contact information"
@@ -1218,13 +1226,17 @@ export default function FormSettings() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
                       <MobileToggle
-                        checked={true}
-                        onCheckedChange={() => {}}
+                        checked={formSettings.enableName ?? true}
+                        onCheckedChange={(checked) => setFormSettings(prev => ({
+                          ...prev,
+                          enableName: checked,
+                          requireName: checked ? prev.requireName : false,
+                        }))}
                         size="sm"
                       />
                     </div>
                   </div>
-                  {true && (
+                  {formSettings.enableName && (
                     <div className="pl-4 border-l-2 border-amber-200/60">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <MobileToggle
@@ -1248,13 +1260,17 @@ export default function FormSettings() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-sm text-gray-500">Show</span>
                       <MobileToggle
-                        checked={true}
-                        onCheckedChange={() => {}}
+                        checked={formSettings.enableEmail ?? true}
+                        onCheckedChange={(checked) => setFormSettings(prev => ({
+                          ...prev,
+                          enableEmail: checked,
+                          requireEmail: checked ? prev.requireEmail : false,
+                        }))}
                         size="sm"
                       />
                     </div>
                   </div>
-                  {true && (
+                  {formSettings.enableEmail && (
                     <div className="pl-4 border-l-2 border-amber-200/60">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
                         <MobileToggle

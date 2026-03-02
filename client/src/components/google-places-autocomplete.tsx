@@ -25,13 +25,65 @@ interface GooglePlacesAutocompleteProps {
   hasCustomCSS?: boolean;
 }
 
+type PlaceAddressComponent = {
+  long_name?: string;
+  short_name?: string;
+  types?: string[];
+};
+
+function getAddressComponent(
+  components: PlaceAddressComponent[] | undefined,
+  type: string,
+  useShortName = false
+): string {
+  if (!components || !Array.isArray(components)) {
+    return '';
+  }
+  const component = components.find((item) => Array.isArray(item.types) && item.types.includes(type));
+  if (!component) {
+    return '';
+  }
+  return (useShortName ? component.short_name : component.long_name) || '';
+}
+
+function extractFullAddress(place: any): string {
+  if (!place || typeof place !== 'object') {
+    return '';
+  }
+
+  if (typeof place.formatted_address === 'string' && place.formatted_address.trim()) {
+    return place.formatted_address.trim();
+  }
+
+  const components = place.address_components as PlaceAddressComponent[] | undefined;
+  if (!components || components.length === 0) {
+    return typeof place.name === 'string' ? place.name.trim() : '';
+  }
+
+  const streetNumber = getAddressComponent(components, 'street_number');
+  const route = getAddressComponent(components, 'route');
+  const subpremise = getAddressComponent(components, 'subpremise');
+  const city =
+    getAddressComponent(components, 'locality') ||
+    getAddressComponent(components, 'postal_town') ||
+    getAddressComponent(components, 'sublocality_level_1');
+  const state = getAddressComponent(components, 'administrative_area_level_1', true);
+  const postalCode = getAddressComponent(components, 'postal_code');
+
+  const line1Base = [streetNumber, route].filter(Boolean).join(' ').trim();
+  const line1 = subpremise && line1Base ? `${line1Base}, ${subpremise}` : line1Base || subpremise;
+  const cityStateZip = [city, [state, postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+
+  return [line1, cityStateZip].filter(Boolean).join(', ').trim();
+}
+
 export function GooglePlacesAutocomplete({
   value,
   onChange,
   placeholder = "Enter address...",
   className,
   types = ['geocode'],
-  fields = ['formatted_address', 'geometry'],
+  fields = ['formatted_address', 'address_components', 'geometry', 'name'],
   componentRestrictions,
   styling = {},
   componentStyles,
@@ -42,6 +94,7 @@ export function GooglePlacesAutocomplete({
   const { isLoaded, error } = useGoogleMaps();
   const [localValue, setLocalValue] = useState(value);
   const ignoreNextPropUpdate = useRef(false);
+  const isNormalizingRef = useRef(false);
 
   // Sync local value with prop changes from parent
   useEffect(() => {
@@ -69,11 +122,12 @@ export function GooglePlacesAutocomplete({
       // Handle place selection
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
-        
-        if (place.formatted_address) {
+        const fullAddress = extractFullAddress(place);
+
+        if (fullAddress) {
           ignoreNextPropUpdate.current = true;
-          setLocalValue(place.formatted_address);
-          onChange(place.formatted_address);
+          setLocalValue(fullAddress);
+          onChange(fullAddress);
         }
       });
     } catch (error) {
@@ -186,6 +240,36 @@ export function GooglePlacesAutocomplete({
     onChange(newValue);
   };
 
+  const handleInputBlur = async () => {
+    if (!isLoaded || error || isNormalizingRef.current) {
+      return;
+    }
+
+    const valueToNormalize = localValue.trim();
+    if (!valueToNormalize) {
+      return;
+    }
+
+    try {
+      isNormalizingRef.current = true;
+      const geocoder = new window.google.maps.Geocoder();
+      const result = await geocoder.geocode({ address: valueToNormalize });
+      const bestMatch = result?.results?.[0];
+      const normalizedAddress = bestMatch ? extractFullAddress(bestMatch) : '';
+
+      if (normalizedAddress && normalizedAddress !== valueToNormalize) {
+        ignoreNextPropUpdate.current = true;
+        setLocalValue(normalizedAddress);
+        onChange(normalizedAddress);
+      }
+    } catch (normalizeError) {
+      // Non-blocking fallback to typed value if geocoding fails.
+      console.warn('Address normalization failed:', normalizeError);
+    } finally {
+      isNormalizingRef.current = false;
+    }
+  };
+
   // If Google Maps failed to load, show regular input
   if (error) {
     return (
@@ -193,6 +277,7 @@ export function GooglePlacesAutocomplete({
         ref={inputRef}
         value={localValue}
         onChange={handleInputChange}
+        onBlur={handleInputBlur}
         placeholder={placeholder}
         className={`ab-input ab-address-input ${className || ''}`}
         style={inputStyle}
@@ -207,6 +292,7 @@ export function GooglePlacesAutocomplete({
         ref={inputRef}
         value={localValue}
         onChange={handleInputChange}
+        onBlur={handleInputBlur}
         placeholder={isLoaded ? placeholder : "Loading address suggestions..."}
         className={`ab-input ab-address-input ${className || ''}`}
         disabled={!isLoaded}
@@ -220,6 +306,7 @@ export function GooglePlacesAutocomplete({
       ref={inputRef}
       value={localValue}
       onChange={handleInputChange}
+      onBlur={handleInputBlur}
       placeholder={placeholder}
       className={`ab-input ab-address-input ${className || ''}`}
       style={inputStyle}

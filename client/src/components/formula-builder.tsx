@@ -221,8 +221,11 @@ export default function FormulaBuilderComponent({
     });
   };
 
+  const formulaVariables = Array.isArray(formula.variables) ? formula.variables : [];
+  const formulaExpressionValue = typeof formula.formula === "string" ? formula.formula : "";
+
   const [showVariableModal, setShowVariableModal] = useState(false);
-  const [formulaExpression, setFormulaExpression] = useState(formula.formula);
+  const [formulaExpression, setFormulaExpression] = useState(formulaExpressionValue);
   const [minPriceDollars, setMinPriceDollars] = useState(formula.minPrice ? (formula.minPrice / 100).toString() : '');
   const [maxPriceDollars, setMaxPriceDollars] = useState(formula.maxPrice ? (formula.maxPrice / 100).toString() : '');
   const [showMediaSection, setShowMediaSection] = useState(false);
@@ -246,8 +249,8 @@ export default function FormulaBuilderComponent({
 
   // Sync local formulaExpression state when formula.formula changes (e.g., after AI generation)
   useEffect(() => {
-    setFormulaExpression(formula.formula);
-  }, [formula.formula]);
+    setFormulaExpression(formulaExpressionValue);
+  }, [formulaExpressionValue]);
 
   // Fetch template categories for the save as template dialog
   const { data: templateCategories } = useQuery<Array<{ id: number; name: string; isActive: boolean }>>({
@@ -318,7 +321,7 @@ export default function FormulaBuilderComponent({
     const { active, over } = event;
 
     if (active.id !== over?.id) {
-      const variables = formula.variables || [];
+      const variables = formulaVariables;
       const oldIndex = variables.findIndex((variable) => variable.id === active.id);
       const newIndex = variables.findIndex((variable) => variable.id === over.id);
 
@@ -369,8 +372,8 @@ export default function FormulaBuilderComponent({
         title: formula.title,
         description: formula.description || '',
         bulletPoints: formula.bulletPoints || [],
-        formula: formula.formula,
-        variables: formula.variables,
+        formula: formulaExpressionValue,
+        variables: formulaVariables,
         iconUrl: formula.iconUrl || '🔧'
       };
       const response = await apiRequest("POST", "/api/formulas/edit", { 
@@ -408,12 +411,12 @@ export default function FormulaBuilderComponent({
   });
 
   const handleAddVariable = (variable: Variable) => {
-    const updatedVariables = [...formula.variables, variable];
+    const updatedVariables = [...formulaVariables, variable];
     onUpdate({ variables: updatedVariables });
   };
 
   const handleDeleteVariable = (variableId: string) => {
-    const updatedVariables = formula.variables.filter(v => v.id !== variableId);
+    const updatedVariables = formulaVariables.filter(v => v.id !== variableId);
     onUpdate({ variables: updatedVariables });
   };
 
@@ -421,7 +424,7 @@ export default function FormulaBuilderComponent({
     try {
       console.log('Updating variable with ID:', oldId, 'Updates:', updates);
       
-      const updatedVariables = formula.variables.map((v) => {
+      const updatedVariables = formulaVariables.map((v) => {
         if (v.id !== oldId) return v;
 
         const merged = { ...v, ...updates } as Variable;
@@ -573,7 +576,7 @@ export default function FormulaBuilderComponent({
           </div>
 
           {/* AI Formula Generator - Show for new formulas */}
-          {(!formula.variables.length && !formula.formula) && (
+          {(!formulaVariables.length && !formulaExpressionValue) && (
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700">
                 <CardHeader className="pb-4">
@@ -1186,7 +1189,7 @@ export default function FormulaBuilderComponent({
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">Variables</h3>
-              {(formula.variables || []).length > 0 && (
+              {formulaVariables.length > 0 && (
                 <p className="text-xs text-gray-500 flex items-center gap-1">
                   <GripVertical className="w-3 h-3" />
                   Drag to reorder
@@ -1200,17 +1203,17 @@ export default function FormulaBuilderComponent({
               onDragEnd={handleDragEnd}
             >
               <SortableContext 
-                items={(formula.variables || []).map(v => v.id)}
+                items={formulaVariables.map(v => v.id)}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="grid grid-cols-1 gap-4">
-                  {(formula.variables || []).map((variable) => (
+                  {formulaVariables.map((variable) => (
                     <SortableVariableCard
                       key={variable.id}
                       variable={variable}
                       onDelete={handleDeleteVariable}
                       onUpdate={handleUpdateVariable}
-                      allVariables={formula.variables || []}
+                      allVariables={formulaVariables}
                     />
                   ))}
                   <div
@@ -1236,17 +1239,17 @@ export default function FormulaBuilderComponent({
                 <FormulaExpressionInput
                   value={formulaExpression}
                   onChange={handleFormulaChange}
-                  variables={formula.variables || []}
+                  variables={formulaVariables}
                   placeholder="e.g., squareFootage * 25 + laborHours * 85"
                 />
               </div>
               
               {/* Available Variables */}
-              {(formula.variables || []).length > 0 && (
+              {formulaVariables.length > 0 && (
                 <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3">
                   <h4 className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">Available Variable IDs:</h4>
                   <div className="flex flex-wrap gap-1">
-                    {(formula.variables || []).map((variable) => {
+                    {formulaVariables.map((variable) => {
                       const insertVariable = (id: string) => {
                         const textarea = document.getElementById('formula-expression') as HTMLTextAreaElement;
                         if (textarea) {
@@ -1362,7 +1365,7 @@ export default function FormulaBuilderComponent({
         onClose={() => setShowVariableModal(false)}
         onAddVariable={handleAddVariable}
         otherFormulas={allFormulas.filter(f => f.id !== formula.id)}
-        existingVariableIds={formula.variables?.map(v => v.id) || []}
+        existingVariableIds={formulaVariables.map(v => v.id)}
       />
 
       {/* Save as Template Modal */}

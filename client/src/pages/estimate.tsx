@@ -468,11 +468,12 @@ export default function EstimatePage() {
   const headerMutedClass = isMinimal || isDetailed ? "text-gray-500" : "text-white/80";
   const headerTitleClass = isMinimal || isDetailed ? "text-gray-900" : "text-white";
   const headerSubtleClass = isMinimal || isDetailed ? "text-gray-600" : "text-white/80";
-  const sectionOuterClassName = isDetailed ? "rounded-xl border border-slate-200 bg-white p-5" : "";
+  const sectionOuterClassName = isDetailed ? "rounded-xl border border-slate-200 bg-white p-4 sm:p-5" : "";
   const sectionInnerClassName = isDetailed ? "bg-transparent p-0" : "bg-gray-50 rounded-lg p-4";
   const messageBoxClassName = isDetailed
     ? "rounded-lg border border-slate-200 bg-slate-50 p-4"
     : "bg-blue-50 border-l-4 border-blue-400 p-4 rounded-lg";
+  const contentPaddingClass = isMinimal ? "p-4 sm:p-6" : "p-4 sm:p-6 lg:p-8";
 
   const customerInfoSection = (
     <div className={`mb-8 ${sectionOuterClassName}`}>
@@ -649,7 +650,25 @@ export default function EstimatePage() {
         <Receipt className="w-5 h-5" style={{ color: themeStyles.primaryColor }} />
         Services & Pricing
       </h3>
-      <div className="overflow-x-auto">
+      <div className="space-y-3 md:hidden">
+        {estimate.services.map((service, index) => (
+          <div key={`mobile-service-${index}`} className="rounded-lg border border-gray-200 bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium text-gray-900 break-words">{service.name}</p>
+                {service.category && (
+                  <p className="text-sm text-gray-500">{service.category}</p>
+                )}
+              </div>
+              <p className="shrink-0 font-semibold text-gray-900">{formatCurrency(service.price)}</p>
+            </div>
+            <p className="mt-2 text-sm text-gray-700 break-words">
+              {service.description || 'Professional service'}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="hidden md:block overflow-x-auto">
         <table className={`w-full border-collapse border border-gray-200 rounded-lg overflow-hidden ${isDetailed ? "bg-white" : ""}`}>
           <thead className="bg-gray-50">
             <tr>
@@ -689,7 +708,7 @@ export default function EstimatePage() {
 
   const totalsSection = (
     <div className="border-t pt-6">
-      <div className="max-w-md ml-auto">
+      <div className="w-full sm:ml-auto sm:max-w-md">
         <div className="space-y-3">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Subtotal:</span>
@@ -725,7 +744,7 @@ export default function EstimatePage() {
 
           <Separator />
 
-          <div className="flex justify-between items-center text-xl font-bold text-gray-900">
+          <div className="flex justify-between items-center text-lg sm:text-xl font-bold text-gray-900">
             <span className="flex items-center gap-2">
               <DollarSign className="w-5 h-5" />
               Total:
@@ -749,37 +768,41 @@ export default function EstimatePage() {
   );
 
   return (
-    <div className={`force-light-mode min-h-screen ${pageBackgroundClass} p-4`}>
+    <div className={`force-light-mode min-h-screen ${pageBackgroundClass} px-3 py-4 sm:p-4`}>
       <div className={`${containerWidthClass} mx-auto`}>
         {/* Header Actions */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
-            Estimate {estimate.estimateNumber}
-          </h1>
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <Badge className={isConfirmedEstimate ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"}>
-              {isConfirmedEstimate ? "Confirmed Estimate" : "Pre-Estimate"}
-            </Badge>
-            <Badge className={getStatusColor(estimate.status)}>
-              {getStatusLabel(estimate.status)}
-            </Badge>
+        <div className="mb-6 space-y-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              Estimate {estimate.estimateNumber}
+            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className={isConfirmedEstimate ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"}>
+                {isConfirmedEstimate ? "Confirmed Estimate" : "Pre-Estimate"}
+              </Badge>
+              <Badge className={getStatusColor(estimate.status)}>
+                {getStatusLabel(estimate.status)}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Button
               variant="outline"
               size="sm"
               onClick={handlePrint}
-              className="flex items-center gap-2 text-black"
+              className="h-10 min-w-[120px] flex items-center gap-2 text-black"
             >
               <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Print</span>
+              Print
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 text-black"
+              className="h-10 min-w-[120px] flex items-center gap-2 text-black"
               onClick={handleDownloadPdf}
             >
               <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Download PDF</span>
+              Download PDF
             </Button>
           </div>
         </div>
@@ -798,11 +821,11 @@ export default function EstimatePage() {
                 <p className="text-gray-600 mb-6">
                   This estimate has been confirmed by the business and is ready for your response.
                 </p>
-                <div className="flex items-center justify-center gap-4">
+                <div className="mx-auto flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
                   <Button
                     onClick={() => acceptMutation.mutate()}
                     disabled={acceptMutation.isPending || declineMutation.isPending}
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-lg"
+                    className="w-full bg-green-600 px-4 py-4 text-base text-white hover:bg-green-700 sm:w-auto sm:px-8 sm:py-6 sm:text-lg"
                     data-testid="button-accept-estimate"
                   >
                     <Check className="w-5 h-5 mr-2" />
@@ -812,7 +835,7 @@ export default function EstimatePage() {
                     onClick={() => declineMutation.mutate()}
                     disabled={acceptMutation.isPending || declineMutation.isPending}
                     variant="outline"
-                    className="border-red-300 text-red-600 hover:bg-red-50 px-8 py-6 text-lg"
+                    className="w-full border-red-300 px-4 py-4 text-base text-red-600 hover:bg-red-50 sm:w-auto sm:px-8 sm:py-6 sm:text-lg"
                     data-testid="button-decline-estimate"
                   >
                     <X className="w-5 h-5 mr-2" />
@@ -875,32 +898,34 @@ export default function EstimatePage() {
             <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               <Card className={cardClassName} style={{ backgroundColor: themeStyles.backgroundColor }}>
                 <CardHeader className={headerClassName} style={headerStyle}>
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                       <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Detailed Estimate</p>
-                      <CardTitle className={`text-2xl font-bold mt-2 ${headerTitleClass}`}>
+                      <CardTitle className={`mt-2 text-xl sm:text-2xl font-bold ${headerTitleClass}`}>
                         Estimate #{estimate.estimateNumber}
                       </CardTitle>
                       <p className={headerSubtleClass}>
                         Prepared for {estimate.customerName}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={isConfirmedEstimate ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"}>
-                        {isConfirmedEstimate ? "Confirmed Estimate" : "Pre-Estimate"}
-                      </Badge>
-                      <Badge className={getStatusColor(estimate.status)}>
-                        {getStatusLabel(estimate.status)}
-                      </Badge>
-                      <div className="flex items-baseline gap-2 w-full sm:w-auto sm:ml-2">
+                    <div className="flex w-full flex-col gap-2 md:w-auto md:items-end">
+                      <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                        <Badge className={isConfirmedEstimate ? "bg-emerald-100 text-emerald-800" : "bg-orange-100 text-orange-800"}>
+                          {isConfirmedEstimate ? "Confirmed Estimate" : "Pre-Estimate"}
+                        </Badge>
+                        <Badge className={getStatusColor(estimate.status)}>
+                          {getStatusLabel(estimate.status)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-baseline justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                         <span className="text-sm text-gray-500">Total</span>
-                        <span className="text-lg font-semibold text-gray-900">{formatCurrency(estimate.totalAmount)}</span>
+                        <span className="text-base sm:text-lg font-semibold text-gray-900">{formatCurrency(estimate.totalAmount)}</span>
                       </div>
                     </div>
                   </div>
                 </CardHeader>
 
-                <CardContent className={isMinimal ? "p-6" : "p-8"}>
+                <CardContent className={contentPaddingClass}>
                   {businessDetailsSection}
                   {customerInfoSection}
                   {messageSection}
@@ -912,7 +937,7 @@ export default function EstimatePage() {
 
               <div className="space-y-6">
                 <Card className="shadow-sm border" style={{ backgroundColor: themeStyles.backgroundColor }}>
-                  <CardContent className="p-6 space-y-4">
+                  <CardContent className="p-4 sm:p-6 space-y-4">
                     <div>
                       <p className="text-sm text-gray-500">Status</p>
                       <Badge className={getStatusColor(estimate.status)}>
@@ -964,23 +989,23 @@ export default function EstimatePage() {
           ) : (
             <Card className={cardClassName} style={{ backgroundColor: themeStyles.backgroundColor }}>
               <CardHeader className={headerClassName} style={headerStyle}>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <CardTitle className={`text-2xl font-bold mb-2 ${headerTitleClass}`}>
+                    <CardTitle className={`mb-2 text-xl sm:text-2xl font-bold ${headerTitleClass}`}>
                       Professional Estimate
                     </CardTitle>
                     <p className={headerMutedClass}>
                       Estimate #{estimate.estimateNumber}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className={headerMutedClass}>Issue Date</p>
+                  <div className="text-left sm:text-right">
+                    <p className={`${headerMutedClass} text-sm`}>Issue Date</p>
                     <p className={`font-semibold ${headerTitleClass}`}>
                       {format(new Date(estimate.createdAt), 'MMMM dd, yyyy')}
                     </p>
                     {estimate.validUntil && (
                       <>
-                        <p className={`${headerSubtleClass} mt-2`}>Valid Until</p>
+                        <p className={`${headerSubtleClass} mt-2 text-sm`}>Valid Until</p>
                         <p className={`font-semibold ${headerTitleClass}`}>
                           {format(new Date(estimate.validUntil), 'MMMM dd, yyyy')}
                         </p>
@@ -990,7 +1015,7 @@ export default function EstimatePage() {
                 </div>
               </CardHeader>
 
-              <CardContent className={isMinimal ? "p-6" : "p-8"}>
+              <CardContent className={contentPaddingClass}>
                 {businessDetailsSection}
                 {customerInfoSection}
                 {messageSection}

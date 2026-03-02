@@ -33,7 +33,7 @@ import { apiRequest } from "@/lib/queryClient";
 const TopServicesChart = lazy(() => import("@/components/dashboard/top-services-chart"));
 
 const getQuickActions = (userId?: string) => [
-  { icon: Plus, label: "New Calculator", href: "/formula/new", accent: "from-amber-500 to-orange-600" },
+  { icon: Plus, label: "View Calculator", href: "/formula/new", accent: "from-amber-500 to-orange-600" },
   { icon: Palette, label: "View Calculator", href: userId ? `/styled-calculator?userId=${userId}` : "/styled-calculator", accent: "from-violet-500 to-purple-600" },
   { icon: Share, label: "Share Link", href: "/embed-code", accent: "from-rose-500 to-pink-600" },
   { icon: Users, label: "Leads", href: "/leads", accent: "from-emerald-500 to-teal-600" },
@@ -285,6 +285,7 @@ export default function Dashboard() {
     if (hour < 18) return "Good afternoon";
     return "Good evening";
   })();
+  const greetingName = user?.firstName?.trim() || user?.email?.split('@')[0] || "";
 
   if (formulasLoading || leadsLoading || multiLeadsLoading || statsLoading) {
     return (
@@ -356,11 +357,14 @@ export default function Dashboard() {
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-amber-600/70 dark:text-amber-400/60 font-semibold mb-2" style={{ fontFamily: "'DM Sans', sans-serif" }}>Overview</p>
                 <h1 className="text-3xl sm:text-4xl text-gray-900 dark:text-white leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
-                  {greeting}{user?.email ? `, ${user.email.split('@')[0]}` : ''}
+                  {greeting}{greetingName ? `, ${greetingName}` : ''}
                 </h1>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-md">
                   Here's how your business is performing. Stay on top of leads, quotes, and conversions.
                 </p>
+                <Button asChild className="mt-4 rounded-full bg-amber-600 hover:bg-amber-700 text-white">
+                  <Link href="/call-screen">Use Calculator</Link>
+                </Button>
               </div>
               {profileData?.trialStatus?.isOnTrial && (
                 <div className="flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-100/70 dark:bg-amber-900/30 border border-amber-200/60 dark:border-amber-700/40 flex-shrink-0">

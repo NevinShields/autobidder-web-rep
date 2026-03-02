@@ -863,6 +863,7 @@ export default function StyledCalculator(props: any = {}) {
       distanceInfo?: {
         distance: number;
         fee: number;
+        distanceFee?: number;
         message: string;
       };
       appliedDiscounts?: Array<{
@@ -2510,10 +2511,10 @@ export default function StyledCalculator(props: any = {}) {
     const formSettings = businessSettings?.styling;
     
     // Check each field only if it's enabled and required
-    if (formSettings?.requireName !== false && !leadForm.name) {
+    if (formSettings?.enableName !== false && formSettings?.requireName !== false && !leadForm.name) {
       missingFields.push(formSettings?.nameLabel || 'Name');
     }
-    if (formSettings?.requireEmail !== false && !leadForm.email) {
+    if (formSettings?.enableEmail !== false && formSettings?.requireEmail !== false && !leadForm.email) {
       missingFields.push(formSettings?.emailLabel || 'Email');
     }
     if (formSettings?.enablePhone && formSettings?.requirePhone && !leadForm.phone) {
@@ -2603,7 +2604,8 @@ export default function StyledCalculator(props: any = {}) {
       photoMeasurements: photoMeasurements,
       distanceInfo: distanceInfo ? {
         distance: distanceInfo.distance,
-        fee: Math.round(distanceInfo.fee * 100), // Convert to cents
+        fee: Math.round(distanceInfo.fee * 100), // Legacy field: dollars->cents for fixed fee, or percent*100 for percent mode
+        distanceFee: Math.round(distanceFee * 100), // Canonical travel fee in cents (always)
         message: distanceInfo.message
       } : undefined,
       appliedDiscounts: appliedDiscountData,

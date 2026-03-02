@@ -213,7 +213,11 @@ export function setupGoogleAuth(app: Express) {
           console.error("Session save error:", err);
           return res.redirect("/login?error=session_error");
         }
-        
+
+        if (isNewUser) {
+          return res.redirect("/call-screen");
+        }
+
         if (!user!.onboardingCompleted) {
           return res.redirect("/onboarding");
         }

@@ -276,8 +276,10 @@ app.use((req, res, next) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Keep the process alive after request-level failures.
+    // Rethrowing here can crash the server and impact all users.
+    console.error("Unhandled request error:", err);
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after

@@ -1446,7 +1446,9 @@ export interface CustomFormSettings {
   thankYouMessage: string;
   contactEmail: string;
   businessDescription: string;
+  enableName: boolean;
   requireName: boolean;
+  enableEmail: boolean;
   requireEmail: boolean;
   requirePhone: boolean;
   enablePhone: boolean;
@@ -1688,7 +1690,9 @@ export const stylingOptionsSchema = z.object({
   enableBooking: z.boolean().default(true),
   
   // Lead contact intake customization
+  enableName: z.boolean().default(true),
   requireName: z.boolean().default(true),
+  enableEmail: z.boolean().default(true),
   requireEmail: z.boolean().default(true),
   requirePhone: z.boolean().default(false),
   enablePhone: z.boolean().default(true),

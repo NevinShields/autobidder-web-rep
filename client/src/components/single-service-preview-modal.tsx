@@ -5,6 +5,7 @@ import { X, Calculator, DollarSign } from 'lucide-react';
 import { Formula } from '@shared/schema';
 import EnhancedVariableInput from '@/components/enhanced-variable-input';
 import ServiceCardDisplay from '@/components/service-card-display';
+import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from '@shared/conditional-logic';
 
 interface SingleServicePreviewModalProps {
   isOpen: boolean;
@@ -60,6 +61,39 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
       });
 
       formula.variables.forEach((variable) => {
+        const shouldShow = !variable.conditionalLogic?.enabled ||
+          evaluateConditionalLogic(variable, values, formula.variables);
+
+        if (!shouldShow) {
+          const defaultValue = getDefaultValueForHiddenVariable(variable);
+          let hiddenValue: any = 0;
+
+          if (variable.type === 'checkbox') {
+            hiddenValue = defaultValue ? 1 : 0;
+          } else if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
+            const option = variable.options.find(opt => opt.value === defaultValue);
+            hiddenValue = option?.multiplier || option?.numericValue || Number(defaultValue) || 0;
+          } else if (variable.type === 'multiple-choice' && variable.options) {
+            if (Array.isArray(defaultValue)) {
+              hiddenValue = defaultValue.reduce((total: number, selectedValue: any) => {
+                const option = variable.options?.find((opt) => opt.value?.toString() === selectedValue?.toString());
+                return total + (option?.numericValue || 0);
+              }, 0);
+            } else {
+              const option = variable.options.find(opt => opt.value === defaultValue);
+              hiddenValue = option?.numericValue || Number(defaultValue) || 0;
+            }
+          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
+            hiddenValue = Number(defaultValue) || 0;
+          }
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(hiddenValue)
+          );
+          return;
+        }
+
         if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
           const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
           const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
@@ -214,6 +248,7 @@ export default function SingleServicePreviewModal({ isOpen, onClose, formula }: 
                       onChange={(value) => handleVariableChange(variable.id, value)}
                       styling={formula.styling}
                       allVariables={formula.variables}
+                      currentValues={variableValues}
                     />
                   </div>
                 ))}

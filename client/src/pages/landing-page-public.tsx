@@ -6,23 +6,49 @@ import { Button } from "@/components/ui/button";
 
 export default function LandingPagePublic() {
   const { slug } = useParams<{ slug: string }>();
+  const isPreviewMode = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get("preview");
+    return preview === "1" || preview === "true";
+  }, []);
+  const localPreviewData = useMemo<LandingPagePublicData | null>(() => {
+    if (!isPreviewMode || !slug || typeof window === "undefined") return null;
+    try {
+      const raw = localStorage.getItem("landing_page_draft_preview");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed?.slug !== slug || !parsed?.data || typeof parsed.data !== "object") {
+        return null;
+      }
+      return parsed.data as LandingPagePublicData;
+    } catch {
+      return null;
+    }
+  }, [isPreviewMode, slug]);
 
   const { data, isLoading, error } = useQuery<LandingPagePublicData>({
-    queryKey: ["/api/landing-page/public", slug],
+    queryKey: ["/api/landing-page/public", slug, isPreviewMode],
     queryFn: async () => {
-      const res = await fetch(`/api/landing-page/public?slug=${encodeURIComponent(slug || "")}`);
+      const params = new URLSearchParams({ slug: slug || "" });
+      if (isPreviewMode) {
+        params.set("preview", "1");
+      }
+      const res = await fetch(`/api/landing-page/public?${params.toString()}`);
       if (!res.ok) {
         throw new Error(String(res.status));
       }
       return res.json();
     },
-    enabled: !!slug,
+    enabled: !!slug && !localPreviewData,
   });
+  const resolvedData = localPreviewData || data || null;
 
   const isNotFound = useMemo(() => {
+    if (resolvedData) return false;
     if (!error) return false;
     return (error as any).message === "404" || (error as any).message === "400";
-  }, [error]);
+  }, [error, resolvedData]);
 
   useEffect(() => {
     if (isNotFound) {
@@ -38,9 +64,9 @@ export default function LandingPagePublic() {
       return;
     }
 
-    if (data) {
-      document.title = data.seoTitle || data.businessName || "Landing Page";
-      const desc = data.seoDescription || data.tagline || "";
+    if (resolvedData) {
+      document.title = resolvedData.seoTitle || resolvedData.businessName || "Landing Page";
+      const desc = resolvedData.seoDescription || resolvedData.tagline || "";
       const meta = document.querySelector('meta[name="description"]');
       if (meta) {
         meta.setAttribute("content", desc);
@@ -51,26 +77,26 @@ export default function LandingPagePublic() {
         document.head.appendChild(tag);
       }
 
-      if (data.landingPageUrl) {
+      if (resolvedData.landingPageUrl) {
         let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
         if (!canonical) {
           canonical = document.createElement("link");
           canonical.rel = "canonical";
           document.head.appendChild(canonical);
         }
-        canonical.href = data.landingPageUrl;
+        canonical.href = resolvedData.landingPageUrl;
       }
 
       const jsonLd = {
         "@context": "https://schema.org",
         "@type": "LocalBusiness",
-        name: data.businessName,
-        url: data.landingPageUrl,
-        telephone: data.phone || undefined,
-        email: data.email || undefined,
-        areaServed: data.serviceAreaText || undefined,
+        name: resolvedData.businessName,
+        url: resolvedData.landingPageUrl,
+        telephone: resolvedData.phone || undefined,
+        email: resolvedData.email || undefined,
+        areaServed: resolvedData.serviceAreaText || undefined,
       };
-      if (data.businessName && data.landingPageUrl) {
+      if (resolvedData.businessName && resolvedData.landingPageUrl) {
         let script = document.querySelector("script[data-landing-jsonld]") as HTMLScriptElement | null;
         if (!script) {
           script = document.createElement("script");
@@ -81,18 +107,18 @@ export default function LandingPagePublic() {
         script.textContent = JSON.stringify(jsonLd);
       }
     }
-  }, [data, isNotFound]);
+  }, [resolvedData, isNotFound]);
 
   useEffect(() => {
-    if (!data) return;
+    if (!resolvedData) return;
     fetch("/api/landing-page/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ landingPageId: data.id, type: "view" })
+      body: JSON.stringify({ landingPageId: resolvedData.id, type: "view" })
     }).catch(() => {});
-  }, [data]);
+  }, [resolvedData]);
 
-  if (isLoading) {
+  if (isLoading && !resolvedData) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
@@ -108,18 +134,18 @@ export default function LandingPagePublic() {
     );
   }
 
-  if (!data) {
+  if (!resolvedData) {
     return null;
   }
 
   return (
     <LandingPageView
-      data={data}
+      data={resolvedData}
       onLeadSubmitted={() => {
         fetch("/api/landing-page/events", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ landingPageId: data.id, type: "lead_submit" })
+          body: JSON.stringify({ landingPageId: resolvedData.id, type: "lead_submit" })
         }).catch(() => {});
       }}
     />

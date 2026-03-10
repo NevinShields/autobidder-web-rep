@@ -339,7 +339,7 @@ export default function CustomForms() {
                   Create New Form
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
+            <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-md max-h-[90vh] sm:max-h-[85vh] p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10 flex flex-col">
               <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
               <DialogHeader className="px-6 pt-6">
                 <DialogTitle className="text-2xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
@@ -349,7 +349,7 @@ export default function CustomForms() {
                   Create a new custom form with specific services for testing on different landing pages.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-5 px-6 pb-6">
+              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-5">
                 <div>
                   <Label htmlFor="form-name" className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Form Name</Label>
                   <Input
@@ -389,7 +389,7 @@ export default function CustomForms() {
 
                 <div>
                   <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Select Services</Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto border border-amber-200/60 dark:border-amber-500/20 bg-white/80 dark:bg-gray-800/70 rounded-xl p-3 mt-1.5">
+                  <div className="space-y-2 max-h-36 sm:max-h-40 overflow-y-auto border border-amber-200/60 dark:border-amber-500/20 bg-white/80 dark:bg-gray-800/70 rounded-xl p-3 mt-1.5">
                     {formulas.map((formula) => (
                       <div key={formula.id} className="flex items-center space-x-2">
                         <input
@@ -417,8 +417,9 @@ export default function CustomForms() {
                     </p>
                   )}
                 </div>
-
-                <div className="flex justify-end space-x-2 pt-2">
+              </div>
+              <div className="px-6 py-4 border-t border-amber-200/70 dark:border-amber-500/20 bg-white/85 dark:bg-gray-900/85 backdrop-blur-sm">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="rounded-full border-gray-200 dark:border-gray-700">
                     Cancel
                   </Button>

@@ -896,6 +896,78 @@ const CSS_THEME_PRESETS: CssThemePreset[] = [
 `,
   },
   {
+    id: "violet-citrus",
+    name: "Violet Citrus",
+    description: "Vibrant purple surfaces with energetic orange highlights and warm contrast.",
+    preview: {
+      canvas: "linear-gradient(135deg, #f5f3ff 0%, #ffedd5 100%)",
+      surface: "#ffffff",
+      border: "#ddd6fe",
+      text: "#3b0764",
+      accent: "#f97316",
+      button: "linear-gradient(135deg, #7c3aed 0%, #f97316 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(180deg, #f5f3ff 0%, #ffedd5 58%)",
+      surfaceBg: "#ffffff",
+      border: "#ddd6fe",
+      text: "#3b0764",
+      surfaceText: "#3b0764",
+      mutedText: "#6b21a8",
+      selectedText: "#581c87",
+      primary: "#7c3aed",
+      primaryText: "#ffffff",
+      primaryHover: "#6d28d9",
+      accent: "#f97316",
+      accentSoft: "#fff2e2",
+      selectedBg: "#f3e8ff",
+      selectedBorder: "#f97316",
+      inputBg: "#ffffff",
+      inputBorder: "#c4b5fd",
+      inputText: "#3b0764",
+      inputPlaceholder: "#7e22ce",
+      priceBg: "#ffedd5",
+      priceText: "#9a3412",
+      error: "#dc2626",
+    }),
+  },
+  {
+    id: "forest-slate",
+    name: "Forest Slate",
+    description: "Moody slate panels grounded by deep green accents and balanced readability.",
+    preview: {
+      canvas: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+      surface: "#1f2937",
+      border: "#334155",
+      text: "#e2e8f0",
+      accent: "#22c55e",
+      button: "linear-gradient(135deg, #16a34a 0%, #22c55e 100%)",
+    },
+    css: buildThemeCss({
+      containerBg: "linear-gradient(180deg, #0f172a 0%, #1e293b 50%)",
+      surfaceBg: "#1f2937",
+      border: "#334155",
+      text: "#e2e8f0",
+      surfaceText: "#e2e8f0",
+      mutedText: "#94a3b8",
+      selectedText: "#dcfce7",
+      primary: "#16a34a",
+      primaryText: "#ecfdf5",
+      primaryHover: "#15803d",
+      accent: "#22c55e",
+      accentSoft: "#133327",
+      selectedBg: "#14532d",
+      selectedBorder: "#22c55e",
+      inputBg: "#0f172a",
+      inputBorder: "#475569",
+      inputText: "#e2e8f0",
+      inputPlaceholder: "#94a3b8",
+      priceBg: "#14532d",
+      priceText: "#dcfce7",
+      error: "#fda4af",
+    }),
+  },
+  {
     id: "frosted-glass",
     name: "Frosted Glass",
     description: "Soft translucent layers with blur, cool light, and subtle depth.",
@@ -1706,7 +1778,7 @@ const defaultStyling = {
   containerShadow: 'xl',
   containerBorderWidth: 0,
   containerBorderColor: '#E5E7EB',
-  containerPadding: 8,
+  containerPadding: 5,
   containerMargin: 0,
   backgroundColor: '#FFFFFF',
   fontFamily: 'inter',
@@ -2934,7 +3006,7 @@ ${generateCSSVariables(styling)}
                               <Label className="text-xs font-medium">Padding</Label>
                               <div className="flex items-center gap-3 mt-1">
                                 <Slider
-                                  value={[styling.containerPadding || 8]}
+                                  value={[styling.containerPadding || 5]}
                                   onValueChange={(value) => handleStylingChange({ containerPadding: value[0] })}
                                   max={100}
                                   min={0}
@@ -2942,7 +3014,7 @@ ${generateCSSVariables(styling)}
                                   className="flex-1"
                                 />
                                 <span className="min-w-[50px] text-center text-xs text-gray-500">
-                                  {styling.containerPadding || 8}px
+                                  {styling.containerPadding || 5}px
                                 </span>
                               </div>
                             </div>

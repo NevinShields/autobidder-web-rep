@@ -2229,6 +2229,15 @@ export class DatabaseStorage implements IStorage {
       { title: "Get instant pricing", body: "Use our calculator to see transparent, upfront estimates." },
       { title: "Schedule your service", body: "Pick a time that works best for you and we’ll take it from there." },
     ];
+    const defaultTheme = {
+      primaryColor: "#2563EB",
+      accentColor: "#10B981",
+      backgroundColor: "#F8FAFC",
+      surfaceColor: "#FFFFFF",
+      textColor: "#0F172A",
+      mutedTextColor: "#475569",
+      buttonTextColor: "#FFFFFF",
+    };
 
     const [created] = await db
       .insert(landingPages)
@@ -2236,6 +2245,8 @@ export class DatabaseStorage implements IStorage {
         userId: user.id,
         slug,
         status: "draft",
+        templateKey: "classic",
+        theme: defaultTheme,
         businessName,
         trustChips: defaultTrustChips,
         howItWorks: defaultHowItWorks,

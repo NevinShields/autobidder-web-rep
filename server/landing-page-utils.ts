@@ -21,6 +21,9 @@ export function validateLandingPageBasics(page: LandingPage): string[] {
   if (enabledServices.length === 0) {
     errors.push("At least one service must be enabled.");
   }
+  if (enabledServices.length > 10) {
+    errors.push("You can enable up to 10 services.");
+  }
   if (!page.primaryServiceId) {
     errors.push("Primary service is required.");
   } else if (!enabledServices.find(s => s.serviceId === page.primaryServiceId)) {

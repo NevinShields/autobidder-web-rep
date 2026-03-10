@@ -162,7 +162,7 @@ function PublicHeader() {
             <Link href="/login">
               <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Sign In</Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/onboarding">
               <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0">
                 Get Started
               </Button>

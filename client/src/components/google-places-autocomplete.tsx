@@ -95,6 +95,7 @@ export function GooglePlacesAutocomplete({
   const [localValue, setLocalValue] = useState(value);
   const ignoreNextPropUpdate = useRef(false);
   const isNormalizingRef = useRef(false);
+  const recentAutocompleteSelectionRef = useRef<{ value: string; at: number } | null>(null);
 
   // Sync local value with prop changes from parent
   useEffect(() => {
@@ -125,6 +126,10 @@ export function GooglePlacesAutocomplete({
         const fullAddress = extractFullAddress(place);
 
         if (fullAddress) {
+          recentAutocompleteSelectionRef.current = {
+            value: fullAddress,
+            at: Date.now(),
+          };
           ignoreNextPropUpdate.current = true;
           setLocalValue(fullAddress);
           onChange(fullAddress);
@@ -245,7 +250,20 @@ export function GooglePlacesAutocomplete({
       return;
     }
 
-    const valueToNormalize = localValue.trim();
+    const rawInputValue = (inputRef.current?.value ?? localValue).trim();
+    const lastSelection = recentAutocompleteSelectionRef.current;
+
+    // Skip geocode normalization immediately after an explicit Places selection.
+    // This prevents selected addresses from being overwritten by a geocoder fallback.
+    if (
+      lastSelection &&
+      Date.now() - lastSelection.at < 2500 &&
+      rawInputValue === lastSelection.value
+    ) {
+      return;
+    }
+
+    const valueToNormalize = rawInputValue;
     if (!valueToNormalize) {
       return;
     }

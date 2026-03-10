@@ -763,6 +763,8 @@ export default function FormulaBuilderComponent({
                       onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
                       triggerText="Library"
                       size="sm"
+                      triggerVariant="outline"
+                      triggerClassName="h-8 text-xs font-medium rounded-lg px-2 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
                       className="flex-1 bg-transparent border-none shadow-none hover:bg-gray-100 dark:hover:bg-gray-800 h-8 text-xs font-medium rounded-lg px-2"
                     />
                     <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5 shrink-0" />
@@ -1414,6 +1416,7 @@ export default function FormulaBuilderComponent({
                   }}
                   triggerText={templateIconId ? "Change Icon" : "Select Icon"}
                   size="md"
+                  triggerVariant="outline"
                 />
                 {templateIconUrl && (
                   <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">

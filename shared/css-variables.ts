@@ -97,7 +97,7 @@ export function generateCSSVariables(styling: StylingOptions): string {
     '--ab-container-shadow': getShadowValue(styling.containerShadow || 'xl'),
     '--ab-container-border-width': `${styling.containerBorderWidth || 0}px`,
     '--ab-container-border-color': styling.containerBorderColor || '#E5E7EB',
-    '--ab-container-padding': `${styling.containerPadding || 8}px`,
+    '--ab-container-padding': `${styling.containerPadding || 5}px`,
     '--ab-container-margin': `${styling.containerMargin || 0}px`,
     '--ab-background-color': styling.backgroundColor || '#FFFFFF',
     

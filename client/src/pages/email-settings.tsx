@@ -12,146 +12,82 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Settings, FileText, Plus, Save, User, Building2, Phone, MapPin } from "lucide-react";
+import { Mail, Settings, FileText, Plus, Save, User, Building2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { EmailSettings, EmailTemplate, BusinessSettings } from "@shared/schema";
 import DashboardLayout from "@/components/dashboard-layout";
 
-// Dynamic variables that are currently wired for customer data
-const DYNAMIC_VARIABLES = [
-  { name: 'Customer Name', variable: '{{customerName}}', icon: User },
-  { name: 'Customer Email', variable: '{{customerEmail}}', icon: Mail },
-  { name: 'Customer Phone', variable: '{{customerPhone}}', icon: Phone },
-  { name: 'Customer Address', variable: '{{customerAddress}}', icon: MapPin },
+// Optional template tags available in the editor
+const TEMPLATE_TAGS = [
+  { name: 'Pre-Estimate Link', variable: '{{estimateLink}}', icon: FileText },
 ];
+const ESTIMATE_LINK_TEMPLATE_IDS = new Set(['lead-submitted', 'bid-confirmed']);
 
 const DEFAULT_TEMPLATES = [
   {
     id: 'lead-submitted',
     name: 'Lead Submitted Email',
-    subject: 'Thank you for your {{serviceName}} inquiry - {{totalPrice}}',
-    message: `Hi {{customerName}},
+    subject: 'We received your request',
+    message: `Hi,
 
-Thank you for your interest in our {{serviceName}} service. We've received your inquiry and will get back to you shortly.
+Thanks for reaching out. We received your request and will review it shortly.
 
-Estimated Price: {{totalPrice}}
-Service: {{serviceName}}
-Date Submitted: {{currentDate}}
+We'll follow up soon with the next steps.
 
-What happens next:
-• We'll review your project details within 24 hours
-• One of our specialists will contact you to discuss your needs
-• We'll provide a detailed estimate and timeline
-
-If you have any questions, feel free to contact us:
-{{businessName}}
-Phone: {{businessPhone}}
-Email: {{businessEmail}}
-
-Best regards,
-The {{businessName}} Team`,
+Thank you.`,
     description: 'Sent automatically when customers submit pricing inquiries',
     enabled: false
   },
   {
     id: 'bid-confirmed',
     name: 'Bid Confirmed Email',
-    subject: 'Your Estimate is Ready - {{totalPrice}}',
-    message: `Hi {{customerName}},
+    subject: 'Your pre-estimate is ready',
+    message: `Hi,
 
-Great news! We've reviewed your request and prepared a detailed estimate for you.
+Your pre-estimate is ready to review.
 
-Estimate Total: {{totalPrice}}
+If you'd like to include the link in this email, add the pre-estimate link tag below.
 
-Please click the link below to view the full breakdown of services, pricing, and any applicable fees:
-
-{{estimateLink}}
-
-This estimate includes:
-• Detailed service descriptions
-• Travel fees (if applicable)
-• Any discounts applied
-• Tax calculations
-
-To accept this estimate, simply click "Accept" on the estimate page. If you have any questions or would like to discuss modifications, please don't hesitate to reach out.
-
-This estimate is valid for 30 days from the date of issue.
-
-Contact Information:
-{{businessName}}
-Phone: {{businessPhone}}
-Email: {{businessEmail}}
-
-Thank you for choosing {{businessName}}!
-
-Best regards,
-The {{businessName}} Team`,
+Thank you.`,
     description: 'Sent when you confirm and send a bid to the customer',
     enabled: false
   },
   {
-    id: 'bid-revised',
+    id: 'revised-bid',
     name: 'Revised Bid Email',
-    subject: 'Updated Estimate - {{totalPrice}}',
-    message: `Hi {{customerName}},
+    subject: 'Your updated estimate is ready',
+    message: `Hi,
 
-We've updated your estimate based on our review. Please find the revised pricing below.
+We updated your estimate.
 
-New Estimate Total: {{totalPrice}}
+Please review it and let us know if you have any questions.
 
-Click the link below to view the updated estimate with all the details:
-
-{{estimateLink}}
-
-Changes in this revision:
-• Updated pricing and service details
-• Adjusted fees as discussed
-• Current discounts applied
-
-If you have any questions about the changes, please contact us. We're happy to walk you through the updated estimate.
-
-Contact Information:
-{{businessName}}
-Phone: {{businessPhone}}
-Email: {{businessEmail}}
-
-Best regards,
-The {{businessName}} Team`,
+Thank you.`,
     description: 'Sent when you revise and resend a bid to the customer',
     enabled: false
   },
   {
     id: 'lead-booked',
     name: 'Appointment Booked Email',
-    subject: 'Appointment Confirmed: {{serviceName}} on {{appointmentDate}}',
-    message: `Hi {{customerName}},
+    subject: 'Your appointment is confirmed',
+    message: `Hi,
 
-Your appointment has been confirmed! We're looking forward to providing you with excellent service.
+Your appointment is confirmed.
 
-Appointment Details:
-• Service: {{serviceName}}
-• Date: {{appointmentDate}}
-• Time: {{appointmentTime}}
-• Location: {{customerAddress}}
+If you need to make any changes, reply to this email and we'll help.
 
-Before your appointment:
-• Please ensure easy access to the service area
-• Have any relevant documents ready
-• Contact us if you have any questions
-
-Contact Information:
-{{businessName}}
-Phone: {{businessPhone}}
-Email: {{businessEmail}}
-
-We look forward to serving you!
-
-Best regards,
-The {{businessName}} Team`,
+Thank you.`,
     description: 'Sent when customers book appointments or schedule services',
     enabled: false
   }
 ];
+
+const normalizeTemplateTriggerType = (triggerType: string) => {
+  if (triggerType === "bid-revised") {
+    return "revised-bid";
+  }
+  return triggerType;
+};
 
 export default function EmailSettingsPage() {
   const { toast } = useToast();
@@ -166,6 +102,7 @@ export default function EmailSettingsPage() {
   const [hasTemplateChanges, setHasTemplateChanges] = useState(false);
 
   const currentTemplate = selectedTemplate ? templates.find(t => t.id === selectedTemplate) : null;
+  const canInsertEstimateLink = selectedTemplate ? ESTIMATE_LINK_TEMPLATE_IDS.has(selectedTemplate) : false;
 
   const updateTemplate = (templateId: string, updates: Partial<typeof DEFAULT_TEMPLATES[0]>) => {
     setTemplates(prev => prev.map(t => 
@@ -213,7 +150,9 @@ export default function EmailSettingsPage() {
 
         // Check if template already exists by triggerType
         const existingTemplates = emailTemplates || [];
-        const existingTemplate = existingTemplates.find(t => t.triggerType === template.id);
+        const existingTemplate = existingTemplates.find(
+          (t) => normalizeTemplateTriggerType(t.triggerType) === template.id
+        );
         
         if (existingTemplate) {
           // Update existing template
@@ -443,11 +382,11 @@ export default function EmailSettingsPage() {
     if (emailTemplates && emailTemplates.length > 0) {
       // Convert backend templates to match the local template format
       const backendTemplates = emailTemplates.map(template => ({
-        id: template.triggerType,
+        id: normalizeTemplateTriggerType(template.triggerType),
         name: template.name,
         subject: template.subject,
         message: template.htmlContent,
-        description: getTemplateDescription(template.triggerType),
+        description: getTemplateDescription(normalizeTemplateTriggerType(template.triggerType)),
         enabled: template.isActive
       }));
       
@@ -464,6 +403,7 @@ export default function EmailSettingsPage() {
   const getTemplateDescription = (triggerType: string): string => {
     const descriptions: Record<string, string> = {
       'lead-submitted': 'Sent automatically when customers submit pricing inquiries',
+      'bid-confirmed': 'Sent when you confirm and send a bid to the customer',
       'lead-booked': 'Sent when customers book appointments or schedule services',
       'revised-bid': 'Sent when pricing is updated or revised after initial quote'
     };
@@ -768,7 +708,7 @@ export default function EmailSettingsPage() {
                           disabled={!template.enabled}
                           className="rounded-lg"
                         >
-                          {selectedTemplate === template.id ? 'Hide Variables' : 'Show Variables'}
+                          {selectedTemplate === template.id ? 'Hide Tags' : 'Show Tags'}
                         </Button>
                       </CardContent>
                     </Card>
@@ -780,15 +720,15 @@ export default function EmailSettingsPage() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-lg" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                         <Plus className="h-5 w-5 text-amber-500" />
-                        Dynamic Data
+                        Optional Tags
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Click to insert dynamic data into the selected template.
+                        Insert the pre-estimate link tag into the lead submitted or bid confirmed email if you want to include it.
                       </p>
                       <div className="space-y-2">
-                        {DYNAMIC_VARIABLES.map((item) => {
+                        {TEMPLATE_TAGS.map((item) => {
                           const IconComponent = item.icon;
                           return (
                             <Button
@@ -797,7 +737,7 @@ export default function EmailSettingsPage() {
                               size="sm"
                               className="w-full justify-start gap-2 h-9 text-xs rounded-lg dark:border-gray-700 dark:hover:bg-gray-700/50"
                               onClick={() => insertVariable(item.variable)}
-                              disabled={!selectedTemplate}
+                              disabled={!canInsertEstimateLink}
                             >
                               <IconComponent className="h-3.5 w-3.5 text-gray-400" />
                               {item.name}
@@ -807,7 +747,12 @@ export default function EmailSettingsPage() {
                       </div>
                       {!selectedTemplate && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
-                          Select a template to enable dynamic data.
+                          Select a template to enable tag insertion.
+                        </p>
+                      )}
+                      {selectedTemplate && !canInsertEstimateLink && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+                          This tag is available on lead submitted and bid confirmed emails.
                         </p>
                       )}
                     </CardContent>
@@ -825,7 +770,7 @@ export default function EmailSettingsPage() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingTemplate ? "Edit Template" : "Create New Template"}</DialogTitle>
-            <DialogDescription>Create a custom email template with dynamic data support.</DialogDescription>
+            <DialogDescription>Create a custom email template and optionally add supported tags.</DialogDescription>
           </DialogHeader>
           {/* ... dialog content ... */}
         </DialogContent>

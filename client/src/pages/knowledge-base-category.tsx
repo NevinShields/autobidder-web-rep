@@ -47,7 +47,7 @@ function PublicHeader() {
             <Link href="/login">
               <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Sign In</Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/onboarding">
               <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0">
                 Get Started
               </Button>
@@ -203,9 +203,9 @@ function CategoryContent() {
                 <p className="text-gray-500 dark:text-gray-400">No articles found{activeTag ? " for this tag" : ""}.</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {articles.map(article => (
-                  <Link key={article.id} href={`/knowledge-base/article/${article.slug}`}>
+                  <Link key={article.id} href={`/knowledge-base/article/${article.slug}`} className="block">
                     <div className="group flex items-start gap-4 p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-200 dark:hover:border-amber-700 hover:shadow-md hover:shadow-amber-500/5 transition-all duration-200 cursor-pointer">
                       <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50 transition-colors">
                         <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />

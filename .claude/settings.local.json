@@ -57,7 +57,8 @@
       "Bash(git clone:*)",
       "Bash(GIT_TERMINAL_PROMPT=0 git clone:*)",
       "Bash(gh api:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(__NEW_LINE_61dd8fee47b8ff37__ echo:*)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -74,6 +74,12 @@ interface ServiceArea {
   zipCodes: string[] | null;
 }
 
+interface NearbyCityResponse {
+  city: string;
+  state: string;
+  nearbyCities: Array<{ city: string; state: string; distanceMiles: number }>;
+}
+
 const STEPS = [
   { id: 1, name: "Profile", icon: Building2 },
   { id: 2, name: "Services", icon: ListChecks },
@@ -118,6 +124,7 @@ export default function DirectorySetup() {
   const [selectedCities, setSelectedCities] = useState<Array<{ city: string; state: string }>>([]);
   const [newCity, setNewCity] = useState("");
   const [newCityState, setNewCityState] = useState("");
+  const hasAutoAddedNearbyCities = useRef(false);
 
   // Queries
   const { data: existingProfile, isLoading: profileLoading, isError: profileError } = useQuery<DirectoryProfile | null>({
@@ -279,6 +286,39 @@ export default function DirectorySetup() {
     onError: (err: any) => toast({ title: "Failed to save service area", description: err.message || "Please try again", variant: "destructive" }),
   });
 
+  const addNearbyCities = useMutation({
+    mutationFn: async () => {
+      const city = encodeURIComponent(profileForm.city.trim());
+      const state = encodeURIComponent(profileForm.state.trim());
+      const res = await apiRequest("GET", `/api/directory/nearby-cities?city=${city}&state=${state}`);
+      return res.json() as Promise<NearbyCityResponse>;
+    },
+    onSuccess: (data) => {
+      const normalizedExisting = new Set(
+        selectedCities.map((c) => `${c.city.trim().toLowerCase()}|${c.state.trim().toLowerCase()}`)
+      );
+
+      const additions = data.nearbyCities
+        .map((c) => ({ city: c.city.trim(), state: c.state.trim().toUpperCase() }))
+        .filter((c) => c.city && c.state)
+        .filter((c) => !normalizedExisting.has(`${c.city.toLowerCase()}|${c.state.toLowerCase()}`));
+
+      if (additions.length > 0) {
+        setSelectedCities((prev) => [...prev, ...additions]);
+        toast({
+          title: "Nearby towns added",
+          description: `Added ${additions.length} nearby ${additions.length === 1 ? "town" : "towns"} automatically.`,
+        });
+      }
+    },
+    onError: (err: any) =>
+      toast({
+        title: "Could not auto-add nearby towns",
+        description: err.message || "Please try again",
+        variant: "destructive",
+      }),
+  });
+
   const toggleVisibility = useMutation({
     mutationFn: (showOnDirectory: boolean) =>
       apiRequest("PATCH", "/api/directory/profile", { showOnDirectory }),
@@ -296,6 +336,39 @@ export default function DirectorySetup() {
       toast({ title: "Service display updated!" });
     },
   });
+
+  useEffect(() => {
+    if (existingProfile?.id) {
+      hasAutoAddedNearbyCities.current = false;
+    }
+  }, [existingProfile?.id]);
+
+  useEffect(() => {
+    const hasMainLocation = profileForm.city.trim() && profileForm.state.trim();
+    const hasExistingCities = selectedCities.length > 0;
+    const areasLoaded = existingAreas !== undefined;
+    const existingAreaHasCities = (existingAreas || []).some((a) => (a.cities?.length || 0) > 0);
+
+    if (
+      currentStep === 3 &&
+      hasMainLocation &&
+      areasLoaded &&
+      !hasExistingCities &&
+      !existingAreaHasCities &&
+      !addNearbyCities.isPending &&
+      !hasAutoAddedNearbyCities.current
+    ) {
+      hasAutoAddedNearbyCities.current = true;
+      addNearbyCities.mutate();
+    }
+  }, [
+    currentStep,
+    profileForm.city,
+    profileForm.state,
+    selectedCities.length,
+    existingAreas,
+    addNearbyCities,
+  ]);
 
   // Handlers
   const handleProfileSubmit = () => {
@@ -712,6 +785,17 @@ export default function DirectorySetup() {
                 <p className="text-sm text-muted-foreground mt-1">
                   Add specific cities you want to appear in, even if they're outside your radius.
                 </p>
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addNearbyCities.mutate()}
+                    disabled={!profileForm.city || !profileForm.state || addNearbyCities.isPending}
+                  >
+                    {addNearbyCities.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Auto-add nearest 5 towns
+                  </Button>
+                </div>
                 <div className="flex gap-2 mt-2">
                   <Input
                     value={newCity}

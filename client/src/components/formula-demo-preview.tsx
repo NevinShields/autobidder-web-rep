@@ -3,6 +3,7 @@ import { Formula } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import EnhancedVariableInput from "./enhanced-variable-input";
 import { Calculator } from "lucide-react";
+import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 interface FormulaDemoPreviewProps {
   formula: Formula;
@@ -59,6 +60,39 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
       
       // Then replace variable names with their values
       formula.variables.forEach((variable) => {
+        const shouldShow = !variable.conditionalLogic?.enabled ||
+          evaluateConditionalLogic(variable, values, formula.variables);
+
+        if (!shouldShow) {
+          const defaultValue = getDefaultValueForHiddenVariable(variable);
+
+          let hiddenValue: any = 0;
+          if (variable.type === 'checkbox') {
+            hiddenValue = defaultValue ? 1 : 0;
+          } else if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
+            const option = variable.options.find(opt => opt.value === defaultValue);
+            hiddenValue = option?.multiplier || option?.numericValue || Number(defaultValue) || 0;
+          } else if (variable.type === 'multiple-choice' && variable.options) {
+            if (Array.isArray(defaultValue)) {
+              hiddenValue = defaultValue.reduce((total: number, selectedValue: any) => {
+                const option = variable.options?.find(opt => opt.value?.toString() === selectedValue?.toString());
+                return total + (option?.numericValue || 0);
+              }, 0);
+            } else {
+              const option = variable.options.find(opt => opt.value === defaultValue);
+              hiddenValue = option?.numericValue || Number(defaultValue) || 0;
+            }
+          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
+            hiddenValue = Number(defaultValue) || 0;
+          }
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(hiddenValue)
+          );
+          return;
+        }
+
         // For multi-select, still replace base variable ID with sum of selected options.
         if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
           const selectedValues = Array.isArray(values[variable.id]) ? values[variable.id] : [];
@@ -149,6 +183,8 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
             value={values[variable.id]}
             onChange={(value) => handleVariableChange(variable.id, value)}
             styling={formula.styling}
+            allVariables={formula.variables}
+            currentValues={values}
           />
         ))}
       </div>

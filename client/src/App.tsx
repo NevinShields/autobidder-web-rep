@@ -335,6 +335,7 @@ function Router() {
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/custom-form/:embedId" component={LazyStyledCalculator} />
         <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
+        <Route path="/l/:slug" component={LandingPagePublic} />
 
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />

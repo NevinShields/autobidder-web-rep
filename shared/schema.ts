@@ -1454,6 +1454,8 @@ export interface CustomFormSettings {
   enablePhone: boolean;
   enableAddress: boolean;
   requireAddress: boolean;
+  enablePermissionToContact: boolean;
+  requirePermissionToContact: boolean;
   enableNotes: boolean;
   enableHowDidYouHear: boolean;
   requireHowDidYouHear: boolean;
@@ -1462,6 +1464,7 @@ export interface CustomFormSettings {
   emailLabel: string;
   phoneLabel: string;
   addressLabel: string;
+  permissionToContactLabel: string;
   notesLabel: string;
   howDidYouHearLabel: string;
 }
@@ -1532,7 +1535,7 @@ export const stylingOptionsSchema = z.object({
   containerShadow: z.enum(['none', 'sm', 'md', 'lg', 'xl']).default('xl'),
   containerBorderWidth: z.number().min(0).max(10).default(0),
   containerBorderColor: z.string().default('#E5E7EB'),
-  containerPadding: z.number().min(0).max(100).default(8),
+  containerPadding: z.number().min(0).max(100).default(5),
   containerMargin: z.number().min(0).max(100).default(0),
   backgroundColor: z.string().default('#FFFFFF'),
   
@@ -1621,7 +1624,7 @@ export const stylingOptionsSchema = z.object({
   serviceSelectorIconPosition: z.enum(['left', 'right', 'top', 'bottom']).default('top'),
   serviceSelectorIconSizeUnit: z.enum(['preset', 'pixels', 'percent']).default('preset'),
   serviceSelectorIconPixelSize: z.number().min(16).max(120).default(48),
-  serviceSelectorIconPercentSize: z.number().min(10).max(80).default(30),
+  serviceSelectorIconPercentSize: z.number().min(10).max(100).default(30),
   serviceSelectorMaxHeight: z.number().min(100).max(800).default(300),
   serviceSelectorLineHeight: z.number().min(0).max(100).default(20),
   serviceSelectorPadding: z.enum(['sm', 'md', 'lg', 'xl']).default('xl'),
@@ -1698,6 +1701,8 @@ export const stylingOptionsSchema = z.object({
   enablePhone: z.boolean().default(true),
   enableAddress: z.boolean().default(false),
   requireAddress: z.boolean().default(false),
+  enablePermissionToContact: z.boolean().default(false),
+  requirePermissionToContact: z.boolean().default(false),
   enableNotes: z.boolean().default(false),
   enableHowDidYouHear: z.boolean().default(false),
   requireHowDidYouHear: z.boolean().default(false),
@@ -1706,6 +1711,7 @@ export const stylingOptionsSchema = z.object({
   emailLabel: z.string().default('Email Address'),
   phoneLabel: z.string().default('Phone Number'),
   addressLabel: z.string().default('Address'),
+  permissionToContactLabel: z.string().default('Permission to contact me'),
   notesLabel: z.string().default('Additional Notes'),
   howDidYouHearLabel: z.string().default('How did you hear about us?'),
   
@@ -3026,12 +3032,22 @@ export const landingPages = pgTable("landing_pages", {
   slug: text("slug").notNull().unique(),
   status: varchar("status", { enum: ["draft", "published"] }).notNull().default("draft"),
   publishedAt: timestamp("published_at"),
+  templateKey: text("template_key").notNull().default("classic"),
+  theme: jsonb("theme").$type<{
+    primaryColor?: string;
+    accentColor?: string;
+    backgroundColor?: string;
+    surfaceColor?: string;
+    textColor?: string;
+    mutedTextColor?: string;
+    buttonTextColor?: string;
+  }>(),
   businessName: text("business_name"),
   logoUrl: text("logo_url"),
   tagline: text("tagline"),
   ctaLabel: text("cta_label").notNull().default("Get Instant Quote"),
   trustChips: jsonb("trust_chips").$type<Array<{ label: string; enabled: boolean; icon?: string }>>(),
-  services: jsonb("services").$type<Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number }>>(),
+  services: jsonb("services").$type<Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number; imageUrl?: string | null }>>(),
   primaryServiceId: integer("primary_service_id"),
   enableMultiService: boolean("enable_multi_service").notNull().default(false),
   howItWorks: jsonb("how_it_works").$type<Array<{ title: string; body: string }>>(),

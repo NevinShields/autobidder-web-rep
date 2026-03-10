@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calculator, Plus, Edit, Trash2, ExternalLink, Copy, Settings, GripVertical } from "lucide-react";
+import { Calculator, Plus, Edit, Trash2, ExternalLink, Copy, Settings, GripVertical, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import SingleServicePreviewModal from "@/components/single-service-preview-modal";
 import DashboardLayout from "@/components/dashboard-layout";
+import IconSelector from "@/components/icon-selector";
 import {
   DndContext,
   closestCenter,
@@ -48,14 +49,19 @@ import type { Formula } from "@shared/schema";
 
 
 // Sortable Formula Card Component
-function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onToggleActive, getServiceIcon }: {
+function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onToggleActive, getServiceIcon, onUpdateIcon, onUploadIcon, isIconSaving, isIconUploading }: {
   formula: Formula;
   onPreview: (formula: Formula) => void;
   onDelete: (formula: Formula) => void;
   onCopyEmbed: (embedId: string) => void;
   onToggleActive: (id: number, isActive: boolean) => void;
   getServiceIcon: (formula: Formula) => any;
+  onUpdateIcon: (id: number, iconId: number | null, iconUrl: string | null) => void;
+  onUploadIcon: (id: number, file: File) => void;
+  isIconSaving: boolean;
+  isIconUploading: boolean;
 }) {
+  const [showIconOptions, setShowIconOptions] = useState(false);
   const {
     attributes,
     listeners,
@@ -92,9 +98,14 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
               >
                 <GripVertical className="w-4 h-4 text-slate-400 dark:text-slate-500" />
               </div>
-              <div className="text-xl sm:text-2xl flex-shrink-0">
+              <button
+                type="button"
+                className="text-xl sm:text-2xl flex-shrink-0 w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center"
+                onClick={() => setShowIconOptions((prev) => !prev)}
+                data-testid={`button-icon-options-${formula.id}`}
+              >
                 {getServiceIcon(formula)}
-              </div>
+              </button>
               <div className="min-w-0 flex-1">
                 <CardTitle className="text-base sm:text-lg leading-tight text-slate-900 dark:text-slate-100">
                   {formula.name}
@@ -133,7 +144,48 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
               {formula.variables.length}
             </Badge>
           </div>
-          
+
+          {showIconOptions && (
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/40 p-2 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Service Icon
+              </span>
+              {(isIconSaving || isIconUploading) && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {isIconUploading ? "Uploading" : "Saving"}
+                </span>
+              )}
+            </div>
+            <div className="mt-1">
+              <IconSelector
+                selectedIconId={formula.iconId || undefined}
+                onIconSelect={(iconId, iconUrl) => onUpdateIcon(formula.id, iconId, iconUrl)}
+                triggerText="Library"
+                size="sm"
+                triggerVariant="outline"
+                triggerClassName="w-full h-8 text-xs font-medium"
+              />
+            </div>
+            <label className="inline-flex w-full items-center justify-center gap-1.5 h-8 text-xs font-medium rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+              <Upload className="w-3.5 h-3.5" />
+              Upload Icon
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  onUploadIcon(formula.id, file);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+          )}
+
           
           <div className="flex flex-wrap gap-2 pt-2">
             <Link href={`/formula-builder/${formula.id}`} className="flex-1">
@@ -288,6 +340,67 @@ export default function FormulasPage() {
       queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
     },
   });
+
+  const [savingIconFormulaId, setSavingIconFormulaId] = useState<number | null>(null);
+  const [uploadingIconFormulaId, setUploadingIconFormulaId] = useState<number | null>(null);
+  const updateFormulaIconMutation = useMutation({
+    mutationFn: ({ id, iconId, iconUrl }: { id: number; iconId: number | null; iconUrl: string | null }) =>
+      apiRequest('PATCH', `/api/formulas/${id}`, { iconId, iconUrl }),
+    onMutate: async ({ id, iconId, iconUrl }) => {
+      setSavingIconFormulaId(id);
+      await queryClient.cancelQueries({ queryKey: ['/api/formulas'] });
+      const previousFormulas = queryClient.getQueryData(['/api/formulas']);
+      queryClient.setQueryData(['/api/formulas'], (old: Formula[] | undefined) => {
+        if (!old) return [];
+        return old.map((formula) =>
+          formula.id === id
+            ? { ...formula, iconId, iconUrl: iconUrl || null }
+            : formula
+        );
+      });
+      return { previousFormulas };
+    },
+    onError: (_error, _variables, context) => {
+      queryClient.setQueryData(['/api/formulas'], context?.previousFormulas);
+      toast({
+        title: "Save failed",
+        description: "Could not update service icon.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setSavingIconFormulaId(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
+    },
+  });
+
+  const handleUploadFormulaIcon = async (id: number, file: File) => {
+    setUploadingIconFormulaId(id);
+    try {
+      const formData = new FormData();
+      formData.append("icon", file);
+
+      const response = await fetch("/api/upload/icon", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = await response.json();
+      if (!response.ok || !payload?.iconUrl) {
+        throw new Error(payload?.message || "Failed to upload icon");
+      }
+
+      updateFormulaIconMutation.mutate({ id, iconId: null, iconUrl: payload.iconUrl });
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error?.message || "Could not upload icon.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingIconFormulaId(null);
+    }
+  };
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as number);
@@ -454,6 +567,10 @@ export default function FormulasPage() {
                     onCopyEmbed={copyEmbedUrl}
                     onToggleActive={(id, isActive) => toggleFormulaMutation.mutate({ id, isActive })}
                     getServiceIcon={getServiceIcon}
+                    onUpdateIcon={(id, iconId, iconUrl) => updateFormulaIconMutation.mutate({ id, iconId, iconUrl })}
+                    onUploadIcon={handleUploadFormulaIcon}
+                    isIconSaving={savingIconFormulaId === formula.id}
+                    isIconUploading={uploadingIconFormulaId === formula.id}
                   />
                 ))}
               </div>

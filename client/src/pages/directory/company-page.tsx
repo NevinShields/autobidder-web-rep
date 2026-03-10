@@ -63,7 +63,7 @@ interface CompanyResponse {
 export default function DirectoryCompanyPage() {
   useForceLightMode();
   const { companySlug } = useParams<{ companySlug: string }>();
-  const [showAllServices, setShowAllServices] = useState(false);
+  const [showAllServices, setShowAllServices] = useState(true);
 
   const { data, isLoading, error } = useQuery<CompanyResponse>({
     queryKey: [`/api/public/directory/company/${companySlug}`],

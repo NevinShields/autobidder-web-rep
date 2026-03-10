@@ -293,7 +293,7 @@ export default function VisualComponentEditor({
           iconSizeUnit === 'pixels'
             ? styling.serviceSelectorIconPixelSize || 48
             : iconSizeUnit === 'percent'
-              ? Math.max(18, Math.min(80, Math.round((styling.serviceSelectorIconPercentSize || 30) * 1.2)))
+              ? Math.max(18, Math.min(100, Math.round((styling.serviceSelectorIconPercentSize || 30) * 1.2)))
               : iconPresetMap[iconPreset] || 32;
         const iconClass = isVertical ? 'mb-2' : 'mr-3';
         const maxPreviewWidth = 360;
@@ -625,27 +625,28 @@ export default function VisualComponentEditor({
   };
 
   return (
-    <Card className="mb-4 overflow-hidden">
-      <CardHeader className="pb-2 pt-0 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded-t-lg" onClick={onToggle}>
+    <Card className="mb-4 overflow-visible rounded-2xl border-gray-200/60 dark:border-gray-700/40 bg-white/70 dark:bg-gray-800/50 backdrop-blur-sm shadow-none">
+      <CardHeader className="pb-2 pt-0">
         <div
-          className="flex items-center justify-between"
+          className="flex items-center justify-between cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-900/10 p-2 -m-2 rounded-xl transition-colors"
+          onClick={onToggle}
         >
           <div className="flex items-center space-x-3">
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-amber-500" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <ChevronRight className="h-4 w-4 text-gray-400" />
             )}
             <div className="flex flex-col justify-center">
-              <CardTitle className="text-base">{title}</CardTitle>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{description}</p>
+              <CardTitle className="text-base" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>{title}</CardTitle>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{description}</p>
             </div>
           </div>
         </div>
       </CardHeader>
 
       {isExpanded && (
-        <CardContent className="pt-2">
+        <CardContent className="pt-2 overflow-visible">
           {/* Visual Preview - Compact */}
           <div className="mb-4">
             <Label className="text-xs font-medium mb-1 block">Preview</Label>
@@ -1159,7 +1160,7 @@ export default function VisualComponentEditor({
                           <Slider
                             value={[styling.serviceSelectorIconPercentSize || 30]}
                             onValueChange={([value]) => onStylingChange('serviceSelectorIconPercentSize', value)}
-                            max={80}
+                            max={100}
                             min={10}
                             step={5}
                             className="flex-1"

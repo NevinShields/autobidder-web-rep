@@ -25,6 +25,8 @@ interface TemplateVariables {
   revisedPrice?: string;
   priceChange?: string;
   estimateNumber?: string;
+  estimateLink?: string;
+  preEstimateLink?: string;
   
   // Business Information
   businessName?: string;
@@ -1512,6 +1514,35 @@ export async function sendLeadSubmittedEmail(
     console.error('Error retrieving business settings or email settings:', error);
   }
 
+  let preEstimateLink = '';
+  const parsedLeadId = leadDetails.leadId ? Number(leadDetails.leadId) : NaN;
+  if (Number.isInteger(parsedLeadId) && parsedLeadId > 0) {
+    try {
+      const estimateCandidates = await Promise.allSettled([
+        storage.getEstimatesByLeadId(parsedLeadId),
+        storage.getEstimatesByMultiServiceLeadId(parsedLeadId),
+      ]);
+
+      const estimates = estimateCandidates.flatMap((result) =>
+        result.status === 'fulfilled' ? result.value : []
+      );
+
+      const latestEstimate = estimates
+        .filter((estimate) => estimate?.estimateNumber)
+        .sort((a, b) => {
+          const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return bTime - aTime;
+        })[0];
+
+      if (latestEstimate?.estimateNumber) {
+        preEstimateLink = `${getBaseUrl()}/estimate/${latestEstimate.estimateNumber}`;
+      }
+    } catch (error) {
+      console.error('Error resolving pre-estimate link for lead email:', error);
+    }
+  }
+
   // Convert from cents to dollars for display
   const formattedPrice = (leadDetails.price / 100).toLocaleString('en-US', {
     style: 'currency',
@@ -1532,7 +1563,9 @@ export async function sendLeadSubmittedEmail(
     businessEmail: businessSettings?.businessEmail || '',
     currentDate,
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(), // 30 days from now
-    estimatedTimeframe: leadDetails.estimatedTimeframe || ''
+    estimatedTimeframe: leadDetails.estimatedTimeframe || '',
+    estimateLink: preEstimateLink,
+    preEstimateLink,
   };
   
   // Default subject and content

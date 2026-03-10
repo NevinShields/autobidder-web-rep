@@ -18,7 +18,7 @@ export default function EmbedCode() {
   const { toast } = useToast();
   const [selectedFormula, setSelectedFormula] = useState<string>("");
   const [embedWidth, setEmbedWidth] = useState("800");
-  const [embedHeight, setEmbedHeight] = useState("100%");
+  const [embedHeight, setEmbedHeight] = useState("700");
   const [showBorder, setShowBorder] = useState(false);
   const [borderRadius, setBorderRadius] = useState("8");
   const [responsive, setResponsive] = useState(true);
@@ -55,17 +55,18 @@ export default function EmbedCode() {
     : "";
 
   const styledCalculatorUrl = user?.id ? `${baseUrl}/styled-calculator?userId=${user.id}` : `${baseUrl}/styled-calculator`;
+  const iframeTitle = `${businessSettings?.businessName || "Business"} pricing calculator`;
 
   // Generate iframe code for single formula
   const generateSingleFormulaIframe = () => {
     if (!selectedFormulaData) return "";
-    
+
     const width = responsive ? "100%" : `${embedWidth}px`;
     const height = embedHeight.includes('%') ? embedHeight : `${embedHeight}px`;
     const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
     const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
     const scrolling = "overflow: auto;";
-    
+
     return `<iframe
   src="${singleFormulaUrl}"
   width="${width}"
@@ -74,7 +75,7 @@ export default function EmbedCode() {
   frameborder="0"
   scrolling="auto"
   loading="lazy"
-  title="${selectedFormulaData.title}">
+  title="${iframeTitle}">
 </iframe>`;
   };
 
@@ -85,7 +86,7 @@ export default function EmbedCode() {
     const border = showBorder ? `border: 1px solid #e5e7eb; border-radius: ${borderRadius}px;` : "border: none;";
     const maxWidth = responsive ? `max-width: ${embedWidth}px;` : "";
     const scrolling = "overflow: auto;";
-    
+
     return `<iframe
   src="${styledCalculatorUrl}"
   width="${width}"
@@ -94,7 +95,7 @@ export default function EmbedCode() {
   frameborder="0"
   scrolling="auto"
   loading="lazy"
-  title="Styled Service Calculator">
+  title="${iframeTitle}">
 </iframe>`;
   };
 
@@ -178,7 +179,7 @@ export default function EmbedCode() {
               </h1>
             </div>
             <p className="text-slate-600 dark:text-slate-300">
-              Generate iframe embed codes for your pricing calculators
+              Generate iframe embeds for your pricing calculators
             </p>
           </div>
         </div>
@@ -317,9 +318,12 @@ export default function EmbedCode() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => copyToClipboard(getFullEmbedCode(generateSingleFormulaIframe()), "Single calculator embed code")}
-                            className="flex items-center gap-2"
-                          >
+                        onClick={() => copyToClipboard(
+                          getFullEmbedCode(generateSingleFormulaIframe()),
+                          "Single calculator embed code"
+                        )}
+                        className="flex items-center gap-2"
+                      >
                             <Copy className="h-4 w-4" />
                             Copy Code
                           </Button>
@@ -392,7 +396,10 @@ export default function EmbedCode() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => copyToClipboard(getFullEmbedCode(generateStyledCalculatorIframe()), "Styled calculator embed code")}
+                        onClick={() => copyToClipboard(
+                          getFullEmbedCode(generateStyledCalculatorIframe()),
+                          "Styled calculator embed code"
+                        )}
                         className="flex items-center gap-2"
                       >
                         <Copy className="h-4 w-4" />
@@ -434,21 +441,20 @@ export default function EmbedCode() {
                 <div>
                   <h4 className="font-semibold mb-2">Website Integration</h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Copy the embed code and paste it into your website's HTML where you want the calculator to appear.
+                    Copy the iframe code and paste it into your website's HTML where you want the calculator to appear.
                   </p>
                   <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                    <li>Works with WordPress, Squarespace, Wix, and custom websites</li>
-                    <li>Responsive design adapts to your site's layout</li>
+                    <li>Works with WordPress, Squarespace, Wix, Webflow, and custom websites</li>
+                    <li>Direct iframe embed with no additional loader script required</li>
                     <li>No additional setup or API keys required</li>
                   </ul>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold mb-2">Scrolling & Mobile</h4>
+                  <h4 className="font-semibold mb-2">Performance & Mobile</h4>
                   <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-                    <li>Iframes are automatically set to scrollable (overflow: auto)</li>
                     <li>Minimum recommended height: 600px for mobile devices</li>
-                    <li>Content will scroll within the iframe if it exceeds the height</li>
+                    <li>Calculator content will scroll within the embedded view if needed</li>
                   </ul>
                 </div>
 

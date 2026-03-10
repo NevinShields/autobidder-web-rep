@@ -23,6 +23,8 @@ interface IconSelectorProps {
   triggerText?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
+  triggerVariant?: "default" | "outline";
+  triggerClassName?: string;
 }
 
 export default function IconSelector({ 
@@ -31,6 +33,8 @@ export default function IconSelector({
   triggerText = "Select Icon",
   size = "md",
   className = "",
+  triggerVariant = "default",
+  triggerClassName = "",
 }: IconSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,7 +84,7 @@ export default function IconSelector({
   return (
     <div className={`space-y-2 ${className}`.trim()}>
       {selectedIcon && (
-        <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+        <div className="flex items-center gap-3 p-3 border rounded-lg bg-amber-50/60 dark:bg-amber-900/15 border-amber-200/70 dark:border-amber-700/30">
           <div className="w-10 h-10 bg-white rounded-lg border flex items-center justify-center overflow-hidden">
             <img 
               src={selectedIcon.url} 
@@ -89,14 +93,14 @@ export default function IconSelector({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-medium text-gray-900 truncate">{selectedIcon.name}</p>
-            <p className="text-sm text-gray-500">{selectedIcon.category}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{selectedIcon.name}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{selectedIcon.category}</p>
           </div>
           <Button
             size="sm"
             variant="outline"
             onClick={handleRemoveIcon}
-            className="text-red-600 hover:text-red-700"
+            className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -106,17 +110,17 @@ export default function IconSelector({
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button 
-            variant={selectedIcon ? "outline" : "default"}
-            className={buttonSizeClasses[size]}
+            variant={selectedIcon ? "outline" : triggerVariant}
+            className={`${buttonSizeClasses[size]} ${triggerClassName}`.trim()}
           >
             <Image className="h-4 w-4 mr-2" />
             {selectedIcon ? "Change Icon" : triggerText}
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/40 to-orange-50/40 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Image className="h-5 w-5" />
+            <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <Image className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               Select Service Icon
             </DialogTitle>
           </DialogHeader>
@@ -125,16 +129,16 @@ export default function IconSelector({
             {/* Search and Filter Controls */}
             <div className="flex gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                 <Input
                   placeholder="Search icons..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                 />
               </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -148,10 +152,10 @@ export default function IconSelector({
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
               <span>{filteredIcons.length} icons available</span>
               {selectedCategory !== "all" && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                   {categories.find(c => c.value === selectedCategory)?.label}
                 </Badge>
               )}
@@ -174,33 +178,33 @@ export default function IconSelector({
                     <button
                       key={icon.id}
                       onClick={() => handleIconSelect(icon)}
-                      className={`p-3 rounded-lg border-2 transition-all hover:shadow-md group ${
+                      className={`p-3 rounded-xl border-2 transition-all hover:shadow-md group ${
                         selectedIconId === icon.id 
-                          ? 'border-blue-500 bg-blue-50' 
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-amber-400 bg-amber-50/80 dark:bg-amber-900/20' 
+                          : 'border-gray-200 dark:border-gray-700 hover:border-amber-300 dark:hover:border-amber-600'
                       }`}
                     >
-                      <div className="aspect-square bg-white rounded-lg mb-2 flex items-center justify-center overflow-hidden relative">
+                      <div className="aspect-square bg-white dark:bg-gray-800 rounded-lg mb-2 flex items-center justify-center overflow-hidden relative">
                         <img
                           src={icon.url}
                           alt={icon.name}
                           className="max-w-full max-h-full object-contain"
                         />
                         {selectedIconId === icon.id && (
-                          <div className="absolute top-1 right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                          <div className="absolute top-1 right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center shadow-sm">
                             <Check className="h-2 w-2 text-white" />
                           </div>
                         )}
                       </div>
-                      <p className="text-xs font-medium text-gray-900 truncate group-hover:text-blue-600">
+                      <p className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300">
                         {icon.name}
                       </p>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <Image className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Image className="h-12 w-12 mx-auto mb-3 text-gray-400 dark:text-gray-500" />
                   <p>No icons found matching your criteria</p>
                   {searchQuery && (
                     <Button
@@ -209,7 +213,7 @@ export default function IconSelector({
                         setSearchQuery("");
                         setSelectedCategory("all");
                       }}
-                      className="text-sm"
+                      className="text-sm text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
                     >
                       Clear filters
                     </Button>

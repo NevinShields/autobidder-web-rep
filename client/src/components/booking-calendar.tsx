@@ -59,7 +59,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
       
       console.log('🔄 Fetching availability slots for range:', startDate, 'to', endDate);
       const leadParam = leadId ? `&leadId=${leadId}` : '';
-      const addressParam = (!leadId && customerInfo?.address) ? `&customerAddress=${encodeURIComponent(customerInfo.address)}` : '';
+      const addressParam = customerInfo?.address ? `&customerAddress=${encodeURIComponent(customerInfo.address)}` : '';
       const res = await fetch(`/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}${leadParam}${addressParam}`);
       if (!res.ok) {
         console.error('❌ Failed to fetch available slots:', res.status);

@@ -23,7 +23,6 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ success: false, message: "Authentication required" });
     }
     user = latestUser as any;
-    req.session.user = user;
     
     // Check if user is still active
     if (!user.isActive) {
@@ -96,8 +95,10 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
 }
 
 // Check if user is super admin
-export function isSuperAdmin(userEmail: string): boolean {
-  return SUPER_ADMIN_EMAILS.includes(userEmail);
+export function isSuperAdmin(userEmail?: string | null): boolean {
+  const normalizedEmail = String(userEmail || "").trim().toLowerCase();
+  if (!normalizedEmail) return false;
+  return SUPER_ADMIN_EMAILS.some((email) => email.toLowerCase() === normalizedEmail);
 }
 
 // Super admin authentication middleware
@@ -107,23 +108,34 @@ export async function requireSuperAdmin(req: Request, res: Response, next: NextF
     if (!req.session?.user) {
       return res.status(401).json({ success: false, message: "Authentication required" });
     }
-    
-    const user = req.session.user;
-    
+
+    const sessionUser: any = req.session.user as any;
+    if (!sessionUser?.id) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+
+    // Always refresh from DB to avoid stale session snapshots.
+    const latestUser = await storage.getUserById(sessionUser.id);
+    if (!latestUser) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+
+    const user = latestUser as any;
+
     // Check if user is active
     if (!user.isActive) {
       return res.status(401).json({ success: false, message: "Account is deactivated" });
     }
-    
+
     // Check if user email is in super admin list
     if (!isSuperAdmin(user.email)) {
       return res.status(403).json({ success: false, message: "Super admin access required" });
     }
-    
+
     // Add user to request for downstream handlers
     (req as any).currentUser = user;
     next();
-    
+
   } catch (error) {
     console.error("Super admin auth middleware error:", error);
     res.status(500).json({ success: false, message: "Authentication error" });

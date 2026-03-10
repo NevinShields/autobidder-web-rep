@@ -4,6 +4,7 @@ import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ interface LeadFormData {
   address?: string;
   notes?: string;
   howDidYouHear?: string;
+  permissionToContact?: boolean;
   uploadedImages?: string[];
 }
 
@@ -565,6 +567,7 @@ export default function StyledCalculator(props: any = {}) {
     address: prefillAddress || "",
     notes: "",
     howDidYouHear: "",
+    permissionToContact: false,
     uploadedImages: []
   });
   const [imageUploadLoading, setImageUploadLoading] = useState(false);
@@ -1737,17 +1740,33 @@ export default function StyledCalculator(props: any = {}) {
   
   if (isLoading) {
     return (
-      <div className="force-light-mode max-w-2xl mx-auto p-2 sm:p-6">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-48 mb-3"></div>
-          <div className="h-4 bg-gray-200 rounded w-72 mb-6"></div>
-          <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i}>
-              <Skeleton className="h-4 w-32 mb-2" />
-              <Skeleton className="h-10 w-full" />
+      <div className="force-light-mode max-w-3xl mx-auto p-3 sm:p-6">
+        <div className="relative overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-white via-amber-50/50 to-orange-50/40 shadow-sm">
+          <div className="absolute -top-20 -right-16 w-64 h-64 rounded-full bg-amber-200/30 blur-3xl pointer-events-none" />
+          <div className="p-4 sm:p-6 animate-pulse">
+            <div className="h-1.5 w-20 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 mb-4" />
+            <div className="h-7 bg-amber-100 rounded-md w-52 mb-2" />
+            <div className="h-4 bg-amber-100/80 rounded-md w-72 max-w-full mb-6" />
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[...Array(9)].map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-amber-200/60 bg-white/85 p-3"
+                  style={{ animationDelay: `${i * 70}ms` }}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 mb-3" />
+                  <Skeleton className="h-3 w-16 mb-2 bg-amber-100" />
+                  <Skeleton className="h-2.5 w-10 bg-amber-100/80" />
+                </div>
+              ))}
             </div>
-          ))}
+
+            <div className="mt-6 space-y-3">
+              <Skeleton className="h-4 w-32 bg-amber-100" />
+              <Skeleton className="h-11 w-full rounded-xl bg-amber-100/90" />
+              <Skeleton className="h-11 w-full rounded-xl bg-amber-100/90" />
+            </div>
           </div>
         </div>
       </div>
@@ -2192,10 +2211,10 @@ export default function StyledCalculator(props: any = {}) {
             value = defaultValue ? checkedVal : uncheckedVal;
           } else if (variable.type === 'select' && variable.options) {
             const option = variable.options.find((opt: any) => opt.value === defaultValue);
-            value = option?.multiplier || option?.numericValue || 0;
+            value = option?.multiplier || option?.numericValue || Number(defaultValue) || 0;
           } else if (variable.type === 'dropdown' && variable.options) {
             const option = variable.options.find((opt: any) => opt.value === defaultValue);
-            value = option?.numericValue || 0;
+            value = option?.numericValue || Number(defaultValue) || 0;
           } else if (variable.type === 'multiple-choice' && variable.options) {
             // For multiple-choice, handle both array and single value defaults
             if (Array.isArray(defaultValue)) {
@@ -2525,6 +2544,9 @@ export default function StyledCalculator(props: any = {}) {
     }
     if (formSettings?.enableHowDidYouHear && formSettings?.requireHowDidYouHear && !leadForm.howDidYouHear) {
       missingFields.push(formSettings?.howDidYouHearLabel || 'How did you hear about us');
+    }
+    if (formSettings?.enablePermissionToContact && formSettings?.requirePermissionToContact && !leadForm.permissionToContact) {
+      missingFields.push(formSettings?.permissionToContactLabel || 'Permission to contact');
     }
 
     if (missingFields.length > 0) {
@@ -3683,6 +3705,22 @@ export default function StyledCalculator(props: any = {}) {
                       <option key={index} value={option}>{option}</option>
                     ))}
                   </select>
+                </div>
+              )}
+
+              {businessSettings?.styling?.enablePermissionToContact && (
+                <div className="ab-question-card">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="permissionToContact"
+                      checked={Boolean(leadForm.permissionToContact)}
+                      onCheckedChange={(checked) => setLeadForm(prev => ({ ...prev, permissionToContact: checked === true }))}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="permissionToContact" className="ab-label ab-question-label leading-relaxed cursor-pointer" style={hasCustomCSS ? {} : { color: styling.textColor || '#374151' }}>
+                      {businessSettings?.styling?.permissionToContactLabel || 'Permission to contact me'} {businessSettings?.styling?.requirePermissionToContact ? '*' : ''}
+                    </Label>
+                  </div>
                 </div>
               )}
 

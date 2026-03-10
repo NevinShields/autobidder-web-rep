@@ -31,7 +31,7 @@ const defaultStyling = {
   containerShadow: 'xl',
   containerBorderWidth: 0,
   containerBorderColor: '#E5E7EB',
-  containerPadding: 8,
+  containerPadding: 5,
   containerMargin: 0,
   backgroundColor: '#FFFFFF',
   fontFamily: 'inter',
@@ -305,7 +305,7 @@ export default function DesignDashboard() {
           containerShadow: 'xl',
           containerBorderWidth: 0,
           containerBorderColor: '#E5E7EB',
-          containerPadding: 8,
+          containerPadding: 5,
           containerMargin: 0,
           backgroundColor: '#FFFFFF',
           
@@ -1544,7 +1544,7 @@ export default function DesignDashboard() {
                                                 styling.containerShadow === 'lg' ? '0 10px 15px rgba(0,0,0,0.1)' :
                                                 '0 20px 25px rgba(0,0,0,0.1)',
                                       border: `${styling.containerBorderWidth || 0}px solid ${styling.containerBorderColor || '#E5E7EB'}`,
-                                      padding: `${(styling.containerPadding || 8) * 0.5}px`,
+                                      padding: `${(styling.containerPadding || 5) * 0.5}px`,
                                     }}
                                   >
                                     <div className="w-full h-3 bg-gray-200 rounded mb-2"></div>
@@ -2696,7 +2696,7 @@ export default function DesignDashboard() {
                       <div>
                         <Label className="text-sm font-medium">Container Padding</Label>
                         <Select 
-                          value={String(styling.containerPadding || 8)} 
+                          value={String(styling.containerPadding || 5)} 
                           onValueChange={(value) => handleStylingChange('containerPadding', Number(value))}
                         >
                           <SelectTrigger className="mt-2">

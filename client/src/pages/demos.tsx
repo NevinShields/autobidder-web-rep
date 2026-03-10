@@ -21,6 +21,21 @@ const demos = [
     description: "Square footage + finish selection logic.",
     href: "https://mysite.autobidder.org/preview/cb7a5041?t=1769887566755",
   },
+  {
+    title: "Exterior Cleaning Demo 1",
+    description: "Live exterior cleaning calculator experience.",
+    href: "https://www.littlespressurewashing.com/get-an-instant-price/tuscumbia-al-pressure-washing-price-calculator",
+  },
+  {
+    title: "Exterior Cleaning Demo 2",
+    description: "Styled calculator for exterior cleaning services.",
+    href: "https://rep.autobidder.org/styled-calculator?userId=user_1771992186365_8ebea778bd36a83b",
+  },
+  {
+    title: "Exterior Cleaning Demo 3",
+    description: "Preview build for exterior cleaning funnel.",
+    href: "https://mysite.autobidder.org/preview/a1f29fda?t=1772821258425",
+  },
 ];
 
 export default function DemosPage() {

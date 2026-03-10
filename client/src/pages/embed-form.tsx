@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-meas
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
+import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 // Lazy load heavy components to improve initial loading performance
 const BookingCalendar = lazy(() => import("@/components/booking-calendar"));
@@ -31,6 +33,7 @@ interface LeadFormData {
   address?: string;
   notes?: string;
   howDidYouHear?: string;
+  permissionToContact?: boolean;
 }
 
 interface ServicePricing {
@@ -119,7 +122,8 @@ export default function EmbedForm() {
     phone: "",
     address: "",
     notes: "",
-    howDidYouHear: ""
+    howDidYouHear: "",
+    permissionToContact: false
   });
   const [showPricing, setShowPricing] = useState(false);
   const [currentStep, setCurrentStep] = useState<"contact" | "services" | "configure" | "results">("services");
@@ -303,6 +307,7 @@ export default function EmbedForm() {
     if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
     if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
     if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
+    if (styling.enablePermissionToContact && styling.requirePermissionToContact && !leadForm.permissionToContact) errors.push("Permission to contact");
 
     if (errors.length > 0) {
       toast({
@@ -406,6 +411,42 @@ export default function EmbedForm() {
           }
           
           const regex = new RegExp(`\\b${variable.id}\\b`, 'g');
+          const shouldShow = !variable.conditionalLogic?.enabled ||
+            evaluateConditionalLogic(variable, variables, formula.variables);
+
+          if (!shouldShow) {
+            const defaultValue = getDefaultValueForHiddenVariable(variable);
+            let hiddenValue = 0;
+
+            if (variable?.type === 'multiple-choice' && variable.options) {
+              if (Array.isArray(defaultValue)) {
+                hiddenValue = defaultValue.reduce((sum: number, selectedValue: any) => {
+                  const selectedOption = variable.options.find((opt: any) => opt.value?.toString() === selectedValue?.toString());
+                  return sum + (selectedOption?.numericValue || 0);
+                }, 0);
+              } else {
+                const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
+                hiddenValue = selectedOption?.numericValue || Number(defaultValue) || 0;
+              }
+            } else if (variable?.type === 'dropdown' && variable.options) {
+              const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
+              hiddenValue = selectedOption?.numericValue || Number(defaultValue) || 0;
+            } else if (variable?.type === 'select' && variable.options) {
+              const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
+              hiddenValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(defaultValue) || 0;
+            } else if (variable?.type === 'checkbox') {
+              const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
+              const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
+              hiddenValue = defaultValue ? checkedVal : uncheckedVal;
+            } else {
+              hiddenValue = Number(defaultValue) || 0;
+            }
+
+            formulaExpression = formulaExpression.replace(regex, String(hiddenValue));
+            console.log(`🔄 Replaced ${variable.id} (hidden default) with ${hiddenValue}`);
+            return;
+          }
+
           const val = variables[variable.id];
           let numericValue = 0;
           
@@ -502,7 +543,8 @@ export default function EmbedForm() {
   const handleSubmitQuoteRequest = () => {
     // Check required fields based on settings - only validate if contact collection is enabled
     const hasRequiredContactFields = styling.requireName || styling.requireEmail || styling.requirePhone || 
-                                   (styling.enableAddress && styling.requireAddress);
+                                   (styling.enableAddress && styling.requireAddress) ||
+                                   (styling.enablePermissionToContact && styling.requirePermissionToContact);
     
     if (hasRequiredContactFields) {
       const errors = [];
@@ -510,6 +552,7 @@ export default function EmbedForm() {
       if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
       if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
       if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
+      if (styling.enablePermissionToContact && styling.requirePermissionToContact && !leadForm.permissionToContact) errors.push("Permission to contact");
       if (styling.requireImageUpload && uploadedImages.length === 0) errors.push("Images");
 
       if (errors.length > 0) {
@@ -529,6 +572,7 @@ export default function EmbedForm() {
       address: leadForm.address || null,
       notes: leadForm.notes || null,
       howDidYouHear: leadForm.howDidYouHear || null,
+      permissionToContact: leadForm.permissionToContact || false,
       uploadedImages: uploadedImages,
       photoMeasurements: photoMeasurements,
       services: selectedServices.map(serviceId => {
@@ -592,6 +636,7 @@ export default function EmbedForm() {
     // Check if any contact fields are required
     const hasRequiredContactFields = styling.requireName || styling.requireEmail || styling.requirePhone || 
                                    (styling.enableAddress && styling.requireAddress) ||
+                                   (styling.enablePermissionToContact && styling.requirePermissionToContact) ||
                                    styling.requireHowDidYouHear;
     
     // Check if all service variables are complete
@@ -604,7 +649,7 @@ export default function EmbedForm() {
                              (!hasRequiredContactFields && allVariablesComplete);
     
     setShowPricing(shouldShowPricing);
-  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.requireHowDidYouHear, selectedServices, serviceVariables, availableFormulas]);
+  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.enablePermissionToContact, styling.requirePermissionToContact, styling.requireHowDidYouHear, selectedServices, serviceVariables, availableFormulas]);
 
   // Memoize grid and card classes for service selector
   const gridAndCardClasses = useMemo(() => {
@@ -1216,6 +1261,22 @@ export default function EmbedForm() {
                       </div>
                     )}
 
+                    {/* Permission to Contact Field */}
+                    {styling.enablePermissionToContact && (
+                      <div className="flex items-start space-x-3 rounded-md border p-3">
+                        <Checkbox
+                          id="permissionToContact"
+                          checked={Boolean(leadForm.permissionToContact)}
+                          onCheckedChange={(checked) => setLeadForm({ ...leadForm, permissionToContact: checked === true })}
+                          className="mt-0.5"
+                        />
+                        <Label htmlFor="permissionToContact" className="text-sm leading-relaxed cursor-pointer">
+                          {styling.permissionToContactLabel || 'Permission to contact me'}
+                          {styling.requirePermissionToContact && ' *'}
+                        </Label>
+                      </div>
+                    )}
+
                     {/* Image Upload Field */}
                     {styling.enableImageUpload && (
                       <div>
@@ -1244,10 +1305,11 @@ export default function EmbedForm() {
                           
                           const addressValid = !styling.enableAddress || !styling.requireAddress || Boolean(leadForm.address && leadForm.address.trim());
                           const howDidYouHearValid = !styling.requireHowDidYouHear || (leadForm.howDidYouHear && leadForm.howDidYouHear.trim());
+                          const permissionValid = !styling.enablePermissionToContact || !styling.requirePermissionToContact || Boolean(leadForm.permissionToContact);
                           const imagesValid = !styling.requireImageUpload || uploadedImages.length > 0;
                           
 
-                          if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid && imagesValid) {
+                          if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid && permissionValid && imagesValid) {
                             handleContactSubmit();
                           } else {
                             toast({

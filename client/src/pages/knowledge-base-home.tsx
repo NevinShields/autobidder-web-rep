@@ -56,7 +56,7 @@ function PublicHeader() {
             <Link href="/login">
               <Button variant="ghost" size="sm" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Sign In</Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/onboarding">
               <Button size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-sm shadow-amber-500/20">
                 Get Started
               </Button>
@@ -78,17 +78,17 @@ function KbContent() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: categories = [] } = useQuery<KbCategory[]>({
+  const { data: categories = [], isLoading: isCategoriesLoading } = useQuery<KbCategory[]>({
     queryKey: ["/api/kb/categories"],
     queryFn: () => fetch("/api/kb/categories").then(r => r.json()),
   });
 
-  const { data: popular = [] } = useQuery<KbArticle[]>({
+  const { data: popular = [], isLoading: isPopularLoading } = useQuery<KbArticle[]>({
     queryKey: ["/api/kb/articles/popular"],
     queryFn: () => fetch("/api/kb/articles/popular?limit=6").then(r => r.json()),
   });
 
-  const { data: recent = [] } = useQuery<KbArticle[]>({
+  const { data: recent = [], isLoading: isRecentLoading } = useQuery<KbArticle[]>({
     queryKey: ["/api/kb/articles/recent"],
     queryFn: () => fetch("/api/kb/articles/recent?limit=6").then(r => r.json()),
   });
@@ -105,6 +105,8 @@ function KbContent() {
       navigate(`/knowledge-base?q=${encodeURIComponent(search.trim())}`);
     }
   };
+
+  const isInitialLoading = isCategoriesLoading || isPopularLoading || isRecentLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
@@ -173,7 +175,7 @@ function KbContent() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
         {/* Categories Grid */}
-        {categories.length > 0 && (
+        {!isInitialLoading && categories.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
@@ -214,7 +216,7 @@ function KbContent() {
         )}
 
         {/* Popular Articles */}
-        {popular.length > 0 && (
+        {!isInitialLoading && popular.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
@@ -230,7 +232,7 @@ function KbContent() {
         )}
 
         {/* Recently Updated */}
-        {recent.length > 0 && (
+        {!isInitialLoading && recent.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
@@ -245,8 +247,30 @@ function KbContent() {
           </section>
         )}
 
+        {/* Initial loading state */}
+        {isInitialLoading && (
+          <div className="space-y-8 animate-pulse">
+            <section>
+              <div className="h-7 w-52 rounded bg-gray-200 dark:bg-gray-800 mb-6" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, idx) => (
+                  <div key={`kb-category-skeleton-${idx}`} className="h-28 rounded-2xl bg-gray-200/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700" />
+                ))}
+              </div>
+            </section>
+            <section>
+              <div className="h-7 w-44 rounded bg-gray-200 dark:bg-gray-800 mb-6" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, idx) => (
+                  <div key={`kb-article-skeleton-${idx}`} className="h-44 rounded-2xl bg-gray-200/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700" />
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
         {/* Empty state */}
-        {categories.length === 0 && popular.length === 0 && (
+        {!isInitialLoading && categories.length === 0 && popular.length === 0 && (
           <div className="text-center py-24">
             <BookOpen className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Knowledge Base Coming Soon</h3>

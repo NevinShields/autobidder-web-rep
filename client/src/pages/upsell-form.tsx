@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import { CollapsiblePhotoMeasurement } from "@/components/collapsible-photo-meas
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
+import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 interface LeadFormData {
   name: string;
@@ -25,6 +27,7 @@ interface LeadFormData {
   address?: string;
   notes?: string;
   howDidYouHear?: string;
+  permissionToContact?: boolean;
 }
 
 interface ServicePricing {
@@ -92,7 +95,8 @@ export default function UpsellForm() {
     phone: "",
     address: "",
     notes: "",
-    howDidYouHear: ""
+    howDidYouHear: "",
+    permissionToContact: false
   });
   const [showPricing, setShowPricing] = useState(false);
   const [currentStep, setCurrentStep] = useState<"contact" | "services" | "configure" | "results">("services");
@@ -291,6 +295,7 @@ export default function UpsellForm() {
     if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
     if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
     if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
+    if (styling.enablePermissionToContact && styling.requirePermissionToContact && !leadForm.permissionToContact) errors.push("Permission to contact");
 
     if (errors.length > 0) {
       toast({
@@ -346,6 +351,39 @@ export default function UpsellForm() {
         // Ensure all formula variables have default values
         formula.variables.forEach((variable: any) => {
           const regex = new RegExp(`\\b${variable.id}\\b`, 'g');
+          const shouldShow = !variable.conditionalLogic?.enabled ||
+            evaluateConditionalLogic(variable, variables, formula.variables);
+
+          if (!shouldShow) {
+            const defaultValue = getDefaultValueForHiddenVariable(variable);
+            let hiddenValue = 0;
+
+            if (variable?.type === 'multiple-choice' && variable.options) {
+              if (Array.isArray(defaultValue)) {
+                hiddenValue = defaultValue.reduce((sum: number, selectedValue: any) => {
+                  const selectedOption = variable.options.find((opt: any) => opt.value?.toString() === selectedValue?.toString());
+                  return sum + (selectedOption?.numericValue || 0);
+                }, 0);
+              } else {
+                const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
+                hiddenValue = selectedOption?.numericValue || Number(defaultValue) || 0;
+              }
+            } else if (variable?.type === 'dropdown' && variable.options) {
+              const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
+              hiddenValue = selectedOption?.numericValue || Number(defaultValue) || 0;
+            } else if (variable?.type === 'select' && variable.options) {
+              const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
+              hiddenValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(defaultValue) || 0;
+            } else if (variable?.type === 'checkbox') {
+              hiddenValue = defaultValue ? 1 : 0;
+            } else {
+              hiddenValue = Number(defaultValue) || 0;
+            }
+
+            formulaExpression = formulaExpression.replace(regex, String(hiddenValue));
+            return;
+          }
+
           const val = variables[variable.id];
           let numericValue = 0;
           
@@ -452,7 +490,8 @@ export default function UpsellForm() {
   const handleSubmitQuoteRequest = () => {
     // Check required fields based on settings - only validate if contact collection is enabled
     const hasRequiredContactFields = styling.requireName || styling.requireEmail || styling.requirePhone || 
-                                   (styling.enableAddress && styling.requireAddress);
+                                   (styling.enableAddress && styling.requireAddress) ||
+                                   (styling.enablePermissionToContact && styling.requirePermissionToContact);
     
     if (hasRequiredContactFields) {
       const errors = [];
@@ -460,6 +499,7 @@ export default function UpsellForm() {
       if (styling.requireEmail && !leadForm.email.trim()) errors.push("Email");
       if (styling.requirePhone && !leadForm.phone.trim()) errors.push("Phone");
       if (styling.enableAddress && styling.requireAddress && !leadForm.address?.trim()) errors.push("Address");
+      if (styling.enablePermissionToContact && styling.requirePermissionToContact && !leadForm.permissionToContact) errors.push("Permission to contact");
 
       if (errors.length > 0) {
         toast({
@@ -478,6 +518,7 @@ export default function UpsellForm() {
       address: leadForm.address || null,
       notes: leadForm.notes || null,
       howDidYouHear: leadForm.howDidYouHear || null,
+      permissionToContact: leadForm.permissionToContact || false,
       services: selectedServices.map(serviceId => {
         const formula = availableFormulas.find(f => f.id === serviceId);
         return {
@@ -553,6 +594,7 @@ export default function UpsellForm() {
     // Check if any contact fields are required
     const hasRequiredContactFields = styling.requireName || styling.requireEmail || styling.requirePhone || 
                                    (styling.enableAddress && styling.requireAddress) ||
+                                   (styling.enablePermissionToContact && styling.requirePermissionToContact) ||
                                    styling.requireHowDidYouHear;
     
     // Check if all service variables are complete
@@ -565,7 +607,7 @@ export default function UpsellForm() {
                              (!hasRequiredContactFields && allVariablesComplete);
     
     setShowPricing(shouldShowPricing);
-  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.requireHowDidYouHear, selectedServices, serviceVariables, availableFormulas]);
+  }, [businessSettings?.styling?.requireContactFirst, contactSubmitted, styling.requireName, styling.requireEmail, styling.requirePhone, styling.enableAddress, styling.requireAddress, styling.enablePermissionToContact, styling.requirePermissionToContact, styling.requireHowDidYouHear, selectedServices, serviceVariables, availableFormulas]);
 
   // Calculate grid classes based on card size and cards per row
   const getGridClasses = () => {
@@ -1161,6 +1203,22 @@ export default function UpsellForm() {
                       </div>
                     )}
 
+                    {/* Permission to Contact Field */}
+                    {styling.enablePermissionToContact && (
+                      <div className="flex items-start space-x-3 rounded-md border p-3">
+                        <Checkbox
+                          id="permissionToContact"
+                          checked={Boolean(leadForm.permissionToContact)}
+                          onCheckedChange={(checked) => setLeadForm({ ...leadForm, permissionToContact: checked === true })}
+                          className="mt-0.5"
+                        />
+                        <Label htmlFor="permissionToContact" className="text-sm leading-relaxed cursor-pointer">
+                          {styling.permissionToContactLabel || 'Permission to contact me'}
+                          {styling.requirePermissionToContact && ' *'}
+                        </Label>
+                      </div>
+                    )}
+
                     <div className="pt-4">
                       <Button
                         onClick={() => {
@@ -1174,9 +1232,10 @@ export default function UpsellForm() {
                           
                           const addressValid = !styling.enableAddress || !styling.requireAddress || Boolean(leadForm.address && leadForm.address.trim());
                           const howDidYouHearValid = !styling.requireHowDidYouHear || (leadForm.howDidYouHear && leadForm.howDidYouHear.trim());
+                          const permissionValid = !styling.enablePermissionToContact || !styling.requirePermissionToContact || Boolean(leadForm.permissionToContact);
                           
 
-                          if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid) {
+                          if (nameValid && emailValid && phoneValid && addressValid && howDidYouHearValid && permissionValid) {
                             handleContactSubmit();
                           } else {
                             toast({

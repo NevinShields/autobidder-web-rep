@@ -28,6 +28,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import LiquidEther from "@/components/LiquidEther";
+import { marketingPlans } from "@/lib/pricing-plans";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 const Section = ({
@@ -147,43 +148,6 @@ export default function Landing() {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const plans = [
-    {
-      name: "Autobidder Free",
-      price: "0",
-      description: "Starter access with core visibility tools.",
-      features: ["No MeasureMap Features", "10 Leads per Month", "Access to Directory"],
-    },
-    {
-      name: "Core",
-      price: "49",
-      description: "Essential automation for growing service businesses.",
-      features: ["AI Formula Builder", "Dynamic Formula Builder", "Custom Design Editor", "CRM Integration - Zapier"],
-    },
-    {
-      name: "Plus",
-      price: "97",
-      description: "Expanded toolkit for teams scaling lead flow.",
-      features: [
-        "Website Included",
-        "Autoblogger SEO Tool",
-        "AI Measure Tool",
-        "Property Data API",
-      ],
-      featured: true,
-    },
-    {
-      name: "Plus SEO",
-      price: "297",
-      description: "Growth + SEO acceleration in one plan.",
-      features: [
-        "Everything in Plus",
-        "50 Location Pages Added Monthly for SEO",
-        "Custom White Label Video",
-      ],
-    },
-  ];
 
   const comparisonTiers: ComparisonTier[] = [
     { key: "free", label: "Free", price: "$0" },
@@ -611,7 +575,7 @@ export default function Landing() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-          {plans.map((plan) => (
+          {marketingPlans.map((plan) => (
             <div
               key={plan.name}
               className={`relative flex flex-col p-8 rounded-[2.5rem] border transition-all duration-500 ${
@@ -629,7 +593,7 @@ export default function Landing() {
               <div className="mb-8">
                 <h3 className="text-lg font-bold uppercase tracking-widest mb-2">{plan.name}</h3>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold tracking-tighter">${plan.price}</span>
+                  <span className="text-4xl font-bold tracking-tighter">${plan.monthlyPrice}</span>
                   <span className="text-zinc-500 text-sm font-medium">/mo</span>
                 </div>
                 <p className="text-zinc-500 text-xs mt-4 leading-relaxed">{plan.description}</p>
@@ -649,7 +613,7 @@ export default function Landing() {
                 className="w-full !py-3 !text-[10px]"
                 onClick={() => (window.location.href = "/onboarding")}
               >
-                {plan.price === "0" ? "Get Started" : "Choose Plan"}
+                {plan.monthlyPrice === 0 ? "Get Started" : "Choose Plan"}
               </Button>
             </div>
           ))}

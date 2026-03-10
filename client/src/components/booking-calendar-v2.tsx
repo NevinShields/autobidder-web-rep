@@ -83,7 +83,7 @@ export default function BookingCalendarV2({
       if (!businessOwnerId) return [];
       
       const leadParam = leadId ? `&leadId=${leadId}` : '';
-      const addressParam = (!leadId && customerInfo?.address) ? `&customerAddress=${encodeURIComponent(customerInfo.address)}` : '';
+      const addressParam = customerInfo?.address ? `&customerAddress=${encodeURIComponent(customerInfo.address)}` : '';
       const res = await fetch(
         `/api/public/availability-slots/${businessOwnerId}?startDate=${startDate}&endDate=${endDate}${leadParam}${addressParam}`
       );

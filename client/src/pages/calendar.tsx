@@ -22,6 +22,34 @@ import LeadDetailsModal from "@/components/lead-details-modal";
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+const getDateParts = (dateString: string) => {
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  return { year, month, day };
+};
+
+const parseLocalDate = (dateString: string) => {
+  const { year, month, day } = getDateParts(dateString);
+  return new Date(year, month - 1, day);
+};
+
+const formatLocalDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatCalendarDateForDisplay = (
+  dateString: string,
+  options?: Intl.DateTimeFormatOptions
+) => {
+  const { year, month, day } = getDateParts(dateString);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    ...options,
+  }).format(new Date(Date.UTC(year, month - 1, day, 12)));
+};
+
 interface DayAvailability {
   enabled: boolean;
   startTime: string;
@@ -229,7 +257,7 @@ export default function CalendarPage() {
       const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       
-      return fetch(`/api/availability-slots/${firstDay.toISOString().split('T')[0]}/${lastDay.toISOString().split('T')[0]}?includeLeads=true`)
+      return fetch(`/api/availability-slots/${formatLocalDate(firstDay)}/${formatLocalDate(lastDay)}?includeLeads=true`)
         .then(res => res.json());
     },
   });
@@ -300,7 +328,7 @@ export default function CalendarPage() {
     queryFn: () => {
       const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      return fetch(`/api/blocked-dates?startDate=${firstDay.toISOString().split('T')[0]}&endDate=${lastDay.toISOString().split('T')[0]}`).then(res => res.json());
+      return fetch(`/api/blocked-dates?startDate=${formatLocalDate(firstDay)}&endDate=${formatLocalDate(lastDay)}`).then(res => res.json());
     },
   });
 
@@ -336,7 +364,7 @@ export default function CalendarPage() {
       const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       
-      const res = await fetch(`/api/google-calendar/events?startDate=${firstDay.toISOString().split('T')[0]}&endDate=${lastDay.toISOString().split('T')[0]}`);
+      const res = await fetch(`/api/google-calendar/events?startDate=${formatLocalDate(firstDay)}&endDate=${formatLocalDate(lastDay)}`);
       if (!res.ok) return [];
       return res.json();
     },
@@ -694,13 +722,13 @@ export default function CalendarPage() {
   };
 
   const formatDateForAPI = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    return formatLocalDate(date);
   };
 
   // Drag selection helper functions
   const getDateRange = (startDateStr: string, endDateStr: string): string[] => {
-    const start = new Date(startDateStr);
-    const end = new Date(endDateStr);
+    const start = parseLocalDate(startDateStr);
+    const end = parseLocalDate(endDateStr);
     const range: string[] = [];
     
     // Normalize: ensure start is before end
@@ -797,11 +825,9 @@ export default function CalendarPage() {
     if (!Array.isArray(googleCalendarEvents)) return [];
     return googleCalendarEvents.filter((event: any) => {
       const eventStart = new Date(event.start);
-      const eventEnd = new Date(event.end);
-      const date = new Date(dateStr);
       
       // Check if event occurs on this date
-      const eventDate = eventStart.toISOString().split('T')[0];
+      const eventDate = formatLocalDate(eventStart);
       return eventDate === dateStr || (event.isAllDay && eventDate === dateStr);
     });
   };
@@ -1001,7 +1027,18 @@ export default function CalendarPage() {
       const blocked = isDateBlocked(dateStr);
       const googleEvents = getGoogleEventsForDate(dateStr);
       const dayWorkOrders = getWorkOrdersForDate(dateStr);
-      const hasEvents = bookedCount > 0 || availableCount > 0 || blocked || googleEvents.length > 0 || dayWorkOrders.length > 0;
+      const mobileIndicators = blocked
+        ? ['bg-gray-400']
+        : [
+            ...Array(Math.min(dayWorkOrders.length, 4)).fill('bg-purple-500'),
+            ...Array(Math.min(googleEvents.length, 4)).fill('bg-blue-500'),
+            ...Array(Math.min(bookedCount, 4)).fill('bg-red-500'),
+            ...Array(Math.min(softBookedCount, 4)).fill('bg-amber-400'),
+          ].slice(0, 4);
+
+      if (!blocked && mobileIndicators.length === 0 && availableCount > 0) {
+        mobileIndicators.push('bg-green-500');
+      }
       
       const inDragRange = isDateInDragRange(dateStr);
       const isDragStart = dragStart === dateStr && isDragging;
@@ -1077,11 +1114,15 @@ export default function CalendarPage() {
               )}
             </div>
           )}
-          {isMobile && hasEvents && !blocked && (
-             <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-blue-500"></div>
-          )}
-          {isMobile && blocked && (
-            <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-gray-400"></div>
+          {isMobile && mobileIndicators.length > 0 && (
+            <div className="absolute bottom-1 right-1 flex items-center gap-0.5">
+              {mobileIndicators.map((indicatorClass, index) => (
+                <div
+                  key={`${dateStr}-indicator-${index}`}
+                  className={`w-2 h-2 rounded-full ${indicatorClass}`}
+                />
+              ))}
+            </div>
           )}
         </>
       );
@@ -1385,7 +1426,7 @@ export default function CalendarPage() {
                 <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 max-w-md">
                   {view === 'month'
                     ? 'View monthly bookings and manage appointments'
-                    : `Schedule for ${selectedDate ? new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
+                    : `Schedule for ${selectedDate ? formatCalendarDateForDisplay(selectedDate, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}`
                   }
                 </p>
               </div>
@@ -1735,9 +1776,9 @@ export default function CalendarPage() {
                   <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">You've selected:</p>
                     <p className="font-semibold text-lg text-blue-900 dark:text-blue-100">
-                      {new Date(dragStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {formatCalendarDateForDisplay(dragStart, { month: 'short', day: 'numeric', year: 'numeric' })}
                       {' '}-{' '}
-                      {new Date(currentHoverDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {formatCalendarDateForDisplay(currentHoverDate, { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                       {getDateRange(dragStart, currentHoverDate).length} day{getDateRange(dragStart, currentHoverDate).length > 1 ? 's' : ''}
@@ -1802,17 +1843,25 @@ export default function CalendarPage() {
 
         {/* Schedule Dialog */}
         <Dialog open={scheduleDialogOpen} onOpenChange={setScheduleDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Schedule on {selectedDateForSchedule && new Date(selectedDateForSchedule).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</DialogTitle>
+          <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-md sm:max-w-lg max-h-[90vh] p-0 overflow-hidden rounded-2xl border border-amber-200/60 dark:border-amber-500/20 bg-gradient-to-br from-white/95 via-amber-50/60 to-orange-50/60 dark:from-gray-900/95 dark:via-gray-900/90 dark:to-gray-800/95 backdrop-blur-xl shadow-2xl shadow-amber-500/10 flex flex-col">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <DialogHeader className="px-6 pt-6 pb-3">
+              <DialogTitle className="text-2xl text-gray-900 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+                Schedule Event
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400">
+                {selectedDateForSchedule && formatCalendarDateForDisplay(selectedDateForSchedule, { weekday: 'long', month: 'long', day: 'numeric' })}
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-5">
               {/* Schedule Type Selector */}
-              <div className="flex gap-2">
+              <div>
+                <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400 mb-2 block">Schedule Type</Label>
+                <div className="grid grid-cols-2 gap-2 rounded-xl border border-amber-200/60 dark:border-amber-500/20 bg-white/70 dark:bg-gray-800/60 p-1">
                 <Button
                   variant={scheduleType === 'workorder' ? 'default' : 'outline'}
                   onClick={() => setScheduleType('workorder')}
-                  className="flex-1"
+                  className={`h-10 rounded-lg ${scheduleType === 'workorder' ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm shadow-amber-500/20 hover:from-amber-600 hover:to-orange-700" : "border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"}`}
                   disabled={unscheduledWorkOrders.length === 0}
                   data-testid="button-schedule-type-workorder"
                 >
@@ -1821,19 +1870,20 @@ export default function CalendarPage() {
                 <Button
                   variant={scheduleType === 'event' ? 'default' : 'outline'}
                   onClick={() => setScheduleType('event')}
-                  className="flex-1"
+                  className={`h-10 rounded-lg ${scheduleType === 'event' ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm shadow-amber-500/20 hover:from-amber-600 hover:to-orange-700" : "border-gray-200 dark:border-gray-700 hover:bg-amber-50 dark:hover:bg-amber-900/20"}`}
                   data-testid="button-schedule-type-event"
                 >
                   Manual Event
                 </Button>
+                </div>
               </div>
 
               {scheduleType === 'workorder' ? (
                 <>
                   <div className="space-y-2">
-                    <Label>Select Work Order</Label>
+                    <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Select Work Order</Label>
                     <Select value={selectedWorkOrderId?.toString() || ''} onValueChange={(value) => setSelectedWorkOrderId(parseInt(value))}>
-                      <SelectTrigger data-testid="select-work-order">
+                      <SelectTrigger className="rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80" data-testid="select-work-order">
                         <SelectValue placeholder="Choose a work order..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -1849,20 +1899,22 @@ export default function CalendarPage() {
               ) : (
                 <>
                   <div className="space-y-2">
-                    <Label>Event Title</Label>
+                    <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Event Title</Label>
                     <Input
                       value={eventTitle}
                       onChange={(e) => setEventTitle(e.target.value)}
                       placeholder="e.g., Meeting, Appointment"
+                      className="rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                       data-testid="input-event-title"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Notes (Optional)</Label>
+                    <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Notes (Optional)</Label>
                     <Textarea
                       value={eventNotes}
                       onChange={(e) => setEventNotes(e.target.value)}
                       placeholder="Additional details..."
+                      className="rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 min-h-[96px]"
                       data-testid="textarea-event-notes"
                     />
                   </div>
@@ -1871,18 +1923,19 @@ export default function CalendarPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Start Time</Label>
+                  <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Start Time</Label>
                   <Input
                     type="time"
                     value={scheduleTime}
                     onChange={(e) => setScheduleTime(e.target.value)}
+                    className="rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                     data-testid="input-schedule-time"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Duration (minutes)</Label>
+                  <Label className="text-xs uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Duration</Label>
                   <Select value={scheduleDuration.toString()} onValueChange={(value) => setScheduleDuration(parseInt(value))}>
-                    <SelectTrigger data-testid="select-duration">
+                    <SelectTrigger className="rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80" data-testid="select-duration">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1897,11 +1950,13 @@ export default function CalendarPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-4">
+            </div>
+            <div className="px-6 py-4 border-t border-amber-200/70 dark:border-amber-500/20 bg-white/85 dark:bg-gray-900/85 backdrop-blur-sm">
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
                 <Button
                   variant="outline"
                   onClick={() => setScheduleDialogOpen(false)}
-                  className="flex-1"
+                  className="sm:min-w-[120px] rounded-full border-gray-200 dark:border-gray-700"
                   data-testid="button-cancel-schedule"
                 >
                   Cancel
@@ -1909,7 +1964,7 @@ export default function CalendarPage() {
                 <Button
                   onClick={handleScheduleSubmit}
                   disabled={scheduleWorkOrderMutation.isPending || createEventMutation.isPending}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700"
+                  className="sm:min-w-[140px] rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-amber-500/20"
                   data-testid="button-confirm-schedule"
                 >
                   {scheduleWorkOrderMutation.isPending || createEventMutation.isPending ? 'Scheduling...' : 'Schedule'}
@@ -2112,7 +2167,7 @@ export default function CalendarPage() {
                           <div key={blocked.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                             <div className="flex-1">
                               <div className="font-medium text-gray-900 dark:text-white">
-                                {new Date(blocked.startDate).toLocaleDateString()} - {new Date(blocked.endDate).toLocaleDateString()}
+                                {formatCalendarDateForDisplay(blocked.startDate)} - {formatCalendarDateForDisplay(blocked.endDate)}
                               </div>
                               {blocked.reason && (
                                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">{blocked.reason}</div>
@@ -2439,7 +2494,7 @@ export default function CalendarPage() {
                         Booking Details
                       </DialogTitle>
                       <DialogDescription className="text-amber-100">
-                        {selectedBooking.date && new Date(selectedBooking.date).toLocaleDateString('en-US', {
+                        {selectedBooking.date && formatCalendarDateForDisplay(selectedBooking.date, {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
@@ -2795,7 +2850,7 @@ export default function CalendarPage() {
               <>
                 <SheetHeader>
                   <SheetTitle>
-                    {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    {formatCalendarDateForDisplay(selectedDate, { weekday: 'long', month: 'long', day: 'numeric' })}
                   </SheetTitle>
                 </SheetHeader>
                 <div className="py-4 overflow-y-auto">

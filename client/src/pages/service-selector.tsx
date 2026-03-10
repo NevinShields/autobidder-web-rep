@@ -14,6 +14,7 @@ import ServiceCardDisplay from "@/components/service-card-display";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, ServiceCalculation, BusinessSettings, PropertyAttributes } from "@shared/schema";
+import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 
 
@@ -24,6 +25,15 @@ interface LeadFormData {
   address?: string;
   notes?: string;
   howDidYouHear?: string;
+  permissionToContact?: boolean;
+}
+
+interface LandingPagePublicConfig {
+  id: number;
+  userId: string;
+  services: Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number; imageUrl?: string | null }>;
+  primaryServiceId: number | null;
+  enableMultiService: boolean;
 }
 
 export default function ServiceSelector() {
@@ -36,7 +46,8 @@ export default function ServiceSelector() {
     phone: "",
     address: "",
     notes: "",
-    howDidYouHear: ""
+    howDidYouHear: "",
+    permissionToContact: false
   });
   const [currentStep, setCurrentStep] = useState<"selection" | "address" | "configuration" | "contact" | "pricing">("selection");
   const [propertyAddress, setPropertyAddress] = useState("");
@@ -52,13 +63,29 @@ export default function ServiceSelector() {
   const urlParams = new URLSearchParams(search);
   const userId = urlParams.get('userId');
   const landingPageId = urlParams.get('landingPageId');
+  const landingPageIdNumber = landingPageId ? Number(landingPageId) : NaN;
+
+  const landingConfigRequired = Number.isInteger(landingPageIdNumber) && landingPageIdNumber > 0;
+  const { data: landingPageConfig, isLoading: landingConfigLoading } = useQuery<LandingPagePublicConfig>({
+    queryKey: ["/api/landing-page/public-config", landingPageIdNumber],
+    queryFn: async () => {
+      const res = await fetch(`/api/landing-page/public-config?id=${landingPageIdNumber}`);
+      if (!res.ok) throw new Error("Failed to fetch landing page config");
+      return res.json();
+    },
+    enabled: landingConfigRequired,
+    retry: false,
+  });
+
+  const resolvedUserId = landingPageConfig?.userId || userId;
 
   const { data: formulas, isLoading: formulasLoading } = useQuery({
-    queryKey: userId ? ["/api/public/formulas", userId] : ["/api/formulas"],
+    queryKey: resolvedUserId ? ["/api/public/formulas", resolvedUserId] : ["/api/formulas"],
+    enabled: !landingConfigRequired || Boolean(landingPageConfig),
     queryFn: async () => {
-      if (userId) {
+      if (resolvedUserId) {
         // Use public API for specific user (filters active formulas only)
-        const res = await fetch(`/api/public/formulas?userId=${userId}`);
+        const res = await fetch(`/api/public/formulas?userId=${resolvedUserId}`);
         if (!res.ok) throw new Error('Failed to fetch formulas');
         return res.json();
       } else {
@@ -70,12 +97,64 @@ export default function ServiceSelector() {
     }
   });
 
+  const availableFormulas = useMemo(() => {
+    const base = (formulas as Formula[]) || [];
+    const landingServices = (landingPageConfig?.services || [])
+      .filter((service) => service.enabled)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .slice(0, 10);
+
+    if (landingServices.length === 0) {
+      return base;
+    }
+
+    const serviceById = new Map<number, { name: string; sortOrder: number }>();
+    landingServices.forEach((service, idx) => {
+      serviceById.set(service.serviceId, { name: service.name, sortOrder: Number.isFinite(service.sortOrder) ? service.sortOrder : idx });
+    });
+
+    return base
+      .filter((formula) => serviceById.has(formula.id))
+      .map((formula) => {
+        const configured = serviceById.get(formula.id);
+        return {
+          ...formula,
+          name: configured?.name || formula.name,
+        };
+      })
+      .sort((a, b) => (serviceById.get(a.id)?.sortOrder || 0) - (serviceById.get(b.id)?.sortOrder || 0));
+  }, [formulas, landingPageConfig]);
+
+  useEffect(() => {
+    const allowedServiceIds = new Set(availableFormulas.map((formula) => formula.id));
+    setSelectedServices((prev) => prev.filter((id) => allowedServiceIds.has(id)));
+    setServiceVariables((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (!allowedServiceIds.has(Number(key))) {
+          delete next[Number(key)];
+        }
+      });
+      return next;
+    });
+    setServiceCalculations((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (!allowedServiceIds.has(Number(key))) {
+          delete next[Number(key)];
+        }
+      });
+      return next;
+    });
+  }, [availableFormulas]);
+
   const { data: businessSettings, isLoading: settingsLoading } = useQuery({
-    queryKey: userId ? ["/api/public/business-settings", userId] : ["/api/business-settings"],
+    queryKey: resolvedUserId ? ["/api/public/business-settings", resolvedUserId] : ["/api/business-settings"],
+    enabled: !landingConfigRequired || Boolean(landingPageConfig),
     queryFn: async () => {
-      if (userId) {
+      if (resolvedUserId) {
         // Use public API for specific user
-        const res = await fetch(`/api/public/business-settings?userId=${userId}`);
+        const res = await fetch(`/api/public/business-settings?userId=${resolvedUserId}`);
         if (!res.ok) throw new Error('Failed to fetch business settings');
         return res.json();
       } else {
@@ -91,10 +170,10 @@ export default function ServiceSelector() {
   const shouldShowAddressStep = useMemo(() => {
     if (!(businessSettings as any)?.styling?.enablePropertyAutofill) return false;
     return selectedServices.some(serviceId => {
-      const formula = (formulas as Formula[] | undefined)?.find(f => f.id === serviceId);
+      const formula = availableFormulas.find(f => f.id === serviceId);
       return formula?.variables?.some((v: any) => v.prefillSourceKey);
     });
-  }, [selectedServices, formulas, businessSettings]);
+  }, [selectedServices, availableFormulas, businessSettings]);
 
   // Apply property data prefill to service variables
   const applyPropertyPrefill = (attributes: PropertyAttributes) => {
@@ -107,7 +186,7 @@ export default function ServiceSelector() {
     const prefillUpdates: Array<{ serviceId: number; variableId: string; value: any; connectionKey?: string }> = [];
 
     selectedServices.forEach(serviceId => {
-      const formula = (formulas as Formula[] | undefined)?.find(f => f.id === serviceId);
+      const formula = availableFormulas.find(f => f.id === serviceId);
       if (!formula?.variables) {
         console.log(`[PropertyPrefill] Service ${serviceId}: no formula or variables found`);
         return;
@@ -218,7 +297,7 @@ export default function ServiceSelector() {
           // Propagate via connectionKey to other services
           if (connectionKey) {
             selectedServices.forEach(svcId => {
-              const svc = (formulas as Formula[] | undefined)?.find(f => f.id === svcId);
+              const svc = availableFormulas.find(f => f.id === svcId);
               svc?.variables?.forEach((v: any) => {
                 if (v.connectionKey === connectionKey && !(svcId === serviceId && v.id === variableId)) {
                   const connExisting = updated[svcId]?.[v.id];
@@ -304,15 +383,15 @@ export default function ServiceSelector() {
     const params = new URLSearchParams(search);
     const formulaParam = params.get('formula');
     
-    if (formulaParam && formulas) {
-      const targetFormula = (formulas as Formula[]).find(f => f.embedId === formulaParam);
+    if (formulaParam && availableFormulas.length > 0) {
+      const targetFormula = availableFormulas.find(f => f.embedId === formulaParam);
       if (targetFormula && !selectedServices.includes(targetFormula.id)) {
         handleServiceToggle(targetFormula.id);
         // If only one service is preselected, skip to configuration step
         setCurrentStep("configuration");
       }
     }
-  }, [formulas, search]);
+  }, [availableFormulas, search]);
 
   const submitMultiServiceLeadMutation = useMutation({
     mutationFn: async (data: {
@@ -394,7 +473,7 @@ export default function ServiceSelector() {
 
   const handleVariableChange = (formulaId: number, variableId: string, value: any) => {
     // Find the connectionKey for this variable
-    const formula = (formulas as Formula[] | undefined)?.find(f => f.id === formulaId);
+    const formula = availableFormulas.find(f => f.id === formulaId);
     const variable = formula?.variables?.find((v: any) => v.id === variableId);
     const connKey = (variable as any)?.connectionKey;
 
@@ -410,7 +489,7 @@ export default function ServiceSelector() {
       // If variable has a connectionKey, sync to all other services with matching key
       if (connKey) {
         selectedServices.forEach(svcId => {
-          const svc = (formulas as Formula[] | undefined)?.find(f => f.id === svcId);
+          const svc = availableFormulas.find(f => f.id === svcId);
           svc?.variables?.forEach((v: any) => {
             if (v.connectionKey === connKey && !(svcId === formulaId && v.id === variableId)) {
               updated[svcId] = {
@@ -447,6 +526,39 @@ export default function ServiceSelector() {
       });
       
       formula.variables.forEach((variable) => {
+        const shouldShow = !variable.conditionalLogic?.enabled ||
+          evaluateConditionalLogic(variable, variables, formula.variables);
+
+        if (!shouldShow) {
+          const defaultValue = getDefaultValueForHiddenVariable(variable);
+          let hiddenValue: any = 0;
+
+          if (variable.type === 'checkbox') {
+            hiddenValue = defaultValue ? 1 : 0;
+          } else if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
+            const option = variable.options.find(opt => opt.value === defaultValue);
+            hiddenValue = option?.multiplier || option?.numericValue || Number(defaultValue) || 0;
+          } else if (variable.type === 'multiple-choice' && variable.options) {
+            if (Array.isArray(defaultValue)) {
+              hiddenValue = defaultValue.reduce((total: number, selectedValue: any) => {
+                const option = variable.options?.find(opt => opt.value?.toString() === selectedValue?.toString());
+                return total + (option?.numericValue || 0);
+              }, 0);
+            } else {
+              const option = variable.options.find(opt => opt.value === defaultValue);
+              hiddenValue = option?.numericValue || Number(defaultValue) || 0;
+            }
+          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
+            hiddenValue = Number(defaultValue) || 0;
+          }
+
+          formulaExpression = formulaExpression.replace(
+            new RegExp(`\\b${variable.id}\\b`, 'g'),
+            String(hiddenValue)
+          );
+          return;
+        }
+
         let value = variables[variable.id];
         
         if (variable.type === 'select' && variable.options) {
@@ -567,7 +679,14 @@ export default function ServiceSelector() {
   };
 
   const handleSubmitQuoteRequest = () => {
-    if (!leadForm.name || !leadForm.email || selectedServices.length === 0) {
+    const settings = (businessSettings as BusinessSettings)?.styling;
+    const missing: string[] = [];
+    if (!leadForm.name) missing.push('Name');
+    if (!leadForm.email) missing.push('Email');
+    if (settings?.enableAddress && settings?.requireAddress && !leadForm.address?.trim()) missing.push('Address');
+    if (settings?.enablePermissionToContact && settings?.requirePermissionToContact && !leadForm.permissionToContact) missing.push('Permission to contact');
+
+    if (missing.length > 0 || selectedServices.length === 0) {
       toast({
         title: "Please fill in all required fields and select at least one service",
         variant: "destructive",
@@ -576,7 +695,7 @@ export default function ServiceSelector() {
     }
 
     const services: ServiceCalculation[] = selectedServices.map(formulaId => {
-      const formula = (formulas as Formula[])?.find(f => f.id === formulaId);
+      const formula = availableFormulas.find(f => f.id === formulaId);
       return {
         formulaId,
         formulaName: formula?.name || "Unknown Service",
@@ -608,7 +727,7 @@ export default function ServiceSelector() {
     });
   };
 
-  if (formulasLoading || settingsLoading) {
+  if ((landingConfigRequired && landingConfigLoading) || formulasLoading || settingsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div>Loading services...</div>
@@ -616,7 +735,6 @@ export default function ServiceSelector() {
     );
   }
 
-  const availableFormulas = (formulas as Formula[]) || [];
   const settings = (businessSettings as BusinessSettings) || null;
   const totalPrice = getTotalPrice();
   
@@ -926,6 +1044,8 @@ export default function ServiceSelector() {
                                     multiChoiceHoverBgColor: styling.multiChoiceHoverBgColor,
                                     multiChoiceLayout: styling.multiChoiceLayout,
                                   }}
+                                  allVariables={formula.variables}
+                                  currentValues={serviceVariables[serviceId] || {}}
                                   prefillSource={prefilledFields[`${serviceId}_${variable.id}`]}
                                 />
                               </div>
@@ -1097,13 +1217,34 @@ export default function ServiceSelector() {
                         </div>
                       )}
 
+                      {(businessSettings as BusinessSettings)?.styling?.enablePermissionToContact && (
+                        <div className="flex items-start space-x-3 rounded-md border p-3">
+                          <Checkbox
+                            id="permissionToContact"
+                            checked={Boolean(leadForm.permissionToContact)}
+                            onCheckedChange={(checked) => setLeadForm({ ...leadForm, permissionToContact: checked === true })}
+                            className="mt-0.5"
+                          />
+                          <Label htmlFor="permissionToContact" className="text-sm leading-relaxed cursor-pointer">
+                            {(businessSettings as BusinessSettings)?.styling?.permissionToContactLabel || 'Permission to contact me'}
+                            {(businessSettings as BusinessSettings)?.styling?.requirePermissionToContact && ' *'}
+                          </Label>
+                        </div>
+                      )}
+
                       <button
                         onClick={() => {
                           setCurrentStep('pricing');
                         }}
                         className={`w-full text-white font-medium ${paddingClasses[styling.buttonPadding]} rounded transition-colors`}
                         style={buttonStyles}
-                        disabled={!leadForm.name || !leadForm.email}
+                        disabled={
+                          !leadForm.name ||
+                          !leadForm.email ||
+                          ((businessSettings as BusinessSettings)?.styling?.enablePermissionToContact &&
+                            (businessSettings as BusinessSettings)?.styling?.requirePermissionToContact &&
+                            !leadForm.permissionToContact)
+                        }
                       >
                         View Your Quote
                       </button>

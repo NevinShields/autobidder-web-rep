@@ -2,410 +2,346 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Check, X, Star, Calculator, Users, BarChart3, Palette, Globe, Shield, Zap, Crown, Gift } from "lucide-react";
+import { Check, Crown, Gift, Calculator, Zap, Sparkles, type LucideIcon } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
+import { marketingPlans, type MarketingPlanId } from "@/lib/pricing-plans";
+import { useForceLightMode } from "@/hooks/use-force-light-mode";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function Pricing() {
-  const [isYearly, setIsYearly] = useState(false);
-  const plans = [
-    {
-      name: "Free",
-      price: 0,
-      yearlyPrice: 0,
-      badge: null,
-      description: "Get started with basic pricing calculator features at no cost",
-      icon: Gift,
-      color: "gray",
-      features: [
-        { name: "1 pricing calculator", included: true },
-        { name: "10 leads per month", included: true },
-        { name: "Basic lead capture form", included: true },
-        { name: "Embed code for websites", included: true },
-        { name: "Autobidder branding on forms", included: true },
-        { name: "Email support", included: true },
-        { name: "Custom branding", included: false },
-        { name: "Analytics & stats", included: false },
-        { name: "Custom forms", included: false },
-        { name: "Website builder", included: false },
-        { name: "Automations", included: false },
-        { name: "Zapier integration", included: false }
-      ]
-    },
-    {
-      name: "Starter",
-      price: 49,
-      yearlyPrice: 41.42, // $497/year = $41.42/month
-      badge: null,
-      description: "Perfect for small businesses getting started with pricing calculators",
-      icon: Calculator,
-      color: "blue",
-      features: [
-        { name: "Up to 5 pricing calculators", included: true },
-        { name: "Basic customization options", included: true },
-        { name: "Lead capture forms", included: true },
-        { name: "Email notifications", included: true },
-        { name: "Basic analytics", included: true },
-        { name: "Embed codes for websites", included: true },
-        { name: "24/7 email support", included: true },
-        { name: "Custom branding", included: false },
-        { name: "Advanced analytics", included: false },
-        { name: "Team collaboration", included: false },
-        { name: "API access", included: false },
-        { name: "Priority support", included: false }
-      ]
-    },
-    {
-      name: "Professional",
-      price: 97,
-      yearlyPrice: 80.83, // $970/year = $80.83/month
-      badge: "Most Popular",
-      description: "Ideal for growing businesses that need advanced features and customization",
-      icon: Zap,
-      color: "purple",
-      features: [
-        { name: "Unlimited pricing calculators", included: true },
-        { name: "Full customization suite", included: true },
-        { name: "Advanced lead management", included: true },
-        { name: "Email & SMS notifications", included: true },
-        { name: "Advanced analytics & reports", included: true },
-        { name: "Custom branding & styling", included: true },
-        { name: "Multi-service calculators", included: true },
-        { name: "Team collaboration (up to 5 users)", included: true },
-        { name: "Calendar integration", included: true },
-        { name: "24/7 priority support", included: true },
-        { name: "API access", included: false },
-        { name: "White-label solution", included: false }
-      ]
-    },
-    {
-      name: "Enterprise",
-      price: 297,
-      yearlyPrice: 247.50, // $2970/year = $247.50/month
-      badge: "Best Value",
-      description: "For large organizations requiring maximum flexibility and dedicated support",
-      icon: Crown,
-      color: "gold",
-      features: [
-        { name: "Unlimited everything", included: true },
-        { name: "White-label solution", included: true },
-        { name: "Full API access", included: true },
-        { name: "Advanced integrations", included: true },
-        { name: "Custom development", included: true },
-        { name: "Dedicated account manager", included: true },
-        { name: "Unlimited team members", included: true },
-        { name: "Advanced security features", included: true },
-        { name: "SLA guarantee", included: true },
-        { name: "Training & onboarding", included: true },
-        { name: "Custom reporting", included: true },
-        { name: "24/7 phone support", included: true }
-      ]
-    }
-  ];
+  useForceLightMode();
 
-  const getColorClasses = (color: string, isPrimary: boolean = false) => {
-    if (isPrimary) {
-      switch (color) {
-        case "gray": return "from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700";
-        case "blue": return "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800";
-        case "purple": return "from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800";
-        case "gold": return "from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700";
-        default: return "from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800";
-      }
-    }
-    switch (color) {
-      case "gray": return "border-gray-200 bg-gray-50";
-      case "blue": return "border-blue-200 bg-blue-50";
-      case "purple": return "border-purple-200 bg-purple-50";
-      case "gold": return "border-yellow-200 bg-yellow-50";
-      default: return "border-blue-200 bg-blue-50";
-    }
+  const [isYearly, setIsYearly] = useState(false);
+
+  const planMeta: Record<MarketingPlanId, { badge: string | null; icon: LucideIcon; tone: string }> = {
+    free: { badge: null, icon: Gift, tone: "slate" },
+    core: { badge: null, icon: Calculator, tone: "sky" },
+    plus: { badge: "Most Popular", icon: Zap, tone: "amber" },
+    "plus-seo": { badge: null, icon: Crown, tone: "rose" },
   };
 
-  const getIconColor = (color: string) => {
-    switch (color) {
-      case "gray": return "text-gray-600";
-      case "blue": return "text-blue-600";
-      case "purple": return "text-purple-600";
-      case "gold": return "text-yellow-600";
-      default: return "text-blue-600";
+  const plans = marketingPlans.map((plan) => ({
+    ...plan,
+    ...planMeta[plan.id],
+  }));
+
+  const getToneClasses = (tone: string) => {
+    switch (tone) {
+      case "sky":
+        return {
+          iconWrap: "bg-sky-100 text-sky-700 border-sky-200",
+          button: "bg-slate-900 hover:bg-slate-800 text-white",
+        };
+      case "amber":
+        return {
+          iconWrap: "bg-amber-100 text-amber-700 border-amber-200",
+          button: "bg-amber-600 hover:bg-amber-700 text-white",
+        };
+      case "rose":
+        return {
+          iconWrap: "bg-rose-100 text-rose-700 border-rose-200",
+          button: "bg-slate-900 hover:bg-slate-800 text-white",
+        };
+      default:
+        return {
+          iconWrap: "bg-slate-100 text-slate-700 border-slate-200",
+          button: "bg-slate-900 hover:bg-slate-800 text-white",
+        };
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <Link href="/">
-            <div className="flex items-center space-x-3 cursor-pointer">
-              <img 
-                src={autobidderLogo} 
-                alt="Autobidder" 
-                className="h-10 w-10"
-              />
-              <span className="text-xl font-bold text-gray-900">Autobidder</span>
+    <div
+      className="min-h-screen relative overflow-hidden bg-slate-50 text-slate-900"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}
+    >
+      <style>{`
+        .pricing-grain {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+        }
+      `}</style>
+
+      <div className="pricing-grain absolute inset-0 pointer-events-none" />
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-amber-200/60 to-transparent rounded-full -translate-y-1/3 translate-x-1/3 blur-3xl" />
+        <div className="absolute top-24 left-0 w-80 h-80 bg-gradient-to-br from-orange-200/40 to-transparent rounded-full -translate-x-1/3 blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 w-[32rem] h-[32rem] bg-gradient-to-tr from-slate-200/60 to-transparent rounded-full translate-y-1/3 -translate-x-1/2 blur-3xl" />
+      </div>
+
+      <header className="relative z-10 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex items-center justify-between gap-4">
+            <Link href="/">
+              <div className="flex items-center gap-3 cursor-pointer">
+                <img src={autobidderLogo} alt="Autobidder" className="h-10 w-10" />
+                <span
+                  className="text-xl text-slate-900 tracking-tight"
+                  style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+                >
+                  Autobidder
+                </span>
+              </div>
+            </Link>
+
+            <div className="flex items-center gap-3">
+              <Link href="/login">
+                <Button
+                  variant="ghost"
+                  className="text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                >
+                  Sign In
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm">
+                  Get Started
+                </Button>
+              </Link>
             </div>
-          </Link>
-          <div className="flex items-center space-x-4">
-            <Link href="/login">
-              <Button variant="ghost" className="text-gray-600 hover:text-gray-900">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                Get Started
-              </Button>
-            </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
-        <Badge className="mb-6 bg-blue-100 text-blue-800 hover:bg-blue-100">
-          Simple, Transparent Pricing
-        </Badge>
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Choose the Perfect Plan for Your Business
-        </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Start capturing more leads with professional pricing calculators. 
-          All plans include our core features with no setup fees.
-        </p>
-        
-        {/* Billing Toggle */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-8">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <span className={`text-sm font-medium ${!isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
-              Monthly
-            </span>
-            <Switch
-              checked={isYearly}
-              onCheckedChange={setIsYearly}
-              className="data-[state=checked]:bg-blue-600 flex-shrink-0"
-            />
-            <span className={`text-sm font-medium ${isYearly ? 'text-gray-900' : 'text-gray-500'}`}>
-              Yearly
-            </span>
+      <main className="relative z-10">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
+          <div className="text-center max-w-3xl mx-auto">
+            <Badge className="mb-6 bg-amber-100 text-amber-800 hover:bg-amber-100 border border-amber-200">
+              Pricing That Fits the Way You Grow
+            </Badge>
+            <h1
+              className="text-4xl sm:text-5xl lg:text-6xl text-slate-900 tracking-tight mb-5"
+              style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+            >
+              Choose the plan that matches your stage.
+            </h1>
+            <p className="text-lg sm:text-xl text-slate-600 leading-relaxed">
+              Every plan is built around the same Autobidder workflow: instant pricing, better lead capture,
+              and less manual quoting.
+            </p>
           </div>
-          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 whitespace-nowrap">
-            Save up to 20%
-          </Badge>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-sm text-gray-600">
-          <div className="flex items-center">
-            <Check className="h-4 w-4 text-green-600 mr-2" />
-            <span>14-day free trial</span>
-          </div>
-          <div className="flex items-center">
-            <Check className="h-4 w-4 text-green-600 mr-2" />
-            <span>No setup fees</span>
-          </div>
-          <div className="flex items-center">
-            <Check className="h-4 w-4 text-green-600 mr-2" />
-            <span>Cancel anytime</span>
-          </div>
-        </div>
-      </section>
 
-      {/* Pricing Cards */}
-      <section className="container mx-auto px-4 pb-20">
-        <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {plans.map((plan, index) => {
-            const Icon = plan.icon;
-            const isPopular = plan.badge === "Most Popular";
-            
-            return (
-              <Card 
-                key={index} 
-                className={`relative p-6 ${isPopular ? 'ring-2 ring-purple-500 shadow-2xl scale-105' : 'shadow-lg'} 
-                          border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-200`}
-              >
-                {plan.badge && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <Badge className={`px-4 py-1 text-sm font-medium ${
-                      isPopular 
-                        ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white' 
-                        : 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white'
-                    }`}>
-                      {plan.badge}
-                    </Badge>
-                  </div>
-                )}
-                
-                <CardHeader className="text-center pb-4">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${getColorClasses(plan.color)}`}>
-                    <Icon className={`h-8 w-8 ${getIconColor(plan.color)}`} />
-                  </div>
-                  <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
-                    {plan.name}
-                  </CardTitle>
-                  <div className="mb-4">
-                    <div className="flex items-baseline justify-center gap-1">
-                      {plan.price === 0 ? (
-                        <span className="text-4xl font-bold text-gray-900">Free</span>
-                      ) : (
-                        <>
-                          <span className="text-4xl font-bold text-gray-900">
-                            ${isYearly ? plan.yearlyPrice : plan.price}
-                          </span>
-                          <span className="text-gray-600">
-                            /{isYearly ? 'month' : 'month'}
-                          </span>
-                        </>
-                      )}
+          <div className="mt-10 flex flex-col items-center gap-6">
+            <div className="inline-flex flex-col sm:flex-row items-center gap-4 rounded-2xl border border-slate-200 bg-white/85 backdrop-blur-xl px-5 py-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <span className={`text-sm font-medium ${!isYearly ? "text-slate-900" : "text-slate-500"}`}>
+                  Monthly
+                </span>
+                <Switch
+                  checked={isYearly}
+                  onCheckedChange={setIsYearly}
+                  className="data-[state=checked]:bg-amber-600"
+                />
+                <span className={`text-sm font-medium ${isYearly ? "text-slate-900" : "text-slate-500"}`}>
+                  Yearly
+                </span>
+              </div>
+              <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 whitespace-nowrap">
+                Save up to 20%
+              </Badge>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-sm text-slate-600">
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-600" />
+                <span>14-day free trial</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-600" />
+                <span>No setup fees</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-600" />
+                <span>Cancel anytime</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+            {plans.map((plan) => {
+              const Icon = plan.icon;
+              const toneClasses = getToneClasses(plan.tone);
+
+              return (
+                <Card
+                  key={plan.id}
+                  className={`relative flex flex-col rounded-3xl border bg-white/88 backdrop-blur-xl shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
+                    plan.featured
+                      ? "border-amber-300 ring-1 ring-amber-200 shadow-amber-100/60"
+                      : "border-slate-200/80"
+                  }`}
+                >
+                  {plan.badge && (
+                    <div className="absolute -top-3 left-6">
+                      <Badge className="bg-slate-900 text-white hover:bg-slate-900 px-3 py-1 border-0">
+                        {plan.badge}
+                      </Badge>
                     </div>
-                    {isYearly && plan.price > 0 && (
-                      <div className="text-center mt-1">
-                        <span className="text-sm text-gray-500 line-through">
-                          ${plan.price}/month
-                        </span>
-                        <span className="text-sm text-green-600 ml-2 font-medium">
-                          Save ${(plan.price * 12) - (plan.yearlyPrice * 12)}/year
-                        </span>
-                      </div>
-                    )}
-                    {isYearly && plan.price > 0 && (
-                      <div className="text-xs text-gray-500 text-center mt-1">
-                        Billed annually (${plan.yearlyPrice * 12}/year)
-                      </div>
-                    )}
-                    {plan.price === 0 && (
-                      <div className="text-sm text-gray-500 mt-1">Forever free</div>
-                    )}
-                  </div>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    {plan.description}
-                  </p>
-                </CardHeader>
+                  )}
 
-                <CardContent className="space-y-6">
-                  <Link href="/signup">
-                    <Button
-                      className={`w-full h-12 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r ${getColorClasses(plan.color, true)}`}
-                    >
-                      {plan.price === 0 ? 'Get Started Free' : 'Start Free Trial'}
-                    </Button>
-                  </Link>
+                  <CardHeader className="pb-5 pt-8">
+                    <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center mb-5 ${toneClasses.iconWrap}`}>
+                      <Icon className="h-7 w-7" />
+                    </div>
 
-                  <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900 text-sm">What's included:</h4>
-                    {plan.features.map((feature, featureIndex) => (
-                      <div key={featureIndex} className="flex items-start space-x-3">
-                        {feature.included ? (
-                          <Check className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
-                        ) : (
-                          <X className="h-4 w-4 text-gray-300 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-3">
+                      <CardTitle className="text-2xl text-slate-900">{plan.name}</CardTitle>
+                      <div>
+                        <div className="flex items-end gap-1">
+                          {plan.monthlyPrice === 0 ? (
+                            <span className="text-4xl font-bold tracking-tight text-slate-900">Free</span>
+                          ) : (
+                            <>
+                              <span className="text-4xl font-bold tracking-tight text-slate-900">
+                                ${isYearly ? plan.yearlyMonthlyPrice.toFixed(2) : plan.monthlyPrice}
+                              </span>
+                              <span className="text-slate-500 pb-1">/month</span>
+                            </>
+                          )}
+                        </div>
+
+                        {isYearly && plan.monthlyPrice > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <div className="text-sm text-slate-500">
+                              <span className="line-through">${plan.monthlyPrice}/month</span>
+                              <span className="ml-2 font-medium text-emerald-700">
+                                Save ${((plan.monthlyPrice * 12) - (plan.yearlyMonthlyPrice * 12)).toFixed(2)}/year
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              Billed annually (${(plan.yearlyMonthlyPrice * 12).toFixed(2)}/year)
+                            </div>
+                          </div>
                         )}
-                        <span className={`text-sm ${feature.included ? 'text-gray-700' : 'text-gray-400 line-through'}`}>
-                          {feature.name}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
 
-      {/* FAQ Section */}
-      <section className="bg-white/50 backdrop-blur-sm py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-12">
-              Frequently Asked Questions
-            </h2>
-            
-            <div className="grid gap-8 text-left">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Can I change plans at any time?
-                </h3>
-                <p className="text-gray-600">
-                  Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, 
-                  and we'll prorate any billing differences.
+                        {plan.monthlyPrice === 0 && (
+                          <div className="mt-2 text-sm text-slate-500">Forever free</div>
+                        )}
+                      </div>
+
+                      <p className="text-sm leading-relaxed text-slate-600">{plan.description}</p>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="flex flex-col flex-1 pt-0">
+                    <Link href="/signup">
+                      <Button className={`w-full h-12 rounded-xl font-medium shadow-sm ${toneClasses.button}`}>
+                        {plan.monthlyPrice === 0 ? "Get Started Free" : "Start Free Trial"}
+                      </Button>
+                    </Link>
+
+                    <div className="mt-6 pt-6 border-t border-slate-200">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Sparkles className="h-4 w-4 text-amber-600" />
+                        <h4 className="text-sm font-semibold text-slate-900">Included in this plan</h4>
+                      </div>
+
+                      <div className="space-y-3">
+                        {plan.features.map((feature) => (
+                          <div key={feature} className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center mt-0.5 flex-shrink-0">
+                              <Check className="h-3 w-3 text-emerald-700" />
+                            </div>
+                            <span className="text-sm leading-6 text-slate-700">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="py-20 border-y border-slate-200 bg-white/70 backdrop-blur-xl">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2
+                className="text-3xl sm:text-4xl text-slate-900 mb-3"
+                style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+              >
+                Common questions, clear answers.
+              </h2>
+              <p className="text-slate-600">
+                The pricing structure is simple. The rollout can stay flexible.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-5">
+              {[
+                {
+                  title: "Can I change plans at any time?",
+                  body: "Yes. You can upgrade or downgrade your plan whenever you need to. Billing adjusts based on the change.",
+                },
+                {
+                  title: "What happens during the free trial?",
+                  body: "You get full access to your selected plan for 14 days with no credit card required. Continue after the trial or cancel.",
+                },
+                {
+                  title: "Do you offer refunds?",
+                  body: "Yes. We offer a 30-day money-back guarantee if Autobidder is not the right fit for your workflow.",
+                },
+                {
+                  title: "Is there a setup fee?",
+                  body: "No. There are no setup fees or surprise onboarding costs. The listed plan price is the price you pay.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6"
+                >
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">{item.title}</h3>
+                  <p className="text-slate-600 leading-relaxed">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="rounded-[2rem] bg-slate-900 text-white px-8 py-12 sm:px-12 sm:py-14 shadow-[0_20px_60px_rgba(15,23,42,0.18)] relative overflow-hidden">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_38%)]" />
+              <div className="relative z-10 text-center">
+                <h2
+                  className="text-3xl sm:text-4xl mb-4"
+                  style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+                >
+                  Ready to automate your pricing flow?
+                </h2>
+                <p className="text-slate-300 text-lg max-w-2xl mx-auto mb-8">
+                  Start with the plan that fits today. Upgrade when your lead volume, SEO, or automation needs grow.
                 </p>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  What happens during the free trial?
-                </h3>
-                <p className="text-gray-600">
-                  You get full access to all features of your chosen plan for 14 days. No credit card required. 
-                  After the trial, you can choose to continue with a paid plan or cancel.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Do you offer refunds?
-                </h3>
-                <p className="text-gray-600">
-                  We offer a 30-day money-back guarantee. If you're not satisfied with Autobidder, 
-                  contact us within 30 days for a full refund.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Is there a setup fee?
-                </h3>
-                <p className="text-gray-600">
-                  No setup fees, ever. The price you see is what you pay. We believe in transparent, 
-                  straightforward pricing with no hidden costs.
+                <Link href="/signup">
+                  <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-8">
+                    Start Your Free Trial
+                  </Button>
+                </Link>
+                <p className="text-slate-400 text-sm mt-4">
+                  No credit card required • 14-day free trial
                 </p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Start Converting More Visitors?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of businesses already using Autobidder to capture leads 
-            and grow their revenue.
-          </p>
-          <Link href="/signup">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-semibold text-lg px-8 py-6">
-              Start Your Free Trial
-            </Button>
-          </Link>
-          <p className="text-blue-100 text-sm mt-4">No credit card required • 14-day free trial</p>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <img 
-                src={autobidderLogo} 
-                alt="Autobidder" 
-                className="h-8 w-8 filter brightness-0 invert"
-              />
-              <span className="text-xl font-bold">Autobidder</span>
+      <footer className="relative z-10 border-t border-slate-200 bg-white/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <img src={autobidderLogo} alt="Autobidder" className="h-8 w-8" />
+              <span className="text-slate-900 font-semibold">Autobidder</span>
             </div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300 mb-4 md:mb-0">
-              <Link href="/docs" className="hover:text-white transition-colors">Docs</Link>
-              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+              <Link href="/docs" className="hover:text-slate-900 transition-colors">Docs</Link>
+              <Link href="/privacy" className="hover:text-slate-900 transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-slate-900 transition-colors">Terms</Link>
             </div>
-            <div className="text-gray-400 text-sm">
-              © 2025 Autobidder. All rights reserved.
-            </div>
+            <div className="text-sm text-slate-500">© 2025 Autobidder. All rights reserved.</div>
           </div>
         </div>
       </footer>

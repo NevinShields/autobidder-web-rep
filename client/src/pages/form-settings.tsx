@@ -64,6 +64,8 @@ export default function FormSettings() {
     enablePhone: true,
     enableAddress: false,
     requireAddress: false,
+    enablePermissionToContact: false,
+    requirePermissionToContact: false,
     enableNotes: false,
     enableHowDidYouHear: false,
     requireHowDidYouHear: false,
@@ -73,6 +75,7 @@ export default function FormSettings() {
     emailLabel: 'Email Address',
     phoneLabel: 'Phone Number',
     addressLabel: 'Address',
+    permissionToContactLabel: 'Permission to contact me',
     notesLabel: 'Additional Notes',
     howDidYouHearLabel: 'How did you hear about us?',
     
@@ -172,6 +175,8 @@ export default function FormSettings() {
         enablePhone: businessSettings.styling.enablePhone ?? true,
         enableAddress: businessSettings.styling.enableAddress || false,
         requireAddress: businessSettings.styling.requireAddress || false,
+        enablePermissionToContact: businessSettings.styling.enablePermissionToContact || false,
+        requirePermissionToContact: businessSettings.styling.requirePermissionToContact || false,
         enableNotes: businessSettings.styling.enableNotes || false,
         enableHowDidYouHear: businessSettings.styling.enableHowDidYouHear || false,
         requireHowDidYouHear: businessSettings.styling.requireHowDidYouHear || false,
@@ -181,6 +186,7 @@ export default function FormSettings() {
         emailLabel: businessSettings.styling.emailLabel || 'Email Address',
         phoneLabel: businessSettings.styling.phoneLabel || 'Phone Number',
         addressLabel: businessSettings.styling.addressLabel || 'Address',
+        permissionToContactLabel: businessSettings.styling.permissionToContactLabel || 'Permission to contact me',
         notesLabel: businessSettings.styling.notesLabel || 'Additional Notes',
         howDidYouHearLabel: businessSettings.styling.howDidYouHearLabel || 'How did you hear about us?',
         
@@ -270,6 +276,8 @@ export default function FormSettings() {
           enablePhone: updatedSettings.enablePhone,
           enableAddress: updatedSettings.enableAddress,
           requireAddress: updatedSettings.requireAddress,
+          enablePermissionToContact: updatedSettings.enablePermissionToContact,
+          requirePermissionToContact: updatedSettings.requirePermissionToContact,
           enableNotes: updatedSettings.enableNotes,
           enableHowDidYouHear: updatedSettings.enableHowDidYouHear,
           requireHowDidYouHear: updatedSettings.requireHowDidYouHear,
@@ -279,6 +287,7 @@ export default function FormSettings() {
           emailLabel: updatedSettings.emailLabel,
           phoneLabel: updatedSettings.phoneLabel,
           addressLabel: updatedSettings.addressLabel,
+          permissionToContactLabel: updatedSettings.permissionToContactLabel,
           notesLabel: updatedSettings.notesLabel,
           howDidYouHearLabel: updatedSettings.howDidYouHearLabel,
           salesTaxLabel: updatedSettings.salesTaxLabel,
@@ -727,7 +736,8 @@ export default function FormSettings() {
                       {((formSettings.enableName && formSettings.requireName) ||
                         (formSettings.enableEmail && formSettings.requireEmail) ||
                         (formSettings.enablePhone && formSettings.requirePhone) ||
-                        (formSettings.enableAddress && formSettings.requireAddress)) 
+                        (formSettings.enableAddress && formSettings.requireAddress) ||
+                        (formSettings.enablePermissionToContact && formSettings.requirePermissionToContact)) 
                         ? "Contact information will be collected before showing prices"
                         : "Customers can see prices without providing contact information"
                       }
@@ -1342,6 +1352,49 @@ export default function FormSettings() {
                           size="sm"
                         />
                         <Label className="text-sm">Make address required</Label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Permission to Contact Field */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <div className="space-y-1 flex-1">
+                      <Label className="text-base font-medium">Permission to Contact</Label>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Customer consent checkbox for follow-up contact</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm text-gray-500">Show</span>
+                      <MobileToggle
+                        checked={formSettings.enablePermissionToContact}
+                        onCheckedChange={(checked) => setFormSettings(prev => ({
+                          ...prev,
+                          enablePermissionToContact: checked,
+                          requirePermissionToContact: checked ? prev.requirePermissionToContact : false,
+                        }))}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                  {formSettings.enablePermissionToContact && (
+                    <div className="pl-4 border-l-2 border-amber-200/60 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2">
+                        <MobileToggle
+                          checked={formSettings.requirePermissionToContact}
+                          onCheckedChange={(checked) => handleSettingChange('requirePermissionToContact', checked)}
+                          size="sm"
+                        />
+                        <Label className="text-sm">Make permission required</Label>
+                      </div>
+                      <div>
+                        <Label className="text-sm">Checkbox label</Label>
+                        <Input
+                          value={formSettings.permissionToContactLabel}
+                          onChange={(e) => handleSettingChange('permissionToContactLabel', e.target.value)}
+                          placeholder="Permission to contact me"
+                          className="mt-1"
+                        />
                       </div>
                     </div>
                   )}

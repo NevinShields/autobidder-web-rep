@@ -394,7 +394,7 @@ export default function EnhancedServiceSelector({
       return { width: `${size}px`, height: `${size}px` };
     }
     if (sizeUnit === 'percent') {
-      const percent = Math.max(10, Math.min(80, styling.serviceSelectorIconPercentSize || 30));
+      const percent = Math.max(10, Math.min(100, styling.serviceSelectorIconPercentSize || 30));
       return {
         width: `clamp(24px, ${percent}%, 96px)`,
         height: `clamp(24px, ${percent}%, 96px)`,

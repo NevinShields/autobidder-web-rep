@@ -11,6 +11,14 @@ interface UserTokens {
   calendarId: string;
 }
 
+function buildInclusiveDateRange(startDate: string, endDate: string): { timeMin: Date; timeMax: Date } {
+  const timeMin = new Date(startDate);
+  const timeMax = new Date(endDate);
+  // Date-only end dates should include the entire final day.
+  timeMax.setDate(timeMax.getDate() + 1);
+  return { timeMin, timeMax };
+}
+
 async function refreshAccessToken(userId: string, refreshToken: string): Promise<string> {
   const oauth2Client = new google.auth.OAuth2(
     GOOGLE_CLIENT_ID,
@@ -93,41 +101,36 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
     const calendarIds = selectedCalendarIds.length > 0 ? selectedCalendarIds : ['primary'];
     
     console.log('🔍 getGoogleCalendarBusyTimes - Selected calendar IDs:', calendarIds);
-    
-    // Fix for same-date queries: add 1 day to end date if it's the same as start date
-    let queryEndDate = endDate;
-    if (startDate === endDate) {
-      const end = new Date(endDate);
-      end.setDate(end.getDate() + 1);
-      queryEndDate = end.toISOString().split('T')[0];
-    }
-    
-    console.log('🔍 Querying freebusy API - timeMin:', new Date(startDate).toISOString(), 'timeMax:', new Date(queryEndDate).toISOString());
-    
-    // Method 1: Try Freebusy API first
-    const freebusyResponse = await client.freebusy.query({
-      requestBody: {
-        timeMin: new Date(startDate).toISOString(),
-        timeMax: new Date(queryEndDate).toISOString(),
-        items: calendarIds.map(id => ({ id })),
-      },
-    });
-
-    console.log('🔍 Freebusy API response calendars:', Object.keys(freebusyResponse.data.calendars || {}));
-
-    // Collect busy times from freebusy API
     const freebusyTimes: Array<{ start: string; end: string }> = [];
-    
-    for (const calendarId of calendarIds) {
-      const busyTimes = freebusyResponse.data.calendars?.[calendarId]?.busy || [];
-      console.log(`🔍 Freebusy times for calendar ${calendarId}:`, busyTimes.length, 'events');
-      if (busyTimes.length > 0) {
-        console.log('🔍 First busy slot:', busyTimes[0]);
+
+    const { timeMin, timeMax } = buildInclusiveDateRange(startDate, endDate);
+    console.log('🔍 Querying freebusy API - timeMin:', timeMin.toISOString(), 'timeMax:', timeMax.toISOString());
+
+    // Method 1: Try Freebusy API first. If it fails, continue with direct events.
+    try {
+      const freebusyResponse = await client.freebusy.query({
+        requestBody: {
+          timeMin: timeMin.toISOString(),
+          timeMax: timeMax.toISOString(),
+          items: calendarIds.map(id => ({ id })),
+        },
+      });
+
+      console.log('🔍 Freebusy API response calendars:', Object.keys(freebusyResponse.data.calendars || {}));
+
+      for (const calendarId of calendarIds) {
+        const busyTimes = freebusyResponse.data.calendars?.[calendarId]?.busy || [];
+        console.log(`🔍 Freebusy times for calendar ${calendarId}:`, busyTimes.length, 'events');
+        if (busyTimes.length > 0) {
+          console.log('🔍 First busy slot:', busyTimes[0]);
+        }
+        freebusyTimes.push(...busyTimes.map(slot => ({
+          start: slot.start || '',
+          end: slot.end || '',
+        })));
       }
-      freebusyTimes.push(...busyTimes.map(slot => ({
-        start: slot.start || '',
-        end: slot.end || '',
-      })));
+    } catch (freebusyError) {
+      console.error('Error fetching Google Calendar freebusy data, falling back to event list:', freebusyError);
     }
     
     console.log('🔍 Total freebusy times:', freebusyTimes.length);
@@ -139,8 +142,8 @@ export async function getGoogleCalendarBusyTimes(userId: string, startDate: stri
         try {
           const response = await client.events.list({
             calendarId: calendarId,
-            timeMin: new Date(startDate).toISOString(),
-            timeMax: new Date(queryEndDate).toISOString(),
+            timeMin: timeMin.toISOString(),
+            timeMax: timeMax.toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
           });
@@ -224,14 +227,15 @@ export async function getGoogleCalendarEvents(userId: string, startDate: string,
     const selectedCalendarIds = user?.selectedCalendarIds || [];
     
     const calendarIds = selectedCalendarIds.length > 0 ? selectedCalendarIds : ['primary'];
+    const { timeMin, timeMax } = buildInclusiveDateRange(startDate, endDate);
     
     const allEvents = await Promise.all(
       calendarIds.map(async (calendarId) => {
         try {
           const response = await client.events.list({
             calendarId: calendarId,
-            timeMin: new Date(startDate).toISOString(),
-            timeMax: new Date(endDate).toISOString(),
+            timeMin: timeMin.toISOString(),
+            timeMax: timeMax.toISOString(),
             singleEvents: true,
             orderBy: 'startTime',
           });

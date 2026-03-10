@@ -8,7 +8,7 @@ import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
 import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection, knowledgeBaseCategories, knowledgeBaseTags, knowledgeBaseArticles, knowledgeBaseArticleTags, insertKbCategorySchema, insertKbTagSchema, insertKbArticleSchema } from "@shared/schema";
-import { eq, desc, and, gte, sql, inArray, ilike, or, asc } from "drizzle-orm";
+import { eq, desc, and, gte, sql, inArray, ilike, or, asc, ne } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
 import { requireAuth, optionalAuth, requireSuperAdmin, isSuperAdmin } from "./universalAuth";
@@ -92,7 +92,7 @@ import { Resend } from 'resend';
 import { isEncrypted } from './encryption';
 import { trackCompleteRegistration, trackStartTrial, sendUserLeadEvent } from './facebook-capi';
 import webpush from 'web-push';
-import { validateLandingPageBasics } from "./landing-page-utils";
+import { validateLandingPageBasics, slugifyLandingPage } from "./landing-page-utils";
 import {
   generateBlogContent,
   regenerateSection,
@@ -238,6 +238,194 @@ function resolveTravelFeeCents(leadLike: {
   }
 
   return candidates.length > 0 ? Math.max(...candidates) : 0;
+}
+
+type GeocodeCacheValue = { latitude: number; longitude: number } | null;
+
+type ResolvedRouteEventLocation = {
+  latitude: number;
+  longitude: number;
+  address: string;
+  source: "booking" | "google_sync";
+};
+
+function parseCoordinateValue(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function getAddressCandidates(rawAddress: unknown): string[] {
+  if (typeof rawAddress !== "string") {
+    return [];
+  }
+
+  const trimmed = rawAddress.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  const candidates = new Set<string>();
+  candidates.add(trimmed);
+
+  // Try line-level extraction (useful when Google description has notes + address lines).
+  const lines = trimmed
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  for (const line of lines) {
+    if (line.length < 6) continue;
+    if (/\d/.test(line) || line.includes(",")) {
+      candidates.add(line);
+    }
+  }
+
+  // Try sentence/chunk extraction for comma-separated address fragments.
+  const chunks = trimmed
+    .split(/[|;]+/)
+    .map((chunk) => chunk.trim())
+    .filter(Boolean);
+  for (const chunk of chunks) {
+    if (chunk.length < 6) continue;
+    if (/\d/.test(chunk) || chunk.includes(",")) {
+      candidates.add(chunk);
+    }
+  }
+
+  return Array.from(candidates);
+}
+
+async function geocodeAddressWithCache(
+  rawAddress: unknown,
+  geocodeCache: Map<string, GeocodeCacheValue>
+): Promise<GeocodeCacheValue> {
+  const candidates = getAddressCandidates(rawAddress);
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  for (const candidate of candidates) {
+    if (geocodeCache.has(candidate)) {
+      const cached = geocodeCache.get(candidate) ?? null;
+      if (cached) {
+        return cached;
+      }
+      continue;
+    }
+
+    const geocoded = await geocodeAddress(candidate);
+    const coords = geocoded
+      ? {
+          latitude: geocoded.latitude,
+          longitude: geocoded.longitude,
+        }
+      : null;
+
+    geocodeCache.set(candidate, coords);
+    if (coords) {
+      return coords;
+    }
+  }
+
+  return null;
+}
+
+async function resolveRouteOptimizationEventLocation(
+  event: any,
+  options: {
+    getLeadById: (leadId: number) => Promise<any | undefined>;
+    geocodeCache: Map<string, GeocodeCacheValue>;
+  }
+): Promise<ResolvedRouteEventLocation | null> {
+  const payload = event?.payload as any;
+
+  if (event?.type === "booking") {
+    const eventLeadIdRaw = parseCoordinateValue(event?.leadId);
+    const eventLeadId =
+      eventLeadIdRaw !== null && Number.isInteger(eventLeadIdRaw) && eventLeadIdRaw > 0
+        ? eventLeadIdRaw
+        : null;
+
+    if (eventLeadId) {
+      const existingLead = await options.getLeadById(eventLeadId);
+      if (existingLead?.address) {
+        const leadLat = parseCoordinateValue(existingLead.addressLatitude);
+        const leadLng = parseCoordinateValue(existingLead.addressLongitude);
+        if (leadLat !== null && leadLng !== null) {
+          return {
+            latitude: leadLat,
+            longitude: leadLng,
+            address: existingLead.address,
+            source: "booking",
+          };
+        }
+
+        const geocodedLead = await geocodeAddressWithCache(existingLead.address, options.geocodeCache);
+        if (geocodedLead) {
+          return {
+            latitude: geocodedLead.latitude,
+            longitude: geocodedLead.longitude,
+            address: existingLead.address,
+            source: "booking",
+          };
+        }
+      }
+    }
+
+    const payloadLat = parseCoordinateValue(payload?.booking?.customerLat);
+    const payloadLng = parseCoordinateValue(payload?.booking?.customerLng);
+    if (payloadLat !== null && payloadLng !== null) {
+      return {
+        latitude: payloadLat,
+        longitude: payloadLng,
+        address: payload?.booking?.customerAddress || "Address from booking",
+        source: "booking",
+      };
+    }
+
+    const payloadAddress = payload?.booking?.customerAddress;
+    const geocodedPayloadAddress = await geocodeAddressWithCache(payloadAddress, options.geocodeCache);
+    if (geocodedPayloadAddress) {
+      return {
+        latitude: geocodedPayloadAddress.latitude,
+        longitude: geocodedPayloadAddress.longitude,
+        address: payloadAddress,
+        source: "booking",
+      };
+    }
+
+    return null;
+  }
+
+  if (event?.type === "google_sync") {
+    const syncLocation = payload?.googleSync?.location || event?.description || event?.title;
+    const geocodedLocation = await geocodeAddressWithCache(syncLocation, options.geocodeCache);
+    if (geocodedLocation) {
+      console.log('📍 Resolved Google Calendar route anchor location:', {
+        sourceText: syncLocation,
+        latitude: geocodedLocation.latitude,
+        longitude: geocodedLocation.longitude,
+      });
+      return {
+        latitude: geocodedLocation.latitude,
+        longitude: geocodedLocation.longitude,
+        address: typeof syncLocation === "string" ? syncLocation : "Google Calendar location",
+        source: "google_sync",
+      };
+    }
+    console.log('⚠️ Could not geocode Google Calendar route anchor location:', syncLocation);
+  }
+
+  return null;
 }
 
 const SITEMAP_URL_LIMIT = 25000;
@@ -738,13 +926,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Refresh session user from DB to keep flags like welcomeModalShown in sync
+      // Read fresh user state from DB to keep flags like welcomeModalShown in sync
       const dbUser = await storage.getUser(sessionUser.id);
-      if (dbUser) {
-        req.session.user = dbUser as any;
-      }
-
-      res.json(req.session.user);
+      res.json(dbUser || req.session.user);
     } catch (error) {
       console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -1387,6 +1571,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Lead image delete error:', error);
       res.status(500).json({ message: "Failed to delete image" });
     }
+  });
+
+  // Combined API endpoint for embed forms to reduce requests
+  app.get("/embed/autobidder.js", (_req, res) => {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(`(function() {
+  function init(script) {
+    if (!script || script.dataset.abInitialized === "1") return;
+    script.dataset.abInitialized = "1";
+
+    var d = script.dataset || {};
+    var targetId = d.target || "";
+    var container = targetId ? document.getElementById(targetId) : null;
+
+    if (!container && document.readyState === "loading") {
+      script.dataset.abInitialized = "0";
+      document.addEventListener("DOMContentLoaded", function() {
+        init(script);
+      }, { once: true });
+      return;
+    }
+
+    if (!container) {
+      container = document.createElement("div");
+      if (targetId) container.id = targetId;
+      var parent = script.parentNode;
+      if (parent && parent !== document.head) {
+        parent.insertBefore(container, script.nextSibling);
+      } else if (document.body) {
+        document.body.appendChild(container);
+      } else {
+        script.dataset.abInitialized = "0";
+        return;
+      }
+    }
+
+    var calculatorUrl = d.calculatorUrl;
+    if (!calculatorUrl) {
+      var origin = (d.baseUrl || window.location.origin || "").replace(/\\/$/, "");
+      var params = new URLSearchParams();
+      if (d.userId) params.set("userId", d.userId);
+      if (d.serviceId) params.set("serviceId", d.serviceId);
+      calculatorUrl = origin + "/styled-calculator" + (params.toString() ? ("?" + params.toString()) : "");
+    }
+
+    var iframe = document.createElement("iframe");
+    iframe.src = calculatorUrl;
+    iframe.loading = "lazy";
+    iframe.title = "Autobidder Calculator";
+    iframe.setAttribute("frameborder", "0");
+    iframe.setAttribute("scrolling", "auto");
+    iframe.style.width = d.width || "100%";
+    var height = d.height || "700px";
+    iframe.style.height = height;
+    iframe.style.border = d.border || "none";
+    iframe.style.borderRadius = d.radius || "0px";
+    iframe.style.overflow = "auto";
+    iframe.style.display = "block";
+    iframe.style.background = "#fff";
+
+    // Percent heights often collapse on host pages without an explicit parent height.
+    if (/%$/.test(height)) {
+      iframe.style.minHeight = "700px";
+    }
+
+    container.style.width = "100%";
+    if (d.maxWidth) {
+      container.style.maxWidth = d.maxWidth;
+      container.style.marginLeft = "auto";
+      container.style.marginRight = "auto";
+    }
+    if (/%$/.test(height)) {
+      container.style.minHeight = "700px";
+    }
+
+    container.innerHTML = "";
+    container.appendChild(iframe);
+  }
+
+  if (document.currentScript) {
+    init(document.currentScript);
+    return;
+  }
+
+  var scripts = document.querySelectorAll('script[src*="/embed/autobidder.js"]');
+  for (var i = 0; i < scripts.length; i++) {
+    init(scripts[i]);
+  }
+})();`);
   });
 
   // Combined API endpoint for embed forms to reduce requests
@@ -6689,19 +6963,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Step 2: Query unified calendar_events for bookings and blocked dates
       console.log('📅 Querying unified calendar_events table...');
+      const queryStartBoundary = new Date(`${queryStartDate as string}T00:00:00.000Z`);
+      const queryEndBoundary = new Date(`${queryEndDate as string}T23:59:59.999Z`);
       const calendarEvents = await storage.getUserCalendarEventsByDateRange(
         businessOwnerId,
-        new Date(queryStartDate as string),
-        new Date(queryEndDate as string)
+        queryStartBoundary,
+        queryEndBoundary
       );
       
-      console.log(`📅 Found ${calendarEvents.length} calendar events (bookings + blocked dates)`);
+      console.log(`📅 Found ${calendarEvents.length} calendar events (bookings + blocked + synced events)`);
       
-      // Separate booking and blocked events
+      // Separate booking, blocked, and Google-sync events
       const bookingEvents = calendarEvents.filter(e => e.type === 'booking');
       const blockedEvents = calendarEvents.filter(e => e.type === 'blocked');
+      const googleSyncEvents = calendarEvents.filter(
+        e => e.type === 'google_sync' && e.source === 'google_calendar'
+      );
       
-      console.log(`📅 Bookings: ${bookingEvents.length}, Blocked: ${blockedEvents.length}`);
+      console.log(`📅 Bookings: ${bookingEvents.length}, Blocked: ${blockedEvents.length}, Google Sync: ${googleSyncEvents.length}`);
       
       // Mark generated slots as booked if they match booking events
       const bookedSlotsMap = new Map();
@@ -6898,18 +7177,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           let customerLng: number | null = null;
           let customerAddressString = '';
           
-          // Get customer location - either from lead or from provided address
+          // Get customer location from lead first, with geocode fallback if coordinates are missing.
           if (leadId) {
             const lead = await storage.getMultiServiceLead(Number(leadId));
-            if (lead?.address && lead.addressLatitude && lead.addressLongitude) {
-              customerLat = parseFloat(lead.addressLatitude);
-              customerLng = parseFloat(lead.addressLongitude);
+            if (lead?.address) {
               customerAddressString = lead.address;
+              const leadLat = parseCoordinateValue(lead.addressLatitude);
+              const leadLng = parseCoordinateValue(lead.addressLongitude);
+              if (leadLat !== null && leadLng !== null) {
+                customerLat = leadLat;
+                customerLng = leadLng;
+              } else {
+                const geocodeStartTime = Date.now();
+                const geocodedLeadAddress = await geocodeAddress(lead.address);
+                console.log(`⏱️ Geocoding lead address took ${Date.now() - geocodeStartTime}ms`);
+                if (geocodedLeadAddress) {
+                  customerLat = geocodedLeadAddress.latitude;
+                  customerLng = geocodedLeadAddress.longitude;
+                }
+              }
             }
-          } else if (customerAddress) {
-            // Geocode the customer address
+          }
+
+          // Fallback to provided customer address (even when leadId exists) if we still lack coordinates.
+          if ((customerLat === null || customerLng === null) && customerAddress) {
             const geocodeStartTime = Date.now();
-            const { geocodeAddress } = await import('./location-utils.js');
             const geocoded = await geocodeAddress(customerAddress as string);
             console.log(`⏱️ Geocoding customer address took ${Date.now() - geocodeStartTime}ms`);
             if (geocoded) {
@@ -6922,35 +7214,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (customerLat !== null && customerLng !== null) {
             console.log(`📍 Customer location: ${customerAddressString} (${customerLat}, ${customerLng})`);
             
-            // Group bookings by date and collect all unique leadIds
-            const bookingsByDate = new Map<string, any[]>();
-            const leadIds = new Set<number>();
+            const routeSourceEvents = [...calendarEvents];
+            if (user?.googleCalendarConnected) {
+              try {
+                const routeOptGoogleEnd = new Date(`${queryEndDate as string}T00:00:00.000Z`);
+                routeOptGoogleEnd.setUTCDate(routeOptGoogleEnd.getUTCDate() + 1);
+                const routeOptGoogleEvents = await getGoogleCalendarEvents(
+                  businessOwnerId,
+                  queryStartDate as string,
+                  routeOptGoogleEnd.toISOString().split('T')[0]
+                );
 
-            console.log('🔍 Analyzing bookings for route optimization:');
-            bookingEvents.forEach(booking => {
-              const payload = booking.payload as any;
-              console.log('🔍 Booking:', {
-                id: booking.id,
-                status: booking.status,
-                leadId: booking.leadId,
-                hasPayloadCoords: !!(payload?.booking?.customerLat && payload?.booking?.customerLng),
-                date: booking.startsAt.toISOString().split('T')[0]
-              });
-              const bookingDate = booking.startsAt.toISOString().split('T')[0];
-              // Include booking if it's confirmed AND has either leadId OR payload coordinates
-              const hasLocationData = booking.leadId || (payload?.booking?.customerLat && payload?.booking?.customerLng);
-              if (booking.status === 'confirmed' && hasLocationData) {
-                if (!bookingsByDate.has(bookingDate)) {
-                  bookingsByDate.set(bookingDate, []);
+                let liveEventsAdded = 0;
+                routeOptGoogleEvents.forEach((event) => {
+                  const routeLocationCandidate = (event.location || event.description || event.title || '').trim();
+                  if (!routeLocationCandidate) return;
+
+                  const startsAt = new Date(event.start);
+                  if (Number.isNaN(startsAt.getTime())) return;
+
+                  routeSourceEvents.push({
+                    type: "google_sync",
+                    source: "google_calendar",
+                    status: "confirmed",
+                    startsAt,
+                    payload: {
+                      googleSync: {
+                        externalId: event.id,
+                        location: routeLocationCandidate,
+                      },
+                    },
+                  } as any);
+                  console.log('📍 Added live Google route anchor candidate:', {
+                    eventId: event.id,
+                    startsAt: event.start,
+                    location: routeLocationCandidate,
+                  });
+                  liveEventsAdded++;
+                });
+
+                if (liveEventsAdded > 0) {
+                  console.log(`📅 Added ${liveEventsAdded} live Google Calendar events for route optimization`);
                 }
-                bookingsByDate.get(bookingDate)!.push(booking);
-                if (booking.leadId) {
-                  leadIds.add(booking.leadId);
+              } catch (error) {
+                console.error("Error loading Google Calendar event locations for route optimization:", error);
+              }
+            }
+
+            // Group route anchor events (internal bookings + Google synced events) by date.
+            const routeAnchorsByDate = new Map<string, any[]>();
+            const leadIds = new Set<number>();
+            const geocodeCache = new Map<string, GeocodeCacheValue>();
+
+            console.log('🔍 Analyzing route anchor events for route optimization:');
+            routeSourceEvents.forEach((event) => {
+              const eventDate = new Date(event.startsAt).toISOString().split('T')[0];
+
+              if (event.type === 'booking') {
+                const payload = event.payload as any;
+                const hasPotentialLocationData =
+                  !!event.leadId ||
+                  !!(payload?.booking?.customerLat && payload?.booking?.customerLng) ||
+                  !!payload?.booking?.customerAddress;
+                if (event.status === 'confirmed' && hasPotentialLocationData) {
+                  if (!routeAnchorsByDate.has(eventDate)) {
+                    routeAnchorsByDate.set(eventDate, []);
+                  }
+                  routeAnchorsByDate.get(eventDate)!.push(event);
+                  if (event.leadId) {
+                    leadIds.add(event.leadId);
+                  }
                 }
-              } else {
-                console.log('⚠️ Booking excluded - status:', booking.status, 'leadId:', booking.leadId, 'hasPayloadCoords:', !!(payload?.booking?.customerLat));
+                return;
+              }
+
+              if (event.type === 'google_sync') {
+                const syncLocation = (event.payload as any)?.googleSync?.location;
+                if (event.status !== 'cancelled' && typeof syncLocation === 'string' && syncLocation.trim()) {
+                  if (!routeAnchorsByDate.has(eventDate)) {
+                    routeAnchorsByDate.set(eventDate, []);
+                  }
+                  routeAnchorsByDate.get(eventDate)!.push(event);
+                }
               }
             });
+
+            console.log(`🔍 Route anchor dates found: ${routeAnchorsByDate.size}`);
             
             // Batch fetch all leads at once (much faster than fetching one by one)
             const leadsMap = new Map<number, any>();
@@ -6968,57 +7317,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
               );
               console.log(`⏱️ Batch fetching leads took ${Date.now() - batchFetchStartTime}ms`);
             }
+
+            const getLeadById = async (id: number): Promise<any | undefined> => {
+              if (leadsMap.has(id)) {
+                return leadsMap.get(id);
+              }
+              const existingLead = await storage.getMultiServiceLead(id);
+              if (existingLead) {
+                leadsMap.set(id, existingLead);
+              }
+              return existingLead;
+            };
             
             // Create set of dates that should be blocked
             const blockedDates = new Set<string>();
-            const { calculateDistance } = await import('./location-utils.js');
             
-            for (const [dateStr, dateBookings] of bookingsByDate.entries()) {
-              // Find the most recent booking on this date
-              const mostRecentBooking = dateBookings.reduce((latest, current) => {
-                return current.startsAt > latest.startsAt ? current : latest;
-              });
+            for (const [dateStr, dateAnchors] of routeAnchorsByDate.entries()) {
+              const anchorsNewestFirst = [...dateAnchors].sort(
+                (a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()
+              );
 
-              let existingLat: number | null = null;
-              let existingLng: number | null = null;
-              let existingAddress: string | null = null;
-
-              // Try to get coordinates from lead first
-              if (mostRecentBooking.leadId) {
-                const existingLead = leadsMap.get(mostRecentBooking.leadId);
-                if (existingLead?.address && existingLead.addressLatitude && existingLead.addressLongitude) {
-                  existingLat = parseFloat(existingLead.addressLatitude);
-                  existingLng = parseFloat(existingLead.addressLongitude);
-                  existingAddress = existingLead.address;
+              let checkedAnyAnchor = false;
+              for (const anchorEvent of anchorsNewestFirst) {
+                const resolvedAnchor = await resolveRouteOptimizationEventLocation(anchorEvent, {
+                  getLeadById,
+                  geocodeCache,
+                });
+                if (!resolvedAnchor) {
+                  continue;
                 }
-              }
 
-              // Fallback to payload coordinates if lead doesn't have them
-              if (!existingLat || !existingLng) {
-                const payload = mostRecentBooking.payload as any;
-                if (payload?.booking?.customerLat && payload?.booking?.customerLng) {
-                  existingLat = payload.booking.customerLat;
-                  existingLng = payload.booking.customerLng;
-                  existingAddress = payload.booking.customerAddress || 'Address from booking';
-                  console.log('📍 Using payload coordinates for existing booking');
-                }
-              }
-
-              if (existingLat && existingLng && existingAddress) {
-                // Calculate distance
+                checkedAnyAnchor = true;
                 const distance = calculateDistance(
                   customerLat,
                   customerLng,
-                  existingLat,
-                  existingLng
+                  resolvedAnchor.latitude,
+                  resolvedAnchor.longitude
                 );
 
-                console.log(`📏 ${dateStr}: Distance to existing job at ${existingAddress}: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
+                console.log(`📏 ${dateStr}: Distance to existing ${resolvedAnchor.source === 'google_sync' ? 'Google Calendar' : 'booking'} event at ${resolvedAnchor.address}: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
 
                 if (distance > businessSettings.routeOptimizationThreshold) {
                   console.log(`🚫 Blocking date ${dateStr} - too far from existing jobs`);
                   blockedDates.add(dateStr);
+                  break;
                 }
+              }
+
+              if (!checkedAnyAnchor) {
+                console.log(`⚠️ ${dateStr}: No route anchor event with resolvable location, skipping distance check`);
               }
             }
             
@@ -7069,10 +7416,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // VALIDATION: Check if slot is actually available before booking
       // Step 1: Check if date is blocked
+      const dayStartBoundary = new Date(`${date}T00:00:00.000Z`);
+      const dayEndBoundary = new Date(`${date}T23:59:59.999Z`);
       const calendarEvents = await storage.getUserCalendarEventsByDateRange(
         businessOwnerId,
-        new Date(date),
-        new Date(date)
+        dayStartBoundary,
+        dayEndBoundary
       );
       
       const blockedEvents = calendarEvents.filter(e => e.type === 'blocked');
@@ -7164,19 +7513,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const lead = await storage.getMultiServiceLead(leadId);
             if (lead?.address) {
               customerAddress = lead.address;
-              if (lead.addressLatitude && lead.addressLongitude) {
-                customerLat = parseFloat(lead.addressLatitude);
-                customerLng = parseFloat(lead.addressLongitude);
+              const leadLat = parseCoordinateValue(lead.addressLatitude);
+              const leadLng = parseCoordinateValue(lead.addressLongitude);
+              if (leadLat !== null && leadLng !== null) {
+                customerLat = leadLat;
+                customerLng = leadLng;
+              } else {
+                const geocodedLeadAddress = await geocodeAddress(lead.address);
+                if (geocodedLeadAddress) {
+                  customerLat = geocodedLeadAddress.latitude;
+                  customerLng = geocodedLeadAddress.longitude;
+                }
               }
             }
           }
 
-          // Fallback to provided customer address if lead doesn't have coordinates
-          if ((!customerAddress || !customerLat || !customerLng) && providedCustomerAddress) {
+          // Fallback to provided customer address if lead-based resolution is incomplete.
+          if ((customerLat === null || customerLng === null) && providedCustomerAddress) {
             console.log('📍 Using provided customer address for route optimization');
             customerAddress = providedCustomerAddress;
-            // Geocode the provided address
-            const { geocodeAddress } = await import('./location-utils.js');
             const geocoded = await geocodeAddress(providedCustomerAddress);
             if (geocoded) {
               customerLat = geocoded.latitude;
@@ -7189,78 +7544,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!customerAddress || !customerLat || !customerLng) {
             console.log('⚠️ No customer address available for route optimization, skipping check');
           } else {
-            // Get all confirmed bookings for this date
-            console.log('🔍 Checking bookingEvents:', bookingEvents.length, 'total events');
-            const dateBookings = bookingEvents.filter(booking => {
-              const bookingDate = booking.startsAt.toISOString().split('T')[0];
-              const matches = bookingDate === date && booking.status === 'confirmed';
-              console.log('🔍 Booking check:', { bookingDate, targetDate: date, status: booking.status, matches });
-              return matches;
+            const routeSourceEvents = [...calendarEvents];
+            if (user?.googleCalendarConnected) {
+              try {
+                const routeOptGoogleEnd = new Date(`${date}T00:00:00.000Z`);
+                routeOptGoogleEnd.setUTCDate(routeOptGoogleEnd.getUTCDate() + 1);
+                const routeOptGoogleEvents = await getGoogleCalendarEvents(
+                  businessOwnerId,
+                  date,
+                  routeOptGoogleEnd.toISOString().split('T')[0]
+                );
+
+                let liveEventsAdded = 0;
+                routeOptGoogleEvents.forEach((event) => {
+                  const routeLocationCandidate = (event.location || event.description || event.title || '').trim();
+                  if (!routeLocationCandidate) return;
+
+                  const startsAt = new Date(event.start);
+                  if (Number.isNaN(startsAt.getTime())) return;
+
+                  routeSourceEvents.push({
+                    type: "google_sync",
+                    source: "google_calendar",
+                    status: "confirmed",
+                    startsAt,
+                    payload: {
+                      googleSync: {
+                        externalId: event.id,
+                        location: routeLocationCandidate,
+                      },
+                    },
+                  } as any);
+                  console.log('📍 Added live Google route anchor candidate:', {
+                    eventId: event.id,
+                    startsAt: event.start,
+                    location: routeLocationCandidate,
+                  });
+                  liveEventsAdded++;
+                });
+
+                if (liveEventsAdded > 0) {
+                  console.log(`📅 Added ${liveEventsAdded} live Google Calendar events for booking route optimization check`);
+                }
+              } catch (error) {
+                console.error("Error loading live Google Calendar event locations for booking route optimization:", error);
+              }
+            }
+
+            const routeAnchorEvents = routeSourceEvents.filter((event) => {
+              const eventDate = new Date(event.startsAt).toISOString().split('T')[0];
+              if (eventDate !== date) return false;
+
+              if (event.type === 'booking') {
+                return event.status === 'confirmed';
+              }
+
+              if (event.type === 'google_sync') {
+                return event.status !== 'cancelled' && !!(event.payload as any)?.googleSync?.location;
+              }
+
+              return false;
             });
             
-            console.log(`📍 Found ${dateBookings.length} existing bookings for ${date}`);
+            console.log(`📍 Found ${routeAnchorEvents.length} route anchor events for ${date}`);
             
-            if (dateBookings.length > 0) {
-              // Find the most recent booking (latest start time)
-              const mostRecentBooking = dateBookings.reduce((latest, current) => {
-                return current.startsAt > latest.startsAt ? current : latest;
-              });
-              console.log('🔍 Most recent booking:', { leadId: mostRecentBooking.leadId, startsAt: mostRecentBooking.startsAt });
-
-              // Get the address of the most recent booking
-              let mostRecentAddress: string | null = null;
-              let mostRecentLat: number | null = null;
-              let mostRecentLng: number | null = null;
-
-              // Try to get coordinates from lead first
-              if (mostRecentBooking.leadId) {
-                const existingLead = await storage.getMultiServiceLead(mostRecentBooking.leadId);
-                if (existingLead?.address) {
-                  mostRecentAddress = existingLead.address;
-                  if (existingLead.addressLatitude && existingLead.addressLongitude) {
-                    mostRecentLat = parseFloat(existingLead.addressLatitude);
-                    mostRecentLng = parseFloat(existingLead.addressLongitude);
-                  } else {
-                    // Geocode the existing lead's address if coordinates are missing
-                    console.log('📍 Geocoding existing booking address (missing coordinates)');
-                    const { geocodeAddress } = await import('./location-utils.js');
-                    const geocoded = await geocodeAddress(existingLead.address);
-                    if (geocoded) {
-                      mostRecentLat = geocoded.latitude;
-                      mostRecentLng = geocoded.longitude;
-                    }
-                  }
+            if (routeAnchorEvents.length > 0) {
+              const anchorsNewestFirst = [...routeAnchorEvents].sort(
+                (a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime()
+              );
+              const leadCache = new Map<number, any>();
+              const geocodeCache = new Map<string, GeocodeCacheValue>();
+              const getLeadById = async (id: number): Promise<any | undefined> => {
+                if (leadCache.has(id)) {
+                  return leadCache.get(id);
                 }
-              }
-
-              // Fallback to payload coordinates if lead doesn't have them
-              if (!mostRecentLat || !mostRecentLng) {
-                const payload = mostRecentBooking.payload as any;
-                if (payload?.booking?.customerLat && payload?.booking?.customerLng) {
-                  mostRecentLat = payload.booking.customerLat;
-                  mostRecentLng = payload.booking.customerLng;
-                  mostRecentAddress = payload.booking.customerAddress || 'Address from booking';
-                  console.log('📍 Using payload coordinates for existing booking');
+                const existingLead = await storage.getMultiServiceLead(id);
+                if (existingLead) {
+                  leadCache.set(id, existingLead);
                 }
-              }
+                return existingLead;
+              };
 
-              console.log('🔍 Existing booking location resolved:', { mostRecentAddress, mostRecentLat, mostRecentLng });
+              let checkedAnyAnchor = false;
+              for (const anchorEvent of anchorsNewestFirst) {
+                const resolvedAnchorLocation = await resolveRouteOptimizationEventLocation(anchorEvent, {
+                  getLeadById,
+                  geocodeCache,
+                });
+                if (!resolvedAnchorLocation) {
+                  continue;
+                }
 
-              if (mostRecentAddress && mostRecentLat && mostRecentLng) {
-                // Calculate distance between addresses
-                const { calculateDistance } = await import('./location-utils.js');
+                checkedAnyAnchor = true;
                 console.log('🔍 Calculating distance between:', {
                   customer: { lat: customerLat, lng: customerLng },
-                  existing: { lat: mostRecentLat, lng: mostRecentLng }
+                  existing: { lat: resolvedAnchorLocation.latitude, lng: resolvedAnchorLocation.longitude },
+                  source: resolvedAnchorLocation.source,
                 });
                 const distance = calculateDistance(
                   customerLat,
                   customerLng,
-                  mostRecentLat,
-                  mostRecentLng
+                  resolvedAnchorLocation.latitude,
+                  resolvedAnchorLocation.longitude
                 );
 
-                console.log(`📏 Distance from most recent job: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
+                console.log(`📏 Distance to ${resolvedAnchorLocation.source === 'google_sync' ? 'Google Calendar event' : 'existing job'}: ${distance} miles (threshold: ${businessSettings.routeOptimizationThreshold} miles)`);
                 
                 if (distance > businessSettings.routeOptimizationThreshold) {
                   console.log(`❌ Booking rejected - too far from existing jobs (${distance} mi > ${businessSettings.routeOptimizationThreshold} mi)`);
@@ -7271,10 +7659,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     threshold: businessSettings.routeOptimizationThreshold
                   });
                 }
-                
+              }
+
+              if (checkedAnyAnchor) {
                 console.log(`✅ Route optimization check passed - within ${businessSettings.routeOptimizationThreshold} miles of existing jobs`);
               } else {
-                console.log('⚠️ Most recent booking has no address, skipping distance check');
+                console.log('⚠️ No route anchor event with resolvable location, skipping distance check');
               }
             }
           }
@@ -10982,6 +11372,9 @@ The Autobidder Team`;
     try {
       const { userId } = req.params;
       const adminUser = (req as any).currentUser;
+      if (!adminUser?.id) {
+        return res.status(401).json({ message: "Invalid admin session" });
+      }
       
       // Verify user exists
       const user = await storage.getUserById(userId);
@@ -10994,21 +11387,8 @@ The Autobidder Team`;
       // Keep legacy key for in-flight sessions that may still rely on it.
       (req.session as any).originalAdminUser = { id: adminUser.id };
       
-      // Switch the session to the impersonated user
-      (req.session as any).user = {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        organizationName: user.organizationName,
-        plan: user.plan,
-        isActive: user.isActive,
-        isBetaTester: user.isBetaTester,
-        permissions: user.permissions,
-        stripeCustomerId: user.stripeCustomerId,
-        trialEndDate: user.trialEndDate,
-        selectedCalendarIds: user.selectedCalendarIds
-      };
+      // Switch the session to the impersonated user using the same normalized shape used elsewhere.
+      (req.session as any).user = sanitizeUser(user);
       
       // Mark the session as being impersonated
       (req.session as any).isImpersonating = true;
@@ -11019,7 +11399,11 @@ The Autobidder Team`;
       // Ensure session write completes before frontend redirects.
       req.session.save((saveError) => {
         if (saveError) {
-          console.error("Error saving impersonation session:", saveError);
+          console.error("Error saving impersonation session:", {
+            saveError,
+            adminUserId: adminUser.id,
+            impersonatedUserId: user.id,
+          });
           return res.status(500).json({ message: "Failed to persist impersonation session" });
         }
 
@@ -11058,7 +11442,7 @@ The Autobidder Team`;
       }
       
       // Restore the original admin user
-      (req.session as any).user = originalAdmin;
+      (req.session as any).user = sanitizeUser(originalAdmin);
       delete (req.session as any).originalAdminUserId;
       delete (req.session as any).originalAdminUser;
       delete (req.session as any).isImpersonating;
@@ -11068,7 +11452,10 @@ The Autobidder Team`;
       // Ensure session write completes before frontend redirects.
       req.session.save((saveError) => {
         if (saveError) {
-          console.error("Error saving ended impersonation session:", saveError);
+          console.error("Error saving ended impersonation session:", {
+            saveError,
+            originalAdminId,
+          });
           return res.status(500).json({ message: "Failed to persist impersonation end state" });
         }
 
@@ -18649,14 +19036,59 @@ This booking was created on ${new Date().toLocaleString()}.
       .substring(0, 50);
   }
 
+  async function updateDirectoryCategoryListingCount(categoryId: number) {
+    const uniqueProviders = await db
+      .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
+      .from(directoryServiceListings)
+      .innerJoin(directoryProfiles, eq(directoryServiceListings.directoryProfileId, directoryProfiles.id))
+      .where(and(
+        eq(directoryServiceListings.categoryId, categoryId),
+        eq(directoryServiceListings.isActive, true),
+        eq(directoryProfiles.isActive, true),
+        eq(directoryProfiles.showOnDirectory, true),
+        eq(directoryProfiles.status, "approved")
+      ));
+
+    await db
+      .update(directoryCategories)
+      .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
+      .where(eq(directoryCategories.id, categoryId));
+  }
+
   // PUBLIC: Get all approved directory categories
   app.get("/api/public/directory/categories", async (req, res) => {
     try {
-      const categories = await db
+      const approvedCategories = await db
         .select()
         .from(directoryCategories)
         .where(eq(directoryCategories.status, "approved"))
         .orderBy(directoryCategories.displayOrder);
+
+      const activeCategoryCounts = await db
+        .select({
+          categoryId: directoryServiceListings.categoryId,
+          listingCount: sql<number>`count(distinct ${directoryServiceListings.directoryProfileId})::int`,
+        })
+        .from(directoryServiceListings)
+        .innerJoin(directoryProfiles, eq(directoryServiceListings.directoryProfileId, directoryProfiles.id))
+        .where(and(
+          eq(directoryServiceListings.isActive, true),
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved")
+        ))
+        .groupBy(directoryServiceListings.categoryId);
+
+      const listingCountByCategoryId = new Map(
+        activeCategoryCounts.map((entry) => [entry.categoryId, entry.listingCount])
+      );
+
+      const categories = approvedCategories
+        .map((category) => ({
+          ...category,
+          listingCount: listingCountByCategoryId.get(category.id) || 0,
+        }))
+        .filter((category) => category.listingCount > 0);
 
       res.json(categories);
     } catch (error) {
@@ -18693,9 +19125,22 @@ This booking was created on ${new Date().toLocaleString()}.
 
       // Build a map of profileId -> radius
       const radiusMap: Record<number, number> = {};
+      const additionalCitiesMap: Record<number, Array<{ city: string; state: string }>> = {};
       for (const area of serviceAreas) {
         if (area.areaType === "radius" && area.radiusMiles) {
           radiusMap[area.directoryProfileId] = area.radiusMiles;
+        }
+        if (area.cities && Array.isArray(area.cities)) {
+          const parsedCities = (area.cities as Array<{ city?: string; state?: string }>)
+            .map((c) => ({
+              city: (c.city || "").trim(),
+              state: (c.state || "").trim(),
+            }))
+            .filter((c) => c.city && c.state) as Array<{ city: string; state: string }>;
+
+          if (parsedCities.length > 0) {
+            additionalCitiesMap[area.directoryProfileId] = parsedCities;
+          }
         }
       }
 
@@ -18761,6 +19206,28 @@ This booking was created on ${new Date().toLocaleString()}.
           catIds.forEach(id => locationResults[key].categoryIds.add(id));
         }
 
+        // Include explicitly selected additional cities for this profile
+        const additionalCities = additionalCitiesMap[profile.id] || [];
+        for (const cityInfo of additionalCities) {
+          const cityMatch = !q ||
+            cityInfo.city.toLowerCase().includes(q) ||
+            cityInfo.state.toLowerCase().includes(q) ||
+            `${cityInfo.city}, ${cityInfo.state}`.toLowerCase().includes(q);
+
+          if (!cityMatch) continue;
+
+          const key = `${cityInfo.city}|${cityInfo.state}`;
+          if (!locationResults[key]) {
+            locationResults[key] = {
+              city: cityInfo.city,
+              state: cityInfo.state,
+              citySlug: generateSlug(`${cityInfo.city} ${cityInfo.state}`),
+              categoryIds: new Set(),
+            };
+          }
+          catIds.forEach(id => locationResults[key].categoryIds.add(id));
+        }
+
         // If we have geocoded the search query, check radius coverage
         if (searchLat && searchLng && profLat && profLng && radius > 0) {
           const distance = calculateDistance(searchLat, searchLng, profLat, profLng);
@@ -18815,35 +19282,108 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Category not found" });
       }
 
-      // Get cities from live listings to avoid stale/missing cache entries
-      const cities = await db
-        .select({
-          city: directoryProfiles.city,
-          state: directoryProfiles.state,
-          profileCount: sql<number>`count(distinct ${directoryProfiles.id})`,
-        })
+      // Find all active profiles that have active listings in this category
+      const categoryListings = await db
+        .selectDistinct({ directoryProfileId: directoryServiceListings.directoryProfileId })
         .from(directoryServiceListings)
         .innerJoin(directoryProfiles, eq(directoryServiceListings.directoryProfileId, directoryProfiles.id))
-        .innerJoin(directoryCategories, eq(directoryServiceListings.categoryId, directoryCategories.id))
         .where(and(
           eq(directoryServiceListings.categoryId, category.id),
           eq(directoryServiceListings.isActive, true),
           eq(directoryProfiles.isActive, true),
           eq(directoryProfiles.showOnDirectory, true),
-          eq(directoryProfiles.status, "approved"),
-          eq(directoryCategories.status, "approved")
-        ))
-        .groupBy(directoryProfiles.city, directoryProfiles.state)
-        .orderBy(desc(sql<number>`count(distinct ${directoryProfiles.id})`));
+          eq(directoryProfiles.status, "approved")
+        ));
+
+      const profileIds = categoryListings.map((l) => l.directoryProfileId);
+      if (profileIds.length === 0) {
+        return res.json({ category, cities: [] });
+      }
+
+      const profiles = await db
+        .select({
+          id: directoryProfiles.id,
+          city: directoryProfiles.city,
+          state: directoryProfiles.state,
+        })
+        .from(directoryProfiles)
+        .where(inArray(directoryProfiles.id, profileIds));
+
+      const areas = await db
+        .select({
+          directoryProfileId: directoryServiceAreas.directoryProfileId,
+          cities: directoryServiceAreas.cities,
+        })
+        .from(directoryServiceAreas)
+        .where(and(
+          inArray(directoryServiceAreas.directoryProfileId, profileIds),
+          eq(directoryServiceAreas.isActive, true)
+        ));
+
+      const areasByProfile = new Map<number, Array<{ city: string; state: string }>>();
+      for (const area of areas) {
+        const parsedCities = Array.isArray(area.cities)
+          ? (area.cities as Array<{ city?: string; state?: string }>)
+              .map((c) => ({
+                city: (c.city || "").trim(),
+                state: (c.state || "").trim(),
+              }))
+              .filter((c) => c.city && c.state) as Array<{ city: string; state: string }>
+          : [];
+
+        if (parsedCities.length > 0) {
+          areasByProfile.set(area.directoryProfileId, parsedCities);
+        }
+      }
+
+      const cityMap = new Map<string, { city: string; state: string; citySlug: string; profileIds: Set<number> }>();
+      for (const profile of profiles) {
+        const profileCity = (profile.city || "").trim();
+        const profileState = (profile.state || "").trim();
+        if (profileCity && profileState) {
+          const key = `${profileCity}|${profileState}`.toLowerCase();
+          if (!cityMap.has(key)) {
+            cityMap.set(key, {
+              city: profileCity,
+              state: profileState,
+              citySlug: generateSlug(`${profileCity}-${profileState}`),
+              profileIds: new Set<number>(),
+            });
+          }
+          cityMap.get(key)!.profileIds.add(profile.id);
+        }
+
+        const extraCities = areasByProfile.get(profile.id) || [];
+        for (const cityInfo of extraCities) {
+          const key = `${cityInfo.city}|${cityInfo.state}`.toLowerCase();
+          if (!cityMap.has(key)) {
+            cityMap.set(key, {
+              city: cityInfo.city,
+              state: cityInfo.state,
+              citySlug: generateSlug(`${cityInfo.city}-${cityInfo.state}`),
+              profileIds: new Set<number>(),
+            });
+          }
+          cityMap.get(key)!.profileIds.add(profile.id);
+        }
+      }
+
+      const cities = Array.from(cityMap.values())
+        .map((c) => ({
+          city: c.city,
+          state: c.state,
+          citySlug: c.citySlug,
+          profileCount: c.profileIds.size,
+        }))
+        .sort((a, b) => {
+          if (b.profileCount !== a.profileCount) return b.profileCount - a.profileCount;
+          if (a.state !== b.state) return a.state.localeCompare(b.state);
+          return a.city.localeCompare(b.city);
+        });
 
       res.json({
         category,
-        cities: cities.map((row) => ({
-          city: row.city,
-          state: row.state,
-          citySlug: generateSlug(`${row.city}-${row.state}`),
-          profileCount: row.profileCount,
-        })),
+        cities,
       });
     } catch (error) {
       console.error("[Directory] Error fetching cities:", error);
@@ -18919,9 +19459,17 @@ This booking was created on ${new Date().toLocaleString()}.
       // Also find nearby businesses via radius-based service areas
       if (category) {
         try {
-          const searchGeo = await geocodeAddress(`${slugCity}, ${slugState}`);
-          if (searchGeo) {
-            // Get all active profiles with radius service areas that have listings in this category
+          // Find profiles in this category first
+          const categoryListings = await db
+            .selectDistinct({ directoryProfileId: directoryServiceListings.directoryProfileId })
+            .from(directoryServiceListings)
+            .where(and(
+              eq(directoryServiceListings.categoryId, category.id),
+              eq(directoryServiceListings.isActive, true)
+            ));
+
+          const profilesInCategory = new Set(categoryListings.map((l) => l.directoryProfileId));
+          if (profilesInCategory.size > 0) {
             const radiusProfiles = await db
               .select({
                 id: directoryProfiles.id,
@@ -18937,45 +19485,85 @@ This booking was created on ${new Date().toLocaleString()}.
               })
               .from(directoryProfiles)
               .where(and(
+                inArray(directoryProfiles.id, Array.from(profilesInCategory)),
                 eq(directoryProfiles.isActive, true),
                 eq(directoryProfiles.showOnDirectory, true),
                 eq(directoryProfiles.status, "approved")
               ));
 
             const areas = await db
-              .select()
+              .select({
+                directoryProfileId: directoryServiceAreas.directoryProfileId,
+                areaType: directoryServiceAreas.areaType,
+                radiusMiles: directoryServiceAreas.radiusMiles,
+                cities: directoryServiceAreas.cities,
+              })
               .from(directoryServiceAreas)
-              .where(eq(directoryServiceAreas.isActive, true));
+              .where(and(
+                inArray(directoryServiceAreas.directoryProfileId, Array.from(profilesInCategory)),
+                eq(directoryServiceAreas.isActive, true)
+              ));
 
             const radiusMap: Record<number, number> = {};
+            const explicitCitiesMap: Record<number, Array<{ city: string; state: string }>> = {};
             for (const area of areas) {
               if (area.areaType === "radius" && area.radiusMiles) {
                 radiusMap[area.directoryProfileId] = area.radiusMiles;
               }
+              if (area.cities && Array.isArray(area.cities)) {
+                const parsedCities = (area.cities as Array<{ city?: string; state?: string }>)
+                  .map((c) => ({
+                    city: (c.city || "").trim(),
+                    state: (c.state || "").trim(),
+                  }))
+                  .filter((c) => c.city && c.state) as Array<{ city: string; state: string }>;
+                explicitCitiesMap[area.directoryProfileId] = parsedCities;
+              }
             }
 
-            // Check which profiles have listings in this category
-            const categoryListings = await db
-              .select({ directoryProfileId: directoryServiceListings.directoryProfileId })
-              .from(directoryServiceListings)
-              .where(eq(directoryServiceListings.categoryId, category.id));
+            const existingIds = new Set(resultProfiles.map((p) => p.id));
 
-            const profilesInCategory = new Set(categoryListings.map(l => l.directoryProfileId));
-            const existingIds = new Set(resultProfiles.map(p => p.id));
-
+            // Include profiles that explicitly target this exact city/state
             for (const profile of radiusProfiles) {
               if (existingIds.has(profile.id)) continue;
-              if (!profilesInCategory.has(profile.id)) continue;
 
-              const profLat = profile.latitude ? parseFloat(profile.latitude) : null;
-              const profLng = profile.longitude ? parseFloat(profile.longitude) : null;
-              const radius = radiusMap[profile.id];
+              let matchesExplicitCity = generateSlug(`${profile.city}-${profile.state}`) === citySlug;
+              if (!matchesExplicitCity) {
+                const extraCities = explicitCitiesMap[profile.id] || [];
+                for (const cityInfo of extraCities) {
+                  if (generateSlug(`${cityInfo.city}-${cityInfo.state}`) === citySlug) {
+                    matchesExplicitCity = true;
+                    resultCity = cityInfo.city;
+                    resultState = cityInfo.state;
+                    break;
+                  }
+                }
+              }
 
-              if (profLat && profLng && radius) {
-                const distance = calculateDistance(searchGeo.latitude, searchGeo.longitude, profLat, profLng);
-                if (distance <= radius) {
-                  const { latitude, longitude, ...profileData } = profile;
-                  resultProfiles.push(profileData);
+              if (matchesExplicitCity) {
+                const { latitude, longitude, ...profileData } = profile;
+                resultProfiles.push(profileData);
+                existingIds.add(profile.id);
+              }
+            }
+
+            // Also include profiles that cover this city by radius
+            const searchGeo = await geocodeAddress(`${slugCity}, ${slugState}`);
+            if (searchGeo) {
+              for (const profile of radiusProfiles) {
+                if (existingIds.has(profile.id)) continue;
+
+                const profLat = profile.latitude ? parseFloat(profile.latitude) : null;
+                const profLng = profile.longitude ? parseFloat(profile.longitude) : null;
+                const radius = radiusMap[profile.id];
+
+                if (profLat && profLng && radius) {
+                  const distance = calculateDistance(searchGeo.latitude, searchGeo.longitude, profLat, profLng);
+                  if (distance <= radius) {
+                    const { latitude, longitude, ...profileData } = profile;
+                    resultProfiles.push(profileData);
+                    existingIds.add(profile.id);
+                  }
                 }
               }
             }
@@ -19363,6 +19951,10 @@ This booking was created on ${new Date().toLocaleString()}.
             .set({ categoryId, customDisplayName })
             .where(eq(directoryServiceListings.id, existingListing.id))
             .returning();
+
+          await updateDirectoryCategoryListingCount(existingListing.categoryId);
+          await updateDirectoryCategoryListingCount(categoryId);
+
           updateDirectoryIndexCache(profile.id).catch((err) => {
             console.error("[Directory] Async cache update failed after service category update:", err);
           });
@@ -19399,15 +19991,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(directoryProfiles.id, profile.id));
 
       // Update category listing count (unique providers, not services)
-      const uniqueProviders = await db
-        .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
-        .from(directoryServiceListings)
-        .where(eq(directoryServiceListings.categoryId, categoryId));
-
-      await db
-        .update(directoryCategories)
-        .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
-        .where(eq(directoryCategories.id, categoryId));
+      await updateDirectoryCategoryListingCount(categoryId);
 
       updateDirectoryIndexCache(profile.id).catch((err) => {
         console.error("[Directory] Async cache update failed after service add:", err);
@@ -19461,15 +20045,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(directoryProfiles.id, profile.id));
 
       // Update category listing count (unique providers, not services)
-      const uniqueProviders = await db
-        .selectDistinct({ profileId: directoryServiceListings.directoryProfileId })
-        .from(directoryServiceListings)
-        .where(eq(directoryServiceListings.categoryId, listing.categoryId));
-
-      await db
-        .update(directoryCategories)
-        .set({ listingCount: uniqueProviders.length, updatedAt: new Date() })
-        .where(eq(directoryCategories.id, listing.categoryId));
+      await updateDirectoryCategoryListingCount(listing.categoryId);
 
       updateDirectoryIndexCache(profile.id).catch((err) => {
         console.error("[Directory] Async cache update failed after service removal:", err);
@@ -19506,6 +20082,90 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("[Directory] Error fetching service areas:", error);
       res.status(500).json({ message: "Failed to fetch service areas" });
+    }
+  });
+
+  // AUTHENTICATED: Suggest nearest towns to a profile's main city
+  app.get("/api/directory/nearby-cities", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+
+      const [profile] = await db
+        .select({
+          city: directoryProfiles.city,
+          state: directoryProfiles.state,
+        })
+        .from(directoryProfiles)
+        .where(eq(directoryProfiles.userId, userId))
+        .limit(1);
+
+      const rawCity = (req.query.city as string | undefined)?.trim();
+      const rawState = (req.query.state as string | undefined)?.trim();
+      const baseCity = rawCity || profile?.city;
+      const baseState = (rawState || profile?.state || "").toUpperCase();
+
+      if (!baseCity || !baseState) {
+        return res.status(400).json({ message: "City and state are required" });
+      }
+
+      const baseGeo = await geocodeAddress(`${baseCity}, ${baseState}`);
+      if (!baseGeo) {
+        return res.json({ city: baseCity, state: baseState, nearbyCities: [] });
+      }
+
+      const candidates = await db
+        .select({
+          city: directoryProfiles.city,
+          state: directoryProfiles.state,
+          latitude: directoryProfiles.latitude,
+          longitude: directoryProfiles.longitude,
+        })
+        .from(directoryProfiles)
+        .where(and(
+          eq(directoryProfiles.state, baseState),
+          eq(directoryProfiles.isActive, true),
+          eq(directoryProfiles.showOnDirectory, true),
+          eq(directoryProfiles.status, "approved")
+        ));
+
+      const cityDistanceMap = new Map<string, { city: string; state: string; distanceMiles: number }>();
+      const baseCityKey = baseCity.trim().toLowerCase();
+      const baseStateKey = baseState.toLowerCase();
+
+      for (const candidate of candidates) {
+        const city = (candidate.city || "").trim();
+        const state = (candidate.state || "").trim();
+        if (!city || !state) continue;
+        if (!candidate.latitude || !candidate.longitude) continue;
+
+        if (city.toLowerCase() === baseCityKey && state.toLowerCase() === baseStateKey) {
+          continue;
+        }
+
+        const lat = parseFloat(candidate.latitude);
+        const lng = parseFloat(candidate.longitude);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) continue;
+
+        const distanceMiles = calculateDistance(baseGeo.latitude, baseGeo.longitude, lat, lng);
+        const key = `${city}|${state}`.toLowerCase();
+        const existing = cityDistanceMap.get(key);
+        if (!existing || distanceMiles < existing.distanceMiles) {
+          cityDistanceMap.set(key, { city, state, distanceMiles });
+        }
+      }
+
+      const nearbyCities = Array.from(cityDistanceMap.values())
+        .sort((a, b) => a.distanceMiles - b.distanceMiles || a.city.localeCompare(b.city))
+        .slice(0, 5);
+
+      res.json({
+        city: baseCity,
+        state: baseState,
+        nearbyCities,
+      });
+    } catch (error) {
+      console.error("[Directory] Error suggesting nearby cities:", error);
+      res.status(500).json({ message: "Failed to fetch nearby cities" });
     }
   });
 
@@ -21624,8 +22284,66 @@ This booking was created on ${new Date().toLocaleString()}.
   });
 
   // ==================== Landing Pages ====================
+  const landingPageTemplateKeys = [
+    "classic",
+    "split",
+    "spotlight",
+    "bubble-shark",
+    "noir-edge",
+    "fresh-deck",
+    "halo-glass",
+    "atlas-pro",
+    "mono-grid",
+  ] as const;
+  const defaultLandingPageTheme = {
+    primaryColor: "#2563EB",
+    accentColor: "#10B981",
+    backgroundColor: "#F8FAFC",
+    surfaceColor: "#FFFFFF",
+    textColor: "#0F172A",
+    mutedTextColor: "#475569",
+    buttonTextColor: "#FFFFFF",
+  };
+  const landingPageThemeKeys = [
+    "primaryColor",
+    "accentColor",
+    "backgroundColor",
+    "surfaceColor",
+    "textColor",
+    "mutedTextColor",
+    "buttonTextColor",
+  ] as const;
+  const isHexColor = (value: unknown): value is string =>
+    typeof value === "string" && /^#([0-9a-fA-F]{6})$/.test(value.trim());
+  const isValidLandingMediaUrl = (value: unknown): value is string => {
+    if (typeof value !== "string") {
+      return false;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > 2048) {
+      return false;
+    }
+    return /^\/(objects|uploads)\//.test(trimmed) || /^https?:\/\//i.test(trimmed);
+  };
+  const sanitizeLandingPageTheme = (theme: unknown) => {
+    const next = { ...defaultLandingPageTheme };
+    if (!theme || typeof theme !== "object") {
+      return next;
+    }
+    for (const key of landingPageThemeKeys) {
+      const value = (theme as any)[key];
+      if (isHexColor(value)) {
+        next[key] = value.trim();
+      }
+    }
+    return next;
+  };
+
   const sanitizeLandingPageUpdate = (payload: any) => {
     const allowed = [
+      "slug",
+      "templateKey",
+      "theme",
       "businessName",
       "logoUrl",
       "tagline",
@@ -21648,8 +22366,44 @@ This booking was created on ${new Date().toLocaleString()}.
         update[key] = payload[key];
       }
     }
+    if (typeof update.templateKey === "string" && /^[a-z0-9-]{1,50}$/.test(update.templateKey)) {
+      // keep it — any valid slug-style key is accepted; unknown keys fall back to "classic" on render
+    } else {
+      delete update.templateKey;
+    }
+    if ("slug" in update) {
+      if (typeof update.slug === "string" && update.slug.trim()) {
+        update.slug = slugifyLandingPage(update.slug);
+      } else {
+        delete update.slug;
+      }
+    }
+    if ("theme" in update) {
+      update.theme = sanitizeLandingPageTheme(update.theme);
+    }
+    if ("logoUrl" in update) {
+      update.logoUrl = isValidLandingMediaUrl(update.logoUrl) ? update.logoUrl.trim() : null;
+    }
     if (Array.isArray(update.trustChips)) {
       update.trustChips = update.trustChips.slice(0, 3);
+    }
+    if (Array.isArray(update.services)) {
+      const normalizedServices = update.services
+        .map((service: any, idx: number) => ({
+          serviceId: Number(service?.serviceId),
+          name: typeof service?.name === "string" && service.name.trim() ? service.name.trim() : "Service",
+          enabled: Boolean(service?.enabled),
+          sortOrder: Number.isFinite(Number(service?.sortOrder)) ? Number(service.sortOrder) : idx,
+          imageUrl: isValidLandingMediaUrl(service?.imageUrl) ? service.imageUrl.trim() : null,
+        }))
+        .filter((service: any) => Number.isInteger(service.serviceId) && service.serviceId > 0);
+      const deduped = normalizedServices.filter((service: any, idx: number, arr: any[]) =>
+        arr.findIndex((candidate: any) => candidate.serviceId === service.serviceId) === idx
+      );
+      update.services = deduped.slice(0, 10).map((service: any, idx: number) => ({
+        ...service,
+        sortOrder: idx,
+      }));
     }
     if (Array.isArray(update.howItWorks)) {
       update.howItWorks = update.howItWorks.slice(0, 3);
@@ -21692,6 +22446,18 @@ This booking was created on ${new Date().toLocaleString()}.
       const userId = getEffectiveOwnerId((req as any).currentUser);
       const updateData = sanitizeLandingPageUpdate(req.body);
 
+      if (typeof updateData.slug === "string" && updateData.slug.trim()) {
+        const [existingSlug] = await db
+          .select({ id: landingPages.id })
+          .from(landingPages)
+          .where(and(eq(landingPages.slug, updateData.slug), ne(landingPages.userId, userId)))
+          .limit(1);
+
+        if (existingSlug) {
+          return res.status(400).json({ message: "That URL is already taken. Please choose another slug." });
+        }
+      }
+
       const [updated] = await db
         .update(landingPages)
         .set({ ...updateData, updatedAt: new Date() })
@@ -21707,6 +22473,32 @@ This booking was created on ${new Date().toLocaleString()}.
       console.error("[LandingPage] Error updating landing page:", error);
       res.status(500).json({ message: "Failed to update landing page" });
     }
+  });
+
+  app.post("/api/landing-page/upload-image", requireAuth, (req, res) => {
+    uploadLeadImage.single("image")(req, res, async (err: any) => {
+      try {
+        if (err) {
+          const errorMessage = typeof err?.message === "string" ? err.message : "Failed to upload image";
+          return res.status(400).json({ message: errorMessage });
+        }
+
+        const userId = getEffectiveOwnerId((req as any).currentUser);
+        if (!req.file) {
+          return res.status(400).json({ message: "No image uploaded" });
+        }
+
+        const imageUrl = await uploadImageBufferToObjectStorage({
+          file: req.file,
+          ownerId: userId,
+        });
+
+        return res.json({ imageUrl });
+      } catch (error: any) {
+        console.error("[LandingPage] Error uploading media:", error);
+        return res.status(500).json({ message: error?.message || "Failed to upload image" });
+      }
+    });
   });
 
   app.post("/api/landing-page/me/publish", requireAuth, async (req, res) => {
@@ -21725,6 +22517,24 @@ This booking was created on ${new Date().toLocaleString()}.
       const basicErrors = validateLandingPageBasics(page as any);
       if (basicErrors.length > 0) {
         return res.status(400).json({ message: basicErrors[0], errors: basicErrors });
+      }
+
+      const enabledServiceIds = (((page.services as Array<{ serviceId: number; enabled: boolean }> | null) || [])
+        .filter((service) => service.enabled)
+        .map((service) => service.serviceId))
+        .filter((serviceId): serviceId is number => Number.isInteger(serviceId) && serviceId > 0);
+
+      if (enabledServiceIds.length > 0) {
+        const ownedServices = await db
+          .select({ id: formulas.id })
+          .from(formulas)
+          .where(and(
+            eq(formulas.userId, userId),
+            inArray(formulas.id, enabledServiceIds)
+          ));
+        if (ownedServices.length !== new Set(enabledServiceIds).size) {
+          return res.status(400).json({ message: "Landing page services must come from your calculators." });
+        }
       }
 
       if (!page.primaryServiceId) {
@@ -21805,9 +22615,11 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  app.get("/api/landing-page/public", async (req, res) => {
+  app.get("/api/landing-page/public", optionalAuth, async (req, res) => {
     try {
       const slug = typeof req.query.slug === "string" ? req.query.slug : "";
+      const previewRaw = typeof req.query.preview === "string" ? req.query.preview : "";
+      const previewRequested = previewRaw === "1" || previewRaw.toLowerCase() === "true";
       if (!slug) {
         return res.status(400).json({ message: "Slug is required" });
       }
@@ -21819,6 +22631,8 @@ This booking was created on ${new Date().toLocaleString()}.
           slug: landingPages.slug,
           status: landingPages.status,
           publishedAt: landingPages.publishedAt,
+          templateKey: landingPages.templateKey,
+          theme: landingPages.theme,
           businessName: landingPages.businessName,
           logoUrl: landingPages.logoUrl,
           tagline: landingPages.tagline,
@@ -21841,7 +22655,22 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(landingPages.slug, slug))
         .limit(1);
 
-      if (!page || page.status !== "published") {
+      const currentUser = (req as any).currentUser;
+      const viewerOwnerId = currentUser ? getEffectiveOwnerId(currentUser) : null;
+      const canViewOwnDraft = Boolean(viewerOwnerId && viewerOwnerId === page?.userId);
+      const canViewAsImpersonatingAdmin = Boolean(
+        currentUser?.isImpersonating &&
+        currentUser?.ownerId &&
+        currentUser.ownerId === page?.userId,
+      );
+      const canViewAsSuperAdmin = Boolean(currentUser?.userType === "super_admin");
+      const canViewDraftPreview = Boolean(
+        previewRequested &&
+        currentUser &&
+        (canViewOwnDraft || canViewAsImpersonatingAdmin || canViewAsSuperAdmin),
+      );
+
+      if (!page || (page.status !== "published" && !canViewDraftPreview)) {
         return res.status(404).json({ message: "Landing page not found" });
       }
 
@@ -21859,9 +22688,22 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const leadLimitCheck = await checkMonthlyLeadLimit(page.userId);
       const baseUrl = getRequestBaseUrl(req);
+      const services = (((page.services as Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number }> | null) || [])
+        .map((service, idx) => ({
+          serviceId: Number(service?.serviceId),
+          name: typeof service?.name === "string" && service.name.trim() ? service.name.trim() : "Service",
+          enabled: Boolean(service?.enabled),
+          sortOrder: Number.isFinite(Number(service?.sortOrder)) ? Number(service.sortOrder) : idx,
+          imageUrl: isValidLandingMediaUrl((service as any)?.imageUrl) ? (service as any).imageUrl.trim() : null,
+        }))
+        .filter((service) => Number.isInteger(service.serviceId) && service.serviceId > 0)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .slice(0, 10));
 
       res.json({
         ...page,
+        services,
+        theme: sanitizeLandingPageTheme(page.theme),
         primaryServiceEmbedId: primaryFormula?.embedId || null,
         landingPageUrl: `${baseUrl}/l/${page.slug}`,
         leadCapReached: !leadLimitCheck.allowed,
@@ -21872,6 +22714,56 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("[LandingPage] Error fetching public landing page:", error);
       res.status(500).json({ message: "Failed to fetch landing page" });
+    }
+  });
+
+  app.get("/api/landing-page/public-config", async (req, res) => {
+    try {
+      const rawId = req.query.id;
+      const landingPageId = typeof rawId === "string" ? Number(rawId) : NaN;
+      if (!Number.isInteger(landingPageId) || landingPageId <= 0) {
+        return res.status(400).json({ message: "Valid landing page id is required" });
+      }
+
+      const [page] = await db
+        .select({
+          id: landingPages.id,
+          userId: landingPages.userId,
+          status: landingPages.status,
+          services: landingPages.services,
+          primaryServiceId: landingPages.primaryServiceId,
+          enableMultiService: landingPages.enableMultiService,
+        })
+        .from(landingPages)
+        .where(eq(landingPages.id, landingPageId))
+        .limit(1);
+
+      if (!page || page.status !== "published") {
+        return res.status(404).json({ message: "Landing page not found" });
+      }
+
+      const services = (((page.services as Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number }> | null) || [])
+        .filter((service) => service.enabled)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .slice(0, 10))
+        .map((service) => ({
+          serviceId: service.serviceId,
+          name: service.name,
+          enabled: true,
+          sortOrder: service.sortOrder,
+          imageUrl: isValidLandingMediaUrl((service as any)?.imageUrl) ? (service as any).imageUrl.trim() : null,
+        }));
+
+      return res.json({
+        id: page.id,
+        userId: page.userId,
+        services,
+        primaryServiceId: page.primaryServiceId,
+        enableMultiService: page.enableMultiService,
+      });
+    } catch (error) {
+      console.error("[LandingPage] Error fetching public landing config:", error);
+      return res.status(500).json({ message: "Failed to fetch landing page config" });
     }
   });
 

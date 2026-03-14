@@ -10,7 +10,7 @@ import { isSuperAdmin } from "./universalAuth";
 import { users, passwordResetCodes } from "@shared/schema";
 import { db } from "./db";
 import { and, eq, gte, isNull, lte } from "drizzle-orm";
-import { sendAdminNewUserSignupNotification } from "./email-templates";
+import { sendAdminNewUserSignupNotification, sendWelcomeEmail } from "./email-templates";
 import { addUserToGoogleSheet } from "./googleSheets";
 import { ensureDirectoryProfileFromBusinessInfo } from "./directory-onboarding";
 
@@ -74,6 +74,13 @@ export function generateSecureToken(): string {
 
 export function generateUserId(): string {
   return `user_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+}
+
+function getUserCalculatorUrl(user: { id: string; shareSlug?: string | null }): string {
+  const baseUrl = process.env.DOMAIN || (
+    process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://rep.autobidder.org'
+  );
+  return `${baseUrl}/styled-calculator?userId=${user.id}`;
 }
 
 // New security helper functions for 6-digit code system
@@ -426,6 +433,14 @@ export function setupEmailAuth(app: Express) {
         businessName
       ).catch(error => {
         console.error('Failed to send admin signup notification:', error);
+      });
+
+      sendWelcomeEmail(
+        email,
+        firstName,
+        getUserCalculatorUrl(user)
+      ).catch(error => {
+        console.error('Failed to send welcome email:', error);
       });
       
       // Add user to Google Sheet (non-blocking)

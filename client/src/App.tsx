@@ -98,6 +98,7 @@ const IconGeneratorPage = lazy(() => import("@/pages/icon-generator"));
 const SetupStepByStepPage = lazy(() => import("@/pages/setup-step-by-step"));
 const LandingPagePublic = lazy(() => import("@/pages/landing-page-public"));
 const LandingPageEditor = lazy(() => import("@/pages/landing-page-editor"));
+const PublicCalculatorShare = lazy(() => import("@/pages/public-calculator-share"));
 
 // Blog pages
 const BlogPostsPage = lazy(() => import("@/pages/blog-posts"));
@@ -211,11 +212,14 @@ function Router() {
         <Route path="/embed/:embedId" component={EmbedCalculator} />
         <Route path="/custom-form/:embedId" component={LazyStyledCalculator} />
         <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
+        <Route path="/c/:slug" component={PublicCalculatorShare} />
         <Route path="/l/:slug" component={LandingPagePublic} />
 
         <Route path="/service-selector" component={ServiceSelector} />
         <Route path="/services" component={ServiceSelector} />
         <Route path="/styled-calculator" component={LazyStyledCalculator} />
+        <Route path="/style-calculator" component={LazyStyledCalculator} />
+        <Route path="/c/:slug" component={PublicCalculatorShare} />
         <Route path="/estimate/:estimateNumber" component={EstimatePage} />
         <Route path="/verify-bid/:token" component={VerifyBidPage} />
         <Route path="/bid-response/:token" component={BidResponsePage} />
@@ -265,6 +269,7 @@ function Router() {
         <Route path="/form-settings" component={FormSettings} />
         <Route path="/design" component={DesignDashboard} />
         <Route path="/styled-calculator" component={LazyStyledCalculator} />
+        <Route path="/style-calculator" component={LazyStyledCalculator} />
         <Route path="/leads" component={LeadsPage} />
         <Route path="/photos" component={PhotosPage} />
         <Route path="/proposals" component={ProposalsPage} />

@@ -182,37 +182,56 @@ function createUnifiedEmailTemplate(params: {
   cardTitle?: string;
   footerText?: string;
   accentColor?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  eyebrow?: string;
 }): string {
   const accentColor = params.accentColor || '#2563eb';
+  const logoUrl = `${getBaseUrl()}/favicon.png`;
   
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, ${accentColor} 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">
+    <div style="margin:0; padding:24px 12px; background-color:#f5f7fb; background-image:radial-gradient(circle at top left, rgba(245,158,11,0.10), transparent 28%), radial-gradient(circle at top right, rgba(37,99,235,0.10), transparent 24%);">
+      <div style="font-family:Arial, sans-serif; max-width:600px; margin:0 auto; background-color:#ffffff; border:1px solid #e5e7eb; border-radius:24px; overflow:hidden; box-shadow:0 24px 60px rgba(15,23,42,0.10);">
+        <div style="background:#eff6ff; padding:32px 24px 30px; text-align:center; position:relative; border-bottom:1px solid #dbeafe;">
+          <div style="display:inline-block; margin-bottom:14px; padding:7px 12px; border-radius:999px; background:#ffffff; border:1px solid #bfdbfe; color:${accentColor}; font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;">
+            ${params.eyebrow || 'Autobidder'}
+          </div>
+          <div style="margin:0 auto 16px; width:56px; height:56px; border-radius:18px; background:#ffffff; border:1px solid #bfdbfe; overflow:hidden; text-align:center; line-height:56px;">
+            <img src="${logoUrl}" alt="Autobidder" style="display:inline-block; width:38px; height:38px; object-fit:contain; vertical-align:middle;" />
+          </div>
+          <h1 style="color:#111827; margin:0; font-size:30px; line-height:1.1; font-weight:700;">
           ${params.title}
-        </h1>
-        ${params.subtitle ? `<p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">${params.subtitle}</p>` : ''}
-      </div>
-      
-      <!-- Main content -->
-      <div style="padding: 40px 30px;">
-        ${params.mainContent}
-        
-        ${params.cardContent ? `
-        <!-- Content Card -->
-        <div style="background-color: #f8fafc; border: 2px solid #e5e7eb; border-radius: 12px; padding: 25px; margin: 25px 0;">
-          ${params.cardTitle ? `<h3 style="color: #1f2937; font-size: 18px; margin-bottom: 20px;">${params.cardTitle}</h3>` : ''}
+          </h1>
+          ${params.subtitle ? `<p style="color:#4b5563; margin:12px 0 0 0; font-size:16px; line-height:1.55;">${params.subtitle}</p>` : ''}
+        </div>
+
+        <div style="padding:36px 30px 30px;">
+          <div style="color:#374151; font-size:16px; line-height:1.7;">
+            ${params.mainContent}
+          </div>
+
+          ${params.ctaLabel && params.ctaUrl ? `
+          <div style="text-align:center; margin:28px 0 8px;">
+            <a href="${params.ctaUrl}" style="display:inline-block; background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:14px; font-weight:700; font-size:15px; box-shadow:0 10px 24px rgba(234,88,12,0.20);">
+              ${params.ctaLabel}
+            </a>
+          </div>
+          ` : ''}
+
+          ${params.cardContent ? `
+        <div style="background:linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); border:1px solid #e5e7eb; border-radius:18px; padding:22px; margin:28px 0 0;">
+          ${params.cardTitle ? `<h3 style="color:#111827; font-size:17px; margin:0 0 16px; font-weight:700;">${params.cardTitle}</h3>` : ''}
           ${params.cardContent}
         </div>
         ` : ''}
-      </div>
-      
-      <!-- Footer -->
-      <div style="background-color: #f9fafb; padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
-        <p style="margin: 0;">
-          ${params.footerText || 'This email was sent by Autobidder • Your Business Growth Platform'}
-        </p>
+
+          <div style="margin-top:30px; padding-top:18px; border-top:1px solid #e5e7eb; text-align:center;">
+            <p style="margin:0 0 8px; color:#111827; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Autobidder</p>
+            <p style="margin:0; color:#6b7280; font-size:12px; line-height:1.6;">
+              ${params.footerText || 'This email was sent by Autobidder • Your Business Growth Platform'}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -265,34 +284,47 @@ export async function sendWebsiteActivationEmail(
   });
 }
 
-export async function sendWelcomeEmail(userEmail: string, userName: string): Promise<boolean> {
+export async function sendWelcomeEmail(
+  userEmail: string,
+  userName: string,
+  calculatorUrl?: string
+): Promise<boolean> {
   const subject = "Welcome to Autobidder!";
+  const formUrl = calculatorUrl || `${getBaseUrl()}/styled-calculator`;
+  const setupCallUrl = "https://rep.autobidder.org/schedule-call";
+  const demosUrl = "https://rep.autobidder.org/demos";
+  const knowledgeBaseUrl = "https://rep.autobidder.org/knowledge-base";
   
   const html = createUnifiedEmailTemplate({
     title: "Welcome to Autobidder!",
     subtitle: `Hi ${userName}, let's get you started`,
     mainContent: `
       <h2 style="color: #1f2937; font-size: 22px; margin-bottom: 20px;">
-        Thank you for joining Autobidder! Your account is ready to use.
+        Welcome to Autobidder, here are some links to help get you started:
       </h2>
-      
-      <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-        You can now create intelligent pricing calculators and capture high-quality leads for your business.
-      </p>
-      
-      <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
-        Ready to get started? Log in to your dashboard and create your first pricing calculator today!
-      </p>
+      <div style="margin: 24px 0 0;">
+        <a href="${formUrl}" style="display:block; margin:0 0 12px 0; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; padding: 14px 18px; border-radius: 14px; text-decoration: none; font-weight: 700; text-align: center;">
+          Open Your Autobidder Form
+        </a>
+        <a href="${setupCallUrl}" style="display:block; margin:0 0 12px 0; background: #ffffff; color: #1f2937; padding: 14px 18px; border-radius: 14px; text-decoration: none; font-weight: 700; text-align: center; border: 1px solid #dbeafe;">
+          Schedule a Setup Call
+        </a>
+        <a href="${demosUrl}" style="display:block; margin:0 0 12px 0; background: #ffffff; color: #1f2937; padding: 14px 18px; border-radius: 14px; text-decoration: none; font-weight: 700; text-align: center; border: 1px solid #dbeafe;">
+          View Demos
+        </a>
+        <a href="${knowledgeBaseUrl}" style="display:block; margin:0; background: #ffffff; color: #1f2937; padding: 14px 18px; border-radius: 14px; text-decoration: none; font-weight: 700; text-align: center; border: 1px solid #dbeafe;">
+          Open Knowledge Base
+        </a>
+      </div>
     `,
-    cardTitle: "What you can do now:",
+    cardTitle: "Quick Links",
     cardContent: `
-      <ul style="color: #4b5563; margin: 0; padding-left: 18px;">
-        <li style="margin-bottom: 8px;">Create custom pricing calculators for your services</li>
-        <li style="margin-bottom: 8px;">Capture and manage leads automatically</li>
-        <li style="margin-bottom: 8px;">Send professional quotes to prospects</li>
-        <li style="margin-bottom: 8px;">Build your business website</li>
-        <li>Track your performance with detailed analytics</li>
-      </ul>
+      <div style="color: #4b5563; line-height: 1.8;">
+        <div style="margin-bottom: 10px;"><strong>Your form:</strong> <a href="${formUrl}" style="color: #2563eb; text-decoration: none;">${formUrl}</a></div>
+        <div style="margin-bottom: 10px;"><strong>Setup call:</strong> <a href="${setupCallUrl}" style="color: #2563eb; text-decoration: none;">${setupCallUrl}</a></div>
+        <div style="margin-bottom: 10px;"><strong>Demos:</strong> <a href="${demosUrl}" style="color: #2563eb; text-decoration: none;">${demosUrl}</a></div>
+        <div><strong>Knowledge base:</strong> <a href="${knowledgeBaseUrl}" style="color: #2563eb; text-decoration: none;">${knowledgeBaseUrl}</a></div>
+      </div>
     `,
     footerText: "Welcome to Autobidder • Your Business Growth Platform",
     accentColor: "#2563eb"
@@ -2075,62 +2107,37 @@ export async function sendPasswordResetEmail(
 ): Promise<boolean> {
   const subject = "Reset Your Autobidder Password";
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Password Reset Request</title>
-    </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0;">
-      
-      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 40px 30px; text-align: center;">
-        <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600;">Password Reset Request</h1>
-      </div>
-      
-      <div style="background: #ffffff; padding: 40px 30px;">
-        <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">Hello ${userName},</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 20px;">
-          We received a request to reset your password for your Autobidder account. If you made this request, click the button below to reset your password:
-        </p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetLink}" 
-             style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
-            Reset Password
-          </a>
-        </div>
-        
-        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 20px 0;">
-          <p style="margin: 0; color: #856404; font-size: 14px;">
-            <strong>⚠️ Security Notice:</strong> This link will expire in 15 minutes for your security.
-          </p>
-        </div>
-        
-        <p style="font-size: 14px; color: #666;">
-          If you didn't request a password reset, you can safely ignore this email. Your password will not be changed.
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666;">
-          If the button doesn't work, copy and paste this link into your browser:<br>
-          <span style="word-break: break-all; color: #3b82f6;">${resetLink}</span>
-        </p>
-        
-        <p style="font-size: 14px; color: #666;">
-          <strong>The Autobidder Team</strong>
+  const html = createUnifiedEmailTemplate({
+    title: "Password Reset Request",
+    subtitle: `Hi ${userName}, use the secure link below to update your password`,
+    eyebrow: "Account Security",
+    ctaLabel: "Reset Password",
+    ctaUrl: resetLink,
+    mainContent: `
+      <h2 style="color:#111827; font-size:22px; margin:0 0 18px; text-align:center;">
+        We received a request to reset your Autobidder password.
+      </h2>
+      <p style="margin:0 0 18px;">
+        If you made this request, use the button below to create a new password. If not, you can safely ignore this email and your account will remain unchanged.
+      </p>
+      <div style="background-color:#fff7ed; border:1px solid #fdba74; border-radius:14px; padding:16px; margin:22px 0;">
+        <p style="margin:0; color:#9a3412; font-size:14px; line-height:1.6;">
+          <strong>Security notice:</strong> This reset link expires in 15 minutes.
         </p>
       </div>
-      
-    </body>
-    </html>
-  `;
+      <p style="margin:18px 0 0; color:#6b7280; font-size:14px;">
+        If the button does not work, copy and paste this link into your browser:
+        <br />
+        <span style="word-break:break-all; color:#2563eb;">${resetLink}</span>
+      </p>
+    `,
+    footerText: "Password reset email • If you didn't request this, you can ignore it safely.",
+    accentColor: "#2563eb"
+  });
 
   return await sendEmail({
     to: userEmail,
+    from: 'Autobidder Security <noreply@autobidder.org>',
     subject,
     html
   });
@@ -2144,81 +2151,46 @@ export async function sendWebsiteSetupEmail(
 ): Promise<boolean> {
   const subject = "Your Autobidder Website is Ready to Customize!";
   
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Website Setup Link</title>
-    </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0;">
-      
-      <!-- Header -->
-      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 40px 30px; text-align: center; position: relative; overflow: hidden;">
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 20px; backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-          <h1 style="color: white; margin: 0 0 10px 0; font-size: 32px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.5); background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Your Website is Ready!</h1>
-          <p style="color: #e2e8f0; margin: 0; font-size: 18px; font-weight: 500;">${websiteName}</p>
-        </div>
-      </div>
-      
-      <!-- Main Content -->
-      <div style="background: #ffffff; padding: 40px 30px;">
-        <h2 style="color: #333; margin: 0 0 20px 0; font-size: 24px;">Hello ${userName},</h2>
-        
-        <p style="font-size: 16px; margin-bottom: 20px;">
-          Exciting news! Your website has been successfully created and is ready for customization. Click the button below to access your website editor and start building your online presence.
-        </p>
-        
-        <div style="background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid rgba(59, 130, 246, 0.1);">
-          <h3 style="margin: 0 0 15px 0; color: #3b82f6; font-size: 18px; display: flex; align-items: center;">
-            <span style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 16px; margin-right: 12px;">→</span>
-            What You Can Do Next:
-          </h3>
-          <ul style="padding-left: 20px; margin: 0; color: #334155;">
-            <li style="margin-bottom: 8px;"><strong>Customize Your Design:</strong> Choose colors, fonts, and layouts that match your brand</li>
-            <li style="margin-bottom: 8px;"><strong>Add Your Content:</strong> Upload images, write compelling copy, and showcase your services</li>
-            <li style="margin-bottom: 8px;"><strong>Integrate Your Calculators:</strong> Embed your Autobidder pricing tools directly into your site</li>
-            <li style="margin-bottom: 8px;"><strong>Go Live:</strong> Publish your website and start attracting customers</li>
-          </ul>
-        </div>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${setupLink}" 
-             style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 15px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3); font-size: 16px;">
-            Start Customizing Your Website →
-          </a>
-        </div>
-        
-        <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 15px; border-radius: 6px; margin: 25px 0;">
-          <p style="margin: 0; color: #047857; font-size: 14px;">
-            <strong>Pro Tip:</strong> Your website editor will save automatically as you work, so you can take your time to create something amazing!
-          </p>
-        </div>
-        
-        <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-          This secure link will take you directly to your website editor. You can bookmark this link to access your website anytime, or you can always find it in your Autobidder dashboard.
-        </p>
-        
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        
-        <p style="font-size: 14px; color: #666;">
-          If the button doesn't work, copy and paste this link into your browser:<br>
-          <span style="word-break: break-all; color: #3b82f6; background: #f8fafc; padding: 8px; border-radius: 4px; display: inline-block; margin-top: 8px;">${setupLink}</span>
-        </p>
-        
-        <p style="font-size: 14px; color: #666; margin-top: 25px;">
-          Need help getting started? Our support team is here to help!<br><br>
-          <strong>The Autobidder Team</strong>
+  const html = createUnifiedEmailTemplate({
+    title: "Your Website is Ready!",
+    subtitle: `Hi ${userName}, ${websiteName} is ready for customization`,
+    eyebrow: "Website Builder",
+    ctaLabel: "Open Website Editor",
+    ctaUrl: setupLink,
+    mainContent: `
+      <h2 style="color:#111827; font-size:22px; margin:0 0 18px;">
+        Your website has been created successfully.
+      </h2>
+      <p style="margin:0 0 18px;">
+        You can start customizing your design, add service content, and publish updates directly from the Autobidder website editor.
+      </p>
+      <div style="background-color:#ecfdf5; border:1px solid #86efac; border-radius:14px; padding:16px; margin:22px 0;">
+        <p style="margin:0; color:#166534; font-size:14px; line-height:1.6;">
+          <strong>Tip:</strong> Your edits save automatically while you work.
         </p>
       </div>
-      
-    </body>
-    </html>
-  `;
+      <p style="margin:18px 0 0; color:#6b7280; font-size:14px;">
+        If the button does not work, copy and paste this link into your browser:
+        <br />
+        <span style="word-break:break-all; color:#2563eb;">${setupLink}</span>
+      </p>
+    `,
+    cardTitle: "What to do next",
+    cardContent: `
+      <ul style="color:#4b5563; margin:0; padding-left:18px;">
+        <li style="margin-bottom:8px;"><strong>Customize your design:</strong> match your brand colors, fonts, and layout.</li>
+        <li style="margin-bottom:8px;"><strong>Add your content:</strong> showcase services, photos, and trust signals.</li>
+        <li style="margin-bottom:8px;"><strong>Embed calculators:</strong> connect your pricing tools directly to the site.</li>
+        <li><strong>Publish updates:</strong> launch when you are ready.</li>
+      </ul>
+    `,
+    footerText: "Website setup email • Open your editor anytime from your Autobidder dashboard.",
+    accentColor: "#059669"
+  });
 
   return await sendEmail({
     to: userEmail,
+    from: 'Autobidder <noreply@autobidder.org>',
     subject,
     html
   });

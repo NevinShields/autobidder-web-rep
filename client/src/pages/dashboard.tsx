@@ -32,9 +32,12 @@ import { apiRequest } from "@/lib/queryClient";
 
 const TopServicesChart = lazy(() => import("@/components/dashboard/top-services-chart"));
 
-const getQuickActions = (userId?: string) => [
-  { icon: Plus, label: "View Calculator", href: "/formula/new", accent: "from-amber-500 to-orange-600" },
-  { icon: Palette, label: "View Calculator", href: userId ? `/styled-calculator?userId=${userId}` : "/styled-calculator", accent: "from-violet-500 to-purple-600" },
+const getPublicCalculatorHref = (userId?: string, shareSlug?: string | null) =>
+  shareSlug ? `/c/${shareSlug}` : userId ? `/styled-calculator?userId=${userId}` : "/styled-calculator";
+
+const getQuickActions = (userId?: string, shareSlug?: string | null) => [
+  { icon: Plus, label: "New Formula", href: "/formula/new", accent: "from-amber-500 to-orange-600" },
+  { icon: Palette, label: "View Calculator", href: getPublicCalculatorHref(userId, shareSlug), accent: "from-violet-500 to-purple-600" },
   { icon: Share, label: "Share Link", href: "/embed-code", accent: "from-rose-500 to-pink-600" },
   { icon: Users, label: "Leads", href: "/leads", accent: "from-emerald-500 to-teal-600" },
   { icon: Calendar, label: "Calendar", href: "/calendar", accent: "from-sky-500 to-blue-600" },
@@ -201,7 +204,7 @@ export default function Dashboard() {
 
   const checklistItems = [
     { id: 'create_formula', step: 1, name: 'Create a simple formula', description: 'Start with one service so you can iterate quickly.', href: '/formula/new', actionLabel: 'Create' },
-    { id: 'test_formula', step: 2, name: 'Test the formula', description: 'Run through the calculator to confirm pricing.', href: user?.id ? `/styled-calculator?userId=${user.id}` : '/styled-calculator', actionLabel: 'Test' },
+    { id: 'test_formula', step: 2, name: 'Test the formula', description: 'Run through the calculator to confirm pricing.', href: getPublicCalculatorHref(user?.id, user?.shareSlug), actionLabel: 'Test' },
     { id: 'generate_icon', step: 3, name: 'Generate a custom icon with AI', description: 'Create a branded icon for your service cards.', href: '/icon-generator', actionLabel: 'Generate' },
     { id: 'css_ai_tool', step: 4, name: 'Use the CSS AI tool', description: 'Describe the design and let AI generate custom CSS.', href: '/design', actionLabel: 'Open' },
   ];
@@ -502,7 +505,7 @@ export default function Dashboard() {
                 Quick Actions
               </h2>
               <div className="grid grid-cols-2 gap-2.5">
-                {getQuickActions(user?.id || '').map((action) => (
+                {getQuickActions(user?.id || '', user?.shareSlug).map((action) => (
                   <Link key={action.href} href={action.href}>
                     <div className="dash-quick-action group flex flex-col items-center gap-2 rounded-xl border border-gray-200/60 dark:border-gray-700/40 bg-white/50 dark:bg-gray-800/30 hover:border-amber-300/60 dark:hover:border-amber-500/30 p-4 cursor-pointer">
                       <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${action.accent} flex items-center justify-center shadow-sm`}>

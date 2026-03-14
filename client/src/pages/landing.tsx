@@ -187,7 +187,7 @@ export default function Landing() {
     { feature: "Branded Estimate Pages", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
     { feature: "Directory Listing (SEO Indexed)", free: "No", starter: "Yes", pro: "Yes", scale: "Yes" },
     { feature: "Custom Forms", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
-    { feature: "ATTOM / Property Data Auto-Fill", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
+    { feature: "Property Data Auto-Fill", free: "No", starter: "No", pro: "Yes", scale: "Yes" },
     { feature: "Bid Verification System", free: "No", starter: "No", pro: "No", scale: "Yes" },
     { feature: "Email Open & Engagement Tracking", free: "No", starter: "No", pro: "No", scale: "Yes" },
     { feature: "Branded PDF Estimates", free: "No", starter: "Yes", pro: "No", scale: "Yes" },

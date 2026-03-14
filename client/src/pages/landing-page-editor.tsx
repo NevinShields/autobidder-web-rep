@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import DashboardLayout from "@/components/dashboard-layout";
 import LandingPageView, { type LandingPagePublicData } from "@/components/landing-page-view";
 import type { Formula, LandingPage } from "@shared/schema";
+import { Copy, ExternalLink, Eye, LayoutTemplate, Loader2, Monitor, Save, Smartphone, Tablet, Wand2 } from "lucide-react";
 
 type LandingTemplateKey =
   | "classic"
@@ -24,7 +26,8 @@ type LandingTemplateKey =
   | "fresh-deck"
   | "halo-glass"
   | "atlas-pro"
-  | "mono-grid";
+  | "mono-grid"
+  | "epoxy-strata";
 
 type LandingTheme = {
   primaryColor: string;
@@ -34,6 +37,10 @@ type LandingTheme = {
   textColor: string;
   mutedTextColor: string;
   buttonTextColor: string;
+  heroImageUrl: string | null;
+  heroOverlayColor: string;
+  heroOverlayOpacity: number;
+  showFaqSection: boolean;
 };
 
 const MAX_LANDING_SERVICES = 10;
@@ -49,6 +56,7 @@ const TEMPLATE_OPTIONS: Array<{ key: LandingTemplateKey; label: string; descript
   { key: "halo-glass",  label: "Halo Glass",  description: "Luminous glassmorphism with layered gradients and soft cards." },
   { key: "atlas-pro",   label: "Atlas Pro",   description: "Corporate premium with stat highlights and crisp hierarchy." },
   { key: "mono-grid",   label: "Mono Grid",   description: "Minimal monochrome editorial with clean blocks and strong type." },
+  { key: "epoxy-strata",label: "Epoxy Strata",description: "Industrial epoxy/coatings style with bold proof bars and system cards." },
 ];
 
 const PREVIEW_VIEWPORT_OPTIONS: Array<{ key: PreviewViewport; label: string; maxWidthClass: string }> = [
@@ -65,7 +73,22 @@ const DEFAULT_THEME: LandingTheme = {
   textColor: "#0F172A",
   mutedTextColor: "#475569",
   buttonTextColor: "#FFFFFF",
+  heroImageUrl: null,
+  heroOverlayColor: "#0F172A",
+  heroOverlayOpacity: 45,
+  showFaqSection: true,
 };
+
+const LANDING_THEME_COLOR_KEYS: Array<keyof Pick<LandingTheme, "primaryColor" | "accentColor" | "backgroundColor" | "surfaceColor" | "textColor" | "mutedTextColor" | "buttonTextColor" | "heroOverlayColor">> = [
+  "primaryColor",
+  "accentColor",
+  "backgroundColor",
+  "surfaceColor",
+  "textColor",
+  "mutedTextColor",
+  "buttonTextColor",
+  "heroOverlayColor",
+];
 
 function isHexColor(value: unknown): value is string {
   return typeof value === "string" && /^#([0-9a-fA-F]{6})$/.test(value.trim());
@@ -101,11 +124,26 @@ function sanitizeLandingTheme(input: unknown): LandingTheme {
     return next;
   }
 
-  for (const key of Object.keys(DEFAULT_THEME) as Array<keyof LandingTheme>) {
+  for (const key of LANDING_THEME_COLOR_KEYS) {
     const candidate = (input as Record<string, unknown>)[key];
     if (isHexColor(candidate)) {
       next[key] = candidate.trim();
     }
+  }
+
+  if (isLandingMediaUrl((input as Record<string, unknown>).heroImageUrl)) {
+    next.heroImageUrl = ((input as Record<string, unknown>).heroImageUrl as string).trim();
+  } else if ((input as Record<string, unknown>).heroImageUrl === null) {
+    next.heroImageUrl = null;
+  }
+
+  const rawOpacity = Number((input as Record<string, unknown>).heroOverlayOpacity);
+  if (Number.isFinite(rawOpacity)) {
+    next.heroOverlayOpacity = Math.min(100, Math.max(0, Math.round(rawOpacity)));
+  }
+
+  if (typeof (input as Record<string, unknown>).showFaqSection === "boolean") {
+    next.showFaqSection = (input as Record<string, unknown>).showFaqSection as boolean;
   }
 
   return next;
@@ -142,7 +180,8 @@ function applyLandingDefaults(page: LandingPage): LandingPage {
     page.templateKey === "fresh-deck" ||
     page.templateKey === "halo-glass" ||
     page.templateKey === "atlas-pro" ||
-    page.templateKey === "mono-grid"
+    page.templateKey === "mono-grid" ||
+    page.templateKey === "epoxy-strata"
       ? page.templateKey
       : "classic";
 
@@ -161,8 +200,9 @@ export default function LandingPageEditorPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [heroUploading, setHeroUploading] = useState(false);
   const [uploadingServiceId, setUploadingServiceId] = useState<number | null>(null);
-  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("desktop");
+  const [previewViewport, setPreviewViewport] = useState<PreviewViewport>("mobile");
   const [fullPreviewOpen, setFullPreviewOpen] = useState(false);
   const draftVersionRef = useRef(0);
 
@@ -174,11 +214,54 @@ export default function LandingPageEditorPage() {
     queryKey: ["/api/formulas"],
   });
 
+  const activeFormulas = useMemo(
+    () => formulas.filter((formula) => formula.isActive !== false && formula.isDisplayed !== false),
+    [formulas],
+  );
+  const fallbackPrimaryFormula = activeFormulas[0] || null;
+
   useEffect(() => {
     if (pageData && !dirty) {
       setDraft(applyLandingDefaults(pageData));
     }
   }, [pageData, dirty]);
+
+  useEffect(() => {
+    if (!draft || dirty || formulas.length === 0) return;
+
+    const normalizedServices = normalizeServices(draft.services);
+    const hasPrimaryService = Boolean(draft.primaryServiceId);
+    const hasConfiguredServices = normalizedServices.length > 0;
+
+    if (hasPrimaryService && hasConfiguredServices) {
+      return;
+    }
+
+    const seededServices = hasConfiguredServices
+      ? normalizedServices
+      : activeFormulas.slice(0, MAX_LANDING_SERVICES).map((formula, index) => ({
+          serviceId: formula.id,
+          name: formula.name || formula.title || "Service",
+          enabled: true,
+          sortOrder: index,
+          imageUrl: null,
+        }));
+
+    const nextPrimaryServiceId = draft.primaryServiceId || seededServices[0]?.serviceId || null;
+
+    if (!nextPrimaryServiceId && seededServices.length === 0) {
+      return;
+    }
+
+    setDraft((prev) => {
+      if (!prev) return prev;
+      return applyLandingDefaults({
+        ...prev,
+        services: seededServices as any,
+        primaryServiceId: nextPrimaryServiceId as any,
+      } as LandingPage);
+    });
+  }, [draft, dirty, formulas, activeFormulas]);
 
   const saveMutation = useMutation({
     mutationFn: async (params: { payload: Partial<LandingPage>; version: number }) => {
@@ -244,6 +327,37 @@ export default function LandingPageEditorPage() {
     },
   });
 
+  const generateFaqsMutation = useMutation({
+    mutationFn: async () => {
+      if (!draft) {
+        throw new Error("Landing page not ready");
+      }
+      const response = await apiRequest("POST", "/api/landing-page/me/generate-faqs", buildPayload(draft));
+      return response.json() as Promise<{ faqs: Array<{ question: string; answer: string }>; theme?: Partial<LandingTheme> }>;
+    },
+    onSuccess: (data) => {
+      updateDraft({
+        faqs: (data.faqs || []) as any,
+        theme: {
+          ...currentTheme,
+          ...(data.theme || {}),
+          showFaqSection: true,
+        } as any,
+      });
+      toast({
+        title: "FAQs generated",
+        description: "AI drafted FAQ content for this landing page.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: "FAQ generation failed",
+        description: err?.message || "Unable to generate FAQs right now.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const saveMutateRef = useRef(saveMutation.mutate);
   saveMutateRef.current = saveMutation.mutate;
 
@@ -296,6 +410,12 @@ export default function LandingPageEditorPage() {
     const currentTheme = sanitizeLandingTheme(draft.theme);
     if (!isHexColor(value)) return;
     updateDraft({ theme: { ...currentTheme, [key]: value } as any });
+  };
+
+  const updateThemeSettings = (patch: Partial<LandingTheme>) => {
+    if (!draft) return;
+    const currentTheme = sanitizeLandingTheme(draft.theme);
+    updateDraft({ theme: { ...currentTheme, ...patch } as any });
   };
 
   const uploadLandingImage = async (file: File): Promise<string> => {
@@ -365,6 +485,24 @@ export default function LandingPageEditorPage() {
       });
     } finally {
       setUploadingServiceId(null);
+    }
+  };
+
+  const handleHeroImageSelected = async (file?: File | null) => {
+    if (!file) return;
+    setHeroUploading(true);
+    try {
+      const imageUrl = await uploadLandingImage(file);
+      updateThemeSettings({ heroImageUrl: imageUrl });
+      toast({ title: "Hero image uploaded" });
+    } catch (error: any) {
+      toast({
+        title: "Hero image upload failed",
+        description: error?.message || "Unable to upload hero image.",
+        variant: "destructive",
+      });
+    } finally {
+      setHeroUploading(false);
     }
   };
 
@@ -518,7 +656,7 @@ export default function LandingPageEditorPage() {
   const statusLabel = draft?.status === "published" ? "Published" : "Draft";
   const statusColor = draft?.status === "published" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600";
 
-  const primaryFormula = formulas.find((f) => f.id === draft?.primaryServiceId);
+  const primaryFormula = formulas.find((f) => f.id === draft?.primaryServiceId) || fallbackPrimaryFormula;
   const calculatorConnected = Boolean(primaryFormula?.embedId && primaryFormula.isActive);
   const enabledServices = normalizeServices(draft?.services).filter((service) => service.enabled);
   const canPublish = Boolean(
@@ -570,6 +708,58 @@ export default function LandingPageEditorPage() {
     if (typeof window === "undefined") return livePath;
     return `${window.location.origin}${livePath}`;
   }, [livePath]);
+  const isPublished = draft?.status === "published";
+
+  const copyLiveLink = async () => {
+    if (!liveUrl) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(liveUrl);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = liveUrl;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "absolute";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      toast({ title: "Link copied", description: liveUrl });
+    } catch {
+      toast({
+        title: "Copy failed",
+        description: "Unable to copy the landing page link.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openLivePage = () => {
+    if (!draft?.slug) return;
+
+    if (draft.status !== "published" && previewData) {
+      try {
+        localStorage.setItem(
+          "landing_page_draft_preview",
+          JSON.stringify({
+            slug: draft.slug,
+            data: previewData,
+            savedAt: Date.now(),
+          }),
+        );
+      } catch {
+        // Ignore storage write errors and continue with server preview.
+      }
+    }
+
+    const targetUrl = new URL(`/l/${draft.slug}`, window.location.origin);
+    if (draft.status !== "published") {
+      targetUrl.searchParams.set("preview", "1");
+    }
+    window.open(targetUrl.toString(), "_blank", "noopener,noreferrer");
+  };
 
   if (isLoading) {
     return (
@@ -604,35 +794,120 @@ export default function LandingPageEditorPage() {
   }
 
   const currentTheme = sanitizeLandingTheme(draft.theme);
+  const templateLabel = TEMPLATE_OPTIONS.find((template) => template.key === draft.templateKey)?.label || "Classic";
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Landing Page Builder</h1>
-            <p className="text-sm text-gray-500">Choose a template, set colors, and embed up to 10 of your calculator services.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>{statusLabel}</span>
-            <Button variant="outline" onClick={() => setFullPreviewOpen(true)}>
-              Full Screen Preview
-            </Button>
-            {draft.status !== "published" ? (
-              <Button onClick={() => publishMutation.mutate()} disabled={!canPublish}>
-                Publish
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <Card className="mb-6 border-slate-200 bg-gradient-to-br from-white via-slate-50 to-slate-100/80 shadow-sm">
+          <CardContent className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className={statusColor}>{statusLabel}</Badge>
+                <Badge variant="outline" className="border-slate-200 bg-white/80 text-slate-600">
+                  <LayoutTemplate className="mr-1.5 h-3.5 w-3.5" />
+                  {templateLabel}
+                </Badge>
+                <Badge variant="outline" className="border-slate-200 bg-white/80 text-slate-600">
+                  <Wand2 className="mr-1.5 h-3.5 w-3.5" />
+                  {enabledServices.length} services enabled
+                </Badge>
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Landing Page Builder</h1>
+                <p className="mt-1 max-w-2xl text-sm text-slate-600">
+                  Build a public landing page with the same dashboard styling patterns used across the app.
+                  Pick a template, tune branding, and connect the pricing form tied to this account.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+              <Button variant="outline" onClick={openLivePage} disabled={!livePath} className="bg-white">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View Live Landing Page
               </Button>
-            ) : (
-              <Button variant="outline" onClick={() => unpublishMutation.mutate()}>
-                Unpublish
+              <Button variant="outline" onClick={() => setFullPreviewOpen(true)} className="bg-white">
+                <Eye className="mr-2 h-4 w-4" />
+                Full Screen Preview
               </Button>
-            )}
-          </div>
+              <Button
+                variant="outline"
+                className="bg-white"
+                onClick={() => {
+                  if (!draft) return;
+                  setSaving(true);
+                  saveMutation.mutate({ payload: buildPayload(draft), version: draftVersionRef.current });
+                }}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Save
+              </Button>
+              {draft.status !== "published" ? (
+                <Button onClick={() => publishMutation.mutate()} disabled={!canPublish}>
+                  Publish
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => unpublishMutation.mutate()} className="bg-white">
+                  Unpublish
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="mb-6 grid gap-4 lg:grid-cols-3">
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Page Status</CardTitle>
+              <CardDescription>Publishing requirements and current editor state.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm text-slate-600">
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <span>Autosave</span>
+                <span className="font-medium text-slate-900">{saving ? "Saving..." : dirty ? "Unsaved changes" : "Up to date"}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <span>Calculator</span>
+                <span className="font-medium text-slate-900">{calculatorConnected ? "Connected" : "Needs attention"}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                <span>URL</span>
+                <span className="truncate pl-3 font-medium text-slate-900">{livePath || "Not ready yet"}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm lg:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Preview Controls</CardTitle>
+              <CardDescription>Switch between the three responsive breakpoints while editing.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-2">
+              {PREVIEW_VIEWPORT_OPTIONS.map((option) => {
+                const Icon = option.key === "desktop" ? Monitor : option.key === "tablet" ? Tablet : Smartphone;
+                return (
+                  <button
+                    key={option.key}
+                    type="button"
+                    onClick={() => setPreviewViewport(option.key)}
+                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                      previewViewport === option.key
+                        ? "border-slate-900 bg-slate-900 text-white"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {option.label}
+                  </button>
+                );
+              })}
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="hidden lg:grid grid-cols-[1fr_440px] gap-6">
-          {renderPreviewFrame()}
-          <div className="space-y-4">{renderEditor()}</div>
+        <div className="hidden gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_460px]">
+          <div className="min-w-0">{renderEditor()}</div>
+          <div className="min-w-0">{renderPreviewFrame()}</div>
         </div>
 
         <div className="lg:hidden">
@@ -641,8 +916,8 @@ export default function LandingPageEditorPage() {
               <TabsTrigger value="edit">Edit</TabsTrigger>
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
-            <TabsContent value="edit">{renderEditor()}</TabsContent>
-            <TabsContent value="preview">
+            <TabsContent value="edit" className="mt-4">{renderEditor()}</TabsContent>
+            <TabsContent value="preview" className="mt-4">
               {renderPreviewFrame(true)}
             </TabsContent>
           </Tabs>
@@ -650,7 +925,7 @@ export default function LandingPageEditorPage() {
       </div>
 
       <Dialog open={fullPreviewOpen} onOpenChange={setFullPreviewOpen}>
-        <DialogContent className="w-[98vw] max-w-none h-[95vh] max-h-[95vh] p-0 overflow-hidden">
+        <DialogContent className="h-[95vh] max-h-[95vh] w-[98vw] max-w-none overflow-hidden p-0">
           <div className="h-full min-h-0">{renderPreviewFrame(true, true)}</div>
         </DialogContent>
       </Dialog>
@@ -659,121 +934,59 @@ export default function LandingPageEditorPage() {
 
   function renderPreviewFrame(compact = false, fullScreen = false) {
     return (
-      <div
-        className={`rounded-xl border bg-slate-100/70 overflow-hidden ${
-          fullScreen ? "h-full min-h-0 flex flex-col" : compact ? "h-[72vh] min-h-[520px]" : "h-[calc(100vh-7.5rem)] min-h-[640px]"
+      <Card
+        className={`overflow-hidden border-slate-200 bg-white shadow-sm ${
+          fullScreen ? "flex h-full min-h-0 flex-col" : compact ? "min-h-[520px]" : "sticky top-24"
         }`}
       >
-        <div className="border-b bg-white px-3 py-2.5 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900">Live Render</p>
-            <p className="text-xs text-gray-500">Responsive preview inside the editor.</p>
+        <CardHeader className="border-b border-slate-200 bg-slate-50/80 pb-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-base font-semibold text-slate-900">Live Preview</CardTitle>
+              <CardDescription>Responsive landing-page render inside the editor.</CardDescription>
+            </div>
+            <Badge variant="outline" className="border-slate-200 bg-white text-slate-600">
+              {previewViewport}
+            </Badge>
           </div>
-          <div className="flex items-center gap-1 rounded-lg border bg-gray-50 p-1 overflow-x-auto">
-            {PREVIEW_VIEWPORT_OPTIONS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => setPreviewViewport(option.key)}
-                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition ${
-                  previewViewport === option.key
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className={`${fullScreen ? "flex-1 min-h-0" : "h-[calc(100%-54px)]"} overflow-auto p-3 md:p-4`}>
-          <div className={`mx-auto rounded-xl border bg-white shadow-sm overflow-hidden w-full ${previewMaxWidthClass}`}>
+        </CardHeader>
+        <CardContent className={`${fullScreen ? "flex-1 min-h-0" : compact ? "h-[72vh]" : "h-[calc(100vh-14rem)] min-h-[640px]"} overflow-auto p-3 md:p-4`}>
+          <div className={`mx-auto w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${previewMaxWidthClass}`}>
             {previewData ? <LandingPageView data={previewData} isPreview previewViewport={previewViewport} /> : null}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 
   function renderEditor() {
     if (!draft) return null;
 
-    const isPublished = draft.status === "published";
-
-    const copyLiveLink = async () => {
-      if (!liveUrl) return;
-      try {
-        if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(liveUrl);
-        } else {
-          const textarea = document.createElement("textarea");
-          textarea.value = liveUrl;
-          textarea.setAttribute("readonly", "");
-          textarea.style.position = "absolute";
-          textarea.style.left = "-9999px";
-          document.body.appendChild(textarea);
-          textarea.select();
-          document.execCommand("copy");
-          document.body.removeChild(textarea);
-        }
-        toast({ title: "Link copied", description: liveUrl });
-      } catch {
-        toast({
-          title: "Copy failed",
-          description: "Unable to copy the landing page link.",
-          variant: "destructive",
-        });
-      }
-    };
-
-    const openLivePage = () => {
-      if (!draft.slug) return;
-
-      if (draft.status !== "published" && previewData) {
-        try {
-          localStorage.setItem(
-            "landing_page_draft_preview",
-            JSON.stringify({
-              slug: draft.slug,
-              data: previewData,
-              savedAt: Date.now(),
-            }),
-          );
-        } catch {
-          // Ignore storage write errors and continue with server preview.
-        }
-      }
-
-      const targetUrl = new URL(`/l/${draft.slug}`, window.location.origin);
-      if (draft.status !== "published") {
-        targetUrl.searchParams.set("preview", "1");
-      }
-      window.open(targetUrl.toString(), "_blank", "noopener,noreferrer");
-    };
-
     return (
       <div className="space-y-4">
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Template & Colors</CardTitle>
+            <CardTitle className="text-base font-semibold">Template & Colors</CardTitle>
+            <CardDescription>Select a template and tune the landing-page palette.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="landing-template-picker">Template Picker</Label>
-              <select
-                id="landing-template-picker"
-                data-testid="select-landing-template"
-                className="w-full border rounded-md px-3 py-2 text-sm bg-white"
+              <Select
                 value={(draft.templateKey as LandingTemplateKey) || "classic"}
-                onChange={(e) => updateDraft({ templateKey: e.target.value as any })}
+                onValueChange={(value) => updateDraft({ templateKey: value as any })}
               >
-                {TEMPLATE_OPTIONS.map((template) => (
-                  <option key={template.key} value={template.key}>
-                    {template.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="landing-template-picker" data-testid="select-landing-template">
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEMPLATE_OPTIONS.map((template) => (
+                    <SelectItem key={template.key} value={template.key}>
+                      {template.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <p className="text-xs text-gray-500">Pick a landing page layout, then fine tune with the color controls below.</p>
             </div>
 
@@ -795,7 +1008,7 @@ export default function LandingPageEditorPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {[
+              {([
                 { key: "primaryColor", label: "Primary" },
                 { key: "accentColor", label: "Accent" },
                 { key: "backgroundColor", label: "Background" },
@@ -803,19 +1016,20 @@ export default function LandingPageEditorPage() {
                 { key: "textColor", label: "Text" },
                 { key: "mutedTextColor", label: "Muted Text" },
                 { key: "buttonTextColor", label: "Button Text" },
-              ].map((item) => (
+                { key: "heroOverlayColor", label: "Hero Overlay" },
+              ] as Array<{ key: keyof Pick<LandingTheme, "primaryColor" | "accentColor" | "backgroundColor" | "surfaceColor" | "textColor" | "mutedTextColor" | "buttonTextColor" | "heroOverlayColor">; label: string }>).map((item) => (
                 <div key={item.key}>
                   <Label className="text-xs">{item.label}</Label>
                   <div className="flex items-center gap-2 mt-1">
                     <Input
                       type="color"
-                      value={currentTheme[item.key as keyof LandingTheme]}
-                      onChange={(e) => updateThemeColor(item.key as keyof LandingTheme, e.target.value)}
+                      value={currentTheme[item.key]}
+                      onChange={(e) => updateThemeColor(item.key, e.target.value)}
                       className="w-12 h-9 p-1"
                     />
                     <Input
-                      value={currentTheme[item.key as keyof LandingTheme]}
-                      onChange={(e) => updateThemeColor(item.key as keyof LandingTheme, e.target.value)}
+                      value={currentTheme[item.key]}
+                      onChange={(e) => updateThemeColor(item.key, e.target.value)}
                       className="h-9"
                     />
                   </div>
@@ -823,15 +1037,45 @@ export default function LandingPageEditorPage() {
               ))}
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => updateDraft({ theme: DEFAULT_THEME as any })}>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="hero-overlay-opacity">Hero Overlay Opacity</Label>
+                <span className="text-xs text-slate-500">{currentTheme.heroOverlayOpacity}%</span>
+              </div>
+              <Input
+                id="hero-overlay-opacity"
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={currentTheme.heroOverlayOpacity}
+                onChange={(e) => updateThemeSettings({ heroOverlayOpacity: Number(e.target.value) })}
+                className="px-0"
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                updateDraft({
+                  theme: {
+                    ...DEFAULT_THEME,
+                    heroImageUrl: currentTheme.heroImageUrl,
+                    showFaqSection: currentTheme.showFaqSection,
+                  } as any,
+                })
+              }
+            >
               Reset Colors
             </Button>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Basics</CardTitle>
+            <CardTitle className="text-base font-semibold">Basics</CardTitle>
+            <CardDescription>Business details, landing URL, and primary CTA copy.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -846,16 +1090,8 @@ export default function LandingPageEditorPage() {
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" type="button" onClick={copyLiveLink} disabled={!liveUrl}>
+                  <Copy className="mr-2 h-4 w-4" />
                   Copy Link
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={openLivePage}
-                  disabled={!livePath}
-                >
-                  View Live Landing Page
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
@@ -905,15 +1141,59 @@ export default function LandingPageEditorPage() {
               <Input value={draft.tagline || ""} onChange={(e) => updateDraft({ tagline: e.target.value })} />
             </div>
             <div>
+              <Label>Hero Image</Label>
+              <div className="mt-2 space-y-3">
+                {currentTheme.heroImageUrl ? (
+                  <img
+                    src={currentTheme.heroImageUrl}
+                    alt={`${draft.businessName || "Landing page"} hero`}
+                    className="h-32 w-full rounded-lg border object-cover bg-white"
+                  />
+                ) : (
+                  <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-xs text-slate-500">
+                    No hero image uploaded yet. Templates will use their built-in background styles until you add one.
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      void handleHeroImageSelected(file);
+                      e.currentTarget.value = "";
+                    }}
+                    disabled={heroUploading}
+                  />
+                  {currentTheme.heroImageUrl ? (
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => updateThemeSettings({ heroImageUrl: null })}
+                      disabled={heroUploading}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {heroUploading
+                    ? "Uploading hero image..."
+                    : "Shown in the hero section across templates. Use the overlay color and opacity controls above to improve text contrast."}
+                </p>
+              </div>
+            </div>
+            <div>
               <Label>Primary CTA</Label>
               <Input value={draft.ctaLabel || ""} onChange={(e) => updateDraft({ ctaLabel: e.target.value })} />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Trust Chips</CardTitle>
+            <CardTitle className="text-base font-semibold">Trust Chips</CardTitle>
+            <CardDescription>Short proof points used across the hero and support sections.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {[0, 1, 2].map((idx) => (
@@ -925,14 +1205,15 @@ export default function LandingPageEditorPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Services ({enabledServices.length}/{MAX_LANDING_SERVICES} enabled)</CardTitle>
+              <CardTitle className="text-base font-semibold">Services ({enabledServices.length}/{MAX_LANDING_SERVICES} enabled)</CardTitle>
               <Button size="sm" variant="outline" onClick={syncServicesFromFormulas}>
                 Sync from Calculators
               </Button>
             </div>
+            <CardDescription>Choose the services and imagery exposed on this page.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {formulas.map((formula) => {
@@ -999,25 +1280,29 @@ export default function LandingPageEditorPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Calculator Embed</CardTitle>
+            <CardTitle className="text-base font-semibold">Calculator Embed</CardTitle>
+            <CardDescription>Set the default pricing form and selector behavior.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
               <Label>Primary Service *</Label>
-              <select
-                className="w-full border rounded-md px-3 py-2 text-sm"
-                value={draft.primaryServiceId || ""}
-                onChange={(e) => updateDraft({ primaryServiceId: e.target.value ? Number(e.target.value) : null })}
+              <Select
+                value={draft.primaryServiceId ? String(draft.primaryServiceId) : undefined}
+                onValueChange={(value) => updateDraft({ primaryServiceId: value ? Number(value) : null })}
               >
-                <option value="">Select a service</option>
-                {enabledServices.map((service) => (
-                  <option key={service.serviceId} value={service.serviceId}>
-                    {service.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {enabledServices.map((service) => (
+                    <SelectItem key={service.serviceId} value={String(service.serviceId)}>
+                      {service.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between">
               <div>
@@ -1030,9 +1315,10 @@ export default function LandingPageEditorPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>How It Works</CardTitle>
+            <CardTitle className="text-base font-semibold">How It Works</CardTitle>
+            <CardDescription>Three steps repeated through the public landing-page layout.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {[0, 1, 2].map((idx) => (
@@ -1046,16 +1332,44 @@ export default function LandingPageEditorPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>FAQs</CardTitle>
-              <Button size="sm" variant="outline" onClick={addFaq} disabled={((draft.faqs as any[]) || []).length >= 6}>
-                Add FAQ
-              </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-base font-semibold">FAQs</CardTitle>
+                <CardDescription>Show a dedicated FAQ section for this template and fill it manually or with AI.</CardDescription>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <Switch
+                    checked={Boolean(currentTheme.showFaqSection)}
+                    onCheckedChange={(checked) =>
+                      updateDraft({ theme: { ...currentTheme, showFaqSection: checked } as any })
+                    }
+                  />
+                  <span className="text-sm font-medium text-slate-700">Show FAQ section</span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => generateFaqsMutation.mutate()}
+                  disabled={generateFaqsMutation.isPending || !draft.businessName || enabledServices.length === 0}
+                >
+                  {generateFaqsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                  Generate with AI
+                </Button>
+                <Button size="sm" variant="outline" onClick={addFaq} disabled={((draft.faqs as any[]) || []).length >= 6}>
+                  Add FAQ
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <p className="text-xs text-slate-500">
+              {currentTheme.showFaqSection
+                ? "This FAQ section is enabled for the selected template."
+                : "This FAQ section is hidden on the public landing page until you enable it."}
+            </p>
             {((draft.faqs as any[]) || []).map((faq, idx) => (
               <div key={idx} className="border rounded-lg p-3 space-y-2">
                 <Input value={faq.question} onChange={(e) => updateFaq(idx, { question: e.target.value })} placeholder="Question" />
@@ -1065,12 +1379,18 @@ export default function LandingPageEditorPage() {
                 </Button>
               </div>
             ))}
+            {((draft.faqs as any[]) || []).length === 0 ? (
+              <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-sm text-slate-500">
+                No FAQs added yet. Add them manually or generate them with AI.
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>Contact</CardTitle>
+            <CardTitle className="text-base font-semibold">Contact</CardTitle>
+            <CardDescription>Phone, email, and service-area information shown on the page.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
@@ -1088,9 +1408,10 @@ export default function LandingPageEditorPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardHeader>
-            <CardTitle>SEO</CardTitle>
+            <CardTitle className="text-base font-semibold">SEO</CardTitle>
+            <CardDescription>Metadata used for search snippets and page previews.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
@@ -1106,7 +1427,7 @@ export default function LandingPageEditorPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-slate-200 shadow-sm">
           <CardContent className="py-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{dirty ? "Unsaved" : "Saved"}</Badge>
@@ -1120,6 +1441,7 @@ export default function LandingPageEditorPage() {
                 saveMutation.mutate({ payload: buildPayload(draft), version: draftVersionRef.current });
               }}
             >
+              <Save className="mr-2 h-4 w-4" />
               Save
             </Button>
           </CardContent>

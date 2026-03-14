@@ -22,6 +22,11 @@ const demos = [
     href: "https://mysite.autobidder.org/preview/cb7a5041?t=1769887566755",
   },
   {
+    title: "Auto Detailing",
+    description: "Styled calculator for auto detailing services.",
+    href: "https://rep.autobidder.org/styled-calculator?userId=user_1765988802768_c1d231560bfb2a31",
+  },
+  {
     title: "Exterior Cleaning Demo 1",
     description: "Live exterior cleaning calculator experience.",
     href: "https://www.littlespressurewashing.com/get-an-instant-price/tuscumbia-al-pressure-washing-price-calculator",

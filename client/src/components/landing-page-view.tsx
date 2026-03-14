@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +13,7 @@ import {
   ChevronRight,
   Droplets,
   Home,
+  Layers,
   Mail,
   MapPin,
   Menu,
@@ -25,8 +25,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import CalculatorPreview from "@/components/calculator-preview";
-import type { Formula } from "@shared/schema";
 
 type LandingTemplateKey =
   | "classic"
@@ -37,7 +35,8 @@ type LandingTemplateKey =
   | "fresh-deck"
   | "halo-glass"
   | "atlas-pro"
-  | "mono-grid";
+  | "mono-grid"
+  | "epoxy-strata";
 
 interface LandingTheme {
   primaryColor: string;
@@ -47,6 +46,10 @@ interface LandingTheme {
   textColor: string;
   mutedTextColor: string;
   buttonTextColor: string;
+  heroImageUrl: string | null;
+  heroOverlayColor: string;
+  heroOverlayOpacity: number;
+  showFaqSection: boolean;
 }
 
 const DEFAULT_THEME: LandingTheme = {
@@ -57,7 +60,41 @@ const DEFAULT_THEME: LandingTheme = {
   textColor: "#0F172A",
   mutedTextColor: "#475569",
   buttonTextColor: "#FFFFFF",
+  heroImageUrl: null,
+  heroOverlayColor: "#0F172A",
+  heroOverlayOpacity: 45,
+  showFaqSection: true,
 };
+
+const LANDING_THEME_COLOR_KEYS: Array<keyof Pick<LandingTheme, "primaryColor" | "accentColor" | "backgroundColor" | "surfaceColor" | "textColor" | "mutedTextColor" | "buttonTextColor" | "heroOverlayColor">> = [
+  "primaryColor",
+  "accentColor",
+  "backgroundColor",
+  "surfaceColor",
+  "textColor",
+  "mutedTextColor",
+  "buttonTextColor",
+  "heroOverlayColor",
+];
+
+function isLandingMediaUrl(value: unknown): value is string {
+  if (typeof value !== "string") {
+    return false;
+  }
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 2048) {
+    return false;
+  }
+  return /^\/(objects|uploads)\//.test(trimmed) || /^https?:\/\//i.test(trimmed);
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  const red = parseInt(normalized.slice(0, 2), 16);
+  const green = parseInt(normalized.slice(2, 4), 16);
+  const blue = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
 
 function sanitizeLandingTheme(input: unknown): LandingTheme {
   const next: LandingTheme = { ...DEFAULT_THEME };
@@ -68,11 +105,26 @@ function sanitizeLandingTheme(input: unknown): LandingTheme {
   const isHex = (value: unknown): value is string =>
     typeof value === "string" && /^#([0-9a-fA-F]{6})$/.test(value.trim());
 
-  for (const key of Object.keys(DEFAULT_THEME) as Array<keyof LandingTheme>) {
+  for (const key of LANDING_THEME_COLOR_KEYS) {
     const candidate = (input as Record<string, unknown>)[key];
     if (isHex(candidate)) {
       next[key] = candidate.trim();
     }
+  }
+
+  if (isLandingMediaUrl((input as Record<string, unknown>).heroImageUrl)) {
+    next.heroImageUrl = ((input as Record<string, unknown>).heroImageUrl as string).trim();
+  } else if ((input as Record<string, unknown>).heroImageUrl === null) {
+    next.heroImageUrl = null;
+  }
+
+  const rawOpacity = Number((input as Record<string, unknown>).heroOverlayOpacity);
+  if (Number.isFinite(rawOpacity)) {
+    next.heroOverlayOpacity = Math.min(100, Math.max(0, Math.round(rawOpacity)));
+  }
+
+  if (typeof (input as Record<string, unknown>).showFaqSection === "boolean") {
+    next.showFaqSection = (input as Record<string, unknown>).showFaqSection as boolean;
   }
 
   return next;
@@ -177,10 +229,26 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
     data.templateKey === "fresh-deck" ||
     data.templateKey === "halo-glass" ||
     data.templateKey === "atlas-pro" ||
-    data.templateKey === "mono-grid"
+    data.templateKey === "mono-grid" ||
+    data.templateKey === "epoxy-strata"
       ? data.templateKey
       : "classic";
   const theme = useMemo(() => sanitizeLandingTheme(data.theme), [data.theme]);
+  const showFaqSection = Boolean(theme.showFaqSection && faqs.length > 0);
+  const heroImageUrl = theme.heroImageUrl;
+  const heroOverlayAlpha = Math.min(1, Math.max(0, theme.heroOverlayOpacity / 100));
+  const heroBackgroundLayer = heroImageUrl ? (
+    <div className="absolute inset-0 pointer-events-none">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url("${heroImageUrl}")` }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: hexToRgba(theme.heroOverlayColor, heroOverlayAlpha) }}
+      />
+    </div>
+  ) : null;
 
   const bubbleSpecs = useMemo(
     () =>
@@ -214,10 +282,26 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
     }
   }, [isPreview, templateKey]);
 
-  const { data: formula } = useQuery<Formula>({
-    queryKey: ["/api/embed", data.primaryServiceEmbedId],
-    enabled: Boolean(data.primaryServiceEmbedId) && !data.enableMultiService && !isPreview,
-  });
+  const styledCalculatorUrl = useMemo(() => {
+    if (!data.userId) {
+      return null;
+    }
+
+    const params = new URLSearchParams({ userId: data.userId });
+    const enabledServiceIds = services.map((service) => service.serviceId).filter((id) => Number.isInteger(id) && id > 0);
+
+    if (data.enableMultiService) {
+      if (enabledServiceIds.length > 0) {
+        params.set("serviceIds", enabledServiceIds.join(","));
+      }
+    } else if (data.primaryServiceId) {
+      params.set("serviceId", String(data.primaryServiceId));
+    } else if (enabledServiceIds[0]) {
+      params.set("serviceId", String(enabledServiceIds[0]));
+    }
+
+    return `/styled-calculator?${params.toString()}`;
+  }, [data.enableMultiService, data.primaryServiceId, data.userId, services]);
 
   const handleCallbackRequest = async () => {
     if (!callbackName.trim() || !callbackPhone.trim()) return;
@@ -276,14 +360,12 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               </Button>
             </div>
           </div>
-        ) : data.enableMultiService ? (
+        ) : styledCalculatorUrl ? (
           <iframe
-            title="Service selector"
-            src={`/service-selector?userId=${data.userId}&landingPageId=${data.id}`}
-            className="w-full min-h-[460px] sm:min-h-[540px] border rounded-lg"
+            title={data.enableMultiService ? "Service selector" : "Pricing form"}
+            src={styledCalculatorUrl}
+            className="w-full min-h-[720px] sm:min-h-[860px] border rounded-lg"
           />
-        ) : formula ? (
-          <CalculatorPreview formula={formula as any} onLeadSubmitted={onLeadSubmitted} />
         ) : (
           <div className="text-sm" style={{ color: theme.mutedTextColor }}>
             Calculator unavailable.
@@ -354,6 +436,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               <a
                 href="#quote"
                 className="ab-primary-bg ab-primary-hover text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:shadow-xl transition-all hover:-translate-y-1"
+                style={{ color: theme.buttonTextColor }}
               >
                 {ctaLabel}
               </a>
@@ -369,7 +452,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               <a href="#services" onClick={() => setIsMenuOpen(false)} className="text-base font-semibold py-1">Services</a>
               <a href="#about" onClick={() => setIsMenuOpen(false)} className="text-base font-semibold py-1">Why Us</a>
               <a href="#quote" onClick={() => setIsMenuOpen(false)} className="text-base font-semibold py-1">Quote</a>
-              <a href="#quote" onClick={() => setIsMenuOpen(false)} className="ab-primary-bg text-white text-center font-bold py-3 rounded-xl mt-1">
+              <a href="#quote" onClick={() => setIsMenuOpen(false)} className="ab-primary-bg text-white text-center font-bold py-3 rounded-xl mt-1" style={{ color: theme.buttonTextColor }}>
                 {ctaLabel}
               </a>
             </div>
@@ -377,6 +460,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
         </nav>
 
         <section id="top" className={`relative ${isPreview ? "pt-8 pb-10 sm:pt-10 sm:pb-12 md:pt-14 md:pb-14" : "pt-24 pb-12 sm:pt-32 sm:pb-20 md:pt-48 md:pb-28"} overflow-hidden`}>
+          {heroBackgroundLayer}
           <div className="container mx-auto px-4 sm:px-6 grid md:grid-cols-2 gap-8 md:gap-12 items-center relative z-10">
             <div className="space-y-5 sm:space-y-8 text-center md:text-left">
               <div className="inline-flex items-center gap-2 ab-primary-bg-light ab-primary px-3 sm:px-4 py-1.5 rounded-full font-bold text-[10px] sm:text-sm uppercase tracking-wider">
@@ -392,6 +476,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
                 <a
                   href="#quote"
                   className="ab-primary-bg ab-primary-hover text-white px-6 sm:px-8 py-3.5 sm:py-5 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg shadow-xl transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
+                  style={{ color: theme.buttonTextColor }}
                 >
                   {ctaLabel} <ChevronRight size={20} />
                 </a>
@@ -580,7 +665,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
           </div>
         </section>
 
-        {faqs.length > 0 && (
+        {showFaqSection && (
           <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
             <h2 className="text-xl sm:text-2xl font-black mb-5 sm:mb-6 text-slate-800">FAQs</h2>
             <div className="space-y-4">
@@ -690,7 +775,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
                 const [href, label] = s.split(":");
                 return <a key={href} href={href} className="ne-mono text-[11px] tracking-widest uppercase text-white/50 hover:text-white transition-colors">{label}</a>;
               })}
-              <a href="#quote" className="ne-primary-bg ne-mono text-[11px] tracking-widest uppercase px-5 py-2.5 font-medium hover:opacity-85 transition-opacity" style={{ color: "#0c0c0f" }}>
+              <a href="#quote" className="ne-primary-bg ne-mono text-[11px] tracking-widest uppercase px-5 py-2.5 font-medium hover:opacity-85 transition-opacity" style={{ color: theme.buttonTextColor }}>
                 {ctaLabel}
               </a>
             </div>
@@ -703,13 +788,14 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               <a href="#services" onClick={() => setIsMenuOpen(false)} className="ne-mono text-xs tracking-widest uppercase text-white/60 py-2">Services</a>
               <a href="#about"    onClick={() => setIsMenuOpen(false)} className="ne-mono text-xs tracking-widest uppercase text-white/60 py-2">About</a>
               <a href="#quote"    onClick={() => setIsMenuOpen(false)} className="ne-mono text-xs tracking-widest uppercase text-white/60 py-2">Quote</a>
-              <a href="#quote"    onClick={() => setIsMenuOpen(false)} className="ne-primary-bg ne-mono text-xs tracking-widest uppercase py-3 text-center font-medium mt-1" style={{ color: "#0c0c0f" }}>{ctaLabel}</a>
+              <a href="#quote"    onClick={() => setIsMenuOpen(false)} className="ne-primary-bg ne-mono text-xs tracking-widest uppercase py-3 text-center font-medium mt-1" style={{ color: theme.buttonTextColor }}>{ctaLabel}</a>
             </div>
           )}
         </nav>
 
         {/* Hero */}
         <section id="top" className={`relative overflow-hidden ${isPreview ? "pt-10 pb-14" : "pt-32 pb-24"}`}>
+          {heroBackgroundLayer}
           <div className="absolute left-0 top-0 bottom-0 w-px" style={{ background: `linear-gradient(to bottom, transparent, ${theme.primaryColor}, transparent)` }} />
           <div className="absolute select-none pointer-events-none ne-display font-black leading-none text-right" style={{ color: "rgba(240,239,244,0.022)", fontSize: "clamp(160px,28vw,340px)", right: "-0.04em", top: "50%", transform: "translateY(-50%)" }}>01</div>
           <div className="max-w-7xl mx-auto px-5 sm:px-8 relative z-10">
@@ -727,7 +813,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
                 {data.tagline || "Professional services. Instant quotes. No guesswork."}
               </p>
               <div className="ne-up-3 flex flex-wrap gap-4">
-                <a href="#quote" className="ne-primary-bg ne-mono text-sm tracking-wider uppercase px-8 py-4 font-medium inline-flex items-center gap-2 hover:opacity-85 transition-opacity" style={{ color: "#0c0c0f" }}>
+                <a href="#quote" className="ne-primary-bg ne-mono text-sm tracking-wider uppercase px-8 py-4 font-medium inline-flex items-center gap-2 hover:opacity-85 transition-opacity" style={{ color: theme.buttonTextColor }}>
                   {ctaLabel} <ChevronRight size={15} />
                 </a>
                 {data.phone && (
@@ -834,7 +920,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
         </section>
 
         {/* FAQs */}
-        {faqs.length > 0 && (
+        {showFaqSection && (
           <section className="py-20" style={{ backgroundColor: "#16161a", borderTop: "1px solid rgba(240,239,244,0.06)" }}>
             <div className="max-w-7xl mx-auto px-5 sm:px-8">
               <div className="ne-mono text-[11px] tracking-[0.22em] uppercase mb-3" style={{ color: theme.primaryColor }}>— FAQ</div>
@@ -908,7 +994,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               <a href="#services" className="fd-body font-semibold text-sm text-[#666] hover:text-[#111] transition-colors">Services</a>
               <a href="#about"    className="fd-body font-semibold text-sm text-[#666] hover:text-[#111] transition-colors">About</a>
               <a href="#quote"    className="fd-body font-semibold text-sm text-[#666] hover:text-[#111] transition-colors">Quote</a>
-              <a href="#quote" className="fd-primary-bg fd-body font-bold text-sm px-6 py-2.5 text-white hover:opacity-90 transition-opacity" style={{ borderRadius: "4px" }}>
+              <a href="#quote" className="fd-primary-bg fd-body font-bold text-sm px-6 py-2.5 text-white hover:opacity-90 transition-opacity" style={{ borderRadius: "4px", color: theme.buttonTextColor }}>
                 {ctaLabel}
               </a>
             </div>
@@ -921,13 +1007,14 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               <a href="#services" onClick={() => setIsMenuOpen(false)} className="fd-body font-semibold py-2">Services</a>
               <a href="#about"    onClick={() => setIsMenuOpen(false)} className="fd-body font-semibold py-2">About</a>
               <a href="#quote"    onClick={() => setIsMenuOpen(false)} className="fd-body font-semibold py-2">Quote</a>
-              <a href="#quote"    onClick={() => setIsMenuOpen(false)} className="fd-primary-bg fd-body font-bold py-3 text-white text-center mt-1" style={{ borderRadius: "4px" }}>{ctaLabel}</a>
+              <a href="#quote"    onClick={() => setIsMenuOpen(false)} className="fd-primary-bg fd-body font-bold py-3 text-white text-center mt-1" style={{ borderRadius: "4px", color: theme.buttonTextColor }}>{ctaLabel}</a>
             </div>
           )}
         </nav>
 
         {/* Hero */}
         <section id="top" className={`relative overflow-hidden ${isPreviewMobile ? "pt-4 pb-8" : isPreview ? "pt-6 pb-10" : "pt-20 pb-12 sm:pt-24 sm:pb-28"}`} style={{ backgroundColor: "#faf7f2" }}>
+          {heroBackgroundLayer}
           <div className={`${isPreviewMobile ? "hidden" : "hidden sm:block"} absolute select-none pointer-events-none fd-display font-black leading-none`} style={{ color: `${theme.primaryColor}0d`, fontSize: "clamp(160px,32vw,420px)", right: "-0.04em", top: "-0.08em" }}>01</div>
           <div className={`max-w-7xl mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-2 ${isPreviewMobile ? "gap-5" : "gap-7 sm:gap-10"} items-center relative z-10`}>
             <div>
@@ -943,7 +1030,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
                 {data.tagline || "Professional services. Transparent pricing. Instant quotes."}
               </p>
               <div className={`flex ${isPreviewMobile ? "flex-col" : "flex-col sm:flex-row"} gap-3 ${isPreviewMobile ? "mb-4" : "mb-6 sm:mb-7"}`}>
-                <a href="#quote" className={`fd-primary-bg fd-display text-white ${isPreviewMobile ? "px-4 py-2.5 text-sm" : "px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"} inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity`} style={{ borderRadius: "4px" }}>
+                <a href="#quote" className={`fd-primary-bg fd-display text-white ${isPreviewMobile ? "px-4 py-2.5 text-sm" : "px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"} inline-flex items-center justify-center gap-2 hover:opacity-90 transition-opacity`} style={{ borderRadius: "4px", color: theme.buttonTextColor }}>
                   {ctaLabel} <ChevronRight size={18} />
                 </a>
                 <a href="#services" className={`fd-display text-[#111] ${isPreviewMobile ? "px-4 py-2.5 text-sm" : "px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg"} inline-flex items-center justify-center gap-2 hover:bg-black/5 transition-colors`} style={{ border: "2px solid #ddd9d0", borderRadius: "4px" }}>
@@ -1077,7 +1164,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
         </section>
 
         {/* FAQs */}
-        {faqs.length > 0 && (
+        {showFaqSection && (
           <section className="py-16 sm:py-20" style={{ backgroundColor: "#faf7f2" }}>
             <div className="max-w-4xl mx-auto px-5 sm:px-8">
               <div className="fd-body text-xs font-bold uppercase tracking-widest mb-2" style={{ color: theme.primaryColor }}>FAQ</div>
@@ -1155,15 +1242,16 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
                 <a href="#about">About</a>
                 <a href="#quote">Quote</a>
               </div>
-              <a href="#quote" className="hg-display text-sm px-4 py-2 rounded-full text-white" style={{ backgroundColor: theme.primaryColor }}>
+              <a href="#quote" className="hg-display text-sm px-4 py-2 rounded-full text-white" style={{ backgroundColor: theme.primaryColor, color: theme.buttonTextColor }}>
                 {ctaLabel}
               </a>
             </div>
           </div>
         </nav>
 
-        <section id="top" className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-start">
+        <section id="top" className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-10 sm:pb-16 overflow-hidden">
+          {heroBackgroundLayer}
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-start">
             <div className="hg-glass rounded-3xl p-6 sm:p-8">
               <div className="inline-flex items-center gap-2 hg-chip rounded-full px-3 py-1 text-[11px] uppercase tracking-widest text-white/90 hg-body mb-4">
                 <Sparkles size={14} style={{ color: theme.accentColor }} />
@@ -1174,7 +1262,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
                 {data.tagline || "Premium service experience with instant online pricing and quick scheduling."}
               </p>
               <div className="flex flex-wrap gap-3">
-                <a href="#quote" className="hg-display px-6 py-3 rounded-full text-sm text-white" style={{ backgroundColor: theme.primaryColor }}>
+                <a href="#quote" className="hg-display px-6 py-3 rounded-full text-sm text-white" style={{ backgroundColor: theme.primaryColor, color: theme.buttonTextColor }}>
                   {ctaLabel}
                 </a>
                 <a href="#services" className="hg-display px-6 py-3 rounded-full text-sm text-white border border-white/25">
@@ -1233,6 +1321,23 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
             ))}
           </div>
         </section>
+
+        {showFaqSection && (
+          <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-14">
+            <div className="hg-glass rounded-3xl p-6 sm:p-8">
+              <div className="text-xs hg-body uppercase tracking-[0.2em] mb-3" style={{ color: theme.accentColor }}>FAQ</div>
+              <h2 className="hg-display text-2xl sm:text-3xl text-white mb-5">Common Questions</h2>
+              <div className="space-y-4">
+                {faqs.map((faq, idx) => (
+                  <div key={idx} className="rounded-2xl border border-white/15 bg-black/10 p-4 sm:p-5">
+                    <div className="hg-display text-white text-lg mb-2">{faq.question}</div>
+                    <p className="hg-body text-sm text-white/70">{faq.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
       </div>
     );
   }
@@ -1270,14 +1375,15 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               <a href="#about">Process</a>
               <a href="#quote">Quote</a>
             </div>
-            <a href="#quote" className="ap-display text-sm px-4 py-2 rounded-md text-white" style={{ backgroundColor: theme.primaryColor }}>
+            <a href="#quote" className="ap-display text-sm px-4 py-2 rounded-md text-white" style={{ backgroundColor: theme.primaryColor, color: theme.buttonTextColor }}>
               {ctaLabel}
             </a>
           </div>
         </nav>
 
-        <section id="top" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6">
+        <section id="top" className="relative max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 overflow-hidden">
+          {heroBackgroundLayer}
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6">
             <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200">
               <div className="inline-flex items-center gap-2 ap-body text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full mb-4" style={{ backgroundColor: `${theme.primaryColor}12`, color: theme.primaryColor }}>
                 <ShieldCheck size={14} /> Professional Team
@@ -1324,7 +1430,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
           </div>
         </section>
 
-        {faqs.length > 0 && (
+        {showFaqSection && (
           <section className="max-w-5xl mx-auto px-4 sm:px-6 pb-14">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8">
               <h2 className="ap-display text-2xl mb-5">Frequently Asked Questions</h2>
@@ -1363,14 +1469,15 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               <a href="#about">How It Works</a>
               <a href="#quote">Quote</a>
             </div>
-            <a href="#quote" className="mg-display text-xs sm:text-sm uppercase px-3 py-2 border-2 border-black hover:bg-black hover:text-white transition-colors">
+            <a href="#quote" className="mg-display text-xs sm:text-sm uppercase px-3 py-2 border-2 border-black hover:bg-black hover:text-white transition-colors" style={{ backgroundColor: theme.primaryColor, borderColor: theme.primaryColor, color: theme.buttonTextColor }}>
               {ctaLabel}
             </a>
           </div>
         </div>
 
-        <section id="top" className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-2 border-2 border-black">
+        <section id="top" className="relative max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 overflow-hidden">
+          {heroBackgroundLayer}
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 border-2 border-black">
             <div className="p-6 sm:p-10 border-b-2 lg:border-b-0 lg:border-r-2 border-black">
               <div className="mg-body text-[11px] uppercase tracking-[0.2em] mb-3" style={{ color: theme.primaryColor }}>
                 Independent Service Studio
@@ -1428,6 +1535,20 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
           </div>
         </section>
 
+        {showFaqSection && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+            <h2 className="mg-display text-2xl sm:text-4xl uppercase mb-4">FAQ</h2>
+            <div className="grid grid-cols-1 gap-3">
+              {faqs.map((faq, idx) => (
+                <div key={idx} className="border-2 border-black p-4 sm:p-5">
+                  <div className="mg-display text-lg uppercase mb-2">{faq.question}</div>
+                  <p className="mg-body text-sm text-black/75">{faq.answer}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         <footer className="border-t-2 border-black">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="mg-body text-xs uppercase tracking-wider">
@@ -1437,6 +1558,398 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
               {data.phone && <span>{data.phone}</span>}
               {data.email && <span>{data.email}</span>}
               {data.serviceAreaText && <span>{data.serviceAreaText}</span>}
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  if (templateKey === "epoxy-strata") {
+    const brandName = data.businessName || "Your Business";
+    const epoxyServices = services.length > 0 ? services : [
+      { serviceId: 1, name: "Garage Floor Coatings", enabled: true, sortOrder: 0, imageUrl: null },
+      { serviceId: 2, name: "Commercial Epoxy Systems", enabled: true, sortOrder: 1, imageUrl: null },
+      { serviceId: 3, name: "Decorative Flake Finishes", enabled: true, sortOrder: 2, imageUrl: null },
+    ];
+    const epoxyProof = trustChips.length > 0 ? trustChips.slice(0, 4) : [
+      { label: "Architectural Grade Finishes", enabled: true },
+      { label: "Industrial Durability", enabled: true },
+      { label: "Fast Turnaround", enabled: true },
+      { label: "Custom Color Systems", enabled: true },
+    ];
+    const epoxySteps = howItWorks.length > 0 ? howItWorks : [
+      { title: "Prep & Grinding", body: "We open the slab properly so the coating system bonds mechanically instead of just sitting on the surface." },
+      { title: "Build The System", body: "Primer, body coat, flake or metallic layer, and topcoat are selected around the use case and finish target." },
+      { title: "Return To Service", body: "You get a clear cure timeline, maintenance guidance, and a floor built for long-term performance." },
+    ];
+    const epoxyIcons = [ShieldCheck, Sparkles, Home, Building2, Droplets, Zap, CarFront, Star];
+    const showcaseImages = [theme.heroImageUrl, ...epoxyServices.map((service) => service.imageUrl)].filter((value): value is string => Boolean(value));
+    const primaryShowcaseImage = showcaseImages[0] || null;
+    const secondaryShowcaseImage = showcaseImages[1] || showcaseImages[0] || null;
+    const tertiaryShowcaseImage = showcaseImages[2] || showcaseImages[0] || null;
+
+    return (
+      <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#090b0f", color: "#f5f7fa" }}>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+          .es-display { font-family: 'Montserrat', sans-serif; }
+          .es-serif { font-family: 'Playfair Display', Georgia, serif; }
+          .es-body { font-family: 'Montserrat', sans-serif; }
+          .es-grid-line {
+            background-image:
+              linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+          }
+        `}</style>
+
+        <div className="fixed inset-0 pointer-events-none opacity-[0.04] z-0 es-grid-line" />
+
+        <nav
+          className={`${isPreview ? "relative" : "fixed"} top-0 left-0 right-0 z-40 transition-all duration-500 ${scrolled ? "py-4 border-b border-white/5" : "py-6 sm:py-8"}`}
+          style={{ backgroundColor: scrolled ? "rgba(9,11,15,0.88)" : "transparent", backdropFilter: scrolled ? "blur(14px)" : "none" }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
+            <a href="#top" className="min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.28em] text-white/40 es-body">The</div>
+              <div className="es-serif text-3xl sm:text-4xl italic text-white leading-none truncate">{brandName}</div>
+              <div className="text-[10px] uppercase tracking-[0.4em] es-body" style={{ color: theme.accentColor }}>
+                Collective
+              </div>
+            </a>
+            <div className="hidden md:flex items-center gap-6 es-body text-sm text-white/75">
+              <a href="#systems">Systems</a>
+              <a href="#transformation">Transformation</a>
+              <a href="#process">Process</a>
+              <a href="#quote">Quote</a>
+            </div>
+            <a
+              href="#quote"
+              className="es-body hidden md:inline-flex items-center gap-2 px-6 py-2.5 border rounded-full text-xs uppercase tracking-[0.25em] transition-all duration-300 hover:bg-white hover:text-black"
+              style={{ borderColor: "rgba(255,255,255,0.2)", color: "#ffffff" }}
+            >
+              <Phone className="h-3 w-3" />
+              Consultation
+            </a>
+            <button className="md:hidden text-white/80" onClick={() => setIsMenuOpen((prev) => !prev)}>
+              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+
+          {isMenuOpen && !isPreview && (
+            <div className="md:hidden border-t border-white/10 bg-black/95 px-6 py-8">
+              <div className="flex flex-col items-center gap-6">
+                <a href="#systems" className="es-body text-lg uppercase tracking-[0.22em] text-white" onClick={() => setIsMenuOpen(false)}>Systems</a>
+                <a href="#transformation" className="es-body text-lg uppercase tracking-[0.22em] text-white" onClick={() => setIsMenuOpen(false)}>Transformation</a>
+                <a href="#process" className="es-body text-lg uppercase tracking-[0.22em] text-white" onClick={() => setIsMenuOpen(false)}>Process</a>
+                <a href="#quote" className="mt-4 px-8 py-3 bg-white text-black text-sm uppercase tracking-[0.22em] rounded-full" onClick={() => setIsMenuOpen(false)}>
+                  {ctaLabel}
+                </a>
+              </div>
+            </div>
+          )}
+        </nav>
+
+        <section id="top" className="relative min-h-[90vh] sm:min-h-screen w-full overflow-hidden flex items-center justify-center">
+          {primaryShowcaseImage ? (
+            <div className="absolute inset-0 z-0">
+              <img src={primaryShowcaseImage} alt={brandName} className="w-full h-full object-cover opacity-75" />
+              <div className="absolute inset-0 bg-black/45" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, #090b0f 0%, transparent 45%, rgba(0,0,0,0.55) 100%)" }} />
+            </div>
+          ) : (
+            <div className="absolute inset-0 z-0" style={{ background: `radial-gradient(circle at top, ${theme.primaryColor}30 0%, transparent 35%), linear-gradient(180deg, #151922 0%, #090b0f 70%)` }} />
+          )}
+          <div className="absolute inset-0 z-10 es-grid-line opacity-20 pointer-events-none" />
+          <div className="relative z-20 max-w-7xl mx-auto px-6 text-center pt-28 sm:pt-32 pb-20">
+            <div className="inline-block py-1 px-3 border border-white/20 rounded-full bg-black/30 backdrop-blur-md text-[10px] md:text-xs tracking-[0.3em] uppercase text-gray-300 mb-6 es-body">
+              Architectural Grade Surfaces
+            </div>
+            <h1 className="es-display text-5xl md:text-7xl lg:text-9xl font-bold uppercase tracking-[-0.04em] text-white mb-6 leading-[0.95]">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-500">Luxury</span>
+              <span className="block es-serif italic font-normal text-4xl md:text-6xl lg:text-8xl my-2 md:my-4" style={{ color: theme.accentColor }}>
+                Engineered
+              </span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-b from-gray-200 to-gray-600">Perfection</span>
+            </h1>
+            <p className="max-w-xl mx-auto text-gray-300 text-sm md:text-base leading-relaxed mb-10 es-body">
+              {data.tagline || "Transform your space with seamless, industrial-grade epoxy systems designed for the most demanding luxury environments."}
+            </p>
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+              <a
+                href="#quote"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-sm uppercase tracking-[0.22em] es-body"
+                style={{ backgroundColor: theme.primaryColor, color: theme.buttonTextColor }}
+              >
+                {ctaLabel}
+                <ChevronRight size={16} />
+              </a>
+              <a href="#systems" className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-white/20 rounded-full text-sm uppercase tracking-[0.22em] text-white es-body bg-black/25 backdrop-blur-sm">
+                Explore Gallery
+              </a>
+            </div>
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 hidden sm:flex flex-col items-center gap-2">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-gray-500 es-body">Scroll</span>
+              <div className="w-px h-12 bg-gradient-to-b from-transparent via-white to-transparent opacity-50" />
+            </div>
+          </div>
+        </section>
+
+        <section id="transformation" className="py-20 sm:py-28 relative overflow-hidden" style={{ backgroundColor: "#12161d" }}>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-[420px] blur-[120px] rounded-full pointer-events-none" style={{ backgroundColor: `${theme.primaryColor}18` }} />
+          <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center relative z-10">
+            <div>
+              <h2 className="es-display text-4xl md:text-5xl font-bold uppercase tracking-tight text-white mb-6 leading-none">
+                From Cracked <br />
+                <span className="text-gray-500">To Showroom</span>
+              </h2>
+              <p className="text-gray-400 mb-8 leading-relaxed es-body">
+                We combine heavy-duty surface prep with premium resin systems to produce floors that read as design pieces but perform like commercial infrastructure.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                {[
+                  { label: "Durability", value: "20+ Years" },
+                  { label: "Install Time", value: "24-48 Hrs" },
+                  { label: "Resistance", value: "Industrial" },
+                ].map((stat, index) => (
+                  <div key={index} className="bg-white/5 border border-white/5 p-4 rounded-lg backdrop-blur-sm">
+                    <div className="text-2xl es-serif italic text-white mb-1">{stat.value}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-gray-500 es-body">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+              <ul className="space-y-4">
+                {epoxyProof.map((item, index) => (
+                  <li key={index} className="flex items-center gap-3 text-sm text-gray-300 es-body">
+                    <CheckCircle2 className="w-4 h-4" style={{ color: theme.accentColor }} />
+                    {item.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 h-[440px] sm:h-[520px]">
+              <div className="relative rounded-2xl overflow-hidden border border-white/10">
+                {secondaryShowcaseImage ? (
+                  <img src={secondaryShowcaseImage} alt="Concrete preparation" className="w-full h-full object-cover grayscale contrast-125" />
+                ) : (
+                  <div className="w-full h-full" style={{ background: "linear-gradient(180deg, #3a4048 0%, #1b2027 100%)" }} />
+                )}
+                <div className="absolute inset-0 bg-black/25" />
+                <div className="absolute top-4 left-4 bg-white/80 backdrop-blur text-black text-xs px-3 py-1 rounded uppercase tracking-widest es-body">Before</div>
+              </div>
+              <div className="relative rounded-2xl overflow-hidden border border-white/10">
+                {tertiaryShowcaseImage ? (
+                  <img src={tertiaryShowcaseImage} alt="Finished epoxy floor" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full" style={{ background: `linear-gradient(180deg, ${theme.primaryColor} 0%, #131821 100%)` }} />
+                )}
+                <div className="absolute inset-0 bg-black/15" />
+                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur text-white text-xs px-3 py-1 rounded uppercase tracking-widest es-body">After</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="systems" className="py-24 bg-[#090b0f] relative">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <span className="uppercase tracking-[0.3em] text-xs font-semibold es-body" style={{ color: theme.accentColor }}>
+                Our Expertise
+              </span>
+              <h2 className="text-4xl md:text-5xl font-bold text-white mt-4 uppercase tracking-tight es-display">
+                Premium Systems
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {epoxyServices.slice(0, 3).map((service, index) => {
+                const Icon = epoxyIcons[index % epoxyIcons.length];
+                return (
+                  <a
+                    key={service.serviceId}
+                    href="#quote"
+                    className="group relative h-[500px] w-full overflow-hidden rounded-xl border border-white/5 bg-[#12161d]"
+                  >
+                    <div className="absolute inset-0 overflow-hidden">
+                      {service.imageUrl ? (
+                        <img src={service.imageUrl} alt={service.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      ) : (
+                        <div className="w-full h-full" style={{ background: `linear-gradient(160deg, ${theme.primaryColor} 0%, #161b22 80%)` }} />
+                      )}
+                      <div className="absolute inset-0 bg-black/45 group-hover:bg-black/20 transition-colors duration-500 z-10" />
+                    </div>
+
+                    <div className="absolute inset-0 z-20 flex flex-col justify-end p-8 bg-gradient-to-t from-black via-black/50 to-transparent opacity-90">
+                      <div className="transform transition-transform duration-500 group-hover:-translate-y-4">
+                        <div className="mb-4 h-12 w-12 rounded-full border border-white/15 bg-black/25 flex items-center justify-center">
+                          <Icon size={20} color={theme.buttonTextColor} />
+                        </div>
+                        <h3 className="text-2xl font-bold uppercase tracking-wide text-white mb-2 es-display">{service.name}</h3>
+                        <div className="w-12 h-px mb-4 transition-all duration-500 group-hover:w-24" style={{ backgroundColor: theme.accentColor }} />
+                        <p className="text-gray-300 text-sm leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100 translate-y-4 group-hover:translate-y-0 es-body">
+                          {epoxySteps[index % Math.max(epoxySteps.length, 1)]?.body || "Premium coating build designed around aesthetics, impact resistance, and daily usability."}
+                        </p>
+                      </div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section id="gallery" className="py-24 bg-[#121212]">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex justify-between items-end mb-16">
+              <div>
+                <h2 className="text-4xl font-bold text-white uppercase tracking-tight es-display">Recent Projects</h2>
+                <p className="text-gray-400 mt-2 es-body">Curated selections of our finest installations.</p>
+              </div>
+            </div>
+
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
+              {[primaryShowcaseImage, secondaryShowcaseImage, tertiaryShowcaseImage, ...epoxyServices.map((service) => service.imageUrl)].filter((value): value is string => Boolean(value)).slice(0, 9).map((imageUrl, index) => (
+                <div key={`${imageUrl}-${index}`} className="relative group overflow-hidden rounded-lg break-inside-avoid cursor-pointer">
+                  <img
+                    src={imageUrl}
+                    alt={`${brandName} project ${index + 1}`}
+                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-105 filter saturate-50 group-hover:saturate-100"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="text-center p-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                      <h4 className="text-xl font-bold text-white uppercase tracking-widest es-display">
+                        {epoxyServices[index % epoxyServices.length]?.name || "Signature Finish"}
+                      </h4>
+                      <span className="text-xs uppercase tracking-[0.2em] block mt-2 es-body" style={{ color: theme.accentColor }}>
+                        Recent Installation
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="process" className="py-24 bg-zinc-950 text-white relative">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="mb-16">
+              <h2 className="text-4xl font-bold uppercase tracking-tight mb-2 es-display">The Process</h2>
+              <div className="h-1 w-20" style={{ backgroundColor: theme.accentColor }} />
+            </div>
+
+            <div className="relative">
+              <div className="hidden lg:block absolute top-12 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent z-0" />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                {epoxySteps.slice(0, 3).map((step, index) => (
+                  <div key={index} className="relative z-10 group">
+                    <div className="w-24 h-24 bg-[#151922] border border-white/10 rounded-full flex items-center justify-center mb-6 transition-colors duration-300 shadow-2xl relative">
+                      <div className="absolute inset-0 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500" style={{ backgroundColor: `${theme.primaryColor}18` }} />
+                      <div className="text-gray-300 relative z-10">
+                        {index === 0 ? <ShieldCheck className="w-6 h-6" /> : index === 1 ? <Layers className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
+                      </div>
+                      <div className="absolute -top-2 -right-2 w-8 h-8 text-black font-bold flex items-center justify-center rounded-full text-xs" style={{ backgroundColor: theme.accentColor }}>
+                        {index + 1}
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-bold uppercase tracking-wide mb-3 text-gray-100 es-display">{step.title}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed es-body">{step.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="reviews" className="py-24 bg-[#090b0f] relative overflow-hidden">
+          <div className="absolute inset-0 es-grid-line opacity-20" />
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+            <div className="flex flex-col items-center mb-16">
+              <div className="flex gap-1 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star key={star} className="w-5 h-5 fill-current" style={{ color: theme.accentColor }} />
+                ))}
+              </div>
+              <h2 className="text-3xl font-bold text-white text-center uppercase tracking-wider es-display">Client Authority</h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {(showFaqSection && faqs.length > 0 ? faqs : [
+                { question: "The finish completely changed the space.", answer: "Property Owner" },
+                { question: "The prep work gave us confidence the floor would last.", answer: "Commercial Client" },
+                { question: "Clean install, clear process, strong final result.", answer: "Homeowner" },
+              ]).slice(0, 3).map((faq, index) => (
+                <div key={index} className="bg-white/5 border border-white/5 p-8 relative hover:bg-white/10 transition-colors duration-300">
+                  <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+                  <p className="text-gray-300 italic mb-8 es-serif text-lg leading-loose">"{faq.question}"</p>
+                  <div>
+                    <h4 className="text-white font-bold uppercase tracking-wider text-sm es-body">{brandName}</h4>
+                    <span className="text-xs text-gray-500 uppercase tracking-widest es-body">{faq.answer}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {showFaqSection && (
+          <section className="py-24 bg-[#121212]">
+            <div className="max-w-6xl mx-auto px-6">
+              <div className="mb-14 text-center">
+                <div className="text-xs uppercase tracking-[0.3em] mb-3 es-body" style={{ color: theme.accentColor }}>FAQ</div>
+                <h2 className="text-4xl md:text-5xl font-bold text-white uppercase tracking-tight es-display">Common Questions</h2>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                {faqs.map((faq, index) => (
+                  <div key={index} className="rounded-xl border border-white/10 bg-black/30 p-6">
+                    <div className="text-white text-lg uppercase tracking-wide mb-3 es-display">{faq.question}</div>
+                    <p className="text-gray-400 text-sm leading-relaxed es-body">{faq.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section id="quote" className="py-28 bg-black relative flex items-center justify-center overflow-hidden">
+          <div className="absolute inset-0 opacity-80" style={{ background: "radial-gradient(circle at center, rgba(31,41,55,0.7) 0%, rgba(0,0,0,1) 70%)" }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 blur-[120px] rounded-full pointer-events-none" />
+
+          <div className="relative z-10 max-w-6xl mx-auto px-6 text-center">
+            <h2 className="text-5xl md:text-7xl font-bold text-white uppercase tracking-tight mb-8 es-display">
+              Your Concrete <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-gray-200 to-gray-600">Reimagined.</span>
+            </h2>
+            <p className="text-xl text-gray-400 mb-12 es-body">
+              Schedule your free on-site design consultation and estimate today.
+            </p>
+            <div className="max-w-4xl mx-auto rounded-2xl overflow-hidden border border-white/10 bg-[#f5f7fa] p-3 sm:p-4 text-left">
+              {QuoteCard}
+            </div>
+            <p className="text-xs uppercase tracking-[0.2em] mt-8 animate-pulse es-body" style={{ color: theme.accentColor }}>
+              Limited install spots available this month
+            </p>
+          </div>
+        </section>
+
+        <footer className="bg-[#090b0f] border-t border-white/5 py-16">
+          <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="text-center md:text-left">
+              <div className="text-xl font-bold text-white tracking-widest uppercase mb-2 es-display">{brandName}</div>
+              <p className="text-xs text-gray-600 uppercase tracking-wider es-body">Premium Epoxy Systems</p>
+            </div>
+
+            <div className="flex flex-wrap gap-6 text-sm text-gray-500 es-body">
+              {data.phone && <span>{data.phone}</span>}
+              {data.email && <span>{data.email}</span>}
+              {data.serviceAreaText && <span>{data.serviceAreaText}</span>}
+            </div>
+
+            <div className="text-xs text-gray-600 es-body">
+              © {new Date().getFullYear()} {brandName}{data.autobidderBrandingRequired ? " · Autobidder" : ""}. All Rights Reserved.
             </div>
           </div>
         </footer>
@@ -1497,26 +2010,28 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
       {/* Hero */}
       {templateKey === "spotlight" ? (
         <section
-          className="border-b"
+          className="relative border-b overflow-hidden"
           style={{
             background: `linear-gradient(160deg, ${theme.primaryColor}12 0%, ${theme.surfaceColor} 50%, ${theme.accentColor}12 100%)`,
             borderColor: `${theme.primaryColor}20`,
           }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          {heroBackgroundLayer}
+          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div className="max-w-3xl mx-auto text-center">{HeroContent}</div>
             <div className="max-w-5xl mx-auto mt-8">{QuoteCard}</div>
           </div>
         </section>
       ) : templateKey === "split" ? (
         <section
-          className="border-b"
+          className="relative border-b overflow-hidden"
           style={{
             background: `linear-gradient(120deg, ${theme.primaryColor} 0%, ${theme.textColor} 100%)`,
             borderColor: `${theme.primaryColor}33`,
           }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          {heroBackgroundLayer}
+          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div className="grid grid-cols-1 gap-8 items-center">
               <div className="space-y-5">
                 {data.logoUrl && <img src={data.logoUrl} alt={data.businessName || "Business logo"} className="h-12 w-auto" />}
@@ -1553,13 +2068,14 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
         </section>
       ) : (
         <section
-          className="border-b"
+          className="relative border-b overflow-hidden"
           style={{
             background: `linear-gradient(to bottom, ${theme.primaryColor}0D 0%, ${theme.surfaceColor} 100%)`,
             borderColor: `${theme.primaryColor}20`,
           }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+          {heroBackgroundLayer}
+          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
             <div className="grid grid-cols-1 gap-8 items-center">
               {HeroContent}
               {QuoteCard}
@@ -1627,7 +2143,7 @@ export default function LandingPageView({ data, isPreview, previewViewport, onLe
       </section>
 
       {/* FAQ */}
-      {faqs.length > 0 && (
+      {showFaqSection && (
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <h2 className="text-2xl font-bold mb-6" style={{ color: theme.textColor }}>
             FAQs

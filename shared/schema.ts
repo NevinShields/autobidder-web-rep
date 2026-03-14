@@ -992,6 +992,7 @@ export const passwordResetCodes = pgTable("password_reset_codes", {
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
   email: varchar("email").unique(),
+  shareSlug: varchar("share_slug").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -1884,53 +1885,20 @@ export const estimateServiceSchema = z.object({
 export interface PropertyAttributes {
   building_area_sqft?: number;
   stories?: number;
-  year_built?: number;
-  lot_area_sqft?: number;
   exterior_wall_material?: string;
   roof_material?: string;
-  // Surface dimensions (parsed from ATTOM dimensions strings)
-  "surface.driveway.area_sqft"?: number;
-  "surface.driveway.dimensions_raw"?: string;
-  "surface.patio.area_sqft"?: number;
-  "surface.patio.dimensions_raw"?: string;
-  "surface.deck.area_sqft"?: number;
-  "surface.deck.dimensions_raw"?: string;
-  "surface.pool.area_sqft"?: number;
-  "surface.pool.dimensions_raw"?: string;
-  "surface.garage.area_sqft"?: number;
-  "surface.garage.dimensions_raw"?: string;
-  "surface.fence.linear_ft"?: number;
 }
 
 export const PROPERTY_ATTRIBUTE_LABELS: Record<string, string> = {
   building_area_sqft: "Building Area (sqft)",
   stories: "Number of Stories",
-  year_built: "Year Built",
-  lot_area_sqft: "Lot Area (sqft)",
   exterior_wall_material: "Exterior Wall Material",
   roof_material: "Roof Material",
-  "surface.driveway.area_sqft": "Driveway Area (sqft)",
-  "surface.driveway.dimensions_raw": "Driveway Dimensions",
-  "surface.patio.area_sqft": "Patio Area (sqft)",
-  "surface.patio.dimensions_raw": "Patio Dimensions",
-  "surface.deck.area_sqft": "Deck Area (sqft)",
-  "surface.deck.dimensions_raw": "Deck Dimensions",
-  "surface.pool.area_sqft": "Pool Area (sqft)",
-  "surface.pool.dimensions_raw": "Pool Dimensions",
-  "surface.garage.area_sqft": "Garage Area (sqft)",
-  "surface.garage.dimensions_raw": "Garage Dimensions",
-  "surface.fence.linear_ft": "Fence Length (linear ft)",
 };
 
 export const PROPERTY_ATTRIBUTE_GROUPS: Record<string, string[]> = {
-  "Home": ["building_area_sqft", "stories", "year_built", "lot_area_sqft"],
+  "Home": ["building_area_sqft", "stories"],
   "Materials": ["exterior_wall_material", "roof_material"],
-  "Driveway": ["surface.driveway.area_sqft", "surface.driveway.dimensions_raw"],
-  "Patio": ["surface.patio.area_sqft", "surface.patio.dimensions_raw"],
-  "Deck": ["surface.deck.area_sqft", "surface.deck.dimensions_raw"],
-  "Pool": ["surface.pool.area_sqft", "surface.pool.dimensions_raw"],
-  "Garage": ["surface.garage.area_sqft", "surface.garage.dimensions_raw"],
-  "Fence": ["surface.fence.linear_ft"],
 };
 
 export type Variable = z.infer<typeof variableSchema>;
@@ -3041,6 +3009,10 @@ export const landingPages = pgTable("landing_pages", {
     textColor?: string;
     mutedTextColor?: string;
     buttonTextColor?: string;
+    heroImageUrl?: string | null;
+    heroOverlayColor?: string;
+    heroOverlayOpacity?: number;
+    showFaqSection?: boolean;
   }>(),
   businessName: text("business_name"),
   logoUrl: text("logo_url"),
@@ -3525,13 +3497,13 @@ export type InsertKbTag = z.infer<typeof insertKbTagSchema>;
 export type KbArticle = typeof knowledgeBaseArticles.$inferSelect;
 export type InsertKbArticle = z.infer<typeof insertKbArticleSchema>;
 
-// Property Snapshots - cached property data from ATTOM API
+// Property Snapshots - cached property data from provider API
 export const propertySnapshots = pgTable("property_snapshots", {
   id: serial("id").primaryKey(),
   addressNormalized: text("address_normalized").notNull(),
   addressInput: text("address_input").notNull(),
   attributesJson: jsonb("attributes_json").notNull().$type<PropertyAttributes>(),
-  source: text("source").notNull().default("attom"),
+  source: text("source").notNull().default("realie"),
   retrievedAt: timestamp("retrieved_at").notNull().defaultNow(),
   rawPayloadJson: jsonb("raw_payload_json"),
   confidenceJson: jsonb("confidence_json"),

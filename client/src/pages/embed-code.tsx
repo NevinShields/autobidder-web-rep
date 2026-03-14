@@ -27,7 +27,7 @@ export default function EmbedCode() {
     queryKey: ["/api/formulas"],
   });
 
-  const { data: user } = useQuery<{id: string}>({
+  const { data: user } = useQuery<{ id: string; shareSlug?: string | null }>({
     queryKey: ["/api/auth/user"],
   });
 
@@ -47,14 +47,33 @@ export default function EmbedCode() {
   // Generate embed URLs
   const baseUrl = window.location.origin;
 
-  // Single service URL now uses styled-calculator with serviceId parameter
-  const singleFormulaUrl = selectedFormulaData && user?.id
-    ? `${baseUrl}/styled-calculator?userId=${user.id}&serviceId=${selectedFormulaData.id}`
-    : selectedFormulaData
-    ? `${baseUrl}/styled-calculator?serviceId=${selectedFormulaData.id}`
-    : "";
+  const buildPublicCalculatorUrl = (serviceId?: number) => {
+    if (user?.shareSlug) {
+      const params = new URLSearchParams();
+      if (serviceId) {
+        params.set("serviceId", String(serviceId));
+      }
+      const query = params.toString();
+      return `${baseUrl}/c/${user.shareSlug}${query ? `?${query}` : ""}`;
+    }
 
-  const styledCalculatorUrl = user?.id ? `${baseUrl}/styled-calculator?userId=${user.id}` : `${baseUrl}/styled-calculator`;
+    if (user?.id) {
+      const params = new URLSearchParams({ userId: user.id });
+      if (serviceId) {
+        params.set("serviceId", String(serviceId));
+      }
+      return `${baseUrl}/styled-calculator?${params.toString()}`;
+    }
+
+    if (serviceId) {
+      return `${baseUrl}/styled-calculator?serviceId=${serviceId}`;
+    }
+
+    return `${baseUrl}/styled-calculator`;
+  };
+
+  const singleFormulaUrl = selectedFormulaData ? buildPublicCalculatorUrl(selectedFormulaData.id) : "";
+  const styledCalculatorUrl = buildPublicCalculatorUrl();
   const iframeTitle = `${businessSettings?.businessName || "Business"} pricing calculator`;
 
   // Generate iframe code for single formula

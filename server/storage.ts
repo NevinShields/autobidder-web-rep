@@ -236,125 +236,282 @@ const PERMISSION_LIMITS = [
   "maxTeamMembers",
 ];
 
-const STARTER_STYLE_PRESETS: Array<{
-  id: string;
-  styling: Partial<StylingOptions>;
-}> = [
-  {
-    id: "modern",
-    styling: {
-      fontFamily: "inter",
-      primaryColor: "#2563EB",
-      buttonBackgroundColor: "#2563EB",
-      buttonBorderColor: "#2563EB",
-      buttonHoverBackgroundColor: "#1D4ED8",
-      buttonHoverBorderColor: "#1D4ED8",
-      inputFocusColor: "#2563EB",
-      backgroundColor: "#FFFFFF",
-      textColor: "#1F2937",
-      multiChoiceSelectedColor: "#2563EB",
-      multiChoiceSelectedBgColor: "#EFF6FF",
-    },
-  },
-  {
-    id: "professional",
-    styling: {
-      fontFamily: "roboto",
-      primaryColor: "#4B5563",
-      buttonStyle: "square",
-      buttonBackgroundColor: "#4B5563",
-      buttonBorderColor: "#4B5563",
-      buttonHoverBackgroundColor: "#374151",
-      buttonHoverBorderColor: "#374151",
-      inputFocusColor: "#4B5563",
-      backgroundColor: "#F9FAFB",
-      textColor: "#374151",
-      multiChoiceSelectedColor: "#4B5563",
-      multiChoiceSelectedBgColor: "#F3F4F6",
-    },
-  },
-  {
-    id: "vibrant",
-    styling: {
-      fontFamily: "montserrat",
-      primaryColor: "#8B5CF6",
-      buttonBackgroundColor: "#8B5CF6",
-      buttonBorderColor: "#8B5CF6",
-      buttonHoverBackgroundColor: "#7C3AED",
-      buttonHoverBorderColor: "#7C3AED",
-      inputFocusColor: "#8B5CF6",
-      backgroundColor: "#FEFEFE",
-      textColor: "#1F2937",
-      multiChoiceSelectedColor: "#8B5CF6",
-      multiChoiceSelectedBgColor: "#F3E8FF",
-    },
-  },
-  {
-    id: "minimal",
-    styling: {
-      fontFamily: "open-sans",
-      primaryColor: "#10B981",
-      buttonStyle: "square",
-      buttonBackgroundColor: "#10B981",
-      buttonBorderColor: "#10B981",
-      buttonHoverBackgroundColor: "#059669",
-      buttonHoverBorderColor: "#059669",
-      inputFocusColor: "#10B981",
-      backgroundColor: "#FFFFFF",
-      textColor: "#374151",
-      multiChoiceSelectedColor: "#10B981",
-      multiChoiceSelectedBgColor: "#ECFDF5",
-      multiChoiceLayout: "list",
-    },
-  },
-  {
-    id: "elegant",
-    styling: {
-      fontFamily: "lato",
-      primaryColor: "#D97706",
-      buttonBackgroundColor: "#D97706",
-      buttonBorderColor: "#D97706",
-      buttonHoverBackgroundColor: "#B45309",
-      buttonHoverBorderColor: "#B45309",
-      inputFocusColor: "#D97706",
-      backgroundColor: "#FFFBEB",
-      textColor: "#92400E",
-      multiChoiceSelectedColor: "#D97706",
-      multiChoiceSelectedBgColor: "#FEF3C7",
-    },
-  },
-  {
-    id: "dark",
-    styling: {
-      fontFamily: "inter",
-      primaryColor: "#F59E0B",
-      buttonBackgroundColor: "#F59E0B",
-      buttonBorderColor: "#F59E0B",
-      buttonHoverBackgroundColor: "#D97706",
-      buttonHoverBorderColor: "#D97706",
-      inputFocusColor: "#F59E0B",
-      inputBackgroundColor: "#1F2937",
-      inputTextColor: "#F9FAFB",
-      inputBorderColor: "#374151",
-      backgroundColor: "#111827",
-      textColor: "#F9FAFB",
-      multiChoiceSelectedColor: "#F59E0B",
-      multiChoiceSelectedBgColor: "#1F2937",
-      questionCardBackgroundColor: "#1F2937",
-      questionCardBorderColor: "#374151",
-      pricingCardBackgroundColor: "#1F2937",
-      pricingTextColor: "#F9FAFB",
-      pricingAccentColor: "#F59E0B",
-    },
-  },
-];
+const STARTER_THEME_STYLING: Partial<StylingOptions> = {
+  fontFamily: "inter",
+  primaryColor: "#F97316",
+  buttonBackgroundColor: "#F97316",
+  buttonBorderColor: "#F97316",
+  buttonHoverBackgroundColor: "#EA580C",
+  buttonHoverBorderColor: "#EA580C",
+  buttonTextColor: "#FFFFFF",
+  inputFocusColor: "#F97316",
+  inputBackgroundColor: "#FFFFFF",
+  inputBorderColor: "#FDBA74",
+  inputTextColor: "#7C2D12",
+  inputPlaceholderColor: "#C2410C",
+  backgroundColor: "#FFF7ED",
+  textColor: "#7C2D12",
+  questionCardBackgroundColor: "#FFFFFF",
+  questionCardBorderColor: "#FDBA74",
+  pricingCardBackgroundColor: "#FFFFFF",
+  pricingTextColor: "#7C2D12",
+  pricingAccentColor: "#EF4444",
+  multiChoiceSelectedColor: "#7C2D12",
+  multiChoiceSelectedBgColor: "#FFF1E8",
+};
 
-const getRandomStarterStyling = (): StylingOptions => {
+const STARTER_CUSTOM_CSS = `
+.ab-form-container {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffffff 48%);
+  border: 1px solid #fdba74;
+  color: #7c2d12;
+  border-radius: 18px;
+  box-shadow: 0 20px 38px rgba(15, 23, 42, 0.14);
+}
+
+.ab-question-card,
+.ab-calendar-container {
+  background: #ffffff;
+  border: 1px solid #fdba74;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.ab-button,
+.ab-button-primary {
+  background: #f97316;
+  color: #ffffff;
+  border: 1px solid #f97316;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.ab-button:hover,
+.ab-button-primary:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+  transform: translateY(-1px);
+}
+
+.ab-input,
+.ab-number-input,
+.ab-text-input,
+.ab-textarea,
+.ab-select,
+.ab-address-input,
+.ab-file-input,
+.ab-select-content {
+  background: #ffffff;
+  color: #7c2d12;
+  border: 1px solid #fdba74;
+  border-radius: 10px;
+  caret-color: #7c2d12;
+}
+
+.ab-input::placeholder,
+.ab-number-input::placeholder,
+.ab-text-input::placeholder,
+.ab-textarea::placeholder,
+.ab-address-input::placeholder {
+  color: #c2410c;
+  opacity: 1;
+}
+
+.ab-label,
+.ab-question-label,
+.ab-progress-label {
+  color: #7c2d12;
+}
+
+.ab-form-title,
+.ab-service-title,
+.ab-pricing-card-title,
+.ab-pricing-section-title,
+.ab-pricing-breakdown-title,
+.ab-pricing-line-item-name,
+.ab-pricing-line-item-value,
+.ab-pricing-subtotal-label,
+.ab-pricing-subtotal-value,
+.ab-pricing-tax-label,
+.ab-pricing-tax-value,
+.ab-pricing-total-label,
+.ab-calendar-month-title,
+.ab-calendar-day-header,
+.ab-discount-name,
+.ab-upsell-heading,
+.ab-upsell-title,
+.ab-discount-title,
+.ab-customer-summary-title,
+.ab-pricing-disclaimer-label,
+.ab-discount-savings-title,
+.ab-service-accordion-text,
+.ab-multiple-choice-label {
+  color: #7c2d12;
+}
+
+.ab-form-subtitle,
+.ab-pricing-cart-status,
+.ab-upsell-subtitle,
+.ab-upsell-description,
+.ab-upsell-tooltip,
+.ab-discount-subtitle,
+.ab-discount-description,
+.ab-pricing-disclaimer-text,
+.ab-customer-summary-line,
+.ab-discount-line-label,
+.ab-discount-line-value,
+.ab-discount-savings-row,
+.ab-calendar-date .ab-calendar-date-meta,
+.ab-time-slot .ab-time-slot-meta,
+.ab-calendar-legend-label,
+.ab-slider-min,
+.ab-slider-max {
+  color: #9a3412;
+}
+
+.ab-service-card,
+.ab-service-accordion,
+.ab-multiple-choice,
+.ab-multichoice-card,
+.ab-pricing-card,
+.ab-upsell-card,
+.ab-discount-card,
+.ab-calendar-nav,
+.ab-calendar-nav-prev,
+.ab-calendar-nav-next,
+.ab-calendar-date,
+.ab-time-slot {
+  background: #ffffff;
+  border: 1px solid #fdba74;
+  color: #7c2d12;
+}
+
+.ab-pricing-card {
+  border-radius: 16px;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
+}
+
+.ab-pricing-card-price {
+  background: #ffedd5;
+  color: #c2410c;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.ab-pricing-card-icon {
+  background: #fff1e8;
+  border: 1px solid #f97316;
+  color: #f97316;
+}
+
+.ab-pricing-card-bullet-icon,
+.ab-calendar-legend-swatch-selected,
+.ab-progress-fill {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.ab-pricing-total-value,
+.ab-upsell-price,
+.ab-discount-percent,
+.ab-discount-savings-total,
+.ab-upsell-selected-total,
+.ab-progress-percentage,
+.ab-slider-value,
+.ab-slider-unit,
+.ab-address-nav-button,
+.ab-address-back-button,
+.ab-address-skip-button,
+.ab-address-input-label {
+  color: #f97316;
+}
+
+.ab-upsell-section,
+.ab-discount-section,
+.ab-pricing-disclaimer,
+.ab-customer-summary,
+.ab-upsell-selected-summary,
+.ab-discount-savings,
+.ab-upsell-popular-badge,
+.ab-discount-applied {
+  background: #fff1e8;
+  border: 1px solid #f97316;
+  border-radius: 12px;
+}
+
+.ab-upsell-card-selected,
+.ab-discount-card.selected,
+.ab-multiple-choice.selected,
+.ab-service-card.selected,
+.selected,
+.ab-calendar-date.ab-calendar-date-available:hover,
+.ab-time-slot.ab-time-slot-available:hover {
+  background: #fff1e8;
+  border-color: #f97316;
+  box-shadow: 0 0 0 2px #f9731633;
+  color: #7c2d12 !important;
+}
+
+.ab-calendar-date.ab-calendar-date-available {
+  background: #fff1e8;
+  border-color: #f97316;
+  box-shadow: inset 0 0 0 1px #f9731644;
+}
+
+.ab-calendar-date.selected,
+.ab-time-slot.selected {
+  background: #f97316;
+  border-color: #f97316;
+  color: #ffffff;
+}
+
+.ab-calendar-date.selected .ab-calendar-date-meta,
+.ab-time-slot.selected .ab-time-slot-meta {
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+.ab-calendar-date.ab-calendar-date-unavailable,
+.ab-calendar-date.ab-calendar-date-past,
+.ab-calendar-date:disabled,
+.ab-time-slot:disabled,
+.ab-time-slot.disabled,
+.disabled {
+  background: #ffffff;
+  border: 1px dashed #fdba74;
+  color: #9a3412;
+  opacity: 0.58;
+  filter: grayscale(0.22);
+  cursor: not-allowed;
+}
+
+.ab-calendar-legend-swatch-available {
+  background: #fff1e8;
+  border-color: #f97316;
+}
+
+.ab-calendar-legend-swatch-unavailable {
+  background: #ffffff;
+  border-color: #fdba74;
+}
+
+.ab-checkbox,
+.ab-slider {
+  accent-color: #f97316;
+}
+
+.ab-error {
+  color: #dc2626;
+  font-weight: 600;
+}
+`.trim();
+
+const getStarterStyling = (): StylingOptions => {
   const base = stylingOptionsSchema.parse({});
-  const preset = STARTER_STYLE_PRESETS[Math.floor(Math.random() * STARTER_STYLE_PRESETS.length)];
   return {
     ...base,
-    ...preset.styling,
+    ...STARTER_THEME_STYLING,
   };
 };
 
@@ -448,6 +605,23 @@ async function generateUniqueLandingSlug(base: string): Promise<string> {
       .select({ id: landingPages.id })
       .from(landingPages)
       .where(eq(landingPages.slug, slug))
+      .limit(1);
+    if (!existing) return slug;
+    slug = `${slugBase}-${nanoid(6)}`;
+    attempt += 1;
+  }
+  return `${slugBase}-${nanoid(8)}`;
+}
+
+async function generateUniqueUserShareSlug(base: string): Promise<string> {
+  const slugBase = slugifyLandingPage(base) || "pricing";
+  let slug = slugBase;
+  let attempt = 0;
+  while (attempt < 5) {
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.shareSlug, slug))
       .limit(1);
     if (!existing) return slug;
     slug = `${slugBase}-${nanoid(6)}`;
@@ -647,6 +821,7 @@ export interface IStorage {
   // User operations (IMPORTANT) these are mandatory for Replit Auth
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getUserByShareSlug(slug: string): Promise<User | undefined>;
   
   // User management operations
   getUsersByOwner(ownerId: string): Promise<User[]>;
@@ -962,6 +1137,35 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  private getUserShareSlugBase(user: Partial<User> | Partial<InsertUser> | Partial<UpsertUser>): string {
+    const businessName = user.businessInfo && typeof user.businessInfo === "object" && "businessName" in user.businessInfo
+      ? (user.businessInfo as { businessName?: string }).businessName
+      : undefined;
+
+    return (
+      businessName ||
+      user.organizationName ||
+      [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+      user.email?.split("@")[0] ||
+      "pricing"
+    );
+  }
+
+  private async ensureUserShareSlug(user: User | undefined): Promise<User | undefined> {
+    if (!user || user.userType !== "owner" || user.shareSlug) {
+      return user;
+    }
+
+    const shareSlug = await generateUniqueUserShareSlug(this.getUserShareSlugBase(user));
+    const [updatedUser] = await db
+      .update(users)
+      .set({ shareSlug, updatedAt: new Date() })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    return updatedUser || user;
+  }
+
   // Formula operations
   async getFormula(id: number): Promise<Formula | undefined> {
     const [formula] = await db.select().from(formulas).where(eq(formulas.id, id));
@@ -1980,7 +2184,7 @@ export class DatabaseStorage implements IStorage {
   // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return this.ensureUserShareSlug(user);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -2035,6 +2239,7 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values({
         ...userData,
+        shareSlug: await generateUniqueUserShareSlug(this.getUserShareSlugBase(userData)),
         permissions: normalizePermissions(permissions),
       })
       .onConflictDoUpdate({
@@ -2050,6 +2255,11 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     await this.ensureStarterDesignForUser(user);
+    return (await this.ensureUserShareSlug(user))!;
+  }
+
+  async getUserByShareSlug(slug: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.shareSlug, slug)).limit(1);
     return user;
   }
 
@@ -2060,18 +2270,18 @@ export class DatabaseStorage implements IStorage {
 
   async getUserById(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return this.ensureUserShareSlug(user);
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     // Use case-insensitive email lookup to handle cases like Nevin@domain.com vs nevin@domain.com
     const [user] = await db.select().from(users).where(sql`LOWER(${users.email}) = LOWER(${email})`);
-    return user;
+    return this.ensureUserShareSlug(user);
   }
 
   async getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.stripeSubscriptionId, subscriptionId));
-    return user;
+    return this.ensureUserShareSlug(user);
   }
 
   async createUser(userData: Partial<InsertUser>): Promise<User> {
@@ -2127,6 +2337,7 @@ export class DatabaseStorage implements IStorage {
       .values({
         id: userData.id || nanoid(),
         email: userData.email,
+        shareSlug: await generateUniqueUserShareSlug(this.getUserShareSlugBase(userData)),
         firstName: userData.firstName,
         lastName: userData.lastName,
         profileImageUrl: userData.profileImageUrl,
@@ -2149,9 +2360,10 @@ export class DatabaseStorage implements IStorage {
         permissions: normalizePermissions(permissions),
       } as any)
       .returning();
-    await this.ensureStarterDesignForUser(user);
-    await this.ensureLandingPageForUser(user);
-    return user;
+    const userWithShareSlug = (await this.ensureUserShareSlug(user))!;
+    await this.ensureStarterDesignForUser(userWithShareSlug);
+    await this.ensureLandingPageForUser(userWithShareSlug);
+    return userWithShareSlug;
   }
 
   private async ensureStarterDesignForUser(user: User): Promise<void> {
@@ -2168,7 +2380,7 @@ export class DatabaseStorage implements IStorage {
       return;
     }
 
-    const starterStyling = getRandomStarterStyling();
+    const starterStyling = getStarterStyling();
 
     if (!existingBusinessSettings) {
       const businessName =
@@ -2192,6 +2404,7 @@ export class DatabaseStorage implements IStorage {
         userId: user.id,
         styling: starterStyling,
         componentStyles: DEFAULT_STARTER_COMPONENT_STYLES,
+        customCSS: STARTER_CUSTOM_CSS,
         deviceView: "desktop",
       });
     }
@@ -2238,6 +2451,17 @@ export class DatabaseStorage implements IStorage {
       mutedTextColor: "#475569",
       buttonTextColor: "#FFFFFF",
     };
+    const userFormulas = await this.getFormulasByUserId(user.id);
+    const defaultServices = userFormulas
+      .filter((formula) => formula.isActive !== false && formula.isDisplayed !== false)
+      .slice(0, 10)
+      .map((formula, index) => ({
+        serviceId: formula.id,
+        name: formula.name || formula.title || "Service",
+        enabled: true,
+        sortOrder: index,
+      }));
+    const primaryServiceId = defaultServices[0]?.serviceId ?? null;
 
     const [created] = await db
       .insert(landingPages)
@@ -2251,7 +2475,8 @@ export class DatabaseStorage implements IStorage {
         trustChips: defaultTrustChips,
         howItWorks: defaultHowItWorks,
         faqs: [],
-        services: [],
+        services: defaultServices,
+        primaryServiceId,
       })
       .returning();
 
@@ -2327,7 +2552,7 @@ export class DatabaseStorage implements IStorage {
         permissions,
       } as any)
       .returning();
-    return user;
+    return (await this.ensureUserShareSlug(user))!;
   }
 
   async updateUser(id: string, userData: UpdateUser): Promise<User | undefined> {
@@ -2349,7 +2574,7 @@ export class DatabaseStorage implements IStorage {
       .set(updateData as any)
       .where(eq(users.id, id))
       .returning();
-    return user;
+    return this.ensureUserShareSlug(user);
   }
 
   async deleteUser(id: string): Promise<boolean> {

@@ -1018,6 +1018,644 @@ const CSS_THEME_PRESETS: CssThemePreset[] = [
 }
 `,
   },
+  {
+    id: "neumorphism-cloud",
+    name: "Neumorphism Cloud",
+    description: "Soft tactile surfaces with gentle inset depth and calm blue-gray contrast.",
+    preview: {
+      canvas: "#e9eef5",
+      surface: "#e9eef5",
+      border: "#d6dee8",
+      text: "#314056",
+      accent: "#6d8db3",
+      button: "linear-gradient(135deg, #f6f9fc 0%, #dbe4ef 100%)",
+    },
+    css: `
+.ab-form-container,
+.ab-form-container * {
+  font-family: "Manrope", "Inter", sans-serif !important;
+}
+
+.ab-form-container {
+  background: #e9eef5;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  color: #314056;
+  border-radius: 28px;
+  box-shadow: 22px 22px 48px rgba(163, 177, 198, 0.38), -18px -18px 42px rgba(255, 255, 255, 0.94);
+}
+
+.ab-question-card,
+.ab-calendar-container,
+.ab-pricing-card,
+.ab-service-accordion,
+.ab-upsell-section,
+.ab-discount-section,
+.ab-pricing-disclaimer,
+.ab-customer-summary,
+.ab-upsell-selected-summary,
+.ab-discount-savings {
+  background: #e9eef5;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  color: #314056;
+  box-shadow: 14px 14px 32px rgba(163, 177, 198, 0.32), -12px -12px 28px rgba(255, 255, 255, 0.9);
+}
+
+.ab-button,
+.ab-button-primary {
+  background: linear-gradient(145deg, #f6f9fc 0%, #dbe4ef 100%);
+  color: #314056;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  font-weight: 700;
+  box-shadow: 10px 10px 22px rgba(163, 177, 198, 0.3), -8px -8px 18px rgba(255, 255, 255, 0.92);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.ab-button:hover,
+.ab-button-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 13px 13px 26px rgba(163, 177, 198, 0.32), -10px -10px 20px rgba(255, 255, 255, 0.95);
+}
+.ab-button:active,
+.ab-button-primary:active {
+  transform: translateY(0);
+  box-shadow: inset 6px 6px 14px rgba(163, 177, 198, 0.34), inset -6px -6px 14px rgba(255, 255, 255, 0.92);
+}
+
+.ab-input,
+.ab-number-input,
+.ab-text-input,
+.ab-textarea,
+.ab-select,
+.ab-address-input,
+.ab-file-input,
+.ab-select-content {
+  background: #e9eef5;
+  color: #314056;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 16px;
+  caret-color: #314056;
+  box-shadow: inset 6px 6px 12px rgba(163, 177, 198, 0.26), inset -6px -6px 12px rgba(255, 255, 255, 0.9);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.ab-input:focus,
+.ab-number-input:focus,
+.ab-text-input:focus,
+.ab-textarea:focus,
+.ab-select:focus,
+.ab-address-input:focus,
+.ab-file-input:focus {
+  outline: none;
+  border-color: rgba(109, 141, 179, 0.55);
+  box-shadow: inset 5px 5px 12px rgba(163, 177, 198, 0.24), inset -5px -5px 12px rgba(255, 255, 255, 0.95), 0 0 0 4px rgba(109, 141, 179, 0.12);
+}
+.ab-input::placeholder,
+.ab-number-input::placeholder,
+.ab-text-input::placeholder,
+.ab-textarea::placeholder,
+.ab-address-input::placeholder {
+  color: #66758c;
+  opacity: 1;
+}
+
+.ab-checkbox,
+.ab-slider {
+  accent-color: #6d8db3;
+}
+
+.ab-slider-value,
+.ab-slider-unit,
+.ab-progress-percentage,
+.ab-upsell-price,
+.ab-discount-percent,
+.ab-discount-savings-total,
+.ab-upsell-selected-total,
+.ab-pricing-total-value,
+.ab-label,
+.ab-question-label,
+.ab-address-input-label,
+.ab-upsell-heading,
+.ab-upsell-title,
+.ab-discount-title,
+.ab-customer-summary-title,
+.ab-pricing-disclaimer-label,
+.ab-discount-savings-title,
+.ab-discount-name,
+.ab-service-title,
+.ab-form-title,
+.ab-progress-label,
+.ab-pricing-section-title,
+.ab-pricing-breakdown-title,
+.ab-pricing-line-item-name,
+.ab-pricing-line-item-value,
+.ab-pricing-subtotal-label,
+.ab-pricing-subtotal-value,
+.ab-pricing-tax-label,
+.ab-pricing-tax-value,
+.ab-pricing-total-label,
+.ab-pricing-card-title,
+.ab-pricing-card-description,
+.ab-pricing-card-bullet-text,
+.ab-service-accordion-text,
+.ab-multiple-choice-label,
+.ab-calendar-month-title,
+.ab-calendar-day-header {
+  color: #314056;
+}
+
+.ab-form-subtitle,
+.ab-pricing-cart-status,
+.ab-upsell-subtitle,
+.ab-upsell-description,
+.ab-upsell-tooltip,
+.ab-discount-subtitle,
+.ab-discount-description,
+.ab-pricing-disclaimer-text,
+.ab-customer-summary-line,
+.ab-discount-line-label,
+.ab-discount-line-value,
+.ab-discount-savings-row,
+.ab-calendar-legend-label,
+.ab-calendar-date .ab-calendar-date-meta,
+.ab-time-slot .ab-time-slot-meta {
+  color: #66758c;
+}
+
+.ab-progress-track {
+  background: #e9eef5;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+  box-shadow: inset 5px 5px 12px rgba(163, 177, 198, 0.26), inset -5px -5px 12px rgba(255, 255, 255, 0.9);
+}
+.ab-progress-fill {
+  background: linear-gradient(90deg, #6d8db3 0%, #8ea9c8 100%);
+}
+
+.ab-service-card,
+.ab-multiple-choice,
+.ab-multichoice-card,
+.ab-upsell-card,
+.ab-discount-card,
+.ab-calendar-nav,
+.ab-calendar-nav-prev,
+.ab-calendar-nav-next,
+.ab-calendar-date,
+.ab-time-slot {
+  background: #e9eef5;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  color: #314056;
+  border-radius: 18px;
+  box-shadow: 10px 10px 22px rgba(163, 177, 198, 0.28), -8px -8px 18px rgba(255, 255, 255, 0.94);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.ab-service-card:hover,
+.ab-multiple-choice:hover,
+.ab-multichoice-card:hover,
+.ab-upsell-card:hover,
+.ab-discount-card:hover,
+.ab-calendar-date.ab-calendar-date-available:hover,
+.ab-time-slot.ab-time-slot-available:hover {
+  transform: translateY(-1px);
+  box-shadow: 13px 13px 26px rgba(163, 177, 198, 0.3), -10px -10px 20px rgba(255, 255, 255, 0.96);
+}
+.ab-service-card.selected,
+.ab-multiple-choice.selected,
+.ab-upsell-card-selected,
+.ab-discount-card.selected,
+.ab-calendar-date.selected,
+.ab-time-slot.selected {
+  background: linear-gradient(145deg, #dbe4ef 0%, #eef3f9 100%);
+  border-color: rgba(109, 141, 179, 0.5);
+  box-shadow: inset 7px 7px 14px rgba(163, 177, 198, 0.28), inset -7px -7px 14px rgba(255, 255, 255, 0.92);
+}
+
+.ab-pricing-card-price,
+.ab-upsell-popular-badge,
+.ab-discount-applied,
+.ab-pricing-card-bullet-icon {
+  background: linear-gradient(145deg, #d7e5f4 0%, #edf3f8 100%);
+  color: #314056;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 8px 8px 18px rgba(163, 177, 198, 0.24), -7px -7px 16px rgba(255, 255, 255, 0.94);
+}
+
+.ab-calendar-date.ab-calendar-date-unavailable,
+.ab-calendar-date.ab-calendar-date-past,
+.ab-calendar-date:disabled,
+.ab-time-slot:disabled,
+.ab-time-slot.disabled,
+.disabled {
+  opacity: 0.5;
+  box-shadow: inset 4px 4px 10px rgba(163, 177, 198, 0.2), inset -4px -4px 10px rgba(255, 255, 255, 0.82);
+}
+
+.ab-error {
+  color: #b42318;
+  font-weight: 700;
+}
+`,
+  },
+  {
+    id: "hardware-punch",
+    name: "Hardware Punch",
+    description: "Chunky outlined cards with playful pink buttons and bold offset shadows.",
+    preview: {
+      canvas: "#fff7f7",
+      surface: "#ffffff",
+      border: "#0A3953",
+      text: "#0A3953",
+      accent: "#F9ABAC",
+      button: "#F9ABAC",
+    },
+    css: `
+.ab-form-container,
+.ab-form-container * {
+  font-family: DDCHardware, sans-serif, sans-serif !important;
+}
+.ab-form-container {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  color: #0A3953;
+  border-radius: 16px;
+  box-shadow: 8px 8px 0px #0A3953;
+}
+
+.ab-question-card,
+.ab-calendar-container,
+.ab-pricing-card,
+.ab-service-accordion,
+.ab-upsell-section,
+.ab-discount-section,
+.ab-pricing-disclaimer,
+.ab-customer-summary,
+.ab-upsell-selected-summary,
+.ab-discount-savings {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  border-radius: 14px;
+  color: #0A3953;
+  box-shadow: 6px 6px 0px #0A3953;
+}
+
+.ab-button,
+.ab-button-primary {
+  background: #F9ABAC;
+  color: #0A3953;
+  border: 2px solid #0A3953;
+  border-radius: 12px;
+  font-weight: 700;
+  box-shadow: 4px 4px 0px #0A3953;
+  transition: all 0.15s ease;
+}
+.ab-button:hover,
+.ab-button-primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #0A3953;
+}
+.ab-button:active,
+.ab-button-primary:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+
+.ab-input,
+.ab-number-input,
+.ab-text-input,
+.ab-textarea,
+.ab-select,
+.ab-address-input,
+.ab-file-input {
+  background: #ffffff;
+  color: #0A3953;
+  border: 2px solid #0A3953;
+  border-radius: 10px;
+  caret-color: #0A3953;
+  box-shadow: 4px 4px 0px #0A3953;
+  transition: all 0.15s ease;
+}
+.ab-select-content {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  color: #0A3953;
+}
+.ab-input:focus,
+.ab-number-input:focus,
+.ab-text-input:focus,
+.ab-textarea:focus,
+.ab-select:focus,
+.ab-address-input:focus,
+.ab-file-input:focus {
+  outline: none;
+  border-color: #0A3953;
+  box-shadow: 0 0 0 3px rgba(249, 171, 172, 0.45), 4px 4px 0px #0A3953;
+}
+.ab-input::placeholder,
+.ab-number-input::placeholder,
+.ab-text-input::placeholder,
+.ab-textarea::placeholder,
+.ab-address-input::placeholder {
+  color: #0A3953;
+  opacity: 0.65;
+}
+
+.ab-checkbox,
+.ab-slider {
+  accent-color: #F9ABAC;
+}
+.ab-slider-value,
+.ab-slider-unit,
+.ab-progress-percentage,
+.ab-upsell-price,
+.ab-discount-percent,
+.ab-discount-savings-total,
+.ab-upsell-selected-total,
+.ab-pricing-total-value {
+  color: #0A3953;
+  font-weight: 700;
+}
+.ab-slider-min,
+.ab-slider-max,
+.ab-form-subtitle,
+.ab-pricing-cart-status,
+.ab-upsell-subtitle,
+.ab-upsell-description,
+.ab-upsell-tooltip,
+.ab-discount-subtitle,
+.ab-discount-description,
+.ab-pricing-disclaimer-text,
+.ab-customer-summary-line,
+.ab-discount-line-label,
+.ab-discount-line-value,
+.ab-discount-savings-row,
+.ab-calendar-legend-label,
+.ab-calendar-date .ab-calendar-date-meta,
+.ab-time-slot .ab-time-slot-meta {
+  color: #0A3953;
+  opacity: 0.8;
+}
+
+.ab-label,
+.ab-question-label,
+.ab-address-input-label,
+.ab-upsell-heading,
+.ab-upsell-title,
+.ab-discount-title,
+.ab-customer-summary-title,
+.ab-pricing-disclaimer-label,
+.ab-discount-savings-title,
+.ab-discount-name,
+.ab-service-title,
+.ab-form-title,
+.ab-progress-label,
+.ab-pricing-section-title,
+.ab-pricing-breakdown-title,
+.ab-pricing-line-item-name,
+.ab-pricing-line-item-value,
+.ab-pricing-subtotal-label,
+.ab-pricing-subtotal-value,
+.ab-pricing-tax-label,
+.ab-pricing-tax-value,
+.ab-pricing-total-label,
+.ab-pricing-card-title,
+.ab-pricing-card-description,
+.ab-pricing-card-bullet-text,
+.ab-service-accordion-text,
+.ab-multiple-choice-label,
+.ab-calendar-month-title,
+.ab-calendar-day-header {
+  color: #0A3953;
+  font-weight: 700;
+}
+
+.ab-progress-track {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 3px 3px 0px #0A3953 inset;
+}
+.ab-progress-fill {
+  background: #F9ABAC;
+}
+
+.ab-service-card {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  border-radius: 12px;
+  color: #0A3953;
+  box-shadow: 4px 4px 0px #0A3953;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.ab-service-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #0A3953;
+}
+.ab-service-card.selected {
+  background: #F9ABAC;
+  border-color: #0A3953;
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+
+.ab-multiple-choice,
+.ab-multichoice-card,
+.ab-upsell-card,
+.ab-discount-card {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  border-radius: 12px;
+  color: #0A3953;
+  box-shadow: 4px 4px 0px #0A3953;
+  transition: all 0.15s ease;
+}
+.ab-multiple-choice:hover,
+.ab-multichoice-card:hover,
+.ab-upsell-card:hover,
+.ab-discount-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #0A3953;
+}
+.ab-multiple-choice.selected,
+.ab-upsell-card-selected,
+.ab-discount-card.selected {
+  background: #F9ABAC;
+  border-color: #0A3953;
+  box-shadow: none;
+  transform: translate(4px, 4px);
+}
+
+.ab-service-card.selected,
+.ab-multiple-choice.selected,
+.ab-upsell-card-selected,
+.ab-discount-card.selected,
+.selected {
+  color: #0A3953 !important;
+}
+.ab-service-card.selected .ab-service-title,
+.ab-multiple-choice.selected .ab-multiple-choice-label,
+.ab-upsell-card-selected .ab-upsell-title,
+.ab-upsell-card-selected .ab-upsell-description,
+.ab-discount-card.selected .ab-discount-name,
+.ab-discount-card.selected .ab-discount-description {
+  color: #0A3953 !important;
+}
+
+.ab-pricing-card {
+  box-shadow: 6px 6px 0px #0A3953;
+}
+.ab-pricing-card-price {
+  background: #F9ABAC;
+  color: #0A3953;
+  border: 2px solid #0A3953;
+  border-radius: 999px;
+  font-weight: 800;
+  box-shadow: 3px 3px 0px #0A3953;
+}
+.ab-pricing-card-icon {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  color: #0A3953;
+  box-shadow: 3px 3px 0px #0A3953;
+}
+.ab-pricing-card-bullet-icon {
+  background: #F9ABAC;
+  color: #0A3953;
+  border: 2px solid #0A3953;
+}
+.ab-upsell-section,
+.ab-discount-section,
+.ab-pricing-disclaimer,
+.ab-customer-summary,
+.ab-upsell-selected-summary,
+.ab-discount-savings {
+  background: #fff7f7;
+}
+.ab-upsell-grid,
+.ab-discount-grid {
+  gap: 10px;
+}
+.ab-upsell-popular-badge,
+.ab-discount-applied {
+  background: #F9ABAC;
+  color: #0A3953;
+  border: 2px solid #0A3953;
+  box-shadow: 2px 2px 0px #0A3953;
+}
+.ab-discount-line {
+  border-top: 2px dashed #0A3953;
+}
+
+.ab-calendar-nav,
+.ab-calendar-nav-prev,
+.ab-calendar-nav-next {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  color: #0A3953;
+  box-shadow: 3px 3px 0px #0A3953;
+}
+.ab-calendar-date {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  color: #0A3953;
+  box-shadow: 3px 3px 0px #0A3953;
+  transition: all 0.15s ease;
+}
+.ab-calendar-date.ab-calendar-date-available {
+  background: #ffffff;
+  border-color: #0A3953;
+}
+.ab-calendar-date.ab-calendar-date-available:hover {
+  background: #fff3f3;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #0A3953;
+}
+.ab-calendar-date.ab-calendar-date-unavailable,
+.ab-calendar-date.ab-calendar-date-past,
+.ab-calendar-date:disabled {
+  background: #f7f7f7;
+  border: 2px dashed #0A3953;
+  color: #0A3953;
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: grayscale(0.1);
+}
+.ab-time-slot {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+  color: #0A3953;
+  box-shadow: 3px 3px 0px #0A3953;
+  transition: all 0.15s ease;
+}
+.ab-time-slot.ab-time-slot-available:hover {
+  background: #fff3f3;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #0A3953;
+}
+.ab-calendar-date.selected,
+.ab-time-slot.selected {
+  background: #F9ABAC;
+  border-color: #0A3953;
+  color: #0A3953;
+  box-shadow: none;
+  transform: translate(3px, 3px);
+}
+.ab-time-slot:disabled,
+.ab-time-slot.disabled {
+  background: #f7f7f7;
+  border: 2px dashed #0A3953;
+  color: #0A3953;
+  opacity: 0.5;
+  box-shadow: none;
+}
+.ab-calendar-legend-swatch-available {
+  background: #ffffff;
+  border: 2px solid #0A3953;
+}
+.ab-calendar-legend-swatch-selected {
+  background: #F9ABAC;
+  border: 2px solid #0A3953;
+}
+.ab-calendar-legend-swatch-unavailable {
+  background: #f7f7f7;
+  border: 2px dashed #0A3953;
+}
+.ab-calendar-date.selected .ab-calendar-date-meta,
+.ab-time-slot.selected .ab-time-slot-meta {
+  color: #0A3953;
+  opacity: 1;
+}
+
+.ab-address-nav-button,
+.ab-address-back-button,
+.ab-address-skip-button {
+  color: #0A3953;
+  font-weight: 700;
+}
+.ab-address-nav-button:hover,
+.ab-address-back-button:hover,
+.ab-address-skip-button:hover {
+  color: #0A3953;
+  opacity: 0.75;
+}
+
+.selected {
+  border-color: #0A3953 !important;
+}
+.disabled {
+  opacity: 0.55;
+  filter: grayscale(0.1);
+  pointer-events: none;
+  box-shadow: none !important;
+}
+
+.ab-error {
+  color: #b42318;
+  font-weight: 700;
+}
+`,
+  },
 ];
 
 type PreviewTarget = {

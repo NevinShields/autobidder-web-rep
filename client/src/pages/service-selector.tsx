@@ -13,7 +13,7 @@ import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import ServiceCardDisplay from "@/components/service-card-display";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Formula, ServiceCalculation, BusinessSettings, PropertyAttributes } from "@shared/schema";
+import { stylingOptionsSchema, type Formula, type ServiceCalculation, type BusinessSettings, type PropertyAttributes } from "@shared/schema";
 import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 
 
@@ -735,25 +735,19 @@ export default function ServiceSelector() {
     );
   }
 
-  const settings = (businessSettings as BusinessSettings) || null;
+  const settings =
+    (businessSettings as BusinessSettings | null) ||
+    ({
+      styling: stylingOptionsSchema.parse({}),
+      businessName: "",
+      discounts: [],
+      allowDiscountStacking: false,
+      enableLeadCapture: true,
+      enableBooking: false,
+      enableServiceCart: false,
+      guideVideos: {},
+    } as unknown as BusinessSettings);
   const totalPrice = getTotalPrice();
-  
-  // If no business settings exist, show setup message
-  if (!settings) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">Setup Required</h2>
-            <p className="text-gray-600 mb-4">Business settings need to be configured first.</p>
-            <Button onClick={() => window.location.href = '/settings'}>
-              Go to Settings
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   const styling = settings.styling;
   
@@ -945,7 +939,7 @@ export default function ServiceSelector() {
                           const nextAddress = e.target.value;
                           setPropertyAddress(nextAddress);
                           setLeadForm(prev => {
-                            // Keep contact address synced from ATTOM input,
+                            // Keep contact address synced from property lookup input,
                             // but preserve a manually-entered different contact address.
                             if (prev.address && prev.address.trim() && prev.address.trim() !== propertyAddress.trim()) {
                               return prev;

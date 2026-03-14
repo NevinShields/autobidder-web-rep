@@ -28,7 +28,7 @@ export default function FormSettings() {
 
   });
 
-  const { data: user } = useQuery<{id: string}>({
+  const { data: user } = useQuery<{ id: string; shareSlug?: string | null }>({
     queryKey: ["/api/auth/user"],
   });
 
@@ -467,7 +467,7 @@ export default function FormSettings() {
                 </p>
               </div>
             </div>
-            <Link href={`/styled-calculator?userId=${user?.id}`}>
+            <Link href={user?.shareSlug ? `/c/${user.shareSlug}` : `/styled-calculator?userId=${user?.id}`}>
               <Button className="rounded-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-0 shadow-lg shadow-amber-500/25 px-6">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Preview Form

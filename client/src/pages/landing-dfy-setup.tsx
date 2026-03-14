@@ -21,6 +21,9 @@ import {
 import LiquidEther from "@/components/LiquidEther";
 
 type OnboardingData = {
+  fullName: string;
+  email: string;
+  businessName: string;
   services: string[];
   customServices: string[];
   hasWebsite: string | null;
@@ -73,6 +76,9 @@ const OnboardingModal = ({
 }) => {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<OnboardingData>({
+    fullName: "",
+    email: "",
+    businessName: "",
     services: [],
     customServices: [],
     hasWebsite: null,
@@ -88,8 +94,12 @@ const OnboardingModal = ({
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const totalSteps = 6;
+  const totalSteps = 7;
   const progress = (step / totalSteps) * 100;
+  const hasValidContactInfo =
+    data.fullName.trim().length > 0 &&
+    data.businessName.trim().length > 0 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim());
 
   const nextStep = () => setStep((s) => Math.min(s + 1, totalSteps));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
@@ -131,6 +141,9 @@ const OnboardingModal = ({
     setIsSendingLead(true);
 
     const payload = {
+      fullName: data.fullName.trim(),
+      email: data.email.trim(),
+      businessName: data.businessName.trim(),
       services: data.services,
       customServices: data.customServices,
       hasWebsite: data.hasWebsite,
@@ -230,6 +243,67 @@ const OnboardingModal = ({
                 >
                   {step === 1 && (
                     <div className="space-y-6">
+                      <div className="space-y-2">
+                        <h3 className="text-2xl font-bold leading-tight">First, where should we send your setup details?</h3>
+                        <p className="text-sm text-white/40 leading-relaxed">
+                          We use this to identify your build request and follow up with the right business info.
+                        </p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label htmlFor="dfy-full-name" className="text-xs font-bold tracking-widest text-white/40 uppercase">
+                            Your name
+                          </label>
+                          <input
+                            id="dfy-full-name"
+                            value={data.fullName}
+                            onChange={(event) => setData((prev) => ({ ...prev, fullName: event.target.value }))}
+                            placeholder="John Smith"
+                            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 outline-none focus:border-indigo-500 transition-colors"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label htmlFor="dfy-email" className="text-xs font-bold tracking-widest text-white/40 uppercase">
+                            Email
+                          </label>
+                          <input
+                            id="dfy-email"
+                            type="email"
+                            value={data.email}
+                            onChange={(event) => setData((prev) => ({ ...prev, email: event.target.value }))}
+                            placeholder="you@business.com"
+                            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 outline-none focus:border-indigo-500 transition-colors"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label htmlFor="dfy-business-name" className="text-xs font-bold tracking-widest text-white/40 uppercase">
+                            Business name
+                          </label>
+                          <input
+                            id="dfy-business-name"
+                            value={data.businessName}
+                            onChange={(event) => setData((prev) => ({ ...prev, businessName: event.target.value }))}
+                            placeholder="Smith Exterior Cleaning"
+                            className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-4 outline-none focus:border-indigo-500 transition-colors"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        disabled={!hasValidContactInfo}
+                        onClick={nextStep}
+                        className="w-full h-14 bg-white text-black rounded-2xl font-bold mt-4 disabled:opacity-20 transition-opacity"
+                      >
+                        Continue
+                      </button>
+                    </div>
+                  )}
+
+                  {step === 2 && (
+                    <div className="space-y-6">
                       <h3 className="text-2xl font-bold leading-tight">Which services do you want to offer?</h3>
                       <div className="grid grid-cols-1 gap-3">
                         {[
@@ -294,7 +368,7 @@ const OnboardingModal = ({
                     </div>
                   )}
 
-                  {step === 2 && (
+                  {step === 3 && (
                     <div className="space-y-6">
                       <h3 className="text-2xl font-bold leading-tight">Do you currently have a website?</h3>
                       <div className="grid gap-3">
@@ -318,7 +392,7 @@ const OnboardingModal = ({
                     </div>
                   )}
 
-                  {step === 3 && (
+                  {step === 4 && (
                     <div className="space-y-6">
                       <h3 className="text-2xl font-bold leading-tight">Do you currently use a CRM?</h3>
                       <div className="grid gap-3">
@@ -402,7 +476,7 @@ const OnboardingModal = ({
                     </div>
                   )}
 
-                  {step === 4 && (
+                  {step === 5 && (
                     <div className="space-y-6">
                       <h3 className="text-2xl font-bold leading-tight">Do you have a Facebook Ads account?</h3>
                       <p className="text-sm text-white/40 leading-relaxed">
@@ -429,7 +503,7 @@ const OnboardingModal = ({
                     </div>
                   )}
 
-                  {step === 5 && (
+                  {step === 6 && (
                     <div className="space-y-6">
                       <h3 className="text-2xl font-bold leading-tight">Do you have a logo?</h3>
                       <button
@@ -495,7 +569,7 @@ const OnboardingModal = ({
                     </div>
                   )}
 
-                  {step === 6 && (
+                  {step === 7 && (
                     <div className="space-y-8">
                       <div className="text-center space-y-2">
                         <h3 className="text-3xl font-bold leading-tight">System Ready.</h3>

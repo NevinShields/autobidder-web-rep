@@ -512,7 +512,7 @@ export default function StyledCalculator(props: any = {}) {
 
   // Get URL parameters first
   const searchParams = new URLSearchParams(search);
-  const userId = searchParams.get('userId');
+  const userId = searchParams.get('userId') || searchParams.get('userID');
   const queryServiceIds = searchParams.get('serviceIds');
   const customFormServiceFilterIds = queryServiceIds
     ? queryServiceIds.split(',').map((id) => Number(id.trim())).filter((id) => Number.isFinite(id))
@@ -1951,7 +1951,7 @@ export default function StyledCalculator(props: any = {}) {
             return;
           }
         } else if (variable.type === 'multiple-choice' && variable.options) {
-          // ATTOM strings are often free-form (e.g. "BRICK", "brick veneer", "brick;vinyl").
+          // Property material strings can vary in casing and formatting.
           // Match against option labels/values and set the multiple-choice value shape expected by the UI.
           const raw = String(attrValue || '').trim().toLowerCase();
           if (!raw) return;
@@ -2959,7 +2959,7 @@ export default function StyledCalculator(props: any = {}) {
                     onChange={(newAddress) => {
                       setPropertyAddress(newAddress);
                       setLeadForm(prev => {
-                        // Keep the contact address synced from ATTOM input,
+                        // Keep the contact address synced from property lookup input,
                         // but don't overwrite a different address the user already entered.
                         if (prev.address && prev.address.trim() && prev.address.trim() !== propertyAddress.trim()) {
                           return prev;

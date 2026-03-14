@@ -90,5 +90,6 @@ Generate pricing expressions by describing the service and variables, then tweak
 
 - [Design & Theming](/docs/design-theming)
 - [Logic Page](/docs/logic-page)
+- [AI Formula Prompting Guide](/docs/ai-formula-prompting-guide)
 - [Quick Start](/docs/quick-start)
 - [Core Concepts](/docs/core-concepts)

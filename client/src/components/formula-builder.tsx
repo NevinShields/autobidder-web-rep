@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Formula, Variable } from "@shared/schema";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +23,7 @@ import { ObjectUploader } from "@/components/ObjectUploader";
 import FormulaExpressionInput from "./formula-expression-input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -41,6 +43,19 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+const AI_FORMULA_EXAMPLES = [
+  "House cleaning with bedroom count, bathrooms, add-ons, and first-time deep clean pricing.",
+  "Bathroom renovation with square footage, tile tier, fixtures, demo, and labor complexity.",
+  "Lawn care with lot size, mowing frequency, edging, and seasonal cleanup options.",
+];
+
+const AI_GENERATION_STEPS = [
+  "Reading your service details",
+  "Structuring pricing variables",
+  "Drafting the formula logic",
+  "Packaging the builder setup",
+];
 
 // Sortable Variable Card Component
 function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
@@ -243,6 +258,7 @@ export default function FormulaBuilderComponent({
   const [templateIconId, setTemplateIconId] = useState<number | null>(formula.iconId || null);
   const [templateIconUrl, setTemplateIconUrl] = useState<string | null>(formula.iconUrl || null);
   const [bulletInput, setBulletInput] = useState("");
+  const [aiGenerationStep, setAiGenerationStep] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
   const isTemplateAdmin = user?.email?.toLowerCase() === "admin@autobidder.org";
@@ -364,6 +380,19 @@ export default function FormulaBuilderComponent({
       });
     },
   });
+
+  useEffect(() => {
+    if (!generateAIFormulaMutation.isPending) {
+      setAiGenerationStep(0);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setAiGenerationStep((current) => (current + 1) % AI_GENERATION_STEPS.length);
+    }, 1800);
+
+    return () => window.clearInterval(interval);
+  }, [generateAIFormulaMutation.isPending]);
 
   const editAIFormulaMutation = useMutation({
     mutationFn: async (editInstructions: string) => {
@@ -535,6 +564,9 @@ export default function FormulaBuilderComponent({
     }
   };
 
+  const isGeneratingAIFormula = generateAIFormulaMutation.isPending;
+  const currentAIGenerationStep = AI_GENERATION_STEPS[aiGenerationStep] ?? AI_GENERATION_STEPS[0];
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Formula Builder */}
@@ -577,85 +609,249 @@ export default function FormulaBuilderComponent({
 
           {/* AI Formula Generator - Show for new formulas */}
           {(!formulaVariables.length && !formulaExpressionValue) && (
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                    <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-                    Create Formula with AI
-                  </CardTitle>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    Describe your service and let AI create the calculation formula, variables, and pricing logic for you.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {!showAIBuilder ? (
-                    <Button
-                      onClick={() => setShowAIBuilder(true)}
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200"
-                    >
-                      <Wand2 className="w-4 h-4 mr-2" />
-                      Generate Formula with AI
-                    </Button>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="ai-provider" className="text-blue-900 dark:text-blue-100 font-medium">
-                          AI Provider
-                        </Label>
-                        <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
-                          <SelectTrigger className="mt-2 border-blue-200 focus:border-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                            <SelectValue placeholder="Choose AI provider" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
-                          </SelectContent>
-                        </Select>
+            <div className="p-4 sm:p-6 border-b border-slate-200/80 dark:border-slate-700/70">
+              <Card className="relative overflow-hidden rounded-2xl border-slate-200/60 dark:border-slate-700/40 bg-white/70 dark:bg-slate-800/50 backdrop-blur-sm shadow-none">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/60 to-transparent" />
+                <div className="pointer-events-none absolute -top-20 right-0 h-44 w-44 rounded-full bg-blue-500/10 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-24 left-8 h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
+                <CardHeader className="relative pb-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-500/15 via-cyan-500/10 to-transparent text-blue-700 shadow-sm dark:border-blue-400/20 dark:text-blue-200">
+                          <Sparkles className={cn("h-5 w-5", isGeneratingAIFormula && "animate-pulse")} />
+                        </div>
+                        <div>
+                          <CardTitle className="text-slate-900 dark:text-slate-100">Create Formula with AI</CardTitle>
+                          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            Describe the service once and the builder will get a full pricing draft to refine.
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="ai-description" className="text-blue-900 dark:text-blue-100 font-medium">
-                          Describe your service
-                        </Label>
-                        <Textarea
-                          id="ai-description"
-                          value={aiDescription}
-                          onChange={(e) => setAiDescription(e.target.value)}
-                          placeholder="e.g., 'Create a bathroom renovation calculator that includes square footage, fixtures, tile type, and labor costs'"
-                          className="mt-2 min-h-[100px] border-blue-200 focus:border-blue-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                        />
-                        <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                          Be specific about the factors that affect pricing (materials, size, complexity, etc.)
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => generateAIFormulaMutation.mutate(aiDescription)}
-                          disabled={!aiDescription.trim() || generateAIFormulaMutation.isPending}
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                        >
-                          {generateAIFormulaMutation.isPending ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-4 h-4 mr-2" />
-                              Generate Formula
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setShowAIBuilder(false)}
-                          disabled={generateAIFormulaMutation.isPending}
-                        >
-                          Cancel
-                        </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+                          Variables + formula
+                        </Badge>
+                        <Badge variant="secondary" className="rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+                          Service description
+                        </Badge>
+                        <Badge variant="secondary" className="rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+                          Fast first draft
+                        </Badge>
                       </div>
                     </div>
-                  )}
-                </CardContent>
+                    {!showAIBuilder && (
+                      <Button
+                        onClick={() => setShowAIBuilder(true)}
+                        className="h-11 rounded-xl bg-slate-900 px-5 text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                      >
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        Generate Formula with AI
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                {!showAIBuilder ? (
+                  <CardContent className="relative pt-0">
+                    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/70 p-4 dark:border-slate-700/70 dark:bg-slate-900/50 md:flex-row md:items-center md:justify-between">
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                          Start with a short description and AI will draft the calculator structure for you.
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Best results include scope, pricing drivers, material tiers, and optional add-ons.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {AI_FORMULA_EXAMPLES.slice(0, 2).map((example, index) => (
+                          <button
+                            key={example}
+                            type="button"
+                            onClick={() => {
+                              setAiDescription(example);
+                              setShowAIBuilder(true);
+                            }}
+                            className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
+                          >
+                            Prompt {index + 1}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                ) : (
+                  <CardContent className="relative space-y-5">
+                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+                      <div className="space-y-4">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-slate-700/70 dark:bg-slate-900/70">
+                          <Label htmlFor="ai-provider" className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                            AI Provider
+                          </Label>
+                          <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
+                            <SelectTrigger className="mt-3 h-11 rounded-xl border-slate-200 bg-white/90 text-slate-900 focus:border-blue-400 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100">
+                              <SelectValue placeholder="Choose AI provider" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-slate-700/70 dark:bg-slate-900/70">
+                          <div className="flex items-center justify-between gap-3">
+                            <Label htmlFor="ai-description" className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                              Describe your service
+                            </Label>
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              Include size, materials, complexity, and add-ons
+                            </span>
+                          </div>
+                          <Textarea
+                            id="ai-description"
+                            value={aiDescription}
+                            onChange={(e) => setAiDescription(e.target.value)}
+                            placeholder="Create a bathroom renovation calculator that includes square footage, fixtures, tile tier, demo work, and labor complexity."
+                            className="mt-3 min-h-[160px] rounded-xl border-slate-200 bg-white/90 text-sm leading-6 text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500"
+                          />
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {AI_FORMULA_EXAMPLES.map((example, index) => (
+                              <button
+                                key={example}
+                                type="button"
+                                onClick={() => setAiDescription(example)}
+                                disabled={isGeneratingAIFormula}
+                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
+                              >
+                                Prompt {index + 1}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          <Button
+                            onClick={() => generateAIFormulaMutation.mutate(aiDescription)}
+                            disabled={!aiDescription.trim() || isGeneratingAIFormula}
+                            className="h-11 rounded-xl bg-slate-900 px-5 text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 disabled:hover:translate-y-0 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
+                          >
+                            {isGeneratingAIFormula ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Generating Formula...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="mr-2 h-4 w-4" />
+                                Generate Formula
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => setShowAIBuilder(false)}
+                            disabled={isGeneratingAIFormula}
+                            className="h-11 rounded-xl border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-50 via-white to-blue-50/50 p-4 dark:border-slate-700/70 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/30">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">What AI will build</p>
+                            <Badge variant="outline" className="rounded-full border-blue-200 bg-blue-50/80 text-[11px] font-medium text-blue-700 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-200">
+                              Autofill
+                            </Badge>
+                          </div>
+                          <div className="mt-4 space-y-3">
+                            {["Service title and description", "Questions and pricing variables", "Formula logic and starting structure"].map((item) => (
+                              <div key={item} className="flex items-center gap-3 rounded-xl border border-white/80 bg-white/80 px-3 py-2 dark:border-slate-800 dark:bg-slate-950/50">
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-300">
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-300">{item}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-slate-700/70 dark:bg-slate-900/70">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Generation status</p>
+                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {isGeneratingAIFormula ? currentAIGenerationStep : "Ready when you are."}
+                              </p>
+                            </div>
+                            <div className={cn(
+                              "flex h-10 w-10 items-center justify-center rounded-full border",
+                              isGeneratingAIFormula
+                                ? "border-blue-200 bg-blue-50 text-blue-600 dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-200"
+                                : "border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+                            )}>
+                              {isGeneratingAIFormula ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 space-y-3">
+                            {AI_GENERATION_STEPS.map((step, index) => {
+                              const isActive = isGeneratingAIFormula && index === aiGenerationStep;
+                              const isCompleted = isGeneratingAIFormula && index < aiGenerationStep;
+
+                              return (
+                                <div
+                                  key={step}
+                                  className={cn(
+                                    "flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all duration-300",
+                                    isActive
+                                      ? "border-blue-200 bg-blue-50/80 shadow-sm dark:border-blue-400/30 dark:bg-blue-500/10"
+                                      : "border-slate-200/80 bg-slate-50/80 dark:border-slate-700/70 dark:bg-slate-950/40",
+                                    isCompleted && "border-emerald-200 bg-emerald-50/80 dark:border-emerald-400/20 dark:bg-emerald-500/10"
+                                  )}
+                                >
+                                  <div className="relative flex h-8 w-8 items-center justify-center">
+                                    <div
+                                      className={cn(
+                                        "absolute h-8 w-8 rounded-full",
+                                        isActive && "animate-ping bg-blue-400/20 dark:bg-blue-300/20"
+                                      )}
+                                    />
+                                    <div
+                                      className={cn(
+                                        "relative h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600",
+                                        isActive && "bg-blue-500 dark:bg-blue-300",
+                                        isCompleted && "bg-emerald-500 dark:bg-emerald-300"
+                                      )}
+                                    />
+                                  </div>
+                                  <p
+                                    className={cn(
+                                      "text-sm text-slate-500 dark:text-slate-400",
+                                      (isActive || isCompleted) && "text-slate-700 dark:text-slate-200"
+                                    )}
+                                  >
+                                    {step}
+                                  </p>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {isGeneratingAIFormula && (
+                            <div className="mt-4 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
+                              <div
+                                className="h-2 rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 transition-all duration-700"
+                                style={{ width: `${Math.min(((aiGenerationStep + 1) / AI_GENERATION_STEPS.length) * 100, 100)}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             </div>
           )}

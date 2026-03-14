@@ -194,6 +194,27 @@ export default function EnhancedVariableInput({
     }
   };
 
+  const getFlexibleWidthValue = (width?: string) => {
+    if (!width) return '100%';
+    if (width.endsWith('px') || width.endsWith('%')) return width;
+
+    switch (width) {
+      case 'full': return '100%';
+      case '3/4': return '75%';
+      case '1/2': return '50%';
+      case '1/3': return '33.333333%';
+      case '1/4': return '25%';
+      case 'auto': return 'auto';
+      case 'sm':
+      case 'md':
+      case 'lg':
+      case 'xl':
+        return getWidthValue(width);
+      default:
+        return '100%';
+    }
+  };
+
   const getFontSize = (size: string) => {
     switch (size) {
       case 'xs': return '0.75rem';
@@ -627,14 +648,30 @@ export default function EnhancedVariableInput({
       );
 
     case 'multiple-choice':
-      const getImageSize = (size: string | number) => {
+      const normalizeMultiChoiceImageSize = (
+        size: string | number | { percentage: number } | undefined
+      ): string | number => {
+        if (typeof size === 'number' || typeof size === 'string') {
+          return size;
+        }
+
+        if (size && typeof size === 'object' && typeof size.percentage === 'number') {
+          return size.percentage;
+        }
+
+        return 'md';
+      };
+
+      const getImageSize = (size: string | number | { percentage: number }) => {
+        const normalizedSize = normalizeMultiChoiceImageSize(size);
+
         // If it's a number, treat it as percentage - return both class and style
-        if (typeof size === 'number') {
+        if (typeof normalizedSize === 'number') {
           return {
             className: 'object-cover mx-auto',
             style: { 
-              width: `${size}%`, 
-              height: `${size}%`,
+              width: `${normalizedSize}%`,
+              height: `${normalizedSize}%`,
               maxWidth: '100%',
               maxHeight: '100%'
             }
@@ -650,7 +687,7 @@ export default function EnhancedVariableInput({
         };
         
         return {
-          className: `${classMap[size] || classMap['md']} object-cover mx-auto`,
+          className: `${classMap[normalizedSize] || classMap['md']} object-cover mx-auto`,
           style: {}
         };
       };
@@ -672,13 +709,25 @@ export default function EnhancedVariableInput({
 
       const resolvedMultiChoiceLayout = styling?.multiChoiceLayout || 'grid';
       const isGridLayout = resolvedMultiChoiceLayout === 'grid';
+      const multiChoiceWidth = getFlexibleWidthValue(
+        componentStyles?.multipleChoice?.width || styling?.inputWidth || 'full'
+      );
+      const normalizedMultiChoiceImageSize = normalizeMultiChoiceImageSize(styling?.multiChoiceImageSize);
+      const usesReducedCardWidth = multiChoiceWidth !== '100%' && multiChoiceWidth !== 'auto';
+      const shouldWrapListLayout = !isGridLayout && usesReducedCardWidth;
       const layoutClass = isGridLayout
         ? 'grid gap-2 sm:gap-3 grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 auto-rows-fr'
-        : 'flex flex-col space-y-3';
+        : shouldWrapListLayout
+          ? 'flex flex-wrap gap-3'
+          : 'flex flex-col space-y-3';
 
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
-          <div className="space-y-2" data-variable-id={variable.id}>
+          <div
+            className="space-y-2 max-w-full"
+            data-variable-id={variable.id}
+            style={{ width: '100%', maxWidth: '100%' }}
+          >
             <VariableLabelWithTooltip
               variable={variable}
               style={hasCustomCSS ? {} : { ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }}
@@ -705,6 +754,9 @@ export default function EnhancedVariableInput({
                   } ${isSelected ? 'selected' : ''}`}
                   style={hasCustomCSS ? {} : {
                     ...multiChoiceCardStyle,
+                    width: shouldWrapListLayout ? multiChoiceWidth : undefined,
+                    maxWidth: shouldWrapListLayout ? '100%' : undefined,
+                    flex: shouldWrapListLayout ? `0 0 ${multiChoiceWidth}` : undefined,
                     borderColor: isSelected 
                       ? (styling?.multipleChoiceActiveBorderColor || styling?.multiChoiceSelectedColor || componentStyles?.multipleChoice?.activeBorderColor || '#3B82F6')
                       : (componentStyles?.multipleChoice?.borderColor || styling?.inputBorderColor || '#D1D5DB'),
@@ -734,7 +786,7 @@ export default function EnhancedVariableInput({
                     isGridLayout ? 'space-y-1 sm:space-y-2' : 'space-y-2'
                   }`}>
                     {(() => {
-                      const imageSize = getImageSize(styling?.multiChoiceImageSize || 'md');
+                      const imageSize = getImageSize(normalizedMultiChoiceImageSize);
                       
                       return option.image ? (
                         <img 
@@ -751,11 +803,11 @@ export default function EnhancedVariableInput({
                           className={`${imageSize.className} flex items-center justify-center rounded-lg`}
                           style={{
                             ...imageSize.style,
-                            fontSize: typeof styling?.multiChoiceImageSize === 'number' ? '1.2rem' :
-                                     styling?.multiChoiceImageSize === 'sm' ? '0.8rem' :
-                                     styling?.multiChoiceImageSize === 'md' ? '1.2rem' : 
-                                     styling?.multiChoiceImageSize === 'lg' ? '2rem' : 
-                                     styling?.multiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem',
+                            fontSize: typeof normalizedMultiChoiceImageSize === 'number' ? '1.2rem' :
+                                     normalizedMultiChoiceImageSize === 'sm' ? '0.8rem' :
+                                     normalizedMultiChoiceImageSize === 'md' ? '1.2rem' : 
+                                     normalizedMultiChoiceImageSize === 'lg' ? '2rem' : 
+                                     normalizedMultiChoiceImageSize === 'xl' ? '2.5rem' : '1.2rem',
                             backgroundColor: isSelected 
                               ? (styling?.multipleChoiceActiveBackgroundColor || styling?.multiChoiceSelectedBgColor || '#3B82F6')
                               : '#F3F4F6',

@@ -3,8 +3,15 @@ import { storage } from "./storage";
 import type { Express, Request, Response } from "express";
 import crypto from "crypto";
 import { isSuperAdmin } from "./universalAuth";
-import { sendAdminNewUserSignupNotification } from "./email-templates";
+import { sendAdminNewUserSignupNotification, sendWelcomeEmail } from "./email-templates";
 import { addUserToGoogleSheet } from "./googleSheets";
+
+function getUserCalculatorUrl(user: { id: string; shareSlug?: string | null }): string {
+  const baseUrl = process.env.DOMAIN || (
+    process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://rep.autobidder.org'
+  );
+  return `${baseUrl}/styled-calculator?userId=${user.id}`;
+}
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -176,6 +183,14 @@ export function setupGoogleAuth(app: Express) {
           undefined // No business name from Google OAuth
         ).catch(error => {
           console.error('Failed to send admin signup notification for Google user:', error);
+        });
+
+        sendWelcomeEmail(
+          email,
+          given_name || userName,
+          getUserCalculatorUrl(user)
+        ).catch(error => {
+          console.error('Failed to send welcome email for Google user:', error);
         });
         
         // Add user to Google Sheet (non-blocking, same as email auth)

@@ -53,7 +53,7 @@ import { generateFormula as generateFormulaOpenAI, editFormula as editFormulaOpe
 import { generateFormula as generateFormulaClaude, editFormula as editFormulaClaude } from "./claude";
 import { analyzePhotoMeasurement, analyzeWithSetupConfig, type MeasurementRequest } from "./photo-measurement";
 import { dudaApi } from "./duda-api";
-import { attomApi } from "./attom-api";
+import { realieApi } from "./realie-api";
 import { resolvePropertyData } from "./property-resolver";
 import { PROPERTY_ATTRIBUTE_LABELS, PROPERTY_ATTRIBUTE_GROUPS } from "@shared/schema";
 import { DudaFormMapper } from "./duda-form-mapper";
@@ -106,6 +106,7 @@ import {
   type BlogHtmlEnhancements
 } from './blog-content-generator';
 import { ensureDirectoryProfileFromBusinessInfo } from "./directory-onboarding";
+import { generateLandingPageFaqs } from "./landing-page-faq-generator";
 
 function getBaseUrl(): string {
   if (process.env.DOMAIN) {
@@ -1011,6 +1012,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch config" });
+    }
+  });
+
+  app.get("/api/public/share-links/:slug", async (req, res) => {
+    try {
+      const slug = typeof req.params.slug === "string" ? req.params.slug.trim().toLowerCase() : "";
+      if (!slug) {
+        return res.status(400).json({ message: "slug is required" });
+      }
+
+      const user = await storage.getUserByShareSlug(slug);
+      if (!user || !user.isActive) {
+        return res.status(404).json({ message: "Share link not found" });
+      }
+
+      res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      res.json({
+        userId: user.id,
+        shareSlug: user.shareSlug,
+      });
+    } catch (error) {
+      console.error("Share link lookup error:", error);
+      res.status(500).json({ message: "Failed to resolve share link" });
     }
   });
 
@@ -8584,7 +8608,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Send welcome email
-      await sendWelcomeEmail(email, firstName);
+      await sendWelcomeEmail(
+        email,
+        firstName,
+        `${process.env.DOMAIN || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://rep.autobidder.org')}/styled-calculator?userId=${newUser.id}`
+      );
 
       // Track signup conversion with Facebook CAPI
       const clientIp = getClientIpAddress(req);
@@ -11587,6 +11615,9 @@ ${brandingWebsite}
   // DFY onboarding lead capture (public)
   app.post("/api/dfy-onboarding-lead", async (req, res) => {
     const dfyLeadSchema = z.object({
+      fullName: z.string().trim().min(1),
+      email: z.string().trim().email(),
+      businessName: z.string().trim().min(1),
       services: z.array(z.string().trim().min(1)).min(1),
       customServices: z.array(z.string().trim().min(1)).optional().default([]),
       hasWebsite: z.string().optional().nullable(),
@@ -11622,13 +11653,22 @@ ${brandingWebsite}
       const safeServices = payload.services.map((service) => escapeHtml(service));
       const safeCustomServices = payload.customServices.map((service) => escapeHtml(service));
       const safeCustomCrms = payload.customCrms.map((crm) => escapeHtml(crm));
+      const safeFullName = escapeHtml(payload.fullName);
+      const safeEmail = escapeHtml(payload.email);
+      const safeBusinessName = escapeHtml(payload.businessName);
       const safeLogoUrl = payload.logoUrl ? escapeHtml(payload.logoUrl) : null;
 
-      const emailSubject = "DFY Onboarding Lead";
+      const emailSubject = `DFY Onboarding Lead - ${safeBusinessName}`;
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
           <h2 style="color: #2563eb; margin-bottom: 8px;">DFY Onboarding Lead</h2>
           <p style="color: #4b5563; margin-top: 0;">Submitted on ${new Date().toLocaleString()}</p>
+          <div style="margin: 16px 0;">
+            <h3 style="margin: 0 0 8px; color: #111827;">Contact</h3>
+            <p style="margin: 0; color: #1f2937;"><strong>Name:</strong> ${safeFullName}</p>
+            <p style="margin: 4px 0 0; color: #1f2937;"><strong>Email:</strong> ${safeEmail}</p>
+            <p style="margin: 4px 0 0; color: #1f2937;"><strong>Business:</strong> ${safeBusinessName}</p>
+          </div>
           <div style="margin: 16px 0;">
             <h3 style="margin: 0 0 8px; color: #111827;">Services</h3>
             <ul style="margin: 0; padding-left: 18px; color: #111827;">
@@ -11686,6 +11726,11 @@ ${brandingWebsite}
       const emailText = `DFY Onboarding Lead
 
 Submitted on: ${new Date().toLocaleString()}
+
+Contact:
+Name: ${payload.fullName}
+Email: ${payload.email}
+Business: ${payload.businessName}
 
 Services:
 ${payload.services.map((service) => `- ${service}`).join("\n")}
@@ -22303,6 +22348,10 @@ This booking was created on ${new Date().toLocaleString()}.
     textColor: "#0F172A",
     mutedTextColor: "#475569",
     buttonTextColor: "#FFFFFF",
+    heroImageUrl: null,
+    heroOverlayColor: "#0F172A",
+    heroOverlayOpacity: 45,
+    showFaqSection: true,
   };
   const landingPageThemeKeys = [
     "primaryColor",
@@ -22312,6 +22361,7 @@ This booking was created on ${new Date().toLocaleString()}.
     "textColor",
     "mutedTextColor",
     "buttonTextColor",
+    "heroOverlayColor",
   ] as const;
   const isHexColor = (value: unknown): value is string =>
     typeof value === "string" && /^#([0-9a-fA-F]{6})$/.test(value.trim());
@@ -22335,6 +22385,18 @@ This booking was created on ${new Date().toLocaleString()}.
       if (isHexColor(value)) {
         next[key] = value.trim();
       }
+    }
+    if (isValidLandingMediaUrl((theme as any).heroImageUrl)) {
+      next.heroImageUrl = (theme as any).heroImageUrl.trim();
+    } else if ((theme as any).heroImageUrl === null) {
+      next.heroImageUrl = null;
+    }
+    const rawOpacity = Number((theme as any).heroOverlayOpacity);
+    if (Number.isFinite(rawOpacity)) {
+      next.heroOverlayOpacity = Math.min(100, Math.max(0, Math.round(rawOpacity)));
+    }
+    if (typeof (theme as any).showFaqSection === "boolean") {
+      next.showFaqSection = Boolean((theme as any).showFaqSection);
     }
     return next;
   };
@@ -22501,6 +22563,48 @@ This booking was created on ${new Date().toLocaleString()}.
     });
   });
 
+  app.post("/api/landing-page/me/generate-faqs", requireAuth, async (req, res) => {
+    try {
+      const userId = getEffectiveOwnerId((req as any).currentUser);
+      const [page] = await db
+        .select()
+        .from(landingPages)
+        .where(eq(landingPages.userId, userId))
+        .limit(1);
+
+      if (!page) {
+        return res.status(404).json({ message: "Landing page not found" });
+      }
+
+      const requestUpdate = sanitizeLandingPageUpdate(req.body || {});
+      const effectiveTheme = sanitizeLandingPageTheme(requestUpdate.theme ?? page.theme);
+      const effectiveServices = (((requestUpdate.services ?? page.services) as Array<{ name?: string; enabled?: boolean }> | null) || [])
+        .filter((service) => service?.enabled !== false)
+        .map((service) => (typeof service?.name === "string" ? service.name.trim() : ""))
+        .filter(Boolean)
+        .slice(0, 10);
+
+      const faqs = await generateLandingPageFaqs({
+        businessName: (requestUpdate.businessName ?? page.businessName ?? "").trim(),
+        tagline: requestUpdate.tagline ?? page.tagline ?? null,
+        serviceAreaText: requestUpdate.serviceAreaText ?? page.serviceAreaText ?? null,
+        ctaLabel: requestUpdate.ctaLabel ?? page.ctaLabel ?? null,
+        services: effectiveServices,
+      });
+
+      return res.json({
+        faqs,
+        theme: {
+          ...effectiveTheme,
+          showFaqSection: true,
+        },
+      });
+    } catch (error: any) {
+      console.error("[LandingPage] Error generating FAQs:", error);
+      return res.status(500).json({ message: error?.message || "Failed to generate FAQs" });
+    }
+  });
+
   app.post("/api/landing-page/me/publish", requireAuth, async (req, res) => {
     try {
       const userId = getEffectiveOwnerId((req as any).currentUser);
@@ -22537,26 +22641,44 @@ This booking was created on ${new Date().toLocaleString()}.
         }
       }
 
-      if (!page.primaryServiceId) {
-        return res.status(400).json({ message: "Primary calculator is not connected or inactive." });
-      }
+      const [primaryFormula] = page.primaryServiceId
+        ? await db
+            .select({ id: formulas.id, embedId: formulas.embedId, isActive: formulas.isActive })
+            .from(formulas)
+            .where(and(
+              eq(formulas.id, page.primaryServiceId),
+              eq(formulas.userId, userId)
+            ))
+            .limit(1)
+        : [undefined];
 
-      const [primaryFormula] = await db
-        .select({ id: formulas.id, embedId: formulas.embedId, isActive: formulas.isActive })
-        .from(formulas)
-        .where(and(
-          eq(formulas.id, page.primaryServiceId),
-          eq(formulas.userId, userId)
-        ))
-        .limit(1);
+      const fallbackPrimaryFormula = !primaryFormula
+        ? (await db
+            .select({ id: formulas.id, embedId: formulas.embedId, isActive: formulas.isActive })
+            .from(formulas)
+            .where(and(
+              eq(formulas.userId, userId),
+              eq(formulas.isActive, true),
+              eq(formulas.isDisplayed, true)
+            ))
+            .orderBy(formulas.sortOrder, formulas.id)
+            .limit(1))[0]
+        : undefined;
 
-      if (!primaryFormula || !primaryFormula.embedId || !primaryFormula.isActive) {
+      const resolvedPrimaryFormula = primaryFormula || fallbackPrimaryFormula;
+
+      if (!resolvedPrimaryFormula || !resolvedPrimaryFormula.embedId || !resolvedPrimaryFormula.isActive) {
         return res.status(400).json({ message: "Primary calculator is not connected or inactive." });
       }
 
       const [updated] = await db
         .update(landingPages)
-        .set({ status: "published", publishedAt: new Date(), updatedAt: new Date() })
+        .set({
+          status: "published",
+          publishedAt: new Date(),
+          updatedAt: new Date(),
+          primaryServiceId: page.primaryServiceId ?? resolvedPrimaryFormula.id,
+        })
         .where(eq(landingPages.userId, userId))
         .returning();
 
@@ -22686,6 +22808,19 @@ This booking was created on ${new Date().toLocaleString()}.
             .limit(1)
         : [undefined];
 
+      const [fallbackPrimaryFormula] = !primaryFormula
+        ? await db
+            .select({ id: formulas.id, embedId: formulas.embedId })
+            .from(formulas)
+            .where(and(
+              eq(formulas.userId, page.userId),
+              eq(formulas.isActive, true),
+              eq(formulas.isDisplayed, true)
+            ))
+            .orderBy(formulas.sortOrder, formulas.id)
+            .limit(1)
+        : [undefined];
+
       const leadLimitCheck = await checkMonthlyLeadLimit(page.userId);
       const baseUrl = getRequestBaseUrl(req);
       const services = (((page.services as Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number }> | null) || [])
@@ -22704,7 +22839,8 @@ This booking was created on ${new Date().toLocaleString()}.
         ...page,
         services,
         theme: sanitizeLandingPageTheme(page.theme),
-        primaryServiceEmbedId: primaryFormula?.embedId || null,
+        primaryServiceId: page.primaryServiceId ?? fallbackPrimaryFormula?.id ?? null,
+        primaryServiceEmbedId: primaryFormula?.embedId || fallbackPrimaryFormula?.embedId || null,
         landingPageUrl: `${baseUrl}/l/${page.slug}`,
         leadCapReached: !leadLimitCheck.allowed,
         leadLimit: leadLimitCheck.limit,
@@ -22754,11 +22890,15 @@ This booking was created on ${new Date().toLocaleString()}.
           imageUrl: isValidLandingMediaUrl((service as any)?.imageUrl) ? (service as any).imageUrl.trim() : null,
         }));
 
+      const resolvedPrimaryServiceId =
+        page.primaryServiceId ??
+        (services[0]?.serviceId ?? null);
+
       return res.json({
         id: page.id,
         userId: page.userId,
         services,
-        primaryServiceId: page.primaryServiceId,
+        primaryServiceId: resolvedPrimaryServiceId,
         enableMultiService: page.enableMultiService,
       });
     } catch (error) {
@@ -23124,7 +23264,7 @@ This booking was created on ${new Date().toLocaleString()}.
 
       console.log('[PropertyResolve] Resolving address:', address, 'formulaIds:', formulaIds);
       const { snapshot, attributes } = await resolvePropertyData(address);
-      console.log('[PropertyResolve] Raw attributes from ATTOM:', JSON.stringify(attributes));
+      console.log('[PropertyResolve] Raw property attributes:', JSON.stringify(attributes));
 
       // If formulaIds provided, filter attributes to only those with matching prefillSourceKey mappings
       let filteredAttributes = attributes;
@@ -23182,7 +23322,7 @@ This booking was created on ${new Date().toLocaleString()}.
       res.json({
         attributes: PROPERTY_ATTRIBUTE_LABELS,
         groups: PROPERTY_ATTRIBUTE_GROUPS,
-        configured: attomApi.isConfigured(),
+        configured: realieApi.isConfigured(),
       });
     } catch (error) {
       console.error("[PropertyAttributes] Error:", error);

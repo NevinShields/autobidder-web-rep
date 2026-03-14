@@ -36,6 +36,7 @@ function EmbedRouter() {
         <Route path="/custom-form/:embedId" component={StyledCalculator} />
         <Route path="/f/:accountId/:slug" component={CustomFormDisplay} />
         <Route path="/styled-calculator" component={StyledCalculator} />
+        <Route path="/style-calculator" component={StyledCalculator} />
         <Route>
           <div className="min-h-screen flex items-center justify-center p-4">
             <div className="text-center">

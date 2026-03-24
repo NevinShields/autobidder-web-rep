@@ -52,6 +52,7 @@ interface UserProfile {
   ownerId?: string;
   organizationName?: string;
   businessPhone?: string;
+  showLandingPageNav?: boolean;
   isActive: boolean;
   plan?: "free" | "trial" | "starter" | "professional" | "enterprise" | "standard" | "plus" | "plus_seo";
   stripeCustomerId?: string;
@@ -94,6 +95,7 @@ export default function ProfilePage() {
   const [, navigate] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState<Partial<UserProfile>>({});
+  const [showLandingPageNav, setShowLandingPageNav] = useState(false);
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     pushNotifications: false,
@@ -115,7 +117,10 @@ export default function ProfilePage() {
   // Fetch current user profile
   const { data: profile, isLoading, refetch } = useQuery<UserProfile>({
     queryKey: ['/api/profile'],
-    queryFn: () => fetch('/api/profile').then(res => res.json()),
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/profile');
+      return response.json();
+    },
   });
 
   // Fetch business settings for the phone number
@@ -132,6 +137,17 @@ export default function ProfilePage() {
       }));
     }
   }, [businessSettings, isEditing]);
+
+  useEffect(() => {
+    setShowLandingPageNav(profile?.showLandingPageNav ?? false);
+
+    if (!profile || isEditing) return;
+
+    setProfileData(prev => ({
+      ...prev,
+      showLandingPageNav: profile.showLandingPageNav ?? false,
+    }));
+  }, [profile?.showLandingPageNav, profile, isEditing]);
 
   // Handle payment success callback
   useEffect(() => {
@@ -181,11 +197,58 @@ export default function ProfilePage() {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: Partial<UserProfile>) => 
-      apiRequest('PATCH', '/api/profile', data),
-    onSuccess: () => {
+    mutationFn: async (data: Partial<UserProfile>) => {
+      const response = await apiRequest('PATCH', '/api/profile', data);
+      return response.json();
+    },
+    onMutate: (data: Partial<UserProfile>) => {
+      if (data.showLandingPageNav === undefined) {
+        return;
+      }
+
+      const nextShowLandingPageNav = Boolean(data.showLandingPageNav);
+      setShowLandingPageNav(nextShowLandingPageNav);
+      setProfileData((prev) => ({ ...prev, showLandingPageNav: nextShowLandingPageNav }));
+
+      queryClient.setQueryData(['/api/profile'], (current: UserProfile | undefined) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          showLandingPageNav: nextShowLandingPageNav,
+          businessInfo: {
+            ...(current as any).businessInfo,
+            showLandingPageNav: nextShowLandingPageNav,
+          },
+        } as UserProfile;
+      });
+
+      queryClient.setQueryData(['/api/auth/user'], (current: any) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          showLandingPageNav: nextShowLandingPageNav,
+          businessInfo: {
+            ...(current.businessInfo || {}),
+            showLandingPageNav: nextShowLandingPageNav,
+          },
+        };
+      });
+    },
+    onSuccess: (updatedProfile: UserProfile) => {
+      const nextShowLandingPageNav = updatedProfile.showLandingPageNav ?? false;
+      setShowLandingPageNav(nextShowLandingPageNav);
+      setProfileData((prev) => ({ ...prev, showLandingPageNav: nextShowLandingPageNav }));
+      queryClient.setQueryData(['/api/profile'], updatedProfile);
+      queryClient.setQueryData(['/api/auth/user'], updatedProfile);
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
         title: "Profile Updated",
         description: "Your profile has been successfully updated.",
@@ -193,6 +256,7 @@ export default function ProfilePage() {
       setIsEditing(false);
     },
     onError: () => {
+      setShowLandingPageNav(profile?.showLandingPageNav ?? false);
       toast({
         title: "Update Failed",
         description: "Failed to update profile. Please try again.",
@@ -261,6 +325,7 @@ export default function ProfilePage() {
         lastName: profile?.lastName || '',
         organizationName: profile?.organizationName || '',
         businessPhone: businessSettings?.businessPhone || '',
+        showLandingPageNav: profile?.showLandingPageNav ?? false,
       });
     }
     setIsEditing(!isEditing);
@@ -531,6 +596,23 @@ export default function ProfilePage() {
                         placeholder="(555) 123-4567"
                         className="rounded-xl h-11 bg-white/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
                       />
+                    </div>
+                    <div className="md:col-span-2 rounded-2xl border border-gray-200/70 dark:border-gray-700/60 bg-gray-50/70 dark:bg-gray-900/40 p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <Label className="text-sm font-bold text-gray-900 dark:text-white">Show Landing Page Editor In Nav</Label>
+                          <p className="text-xs text-gray-500 mt-1">Adds the dashboard landing page editor to the left navigation menu. Off by default.</p>
+                        </div>
+                        <Switch
+                          checked={showLandingPageNav}
+                          onCheckedChange={(checked) => {
+                            setShowLandingPageNav(checked);
+                            setProfileData((prev) => ({ ...prev, showLandingPageNav: checked }));
+                            updateProfileMutation.mutate({ showLandingPageNav: checked });
+                          }}
+                          disabled={updateProfileMutation.isPending}
+                        />
+                      </div>
                     </div>
                   </div>
 

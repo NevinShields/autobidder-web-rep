@@ -863,6 +863,9 @@ export default function EnhancedVariableInput({
         </div>
       );
 
+    case 'repeatable-group':
+      return null;
+
     default:
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>

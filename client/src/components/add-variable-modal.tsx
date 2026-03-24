@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Upload, Hash, Type, CheckSquare, SlidersHorizontal, ChevronDown, List, Image, X, Video, ImageIcon, HelpCircle, Link2, Search, Loader2 } from "lucide-react";
+import { Plus, Trash2, Upload, Hash, Type, CheckSquare, SlidersHorizontal, ChevronDown, List, Image, X, Video, ImageIcon, HelpCircle, Link2, Search, Loader2, Copy } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { nanoid } from "nanoid";
 
@@ -17,6 +17,7 @@ interface AddVariableModalProps {
   onAddVariable: (variable: Variable) => void;
   otherFormulas?: Formula[];
   existingVariableIds?: string[];
+  allowRepeatableGroup?: boolean;
 }
 
 interface LinkableVariable {
@@ -34,9 +35,10 @@ const variableTypeConfig = {
   slider: { icon: SlidersHorizontal, label: "Slider", description: "Range slider with min/max" },
   dropdown: { icon: ChevronDown, label: "Dropdown", description: "Single selection from list" },
   "multiple-choice": { icon: Image, label: "Multiple Choice", description: "Options with images" },
+  "repeatable-group": { icon: Copy, label: "Repeatable Group", description: "Repeat a set of questions for each item" },
 };
 
-export default function AddVariableModal({ isOpen, onClose, onAddVariable, otherFormulas = [], existingVariableIds = [] }: AddVariableModalProps) {
+export default function AddVariableModal({ isOpen, onClose, onAddVariable, otherFormulas = [], existingVariableIds = [], allowRepeatableGroup = true }: AddVariableModalProps) {
   const [name, setName] = useState("");
   const [id, setId] = useState("");
   const [idManuallyEdited, setIdManuallyEdited] = useState(false);
@@ -118,6 +120,10 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
     const variables: LinkableVariable[] = [];
     otherFormulas.forEach(formula => {
       formula.variables?.forEach(variable => {
+        if (variable.type === "repeatable-group") {
+          return;
+        }
+
         // Include variables that either have a connectionKey OR could be linked
         // (we'll create a connectionKey based on the variable name if they select it)
         const autoConnectionKey = variable.connectionKey ||
@@ -278,6 +284,13 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
       tooltipVideoUrl: tooltipVideoUrl.trim() || undefined,
       tooltipImageUrl: tooltipImageUrl.trim() || undefined,
       connectionKey: connectionKey.trim() || undefined,
+      repeatableConfig: type === "repeatable-group" ? {
+        countSourceMode: "variable",
+        fixedCount: 1,
+        itemLabelTemplate: name.trim() ? `${name.trim()} {index}` : "Item {index}",
+        instanceFormula: "",
+        childVariables: [],
+      } : undefined,
     };
 
     onAddVariable(variable);
@@ -355,6 +368,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
   const needsSliderConfig = type === 'slider';
   const needsStepperConfig = type === 'stepper';
   const needsCheckboxConfig = type === 'checkbox';
+  const isRepeatableGroup = type === 'repeatable-group';
   const TypeIcon = variableTypeConfig[type as keyof typeof variableTypeConfig]?.icon || Hash;
 
   return (
@@ -418,7 +432,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
           <div className="pt-2">
             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3 block">Variable Type</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {Object.entries(variableTypeConfig).map(([key, config]) => {
+              {Object.entries(variableTypeConfig).filter(([key]) => allowRepeatableGroup || key !== "repeatable-group").map(([key, config]) => {
                 const Icon = config.icon;
                 const isSelected = type === key;
                 return (
@@ -443,7 +457,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
           </div>
 
           {/* Unit Field (for number/text types) */}
-          {!needsOptions && !needsSliderConfig && !needsStepperConfig && !needsCheckboxConfig && (
+          {!needsOptions && !needsSliderConfig && !needsStepperConfig && !needsCheckboxConfig && !isRepeatableGroup && (
             <div className="pt-2">
               <Label htmlFor="variable-unit" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Unit Label <span className="text-gray-400 font-normal">(optional)</span>
@@ -456,6 +470,12 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
                 maxLength={15}
                 className="mt-1.5 h-11"
               />
+            </div>
+          )}
+
+          {isRepeatableGroup && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-100">
+              Repeatable groups let this variable act as a summed total in the main formula. After you add it, configure the count source, child questions, and per-item formula in the builder card.
             </div>
           )}
 

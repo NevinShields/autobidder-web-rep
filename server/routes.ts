@@ -45,7 +45,8 @@ import {
   insertDfyServicePurchaseSchema,
   stylingOptionsSchema,
   insertCallBookingSchema,
-  insertCallAvailabilitySlotSchema
+  insertCallAvailabilitySlotSchema,
+  variableSchema
 } from "@shared/schema";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateIcon, generateIconVariations, refineIcon, generateBulkIcons } from "./icon-generator";
@@ -511,6 +512,44 @@ function getEffectiveOwnerId(currentUser: any): string {
   return currentUser.id;
 }
 
+async function resolveLeadNotificationOwner(
+  currentUser: any,
+  targetOwnerId?: string | null
+): Promise<{ businessOwnerId: string | null; ownerEmail: string | null }> {
+  const currentOwnerId = currentUser ? getEffectiveOwnerId(currentUser) : null;
+  let businessOwnerId = targetOwnerId || currentOwnerId || null;
+  let ownerEmail: string | null = null;
+
+  if (businessOwnerId) {
+    const businessOwner = await storage.getUserById(businessOwnerId);
+    ownerEmail = businessOwner?.email || null;
+  }
+
+  if (!ownerEmail && businessOwnerId) {
+    const ownerSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+    ownerEmail = ownerSettings?.businessEmail || null;
+    if (ownerEmail) {
+      const businessOwner = await storage.getUserByEmail(ownerEmail);
+      businessOwnerId = businessOwner?.id || businessOwnerId;
+    }
+  }
+
+  if (!ownerEmail && currentOwnerId && businessOwnerId === currentOwnerId) {
+    ownerEmail = currentUser?.email || null;
+  }
+
+  if (!ownerEmail) {
+    const fallbackSettings = await storage.getBusinessSettings();
+    ownerEmail = fallbackSettings?.businessEmail || null;
+    if (ownerEmail) {
+      const businessOwner = await storage.getUserByEmail(ownerEmail);
+      businessOwnerId = businessOwner?.id || businessOwnerId;
+    }
+  }
+
+  return { businessOwnerId, ownerEmail };
+}
+
 function sanitizeUser(user: any) {
   if (!user) return user;
   return {
@@ -533,6 +572,7 @@ function sanitizeUser(user: any) {
     onboardingCompleted: user.onboardingCompleted,
     onboardingStep: user.onboardingStep,
     businessInfo: user.businessInfo,
+    showLandingPageNav: user.businessInfo?.showLandingPageNav ?? false,
     isBetaTester: user.isBetaTester,
     googleCalendarConnected: user.googleCalendarConnected,
     googleCalendarId: user.googleCalendarId,
@@ -929,7 +969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Read fresh user state from DB to keep flags like welcomeModalShown in sync
       const dbUser = await storage.getUser(sessionUser.id);
-      res.json(dbUser || req.session.user);
+      res.json(sanitizeUser(dbUser || req.session.user));
     } catch (error) {
       console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -2179,8 +2219,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Received formula data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormulaSchema.parse(req.body);
+      const validatedVariables = variableSchema.array().parse(validatedData.variables || []);
       const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const formulaWithUser = { ...validatedData, userId: effectiveUserId, embedId };
+      const formulaWithUser = { ...validatedData, variables: validatedVariables, userId: effectiveUserId, embedId };
       const formula = await storage.createFormula(formulaWithUser);
       res.status(201).json(formula);
     } catch (error) {
@@ -2225,7 +2266,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validatedData = insertFormulaSchema.partial().parse(req.body);
-      const formula = await storage.updateFormula(id, validatedData);
+      const validatedPayload = {
+        ...validatedData,
+        ...(validatedData.variables ? { variables: variableSchema.array().parse(validatedData.variables) } : {}),
+      };
+      const formula = await storage.updateFormula(id, validatedPayload);
       if (!formula) {
         return res.status(404).json({ message: "Formula not found" });
       }
@@ -3736,7 +3781,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Resolve owner context from payload first (public embeds), then authenticated user.
-      const targetOwnerIdForLead = validatedData.userId || (req as any).currentUser?.id;
+      const currentUser = (req as any).currentUser;
+      const targetOwnerIdForLead = validatedData.userId || (currentUser ? getEffectiveOwnerId(currentUser) : undefined);
 
       // Calculate distance-based pricing if enabled and address provided
       const baseCalculatedPrice = validatedData.calculatedPrice ?? 0;
@@ -3880,33 +3926,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const lead = await storage.createLead(leadData);
       
-      // Determine owner email and ID. Prefer payload owner, then authenticated user, then settings fallback.
-      let businessOwnerId = targetOwnerIdForLead;
-      let ownerEmail = (req as any).currentUser?.email;
-
-      if (businessOwnerId && !ownerEmail) {
-        const businessOwner = await storage.getUserById(businessOwnerId);
-        ownerEmail = businessOwner?.email;
-      }
-
-      if (!ownerEmail && businessOwnerId) {
-        const ownerSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
-        ownerEmail = ownerSettings?.businessEmail;
-        if (ownerEmail) {
-          const businessOwner = await storage.getUserByEmail(ownerEmail);
-          businessOwnerId = businessOwner?.id || businessOwnerId;
-        }
-      }
-
-      // Final safety fallback for legacy contexts with no owner info.
-      if (!ownerEmail) {
-        const fallbackSettings = await storage.getBusinessSettings();
-        ownerEmail = fallbackSettings?.businessEmail;
-        if (ownerEmail) {
-          const businessOwner = await storage.getUserByEmail(ownerEmail);
-          businessOwnerId = businessOwner?.id || businessOwnerId;
-        }
-      }
+      // Determine owner email and ID. Prefer the target autobidder owner over the viewer session.
+      const { businessOwnerId, ownerEmail } = await resolveLeadNotificationOwner(
+        currentUser,
+        targetOwnerIdForLead
+      );
       
       // Update the lead with the correct userId (businessOwnerId)
       if (businessOwnerId && businessOwnerId !== "default_owner") {
@@ -5370,7 +5394,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Resolve owner context from payload first (public embeds), then authenticated user.
-      const targetOwnerIdForMultiLead = validatedData.businessOwnerId || (req as any).currentUser?.id;
+      const currentUser = (req as any).currentUser;
+      const targetOwnerIdForMultiLead = validatedData.businessOwnerId || (currentUser ? getEffectiveOwnerId(currentUser) : undefined);
 
       // Calculate distance-based pricing if enabled and address provided
       const baseTotalPrice = validatedData.totalPrice ?? 0;
@@ -5523,47 +5548,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const ownerKey =
             validatedData.businessOwnerId ||
             targetOwnerIdForMultiLead ||
-            (req as any).currentUser?.id ||
+            (currentUser ? getEffectiveOwnerId(currentUser) : undefined) ||
             "unknown";
         const dedupeKey = `${ownerKey}:${submissionId}`;
         recentMultiServiceSubmissions.set(dedupeKey, { leadId: lead.id, createdAt: Date.now() });
       }
       
-      // Determine owner email and ID - prefer payload owner, then current user, then owner settings, then global fallback.
-      let ownerEmail = (req as any).currentUser?.email;
-      let businessOwnerId = targetOwnerIdForMultiLead;
-      
-      // If businessOwnerId provided but no email, get owner from users table
-      if (businessOwnerId && !ownerEmail) {
-        const businessOwner = await storage.getUserById(businessOwnerId);
-        ownerEmail = businessOwner?.email;
-      }
-      
-      // Try owner-specific business settings before global fallback.
-      if (!ownerEmail && businessOwnerId) {
-        const ownerSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
-        ownerEmail = ownerSettings?.businessEmail;
-        if (ownerEmail) {
-          const businessOwner = await storage.getUserByEmail(ownerEmail);
-          businessOwnerId = businessOwner?.id || businessOwnerId;
-        }
-      }
+      // Determine owner email and ID. Prefer the target autobidder owner over the viewer session.
+      const { businessOwnerId, ownerEmail } = await resolveLeadNotificationOwner(
+        currentUser,
+        targetOwnerIdForMultiLead
+      );
 
-      // Last-resort fallback for malformed/legacy public payloads without owner IDs.
       if (!ownerEmail) {
-        const fallbackSettings = await storage.getBusinessSettings();
-        ownerEmail = fallbackSettings?.businessEmail;
-        if (ownerEmail) {
-          const businessOwner = await storage.getUserByEmail(ownerEmail);
-          businessOwnerId = businessOwner?.id || businessOwnerId;
-          console.warn(
-            `[lead-owner-resolution] multi-service fallback used leadId=${lead.id} ownerEmail=${ownerEmail} ownerId=${businessOwnerId ?? 'unknown'}`
-          );
-        } else {
-          console.warn(
-            `[lead-owner-resolution] multi-service failed leadId=${lead.id} incomingOwnerId=${targetOwnerIdForMultiLead ?? 'none'}`
-          );
-        }
+        console.warn(
+          `[lead-owner-resolution] multi-service failed leadId=${lead.id} incomingOwnerId=${targetOwnerIdForMultiLead ?? 'none'}`
+        );
+      } else if (!targetOwnerIdForMultiLead) {
+        console.warn(
+          `[lead-owner-resolution] multi-service fallback used leadId=${lead.id} ownerEmail=${ownerEmail} ownerId=${businessOwnerId ?? 'unknown'}`
+        );
       }
       
       // Update the lead with the correct businessOwnerId
@@ -5810,7 +5814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               businessPhone: businessSettings?.businessPhone || '',
               estimatedTimeframe: "2-3 business days",
               leadId: lead.id.toString(),
-              businessOwnerId: businessOwnerId
+              businessOwnerId: businessOwnerId || undefined
             });
             console.log(`Lead submitted email sent to customer: ${lead.email}`);
           } catch (error) {
@@ -9838,6 +9842,14 @@ The Autobidder Team`;
         }
       }
 
+      if (updates.showLandingPageNav !== undefined) {
+        const user = await storage.getUserById(userId);
+        filteredUpdates.businessInfo = {
+          ...(user?.businessInfo || {}),
+          showLandingPageNav: Boolean(updates.showLandingPageNav),
+        };
+      }
+
       // Handle businessPhone update if present
       if (filteredUpdates.businessPhone !== undefined) {
         const businessPhone = filteredUpdates.businessPhone;
@@ -9870,7 +9882,13 @@ The Autobidder Team`;
       if (!updatedUser) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(sanitizeUser(updatedUser));
+
+      const sanitizedUser = sanitizeUser(updatedUser);
+      if (req.session?.user) {
+        req.session.user = sanitizedUser as any;
+      }
+
+      res.json(sanitizedUser);
     } catch (error) {
       console.error("Profile update error:", error);
       res.status(500).json({ message: "Failed to update profile" });
@@ -15182,14 +15200,15 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         instructions: {
           step1: "Go to Stripe Dashboard → Developers → Webhooks",
           step2: "Add endpoint with URL above",
-          step3: "Select events: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted",
+          step3: "Select events: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted, invoice.payment_succeeded",
           step4: "Copy signing secret and update STRIPE_WEBHOOK_SECRET_TEST in Replit secrets",
           step5: "Test with a new payment"
         },
         troubleshooting: {
           webhookNotReceived: "Check Stripe Dashboard webhook logs for delivery attempts",
           signatureVerificationFailed: "Verify webhook secret matches Stripe Dashboard",
-          subscriptionNotUpdated: "Check webhook events include required metadata (userId, planId, billingPeriod)"
+          subscriptionNotUpdated: "Check webhook events include required metadata (userId, planId, billingPeriod)",
+          purchaseNotTracked: "Meta revenue tracking requires the invoice.payment_succeeded event to be enabled on the Stripe webhook"
         }
       });
     } catch (error) {
@@ -22337,8 +22356,12 @@ This booking was created on ${new Date().toLocaleString()}.
     "noir-edge",
     "fresh-deck",
     "halo-glass",
+    "sunline-studio",
+    "volt-viking",
     "atlas-pro",
     "mono-grid",
+    "epoxy-strata",
+    "luxe-coat",
   ] as const;
   const defaultLandingPageTheme = {
     primaryColor: "#2563EB",
@@ -22352,6 +22375,119 @@ This booking was created on ${new Date().toLocaleString()}.
     heroOverlayColor: "#0F172A",
     heroOverlayOpacity: 45,
     showFaqSection: true,
+    showBeforeAfterSection: true,
+    showVoltageReliabilitySection: true,
+    epoxyStrataContent: {
+      navSystemsLabel: "Systems",
+      navTransformationLabel: "Transformation",
+      navProcessLabel: "Process",
+      navQuoteLabel: "Quote",
+      navButtonLabel: "Consultation",
+      heroEyebrow: "Architectural Grade Surfaces",
+      heroTitleLine1: "Luxury",
+      heroTitleAccent: "Engineered",
+      heroTitleLine2: "Perfection",
+      heroSecondaryCtaLabel: "Explore Gallery",
+      heroScrollLabel: "Scroll",
+      transformationTitleLine1: "From Cracked",
+      transformationTitleLine2: "To Showroom",
+      transformationBody: "We combine heavy-duty surface prep with premium resin systems to produce floors that read as design pieces but perform like commercial infrastructure.",
+      transformationBeforeLabel: "Before",
+      transformationAfterLabel: "After",
+      transformationStats: [
+        { label: "Durability", value: "20+ Years" },
+        { label: "Install Time", value: "24-48 Hrs" },
+        { label: "Resistance", value: "Industrial" },
+      ],
+      systemsEyebrow: "Our Expertise",
+      systemsHeading: "Premium Systems",
+      galleryHeading: "Recent Projects",
+      gallerySubheading: "Curated selections of our finest installations.",
+      galleryCardEyebrow: "Recent Installation",
+      beforeAfterEyebrow: "Before & After",
+      beforeAfterHeading: "Transformation Pairs",
+      processHeading: "The Process",
+      reviewsHeading: "Client Authority",
+      faqEyebrow: "FAQ",
+      faqHeading: "Common Questions",
+      quoteTitleLine1: "Your Concrete",
+      quoteTitleLine2: "Reimagined.",
+      quoteBody: "Schedule your free on-site design consultation and estimate today.",
+      availabilityNote: "Limited install spots available this month",
+      footerTagline: "Premium Epoxy Systems",
+    },
+    voltVikingContent: {
+      navServicesLabel: "Services",
+      navAboutLabel: "About",
+      navReviewsLabel: "Reviews",
+      navFaqLabel: "FAQ",
+      navButtonLabel: "Call Now",
+      mobileButtonLabel: "(555) VOLT-VKNG",
+      heroTitleLine1: "Legendary",
+      heroTitleAccent: "Electrical",
+      heroTitleLine2: "Services",
+      heroBody: "Powering your home with the strength and precision of the North. Trusted by thousands for safety, speed, and integrity.",
+      heroPrimaryCtaLabel: "Book Service Now",
+      heroSecondaryCtaLabel: "See Our Work",
+      aboutEyebrow: "Our Mission",
+      aboutHeadingLine1: "When You Need",
+      aboutHeadingLine2: "Trusted Electricians",
+      aboutBody: "We aren't just another electrical company. We are a brotherhood of craftsmen dedicated to securing your home's power. Our team brings decades of combined experience to every job, ensuring that your lighting, panels, and circuits are nothing short of legendary.",
+      aboutButtonLabel: "Learn More About Us",
+      aboutChecklist: [
+        "Licensed & Insured Professionals",
+        "Transparent Up-Front Pricing",
+        "Same-Day Service Availability",
+        "100% Satisfaction Guaranteed",
+      ],
+      servicesHeading: "We're Glad You're Here.",
+      servicesSubheading: "How can we help?",
+      philosophyHeading: "We Don't Just Fix.",
+      philosophySubheading: "We Build Long-Term Reliability For Your Fortress.",
+      philosophyItems: [
+        { title: "Safety First", body: "Every connection is tested and verified to exceed modern safety standards." },
+        { title: "Rapid Response", body: "We value your time. We show up when we say we will, or the first hour is on us." },
+        { title: "Elite Craft", body: "Master-level electrical work performed by certified industry leaders." },
+        { title: "Tough as Nails", body: "We use only industrial-grade parts that stand the test of time." },
+      ],
+      guaranteeTitleLine1: "100% Satisfaction",
+      guaranteeAccent: "Guarantee",
+      guaranteeBody: "If you aren't thrilled with our service, we'll keep working until you are. No excuses. No extra charges. Just legendary service.",
+      guaranteeButtonLabel: "Book Your Service",
+      guaranteeCardTitle: "SERVICE VAN",
+      processHeading: "Our Simple 3 Step Process",
+      processSubheading: "",
+      faqHeading: "Common Questions",
+      faqSubheading: "Knowledge is Power",
+      serviceAreaHeading: "Serving Our Community",
+      serviceAreaBody: "We serve the entire tri-state area. Wherever you are, our fleet of rapid-response vans is never more than a short drive away.",
+      serviceAreaButtonLabel: "See Full Service Area",
+      hqLabel: "Main Headquarters",
+      hqAddress: "123 Service Way, Electric City, EC 90210",
+      serviceAreaCities: [
+        "North Ridge",
+        "South Shield",
+        "Electric Bay",
+        "Forge Town",
+        "Copper Creek",
+        "Voltage Village",
+        "Ampere Isle",
+        "Ohm Valley",
+      ],
+      footerBody: "Providing legendary electrical services with a commitment to integrity, safety, and master craftsmanship. Your home is your fortress, and we are here to protect its power.",
+      footerNavHeading: "Navigation",
+      footerNavLinks: [
+        "Residential Services",
+        "Commercial Electrical",
+        "Emergency Response",
+        "About Our Team",
+        "Client Reviews",
+      ],
+      footerContactHeading: "Contact",
+      footerContactButtonLabel: "Contact Us",
+      footerCopyright: "© 2024 Your Electrical Company. All rights reserved.",
+      footerLegalLinks: ["Privacy Policy", "Terms of Service", "Accessibility"],
+    },
   };
   const landingPageThemeKeys = [
     "primaryColor",
@@ -22374,6 +22510,19 @@ This booking was created on ${new Date().toLocaleString()}.
       return false;
     }
     return /^\/(objects|uploads)\//.test(trimmed) || /^https?:\/\//i.test(trimmed);
+  };
+  const sanitizeLandingServiceIcon = (value: unknown): string | null => {
+    if (typeof value !== "string") {
+      return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.length > 2048) {
+      return null;
+    }
+    if (trimmed.length <= 4) {
+      return trimmed;
+    }
+    return isValidLandingMediaUrl(trimmed) ? trimmed : null;
   };
   const sanitizeLandingPageTheme = (theme: unknown) => {
     const next = { ...defaultLandingPageTheme };
@@ -22398,6 +22547,179 @@ This booking was created on ${new Date().toLocaleString()}.
     if (typeof (theme as any).showFaqSection === "boolean") {
       next.showFaqSection = Boolean((theme as any).showFaqSection);
     }
+    if (typeof (theme as any).showBeforeAfterSection === "boolean") {
+      next.showBeforeAfterSection = Boolean((theme as any).showBeforeAfterSection);
+    }
+    if (typeof (theme as any).showVoltageReliabilitySection === "boolean") {
+      next.showVoltageReliabilitySection = Boolean((theme as any).showVoltageReliabilitySection);
+    }
+    const epoxySource =
+      (theme as any).epoxyStrataContent && typeof (theme as any).epoxyStrataContent === "object"
+        ? (theme as any).epoxyStrataContent
+        : {};
+    type EpoxyStrataTextKey = Exclude<
+      keyof typeof defaultLandingPageTheme.epoxyStrataContent,
+      "transformationStats"
+    >;
+    const readEpoxyText = (
+      key: EpoxyStrataTextKey,
+      max: number,
+    ) =>
+      typeof epoxySource[key] === "string"
+        ? epoxySource[key].slice(0, max)
+        : defaultLandingPageTheme.epoxyStrataContent[key];
+    const rawStats = Array.isArray(epoxySource.transformationStats)
+      ? epoxySource.transformationStats
+      : [];
+    next.epoxyStrataContent = {
+      navSystemsLabel: readEpoxyText("navSystemsLabel", 60),
+      navTransformationLabel: readEpoxyText("navTransformationLabel", 60),
+      navProcessLabel: readEpoxyText("navProcessLabel", 60),
+      navQuoteLabel: readEpoxyText("navQuoteLabel", 60),
+      navButtonLabel: readEpoxyText("navButtonLabel", 60),
+      heroEyebrow: readEpoxyText("heroEyebrow", 120),
+      heroTitleLine1: readEpoxyText("heroTitleLine1", 80),
+      heroTitleAccent: readEpoxyText("heroTitleAccent", 80),
+      heroTitleLine2: readEpoxyText("heroTitleLine2", 80),
+      heroSecondaryCtaLabel: readEpoxyText("heroSecondaryCtaLabel", 60),
+      heroScrollLabel: readEpoxyText("heroScrollLabel", 30),
+      transformationTitleLine1: readEpoxyText("transformationTitleLine1", 80),
+      transformationTitleLine2: readEpoxyText("transformationTitleLine2", 80),
+      transformationBody: readEpoxyText("transformationBody", 320),
+      transformationBeforeLabel: readEpoxyText("transformationBeforeLabel", 30),
+      transformationAfterLabel: readEpoxyText("transformationAfterLabel", 30),
+      transformationStats: Array.from({ length: 3 }, (_, index) => {
+        const item = rawStats[index];
+        return {
+          label:
+            item && typeof item === "object" && typeof item.label === "string"
+              ? item.label.slice(0, 40)
+              : defaultLandingPageTheme.epoxyStrataContent.transformationStats[index].label,
+          value:
+            item && typeof item === "object" && typeof item.value === "string"
+              ? item.value.slice(0, 40)
+              : defaultLandingPageTheme.epoxyStrataContent.transformationStats[index].value,
+        };
+      }),
+      systemsEyebrow: readEpoxyText("systemsEyebrow", 120),
+      systemsHeading: readEpoxyText("systemsHeading", 120),
+      galleryHeading: readEpoxyText("galleryHeading", 120),
+      gallerySubheading: readEpoxyText("gallerySubheading", 200),
+      galleryCardEyebrow: readEpoxyText("galleryCardEyebrow", 60),
+      beforeAfterEyebrow: readEpoxyText("beforeAfterEyebrow", 120),
+      beforeAfterHeading: readEpoxyText("beforeAfterHeading", 120),
+      processHeading: readEpoxyText("processHeading", 120),
+      reviewsHeading: readEpoxyText("reviewsHeading", 120),
+      faqEyebrow: readEpoxyText("faqEyebrow", 60),
+      faqHeading: readEpoxyText("faqHeading", 120),
+      quoteTitleLine1: readEpoxyText("quoteTitleLine1", 80),
+      quoteTitleLine2: readEpoxyText("quoteTitleLine2", 80),
+      quoteBody: readEpoxyText("quoteBody", 240),
+      availabilityNote: readEpoxyText("availabilityNote", 120),
+      footerTagline: readEpoxyText("footerTagline", 120),
+    };
+    const voltSource =
+      (theme as any).voltVikingContent && typeof (theme as any).voltVikingContent === "object"
+        ? (theme as any).voltVikingContent
+        : {};
+    type VoltVikingTextKey = Exclude<
+      keyof typeof defaultLandingPageTheme.voltVikingContent,
+      "aboutChecklist" | "philosophyItems" | "serviceAreaCities" | "footerNavLinks" | "footerLegalLinks"
+    >;
+    const normalizeLegacyVoltVikingText = (value: string) => {
+      switch (value) {
+        case "Get A Viking Now":
+          return "Book Service Now";
+        case "When In Need, Call Your":
+          return "When You Need";
+        case "Local Viking Electricians!":
+          return "Trusted Electricians";
+        case "VOLT VIKING VAN":
+          return "SERVICE VAN";
+        case "The Volt Vikings serve the entire tri-state area. Wherever you are, our fleet of rapid-response vans is never more than a short sail away.":
+          return "We serve the entire tri-state area. Wherever you are, our fleet of rapid-response vans is never more than a short drive away.";
+        case "123 Viking Forge Way, Electric City, VK 90210":
+          return "123 Service Way, Electric City, EC 90210";
+        case "North Viking":
+          return "North Ridge";
+        case "About the Vikings":
+          return "About Our Team";
+        case "© 2024 Volt Vikings Electrical. All rights reserved.":
+          return "© 2024 Your Electrical Company. All rights reserved.";
+        default:
+          return value;
+      }
+    };
+    const readVoltText = (key: VoltVikingTextKey, max: number) =>
+      typeof voltSource[key] === "string"
+        ? normalizeLegacyVoltVikingText(voltSource[key]).slice(0, max)
+        : defaultLandingPageTheme.voltVikingContent[key];
+    const sanitizeStringList = (value: unknown, defaults: string[], maxItems: number, maxLength: number) =>
+      Array.from({ length: maxItems }, (_, index) =>
+        Array.isArray(value) && typeof value[index] === "string"
+          ? normalizeLegacyVoltVikingText(value[index]).slice(0, maxLength)
+          : defaults[index]
+      );
+    const rawPhilosophy = Array.isArray(voltSource.philosophyItems) ? voltSource.philosophyItems : [];
+    next.voltVikingContent = {
+      navServicesLabel: readVoltText("navServicesLabel", 60),
+      navAboutLabel: readVoltText("navAboutLabel", 60),
+      navReviewsLabel: readVoltText("navReviewsLabel", 60),
+      navFaqLabel: readVoltText("navFaqLabel", 60),
+      navButtonLabel: readVoltText("navButtonLabel", 60),
+      mobileButtonLabel: readVoltText("mobileButtonLabel", 60),
+      heroTitleLine1: readVoltText("heroTitleLine1", 80),
+      heroTitleAccent: readVoltText("heroTitleAccent", 80),
+      heroTitleLine2: readVoltText("heroTitleLine2", 80),
+      heroBody: readVoltText("heroBody", 320),
+      heroPrimaryCtaLabel: readVoltText("heroPrimaryCtaLabel", 60),
+      heroSecondaryCtaLabel: readVoltText("heroSecondaryCtaLabel", 60),
+      aboutEyebrow: readVoltText("aboutEyebrow", 80),
+      aboutHeadingLine1: readVoltText("aboutHeadingLine1", 120),
+      aboutHeadingLine2: readVoltText("aboutHeadingLine2", 120),
+      aboutBody: readVoltText("aboutBody", 500),
+      aboutButtonLabel: readVoltText("aboutButtonLabel", 80),
+      aboutChecklist: sanitizeStringList(voltSource.aboutChecklist, defaultLandingPageTheme.voltVikingContent.aboutChecklist, 4, 80),
+      servicesHeading: readVoltText("servicesHeading", 120),
+      servicesSubheading: readVoltText("servicesSubheading", 120),
+      philosophyHeading: readVoltText("philosophyHeading", 120),
+      philosophySubheading: readVoltText("philosophySubheading", 200),
+      philosophyItems: Array.from({ length: 4 }, (_, index) => {
+        const item = rawPhilosophy[index];
+        return {
+          title:
+            item && typeof item === "object" && typeof item.title === "string"
+              ? item.title.slice(0, 80)
+              : defaultLandingPageTheme.voltVikingContent.philosophyItems[index].title,
+          body:
+            item && typeof item === "object" && typeof item.body === "string"
+              ? item.body.slice(0, 220)
+              : defaultLandingPageTheme.voltVikingContent.philosophyItems[index].body,
+        };
+      }),
+      guaranteeTitleLine1: readVoltText("guaranteeTitleLine1", 120),
+      guaranteeAccent: readVoltText("guaranteeAccent", 120),
+      guaranteeBody: readVoltText("guaranteeBody", 320),
+      guaranteeButtonLabel: readVoltText("guaranteeButtonLabel", 80),
+      guaranteeCardTitle: readVoltText("guaranteeCardTitle", 80),
+      processHeading: readVoltText("processHeading", 120),
+      processSubheading: readVoltText("processSubheading", 200),
+      faqHeading: readVoltText("faqHeading", 120),
+      faqSubheading: readVoltText("faqSubheading", 120),
+      serviceAreaHeading: readVoltText("serviceAreaHeading", 120),
+      serviceAreaBody: readVoltText("serviceAreaBody", 320),
+      serviceAreaButtonLabel: readVoltText("serviceAreaButtonLabel", 80),
+      hqLabel: readVoltText("hqLabel", 80),
+      hqAddress: readVoltText("hqAddress", 140),
+      serviceAreaCities: sanitizeStringList(voltSource.serviceAreaCities, defaultLandingPageTheme.voltVikingContent.serviceAreaCities, 8, 50),
+      footerBody: readVoltText("footerBody", 420),
+      footerNavHeading: readVoltText("footerNavHeading", 80),
+      footerNavLinks: sanitizeStringList(voltSource.footerNavLinks, defaultLandingPageTheme.voltVikingContent.footerNavLinks, 5, 80),
+      footerContactHeading: readVoltText("footerContactHeading", 80),
+      footerContactButtonLabel: readVoltText("footerContactButtonLabel", 80),
+      footerCopyright: readVoltText("footerCopyright", 160),
+      footerLegalLinks: sanitizeStringList(voltSource.footerLegalLinks, defaultLandingPageTheme.voltVikingContent.footerLegalLinks, 3, 80),
+    };
     return next;
   };
 
@@ -22416,6 +22738,7 @@ This booking was created on ${new Date().toLocaleString()}.
       "enableMultiService",
       "howItWorks",
       "faqs",
+      "beforeAfterGallery",
       "phone",
       "email",
       "serviceAreaText",
@@ -22454,8 +22777,10 @@ This booking was created on ${new Date().toLocaleString()}.
         .map((service: any, idx: number) => ({
           serviceId: Number(service?.serviceId),
           name: typeof service?.name === "string" && service.name.trim() ? service.name.trim() : "Service",
+          description: typeof service?.description === "string" && service.description.trim() ? service.description.trim().slice(0, 240) : null,
           enabled: Boolean(service?.enabled),
           sortOrder: Number.isFinite(Number(service?.sortOrder)) ? Number(service.sortOrder) : idx,
+          iconUrl: sanitizeLandingServiceIcon(service?.iconUrl),
           imageUrl: isValidLandingMediaUrl(service?.imageUrl) ? service.imageUrl.trim() : null,
         }))
         .filter((service: any) => Number.isInteger(service.serviceId) && service.serviceId > 0);
@@ -22472,6 +22797,17 @@ This booking was created on ${new Date().toLocaleString()}.
     }
     if (Array.isArray(update.faqs)) {
       update.faqs = update.faqs.slice(0, 6);
+    }
+    if (Array.isArray(update.beforeAfterGallery)) {
+      update.beforeAfterGallery = update.beforeAfterGallery
+        .map((item: any) => ({
+          label: typeof item?.label === "string" && item.label.trim() ? item.label.trim().slice(0, 80) : "",
+          caption: typeof item?.caption === "string" ? item.caption.trim().slice(0, 240) : "",
+          beforeImageUrl: isValidLandingMediaUrl(item?.beforeImageUrl) ? item.beforeImageUrl.trim() : null,
+          afterImageUrl: isValidLandingMediaUrl(item?.afterImageUrl) ? item.afterImageUrl.trim() : null,
+          enabled: Boolean(item?.enabled),
+        }))
+        .slice(0, 3);
     }
     return update;
   };
@@ -22765,6 +23101,7 @@ This booking was created on ${new Date().toLocaleString()}.
           enableMultiService: landingPages.enableMultiService,
           howItWorks: landingPages.howItWorks,
           faqs: landingPages.faqs,
+          beforeAfterGallery: landingPages.beforeAfterGallery,
           phone: landingPages.phone,
           email: landingPages.email,
           serviceAreaText: landingPages.serviceAreaText,
@@ -22823,12 +23160,25 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const leadLimitCheck = await checkMonthlyLeadLimit(page.userId);
       const baseUrl = getRequestBaseUrl(req);
-      const services = (((page.services as Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number }> | null) || [])
+      const serviceIds = (((page.services as Array<{ serviceId: number; enabled?: boolean }> | null) || [])
+        .map((service) => Number(service?.serviceId))
+        .filter((serviceId): serviceId is number => Number.isInteger(serviceId) && serviceId > 0));
+      const formulaIconRows = serviceIds.length > 0
+        ? await db
+            .select({ id: formulas.id, iconUrl: formulas.iconUrl })
+            .from(formulas)
+            .where(and(eq(formulas.userId, page.userId), inArray(formulas.id, serviceIds)))
+        : [];
+      const formulaIconById = new Map(
+        formulaIconRows.map((formula) => [formula.id, sanitizeLandingServiceIcon(formula.iconUrl)]),
+      );
+      const services = (((page.services as Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number; iconUrl?: string | null }> | null) || [])
         .map((service, idx) => ({
           serviceId: Number(service?.serviceId),
           name: typeof service?.name === "string" && service.name.trim() ? service.name.trim() : "Service",
           enabled: Boolean(service?.enabled),
           sortOrder: Number.isFinite(Number(service?.sortOrder)) ? Number(service.sortOrder) : idx,
+          iconUrl: sanitizeLandingServiceIcon((service as any)?.iconUrl) ?? formulaIconById.get(Number(service?.serviceId)) ?? null,
           imageUrl: isValidLandingMediaUrl((service as any)?.imageUrl) ? (service as any).imageUrl.trim() : null,
         }))
         .filter((service) => Number.isInteger(service.serviceId) && service.serviceId > 0)
@@ -22878,7 +23228,19 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Landing page not found" });
       }
 
-      const services = (((page.services as Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number }> | null) || [])
+      const serviceIds = (((page.services as Array<{ serviceId: number; enabled?: boolean }> | null) || [])
+        .map((service) => Number(service?.serviceId))
+        .filter((serviceId): serviceId is number => Number.isInteger(serviceId) && serviceId > 0));
+      const formulaIconRows = serviceIds.length > 0
+        ? await db
+            .select({ id: formulas.id, iconUrl: formulas.iconUrl })
+            .from(formulas)
+            .where(and(eq(formulas.userId, page.userId), inArray(formulas.id, serviceIds)))
+        : [];
+      const formulaIconById = new Map(
+        formulaIconRows.map((formula) => [formula.id, sanitizeLandingServiceIcon(formula.iconUrl)]),
+      );
+      const services = (((page.services as Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number; iconUrl?: string | null }> | null) || [])
         .filter((service) => service.enabled)
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .slice(0, 10))
@@ -22887,6 +23249,7 @@ This booking was created on ${new Date().toLocaleString()}.
           name: service.name,
           enabled: true,
           sortOrder: service.sortOrder,
+          iconUrl: sanitizeLandingServiceIcon((service as any)?.iconUrl) ?? formulaIconById.get(Number(service?.serviceId)) ?? null,
           imageUrl: isValidLandingMediaUrl((service as any)?.imageUrl) ? (service as any).imageUrl.trim() : null,
         }));
 
@@ -23270,18 +23633,25 @@ This booking was created on ${new Date().toLocaleString()}.
       let filteredAttributes = attributes;
       if (formulaIds && formulaIds.length > 0) {
         const relevantKeys = new Set<string>();
+        const collectPrefillKeys = (variables: any[] = []) => {
+          for (const variable of variables) {
+            if (variable.prefillSourceKey) {
+              relevantKeys.add(variable.prefillSourceKey);
+              console.log(`[PropertyResolve] Variable "${variable.name}" (${variable.id}, type=${variable.type}): prefillSourceKey="${variable.prefillSourceKey}"`);
+            } else {
+              console.log(`[PropertyResolve] Variable "${variable.name}" (${variable.id}, type=${variable.type}): NO prefillSourceKey. connectionKey=${variable.connectionKey || 'none'}`);
+            }
+
+            if (variable.type === 'repeatable-group' && variable.repeatableConfig?.childVariables) {
+              collectPrefillKeys(variable.repeatableConfig.childVariables);
+            }
+          }
+        };
+
         for (const formulaId of formulaIds) {
           const formula = await storage.getFormula(formulaId);
           if (formula?.variables) {
-            const variables = formula.variables as any[];
-            for (const v of variables) {
-              if (v.prefillSourceKey) {
-                relevantKeys.add(v.prefillSourceKey);
-                console.log(`[PropertyResolve] Formula ${formulaId}, variable "${v.name}" (${v.id}, type=${v.type}): prefillSourceKey="${v.prefillSourceKey}"`);
-              } else {
-                console.log(`[PropertyResolve] Formula ${formulaId}, variable "${v.name}" (${v.id}, type=${v.type}): NO prefillSourceKey. connectionKey=${v.connectionKey || 'none'}`);
-              }
-            }
+            collectPrefillKeys(formula.variables as any[]);
           }
         }
 

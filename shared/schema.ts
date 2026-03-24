@@ -1425,6 +1425,7 @@ export interface BusinessInfo {
   servicesOffered?: string[];
   targetMarket?: string;
   yearsInBusiness?: number;
+  showLandingPageNav?: boolean;
 }
 
 export interface OnboardingStep {
@@ -1480,52 +1481,164 @@ export interface DistanceInfo {
 }
 
 // Zod schemas for validation
-export const variableSchema = z.object({
+export type VariableConditionType = 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'is_empty' | 'is_not_empty';
+
+export interface VariableOption {
+  id?: string;
+  label: string;
+  value: string | number;
+  multiplier?: number;
+  image?: string;
+  numericValue?: number;
+  defaultUnselectedValue?: number;
+}
+
+export interface VariableCondition {
+  id: string;
+  dependsOnVariable: string;
+  condition: VariableConditionType;
+  expectedValue?: string | number | boolean;
+  expectedValues?: Array<string | number>;
+}
+
+export interface ConditionalLogic {
+  enabled: boolean;
+  operator?: 'AND' | 'OR';
+  conditions?: VariableCondition[];
+  dependsOnVariable?: string;
+  condition?: VariableConditionType;
+  expectedValue?: string | number | boolean;
+  expectedValues?: Array<string | number>;
+  defaultValue?: string | number | boolean | Array<string | number>;
+}
+
+const repeatableChildVariableTypeValues = [
+  'number',
+  'stepper',
+  'select',
+  'checkbox',
+  'text',
+  'multiple-choice',
+  'dropdown',
+  'slider',
+] as const;
+
+const variableTypeValues = [
+  ...repeatableChildVariableTypeValues,
+  'repeatable-group',
+] as const;
+
+type RepeatableChildVariableType = typeof repeatableChildVariableTypeValues[number];
+type VariableType = typeof variableTypeValues[number];
+
+interface BaseVariable {
+  id: string;
+  name: string;
+  type: VariableType;
+  unit?: string;
+  tooltip?: string;
+  tooltipVideoUrl?: string;
+  tooltipImageUrl?: string;
+  options?: VariableOption[];
+  defaultValue?: string | number | boolean;
+  allowMultipleSelection?: boolean;
+  connectionKey?: string;
+  prefillSourceKey?: string | null;
+  min?: number;
+  max?: number;
+  step?: number;
+  checkedValue?: string | number;
+  uncheckedValue?: string | number;
+  conditionalLogic?: ConditionalLogic;
+}
+
+export interface RepeatableChildVariable extends Omit<BaseVariable, 'type'> {
+  type: RepeatableChildVariableType;
+  repeatableConfig?: never;
+}
+
+export interface RepeatableConfig {
+  countSourceMode?: 'variable' | 'fixed';
+  countVariableId?: string;
+  fixedCount?: number;
+  minInstances?: number;
+  maxInstances?: number;
+  itemLabelTemplate?: string;
+  instanceFormula?: string;
+  childVariables?: RepeatableChildVariable[];
+}
+
+export interface Variable extends BaseVariable {
+  repeatableConfig?: RepeatableConfig;
+}
+
+const variableOptionSchema: z.ZodType<VariableOption> = z.object({
+  id: z.string().optional(),
+  label: z.string(),
+  value: z.union([z.string(), z.number()]),
+  multiplier: z.number().optional(),
+  image: z.string().optional(),
+  numericValue: z.number().optional(),
+  defaultUnselectedValue: z.number().optional(),
+});
+
+const variableConditionSchema: z.ZodType<VariableCondition> = z.object({
+  id: z.string(),
+  dependsOnVariable: z.string(),
+  condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']),
+  expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  expectedValues: z.array(z.union([z.string(), z.number()])).optional(),
+});
+
+const conditionalLogicSchema: z.ZodType<ConditionalLogic> = z.object({
+  enabled: z.boolean(),
+  operator: z.enum(['AND', 'OR']).default('AND'),
+  conditions: z.array(variableConditionSchema).default([]),
+  dependsOnVariable: z.string().optional(),
+  condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']).optional(),
+  expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  expectedValues: z.array(z.union([z.string(), z.number()])).optional(),
+  defaultValue: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()]))]).optional(),
+});
+
+const baseVariableSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.enum(['number', 'stepper', 'select', 'checkbox', 'text', 'multiple-choice', 'dropdown', 'slider']),
   unit: z.string().optional(),
-  tooltip: z.string().optional(), // Optional description/help text for the question
-  tooltipVideoUrl: z.string().optional(), // Optional video URL for tooltip (YouTube, Vimeo, etc.)
-  tooltipImageUrl: z.string().optional(), // Optional image URL for tooltip
-  options: z.array(z.object({
-    id: z.string().optional(), // Unique ID for this option (used in formulas for multi-select)
-    label: z.string(),
-    value: z.union([z.string(), z.number()]),
-    multiplier: z.number().optional(),
-    image: z.string().optional(), // URL or base64 image data
-    numericValue: z.number().optional(), // For formula calculations
-    defaultUnselectedValue: z.number().optional() // Value when option is NOT selected (0 for addition, 1 for multiplication formulas)
-  })).optional(),
+  tooltip: z.string().optional(),
+  tooltipVideoUrl: z.string().optional(),
+  tooltipImageUrl: z.string().optional(),
+  options: z.array(variableOptionSchema).optional(),
   defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
-  allowMultipleSelection: z.boolean().optional(), // For multiple-choice type
-  connectionKey: z.string().optional(), // Key to identify shared variables across services (e.g., "house_sqft", "property_height")
-  prefillSourceKey: z.string().nullable().optional(), // Key mapping to a canonical property attribute for autofill (e.g., "building_area_sqft")
-  // Slider specific properties
-  min: z.number().optional(), // Minimum value for slider
-  max: z.number().optional(), // Maximum value for slider
-  step: z.number().optional(), // Step increment for slider (default: 1)
-  // Checkbox specific properties
-  checkedValue: z.union([z.string(), z.number()]).optional(), // Value when checkbox is checked
-  uncheckedValue: z.union([z.string(), z.number()]).optional(), // Value when checkbox is unchecked
-  // Conditional logic
-  conditionalLogic: z.object({
-    enabled: z.boolean(),
-    operator: z.enum(['AND', 'OR']).default('AND'), // How to combine multiple conditions
-    conditions: z.array(z.object({
-      id: z.string(), // Unique ID for this condition
-      dependsOnVariable: z.string(), // ID of the variable this depends on
-      condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']),
-      expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(), // Value to compare against
-      expectedValues: z.array(z.union([z.string(), z.number()])).optional(), // For multiple values (e.g., contains any of these)
-    })).default([]),
-    // Legacy single condition support (for backward compatibility)
-    dependsOnVariable: z.string().optional(), // ID of the variable this depends on
-    condition: z.enum(['equals', 'not_equals', 'greater_than', 'less_than', 'contains', 'is_empty', 'is_not_empty']).optional(),
-    expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(), // Value to compare against
-    expectedValues: z.array(z.union([z.string(), z.number()])).optional(), // For multiple values (e.g., contains any of these)
-    defaultValue: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()]))]).optional(), // Default value when hidden
-  }).optional(),
+  allowMultipleSelection: z.boolean().optional(),
+  connectionKey: z.string().optional(),
+  prefillSourceKey: z.string().nullable().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  step: z.number().optional(),
+  checkedValue: z.union([z.string(), z.number()]).optional(),
+  uncheckedValue: z.union([z.string(), z.number()]).optional(),
+  conditionalLogic: conditionalLogicSchema.optional(),
+});
+
+const repeatableChildVariableSchema: z.ZodType<RepeatableChildVariable> = baseVariableSchema.extend({
+  type: z.enum(repeatableChildVariableTypeValues),
+});
+
+const repeatableConfigSchema: z.ZodType<RepeatableConfig> = z.object({
+  countSourceMode: z.enum(['variable', 'fixed']).default('variable'),
+  countVariableId: z.string().optional(),
+  fixedCount: z.number().int().nonnegative().optional(),
+  minInstances: z.number().int().nonnegative().optional(),
+  maxInstances: z.number().int().nonnegative().optional(),
+  itemLabelTemplate: z.string().optional(),
+  instanceFormula: z.string().optional(),
+  childVariables: z.array(repeatableChildVariableSchema).default([]),
+});
+
+export const variableSchema: z.ZodType<Variable> = baseVariableSchema.extend({
+  type: z.enum(variableTypeValues),
+  repeatableConfig: repeatableConfigSchema.optional(),
 });
 
 export const stylingOptionsSchema = z.object({
@@ -1747,7 +1860,7 @@ export const insertFormulaSchema = createInsertSchema(formulas).omit({
   id: true,
   embedId: true,
 }).extend({
-  variables: z.array(variableSchema),
+  variables: z.any(),
   styling: stylingOptionsSchema,
 });
 
@@ -1901,7 +2014,6 @@ export const PROPERTY_ATTRIBUTE_GROUPS: Record<string, string[]> = {
   "Materials": ["exterior_wall_material", "roof_material"],
 };
 
-export type Variable = z.infer<typeof variableSchema>;
 export type StylingOptions = z.infer<typeof stylingOptionsSchema>;
 export type Formula = typeof formulas.$inferSelect;
 export type InsertFormula = z.infer<typeof insertFormulaSchema>;
@@ -3013,17 +3125,113 @@ export const landingPages = pgTable("landing_pages", {
     heroOverlayColor?: string;
     heroOverlayOpacity?: number;
     showFaqSection?: boolean;
+    showBeforeAfterSection?: boolean;
+    epoxyStrataContent?: {
+      navSystemsLabel?: string;
+      navTransformationLabel?: string;
+      navProcessLabel?: string;
+      navQuoteLabel?: string;
+      navButtonLabel?: string;
+      heroEyebrow?: string;
+      heroTitleLine1?: string;
+      heroTitleAccent?: string;
+      heroTitleLine2?: string;
+      heroSecondaryCtaLabel?: string;
+      heroScrollLabel?: string;
+      transformationTitleLine1?: string;
+      transformationTitleLine2?: string;
+      transformationBody?: string;
+      transformationBeforeLabel?: string;
+      transformationAfterLabel?: string;
+      transformationStats?: Array<{
+        label?: string;
+        value?: string;
+      }>;
+      systemsEyebrow?: string;
+      systemsHeading?: string;
+      galleryHeading?: string;
+      gallerySubheading?: string;
+      galleryCardEyebrow?: string;
+      beforeAfterEyebrow?: string;
+      beforeAfterHeading?: string;
+      processHeading?: string;
+      reviewsHeading?: string;
+      faqEyebrow?: string;
+      faqHeading?: string;
+      quoteTitleLine1?: string;
+      quoteTitleLine2?: string;
+      quoteBody?: string;
+      availabilityNote?: string;
+      footerTagline?: string;
+    };
+    voltVikingContent?: {
+      navServicesLabel?: string;
+      navAboutLabel?: string;
+      navReviewsLabel?: string;
+      navFaqLabel?: string;
+      navButtonLabel?: string;
+      mobileButtonLabel?: string;
+      heroTitleLine1?: string;
+      heroTitleAccent?: string;
+      heroTitleLine2?: string;
+      heroBody?: string;
+      heroPrimaryCtaLabel?: string;
+      heroSecondaryCtaLabel?: string;
+      aboutEyebrow?: string;
+      aboutHeadingLine1?: string;
+      aboutHeadingLine2?: string;
+      aboutBody?: string;
+      aboutButtonLabel?: string;
+      aboutChecklist?: string[];
+      servicesHeading?: string;
+      servicesSubheading?: string;
+      philosophyHeading?: string;
+      philosophySubheading?: string;
+      philosophyItems?: Array<{
+        title?: string;
+        body?: string;
+      }>;
+      guaranteeTitleLine1?: string;
+      guaranteeAccent?: string;
+      guaranteeBody?: string;
+      guaranteeButtonLabel?: string;
+      guaranteeCardTitle?: string;
+      processHeading?: string;
+      processSubheading?: string;
+      faqHeading?: string;
+      faqSubheading?: string;
+      serviceAreaHeading?: string;
+      serviceAreaBody?: string;
+      serviceAreaButtonLabel?: string;
+      hqLabel?: string;
+      hqAddress?: string;
+      serviceAreaCities?: string[];
+      footerBody?: string;
+      footerNavHeading?: string;
+      footerNavLinks?: string[];
+      footerContactHeading?: string;
+      footerContactButtonLabel?: string;
+      footerCopyright?: string;
+      footerLegalLinks?: string[];
+    };
   }>(),
   businessName: text("business_name"),
   logoUrl: text("logo_url"),
   tagline: text("tagline"),
   ctaLabel: text("cta_label").notNull().default("Get Instant Quote"),
   trustChips: jsonb("trust_chips").$type<Array<{ label: string; enabled: boolean; icon?: string }>>(),
-  services: jsonb("services").$type<Array<{ serviceId: number; name: string; enabled: boolean; sortOrder: number; imageUrl?: string | null }>>(),
+  services: jsonb("services").$type<Array<{ serviceId: number; name: string; description?: string | null; enabled: boolean; sortOrder: number; iconUrl?: string | null; imageUrl?: string | null }>>(),
   primaryServiceId: integer("primary_service_id"),
   enableMultiService: boolean("enable_multi_service").notNull().default(false),
   howItWorks: jsonb("how_it_works").$type<Array<{ title: string; body: string }>>(),
   faqs: jsonb("faqs").$type<Array<{ question: string; answer: string }>>(),
+  beforeAfterGallery: jsonb("before_after_gallery").$type<Array<{
+    label: string;
+    caption: string;
+    beforeImageUrl?: string | null;
+    afterImageUrl?: string | null;
+    enabled: boolean;
+  }>>(),
   phone: text("phone"),
   email: text("email"),
   serviceAreaText: text("service_area_text"),
@@ -3051,6 +3259,18 @@ export const landingPageEvents = pgTable("landing_page_events", {
 });
 
 export type LandingPageEvent = typeof landingPageEvents.$inferSelect;
+
+export const metaPurchaseEvents = pgTable("meta_purchase_events", {
+  id: serial("id").primaryKey(),
+  stripeInvoiceId: text("stripe_invoice_id").notNull().unique(),
+  stripeEventId: text("stripe_event_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  userId: varchar("user_id").references(() => users.id),
+  metaEventId: text("meta_event_id").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type MetaPurchaseEvent = typeof metaPurchaseEvents.$inferSelect;
 
 // Directory Service Listings - Links formulas to directory categories
 export const directoryServiceListings = pgTable("directory_service_listings", {

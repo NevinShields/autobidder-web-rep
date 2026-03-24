@@ -15,6 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { stylingOptionsSchema, type Formula, type ServiceCalculation, type BusinessSettings, type PropertyAttributes } from "@shared/schema";
 import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
+import {
+  REPEATABLE_GROUP_VALUES_KEY,
+  getFlatFormulaValues,
+  getRepeatableGroupCount,
+  getRepeatableGroupValues,
+  isRepeatableGroupVariable,
+} from "@shared/formula-runtime";
 
 
 
@@ -58,6 +65,14 @@ export default function ServiceSelector() {
   const [prefilledFields, setPrefilledFields] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const search = useSearch();
+
+  const hasPropertyPrefillMappings = (variables: any[] = []) => {
+    return variables.some((variable: any) =>
+      Boolean(variable.prefillSourceKey) ||
+      (variable.type === 'repeatable-group' &&
+        variable.repeatableConfig?.childVariables?.some((child: any) => Boolean(child.prefillSourceKey)))
+    );
+  };
 
   // Get user ID from URL parameters (for public forms)
   const urlParams = new URLSearchParams(search);
@@ -171,7 +186,7 @@ export default function ServiceSelector() {
     if (!(businessSettings as any)?.styling?.enablePropertyAutofill) return false;
     return selectedServices.some(serviceId => {
       const formula = availableFormulas.find(f => f.id === serviceId);
-      return formula?.variables?.some((v: any) => v.prefillSourceKey);
+      return hasPropertyPrefillMappings(formula?.variables || []);
     });
   }, [selectedServices, availableFormulas, businessSettings]);
 
@@ -183,7 +198,14 @@ export default function ServiceSelector() {
     console.log('[PropertyPrefill] Selected services:', selectedServices);
 
     // Collect all prefill values first, then apply in a single state update
-    const prefillUpdates: Array<{ serviceId: number; variableId: string; value: any; connectionKey?: string }> = [];
+    const prefillUpdates: Array<{
+      serviceId: number;
+      variableId: string;
+      value: any;
+      connectionKey?: string;
+      repeatableGroupId?: string;
+      repeatableIndex?: number;
+    }> = [];
 
     selectedServices.forEach(serviceId => {
       const formula = availableFormulas.find(f => f.id === serviceId);
@@ -192,7 +214,13 @@ export default function ServiceSelector() {
         return;
       }
 
+      const serviceDraftValues: Record<string, any> = { ...(serviceVariables[serviceId] || {}) };
+      const repeatableGroupDraft = { ...getRepeatableGroupValues(serviceDraftValues) };
+
       formula.variables.forEach((variable: any) => {
+        if (isRepeatableGroupVariable(variable)) {
+          return;
+        }
         if (!variable.prefillSourceKey) {
           console.log(`[PropertyPrefill] Variable "${variable.name}" (${variable.id}, type=${variable.type}): no prefillSourceKey set, skipping. connectionKey=${variable.connectionKey || 'none'}`);
           return;
@@ -269,6 +297,76 @@ export default function ServiceSelector() {
           } else {
             return;
           }
+        } else if (variable.type === 'multiple-choice' && variable.options) {
+          const raw = String(attrValue || '').trim().toLowerCase();
+          if (!raw) return;
+
+          const tokens = raw
+            .split(/[;,/|]+/)
+            .map((t: string) => t.trim())
+            .filter(Boolean);
+          const candidates = tokens.length > 0 ? tokens : [raw];
+          const expandedCandidates = [...candidates];
+
+          if (variable.prefillSourceKey === 'stories') {
+            const parsedStories = typeof attrValue === 'number'
+              ? attrValue
+              : Number.parseFloat(String(attrValue));
+            if (Number.isFinite(parsedStories)) {
+              const storyCount = Math.round(parsedStories);
+              const numberWords: Record<number, string> = {
+                1: 'one',
+                2: 'two',
+                3: 'three',
+                4: 'four',
+                5: 'five',
+                6: 'six',
+                7: 'seven',
+                8: 'eight',
+                9: 'nine',
+                10: 'ten',
+              };
+              const word = numberWords[storyCount];
+              expandedCandidates.push(
+                `${storyCount}`,
+                `${storyCount} story`,
+                `${storyCount} stories`,
+                `${storyCount}-story`,
+                `${storyCount}story`,
+                `${storyCount}st story`,
+                `${storyCount}nd story`,
+                `${storyCount}rd story`,
+                `${storyCount}th story`,
+                `story ${storyCount}`,
+                `stories ${storyCount}`,
+                ...(word ? [`${word}`, `${word} story`, `${word} stories`, `${word}-story`] : []),
+                ...(storyCount === 1 ? ['single', 'single story'] : []),
+                ...(storyCount === 2 ? ['double', 'double story'] : []),
+                ...(storyCount === 3 ? ['triple', 'triple story'] : [])
+              );
+            }
+          }
+
+          const matchedOptions = variable.options.filter((opt: any) => {
+            const label = String(opt.label || '').toLowerCase();
+            const value = String(opt.value || '').toLowerCase();
+            return expandedCandidates.some((candidate: string) =>
+              label === candidate ||
+              value === candidate ||
+              label.includes(candidate) ||
+              value.includes(candidate) ||
+              candidate.includes(label) ||
+              candidate.includes(value)
+            );
+          });
+
+          if (matchedOptions.length === 0) return;
+
+          if (variable.allowMultipleSelection) {
+            convertedValue = matchedOptions.map((opt: any) => opt.value.toString());
+          } else {
+            convertedValue = [matchedOptions[0].value.toString()];
+          }
         }
 
         prefillUpdates.push({
@@ -277,7 +375,81 @@ export default function ServiceSelector() {
           value: convertedValue,
           connectionKey: variable.connectionKey,
         });
+        serviceDraftValues[variable.id] = convertedValue;
         newPrefilledFields[`${serviceId}_${variable.id}`] = variable.prefillSourceKey;
+      });
+
+      formula.variables.forEach((variable: any) => {
+        if (!isRepeatableGroupVariable(variable)) {
+          return;
+        }
+
+        const childVariables = variable.repeatableConfig?.childVariables || [];
+        const instanceCount = getRepeatableGroupCount(variable, formula.variables, getFlatFormulaValues(serviceDraftValues));
+        if (instanceCount <= 0) {
+          return;
+        }
+
+        childVariables.forEach((childVariable: any) => {
+          if (!childVariable.prefillSourceKey) {
+            return;
+          }
+
+          const attrValue = (attributes as any)[childVariable.prefillSourceKey];
+          if (attrValue === undefined || attrValue === null) {
+            return;
+          }
+
+          let convertedValue: any = attrValue;
+          if (['number', 'slider', 'stepper'].includes(childVariable.type)) {
+            convertedValue = typeof attrValue === 'number' ? attrValue : parseFloat(attrValue);
+            if (isNaN(convertedValue)) return;
+          } else if (['select', 'dropdown'].includes(childVariable.type) && childVariable.options) {
+            const strValue = String(attrValue).toLowerCase();
+            const matchedOption = childVariable.options.find((opt: any) =>
+              String(opt.label).toLowerCase().includes(strValue) ||
+              String(opt.value).toLowerCase().includes(strValue) ||
+              strValue.includes(String(opt.label).toLowerCase())
+            );
+            if (!matchedOption) return;
+            convertedValue = String(matchedOption.value);
+          } else if (childVariable.type === 'multiple-choice' && childVariable.options) {
+            const raw = String(attrValue || '').trim().toLowerCase();
+            if (!raw) return;
+
+            const matchedOptions = childVariable.options.filter((opt: any) => {
+              const label = String(opt.label || '').toLowerCase();
+              const value = String(opt.value || '').toLowerCase();
+              return label === raw || value === raw || label.includes(raw) || value.includes(raw) || raw.includes(label) || raw.includes(value);
+            });
+
+            if (matchedOptions.length === 0) return;
+            convertedValue = childVariable.allowMultipleSelection
+              ? matchedOptions.map((opt: any) => opt.value.toString())
+              : [matchedOptions[0].value.toString()];
+          }
+
+          for (let repeatableIndex = 0; repeatableIndex < instanceCount; repeatableIndex++) {
+            const groupInstances = [...(repeatableGroupDraft[variable.id] || [])];
+            groupInstances[repeatableIndex] = {
+              ...(groupInstances[repeatableIndex] || {}),
+              [childVariable.id]: convertedValue,
+            };
+            repeatableGroupDraft[variable.id] = groupInstances;
+
+            prefillUpdates.push({
+              serviceId,
+              variableId: childVariable.id,
+              value: convertedValue,
+              connectionKey: childVariable.connectionKey,
+              repeatableGroupId: variable.id,
+              repeatableIndex,
+            });
+          }
+
+          serviceDraftValues[REPEATABLE_GROUP_VALUES_KEY] = repeatableGroupDraft;
+          newPrefilledFields[`${serviceId}_${childVariable.id}`] = childVariable.prefillSourceKey;
+        });
       });
     });
 
@@ -287,15 +459,32 @@ export default function ServiceSelector() {
       setServiceVariables(prev => {
         const updated = { ...prev };
 
-        for (const { serviceId, variableId, value, connectionKey } of prefillUpdates) {
+        for (const { serviceId, variableId, value, connectionKey, repeatableGroupId, repeatableIndex } of prefillUpdates) {
           console.log(`[PropertyPrefill] Setting ${variableId} = ${value} (type: ${typeof value})`);
-          updated[serviceId] = {
-            ...updated[serviceId],
-            [variableId]: value,
-          };
+          if (repeatableGroupId) {
+            const currentServiceValues = updated[serviceId] || {};
+            const currentRepeatableGroups = { ...getRepeatableGroupValues(currentServiceValues) };
+            const instances = [...(currentRepeatableGroups[repeatableGroupId] || [])];
+            const index = repeatableIndex ?? 0;
+            instances[index] = {
+              ...(instances[index] || {}),
+              [variableId]: value,
+            };
+            currentRepeatableGroups[repeatableGroupId] = instances;
+
+            updated[serviceId] = {
+              ...currentServiceValues,
+              [REPEATABLE_GROUP_VALUES_KEY]: currentRepeatableGroups,
+            };
+          } else {
+            updated[serviceId] = {
+              ...updated[serviceId],
+              [variableId]: value,
+            };
+          }
 
           // Propagate via connectionKey to other services
-          if (connectionKey) {
+          if (connectionKey && !repeatableGroupId) {
             selectedServices.forEach(svcId => {
               const svc = availableFormulas.find(f => f.id === svcId);
               svc?.variables?.forEach((v: any) => {

@@ -51,6 +51,7 @@ export default function MeasureMapTerraImproved({
   const [showInstructions, setShowInstructions] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const expandedContainerRef = useRef<HTMLDivElement>(null);
+  const locationPinRef = useRef<any>(null);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -66,6 +67,84 @@ export default function MeasureMapTerraImproved({
     ...styles
   };
 
+  const setLocationPin = useCallback((position: { lat: number; lng: number } | null, targetMap?: any) => {
+    const activeMap = targetMap || map;
+
+    if (!window.google?.maps || !activeMap) {
+      return;
+    }
+
+    if (!position) {
+      if (locationPinRef.current) {
+        locationPinRef.current.setMap(null);
+        locationPinRef.current = null;
+      }
+      return;
+    }
+
+    if (!locationPinRef.current) {
+      locationPinRef.current = new window.google.maps.Marker({
+        map: activeMap,
+        position,
+        title: 'Measured property',
+        animation: window.google.maps.Animation.DROP,
+        zIndex: 1000,
+      });
+      return;
+    }
+
+    locationPinRef.current.setMap(activeMap);
+    locationPinRef.current.setPosition(position);
+  }, [map]);
+
+  const getFeaturePinPosition = useCallback((feature: any) => {
+    if (!window.google?.maps || !feature?.geometry) {
+      return null;
+    }
+
+    if (feature.geometry.type === 'Polygon' && feature.geometry.coordinates?.[0]?.length) {
+      const bounds = new window.google.maps.LatLngBounds();
+      feature.geometry.coordinates[0].forEach(([lng, lat]: [number, number]) => {
+        bounds.extend({ lat, lng });
+      });
+      const center = bounds.getCenter();
+      return { lat: center.lat(), lng: center.lng() };
+    }
+
+    if (feature.geometry.type === 'LineString' && feature.geometry.coordinates?.length) {
+      const bounds = new window.google.maps.LatLngBounds();
+      feature.geometry.coordinates.forEach(([lng, lat]: [number, number]) => {
+        bounds.extend({ lat, lng });
+      });
+      const center = bounds.getCenter();
+      return { lat: center.lat(), lng: center.lng() };
+    }
+
+    if (feature.geometry.type === 'Point' && feature.geometry.coordinates?.length === 2) {
+      const [lng, lat] = feature.geometry.coordinates;
+      return { lat, lng };
+    }
+
+    return null;
+  }, []);
+
+  const syncLocationPinToFeatures = useCallback((features: any[], targetMap?: any) => {
+    const latestDrawableFeature = [...features].reverse().find((feature) =>
+      feature?.geometry?.type === 'Polygon' ||
+      feature?.geometry?.type === 'LineString' ||
+      feature?.geometry?.type === 'Point'
+    );
+
+    if (!latestDrawableFeature) {
+      return;
+    }
+
+    const position = getFeaturePinPosition(latestDrawableFeature);
+    if (position) {
+      setLocationPin(position, targetMap);
+    }
+  }, [getFeaturePinPosition, setLocationPin]);
+
   // Initialize map when Google Maps is loaded and component is mounted
   useEffect(() => {
     if (isGoogleMapsLoaded && !isMapInitialized && mapRef.current) {
@@ -79,6 +158,15 @@ export default function MeasureMapTerraImproved({
       setMapError(googleMapsError);
     }
   }, [googleMapsError]);
+
+  useEffect(() => {
+    return () => {
+      if (locationPinRef.current) {
+        locationPinRef.current.setMap(null);
+        locationPinRef.current = null;
+      }
+    };
+  }, []);
 
   const initializeMap = useCallback(async () => {
     if (!mapRef.current || !window.google?.maps) {
@@ -252,7 +340,7 @@ export default function MeasureMapTerraImproved({
                       // Use Google Maps spherical geometry for accurate calculations
                       const path = feature.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
                       const distance = window.google.maps.geometry.spherical.computeLength(path);
-                      value = currentUnit === 'sqft' ? distance * 3.28084 : distance; // Convert to ft if needed
+                      value = currentUnit === 'ft' ? distance * 3.28084 : distance; // Convert to ft if needed
                     }
                     type = 'distance';
                   }
@@ -276,17 +364,18 @@ export default function MeasureMapTerraImproved({
             
             console.log('Setting measurements:', newMeasurements);
             setMeasurements(newMeasurements);
+            syncLocationPinToFeatures(features, mapInstance);
             
             // Calculate total
             const total = newMeasurements.reduce((sum, m) => sum + m.value, 0);
-            setTotalMeasurement(total);
+            setTotalMeasurement(roundMeasurementValue(total));
             
             // Call the callback with the most recent measurement
             if (newMeasurements.length > 0) {
               const lastMeasurement = newMeasurements[newMeasurements.length - 1];
               onMeasurementComplete({
-                value: lastMeasurement.value,
-                unit: lastMeasurement.type === 'area' ? (currentUnit === 'sqft' ? 'sq ft' : 'sq m') : (currentUnit === 'sqft' ? 'ft' : 'm')
+                value: roundMeasurementValue(lastMeasurement.value),
+                unit: lastMeasurement.type === 'area' ? (currentUnit === 'sqm' ? 'sq m' : 'sq ft') : (currentUnit === 'm' ? 'm' : 'ft')
               });
             }
           } catch (error) {
@@ -322,9 +411,14 @@ export default function MeasureMapTerraImproved({
           autocompleteInstance.addListener('place_changed', () => {
             const place = autocompleteInstance.getPlace();
             if (place.geometry && place.geometry.location) {
-              mapInstance.setCenter(place.geometry.location);
+              const location = {
+                lat: place.geometry.location.lat(),
+                lng: place.geometry.location.lng(),
+              };
+              mapInstance.setCenter(location);
               mapInstance.setZoom(20);
               setAddress(place.formatted_address || '');
+              setLocationPin(location, mapInstance);
             }
           });
 
@@ -346,7 +440,7 @@ export default function MeasureMapTerraImproved({
       const errorMessage = error instanceof Error ? error.message : String(error);
       setMapError(`Failed to initialize map: ${errorMessage}`);
     }
-  }, [defaultAddress, defaultStyles]);
+  }, [defaultAddress, defaultStyles, currentUnit, onMeasurementComplete, setLocationPin, syncLocationPinToFeatures]);
 
   // Calculate area from polygon coordinates using shoelace formula
   const calculatePolygonArea = useCallback((coordinates: number[][]): number => {
@@ -400,7 +494,7 @@ export default function MeasureMapTerraImproved({
     }
     
     // Convert to feet if needed
-    return currentUnit === 'sqft' ? totalDistance * 3.28084 : totalDistance;
+    return currentUnit === 'm' ? totalDistance : totalDistance * 3.28084;
   }, [currentUnit]);
 
   // Update measurements based on drawn features with improved error handling
@@ -437,7 +531,7 @@ export default function MeasureMapTerraImproved({
                 // Use Google Maps spherical geometry for accurate calculations
                 const path = feature.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
                 const distance = window.google.maps.geometry.spherical.computeLength(path);
-                value = currentUnit === 'sqm' ? distance : distance * 3.28084; // Convert to ft if needed
+                value = currentUnit === 'm' ? distance : distance * 3.28084; // Convert to ft if needed
               } else {
                 value = calculateLinestringDistance(feature.geometry.coordinates);
               }
@@ -463,6 +557,7 @@ export default function MeasureMapTerraImproved({
       
       console.log('Setting measurements:', newMeasurements);
       setMeasurements(newMeasurements);
+      syncLocationPinToFeatures(features);
       
       // Calculate total (separate totals for area and distance)
       const areaTotal = newMeasurements
@@ -474,20 +569,20 @@ export default function MeasureMapTerraImproved({
       
       // Use the total based on current measurement type
       const total = measurementType === 'area' ? areaTotal : distanceTotal;
-      setTotalMeasurement(total);
+      setTotalMeasurement(roundMeasurementValue(total));
       
       // Call the callback with the most recent measurement
       if (newMeasurements.length > 0) {
         const lastMeasurement = newMeasurements[newMeasurements.length - 1];
         onMeasurementComplete({
-          value: lastMeasurement.value,
-          unit: lastMeasurement.type === 'area' ? (currentUnit === 'sqft' ? 'sq ft' : 'sq m') : (currentUnit === 'sqft' ? 'ft' : 'm')
+          value: roundMeasurementValue(lastMeasurement.value),
+          unit: lastMeasurement.type === 'area' ? (currentUnit === 'sqm' ? 'sq m' : 'sq ft') : (currentUnit === 'm' ? 'm' : 'ft')
         });
       }
     } catch (error) {
       console.error('Error updating measurements:', error);
     }
-  }, [draw, calculatePolygonArea, calculateLinestringDistance, measurementType, currentUnit, onMeasurementComplete]);
+  }, [draw, calculatePolygonArea, calculateLinestringDistance, measurementType, currentUnit, onMeasurementComplete, syncLocationPinToFeatures]);
 
   // Tool switching functions
   const setTool = useCallback((tool: 'select' | 'polygon' | 'linestring' | 'freehand') => {
@@ -596,6 +691,7 @@ export default function MeasureMapTerraImproved({
           targetMap.setCenter(location);
           targetMap.setZoom(20);
           setAddress(formattedAddress);
+          setLocationPin(location, targetMap);
         }
       } else {
         console.error('Geocoding failed:', data.error);
@@ -611,7 +707,7 @@ export default function MeasureMapTerraImproved({
         setMapError('Error occurred while searching for the address');
       }
     }
-  }, [map]);
+  }, [map, setLocationPin]);
 
   const detectBuilding = useCallback(async () => {
     if (!address.trim() || !draw) return;
@@ -668,8 +764,10 @@ export default function MeasureMapTerraImproved({
     }
   }, [isGoogleMapsLoaded, initializeMap]);
 
+  const roundMeasurementValue = (value: number) => Math.round(value);
+
   const formatMeasurement = (value: number, measurementType?: 'area' | 'distance'): string => {
-    const roundedValue = Math.round(value * 100) / 100;
+    const roundedValue = roundMeasurementValue(value);
     
     // Determine the appropriate unit based on measurement type
     let displayUnit = currentUnit;

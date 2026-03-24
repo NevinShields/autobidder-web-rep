@@ -8,10 +8,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import NotificationDropdown from "@/components/notification-dropdown";
+import { cn } from "@/lib/utils";
 
 export default function AppHeader() {
+  const MOBILE_MENU_ANIMATION_MS = 300;
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuMounted, setMobileMenuMounted] = useState(false);
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const { user, isSuperAdmin } = useAuth();
   const { toast } = useToast();
 
@@ -53,6 +57,24 @@ export default function AppHeader() {
     return () => {
       document.body.style.overflow = 'unset';
     };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      setMobileMenuMounted(true);
+      const frameId = window.requestAnimationFrame(() => {
+        setMobileMenuVisible(true);
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    setMobileMenuVisible(false);
+    const timeoutId = window.setTimeout(() => {
+      setMobileMenuMounted(false);
+    }, MOBILE_MENU_ANIMATION_MS);
+
+    return () => window.clearTimeout(timeoutId);
   }, [mobileMenuOpen]);
 
   const navGroups = {
@@ -272,16 +294,26 @@ export default function AppHeader() {
         </div>
 
         {/* Mobile Navigation Overlay */}
-        {mobileMenuOpen && (
+        {mobileMenuMounted && (
           <>
             {/* Backdrop */}
             <div 
-              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300 ease-out"
+              className={cn(
+                "fixed inset-0 z-40 bg-black transition-opacity duration-300 ease-out lg:hidden",
+                mobileMenuVisible ? "bg-opacity-50 opacity-100" : "bg-opacity-0 opacity-0 pointer-events-none"
+              )}
               onClick={() => setMobileMenuOpen(false)}
             />
             
             {/* Mobile Menu Slide-out Panel */}
-            <div className="fixed inset-y-4 right-4 h-[calc(100vh-2rem)] w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl z-50 lg:hidden transform transition-all ease-out duration-300 animate-in slide-in-from-right overflow-hidden flex flex-col">
+            <div
+              className={cn(
+                "fixed inset-y-4 right-4 z-50 flex h-[calc(100vh-2rem)] w-80 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] lg:hidden",
+                mobileMenuVisible
+                  ? "translate-x-0 opacity-100"
+                  : "translate-x-8 opacity-0 pointer-events-none"
+              )}
+            >
               {/* Mobile Menu Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-blue-600 to-purple-600 flex-shrink-0 rounded-t-2xl">
                 <div className="flex items-center space-x-3">

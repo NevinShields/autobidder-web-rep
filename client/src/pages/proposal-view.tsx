@@ -1,10 +1,13 @@
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import SubmittedVariableDetails from "@/components/submitted-variable-details";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, X, FileText, Calendar } from "lucide-react";
+import type { Formula } from "@shared/schema";
 
 interface ProposalServiceLine {
+  formulaId?: number;
   formulaName?: string;
   calculatedPrice?: number;
   variables?: Record<string, unknown>;
@@ -79,6 +82,17 @@ export default function ProposalViewPage() {
     retry: false,
   });
 
+  const { data: formulas = [] } = useQuery<Formula[]>({
+    queryKey: ["/api/public/formulas", lead?.businessOwnerId],
+    enabled: !!lead?.businessOwnerId,
+    retry: false,
+    queryFn: async () => {
+      const res = await fetch('/api/public/formulas?userId=' + lead?.businessOwnerId);
+      if (!res.ok) throw new Error("Failed to fetch formulas");
+      return res.json();
+    },
+  });
+
   if (leadLoading || proposalLoading || businessLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -110,6 +124,7 @@ export default function ProposalViewPage() {
 
   const totalPrice = lead.totalPrice || 0;
   const services = lead.services || [];
+  const formulasById = new Map(formulas.map((formula) => [formula.id, formula]));
   const styling: ProposalStyling = {
     primaryColor: proposal?.styling?.primaryColor || "#2563EB",
     backgroundColor: proposal?.styling?.backgroundColor || "#FFFFFF",
@@ -215,12 +230,11 @@ export default function ProposalViewPage() {
                           {service.formulaName}
                         </h4>
                         {service.variables && Object.keys(service.variables).length > 0 && (
-                          <div className="text-sm mt-1" style={{ color: resolvedStyling.textColor + '80' }}>
-                            {Object.entries(service.variables).map(([key, value]) => (
-                              <span key={key} className="mr-3">
-                                {key}: {String(value)}
-                              </span>
-                            ))}
+                          <div className="text-sm mt-2" style={{ color: resolvedStyling.textColor + '80' }}>
+                            <SubmittedVariableDetails
+                              values={service.variables as Record<string, any>}
+                              formula={service.formulaId ? formulasById.get(service.formulaId) : undefined}
+                            />
                           </div>
                         )}
                       </div>

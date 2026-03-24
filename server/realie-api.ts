@@ -5,9 +5,16 @@ interface RealieConfig {
 
 interface RealiePropertyData {
   buildingArea?: number | string | null;
+  livingArea?: number | string | null;
   stories?: number | string | null;
   roofType?: string | null;
+  roof?: string | null;
+  roofDesc?: string | null;
+  roofStyle?: string | null;
   wallType?: string | null;
+  exteriorWall?: string | null;
+  exteriorWallDesc?: string | null;
+  property?: RealiePropertyData | null;
   [key: string]: unknown;
 }
 
@@ -109,6 +116,10 @@ export class RealieApiService {
   } {
     if (!data) return {};
 
+    const record = (data.property && typeof data.property === "object"
+      ? data.property
+      : data) as RealiePropertyData;
+
     const attrs: {
       building_area_sqft?: number;
       stories?: number;
@@ -116,22 +127,28 @@ export class RealieApiService {
       exterior_wall_material?: string;
     } = {};
 
-    const buildingArea = coercePositiveNumber(data.buildingArea);
+    const buildingArea = coercePositiveNumber(record.buildingArea ?? record.livingArea);
     if (buildingArea !== null) {
       attrs.building_area_sqft = buildingArea;
     }
 
-    const stories = coercePositiveNumber(data.stories);
+    const stories = coercePositiveNumber(record.stories);
     if (stories !== null) {
       attrs.stories = stories;
     }
 
-    const roofMaterial = normalizeMaterial(data.roofType ?? null, REALIE_ROOF_TYPE_MAP);
+    const roofMaterial = normalizeMaterial(
+      record.roofType ?? record.roofDesc ?? record.roofStyle ?? record.roof ?? null,
+      REALIE_ROOF_TYPE_MAP,
+    );
     if (roofMaterial) {
       attrs.roof_material = roofMaterial;
     }
 
-    const wallMaterial = normalizeMaterial(data.wallType ?? null, REALIE_WALL_TYPE_MAP);
+    const wallMaterial = normalizeMaterial(
+      record.wallType ?? record.exteriorWallDesc ?? record.exteriorWall ?? null,
+      REALIE_WALL_TYPE_MAP,
+    );
     if (wallMaterial) {
       attrs.exterior_wall_material = wallMaterial;
     }

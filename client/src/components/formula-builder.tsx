@@ -14,6 +14,7 @@ import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVerti
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
+import RepeatableGroupCard from "./repeatable-group-card";
 import AddVariableModal from "./add-variable-modal";
 import FormulaDemoPreview from "./formula-demo-preview";
 import IconSelector from "./icon-selector";
@@ -47,6 +48,7 @@ import { CSS } from '@dnd-kit/utilities';
 const AI_FORMULA_EXAMPLES = [
   "House cleaning with bedroom count, bathrooms, add-ons, and first-time deep clean pricing.",
   "Bathroom renovation with square footage, tile tier, fixtures, demo, and labor complexity.",
+  "Tree removal with a repeatable group for each tree using height, diameter, haul-away, and stump grinding.",
   "Lawn care with lot size, mowing frequency, edging, and seasonal cleanup options.",
 ];
 
@@ -93,12 +95,21 @@ function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
       
       {/* Variable Card with left padding for drag handle */}
       <div className="pl-8">
-        <VariableCard
-          variable={variable}
-          onDelete={onDelete}
-          onUpdate={onUpdate}
-          allVariables={allVariables}
-        />
+        {variable.type === "repeatable-group" ? (
+          <RepeatableGroupCard
+            variable={variable}
+            onDelete={onDelete}
+            onUpdate={onUpdate}
+            allVariables={allVariables}
+          />
+        ) : (
+          <VariableCard
+            variable={variable}
+            onDelete={onDelete}
+            onUpdate={onUpdate}
+            allVariables={allVariables}
+          />
+        )}
       </div>
     </div>
   );
@@ -202,6 +213,15 @@ export default function FormulaBuilderComponent({
     return normalized || `option_${fallbackIndex}`;
   };
 
+  const containsToken = (expression: string, token: string): boolean => {
+    if (!expression.trim() || !token.trim()) {
+      return false;
+    }
+
+    const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`\\b${escapedToken}\\b`).test(expression);
+  };
+
   const ensureUniqueOptionIds = (options: Array<any>) => {
     const used = new Set<string>();
     const withUniqueIds = options.map((option, index) => {
@@ -238,6 +258,16 @@ export default function FormulaBuilderComponent({
 
   const formulaVariables = Array.isArray(formula.variables) ? formula.variables : [];
   const formulaExpressionValue = typeof formula.formula === "string" ? formula.formula : "";
+  const repeatableGroupWarnings = formulaVariables
+    .filter((variable) => variable.type === "repeatable-group" && variable.repeatableConfig?.countVariableId)
+    .map((variable) => ({
+      groupId: variable.id,
+      groupName: variable.name,
+      countVariableId: variable.repeatableConfig?.countVariableId || "",
+    }))
+    .filter(({ groupId, countVariableId }) => (
+      containsToken(formulaExpressionValue, groupId) && containsToken(formulaExpressionValue, countVariableId)
+    ));
 
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [formulaExpression, setFormulaExpression] = useState(formulaExpressionValue);
@@ -1496,6 +1526,20 @@ export default function FormulaBuilderComponent({
                   </p>
                 </div>
               )}
+
+              {repeatableGroupWarnings.length > 0 && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+                  <h4 className="mb-2 font-medium">Repeatable Group Warning</h4>
+                  <div className="space-y-1">
+                    {repeatableGroupWarnings.map(({ groupId, groupName, countVariableId }) => (
+                      <p key={`${groupId}-${countVariableId}`}>
+                        <code>{groupId}</code> for {groupName} already contains the summed total for all repeated items.
+                        Using it together with <code>{countVariableId}</code> in the main formula can double-count the price.
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* Min/Max Price Constraints */}
               <div className="grid grid-cols-2 gap-4">
@@ -1549,6 +1593,7 @@ export default function FormulaBuilderComponent({
                   <li>Reference variables by their ID (case-sensitive)</li>
                   <li>Select variables automatically use their multiplier values</li>
                   <li>Checkbox variables return true/false, multiply by costs</li>
+                  <li>Repeatable group IDs already represent the total across all repeated items</li>
                 </ul>
               </div>
             </div>

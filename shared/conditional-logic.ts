@@ -138,8 +138,8 @@ export function getAvailableDependencies(currentVariable: Variable, allVariables
   
   // Only return variables that appear before the current variable
   return allVariables.slice(0, currentIndex).filter(v => 
-    // Exclude the current variable itself and variables that depend on others to avoid circular dependencies
-    v.id !== currentVariable.id && !v.conditionalLogic?.enabled
+    // Exclude the current variable itself, repeatable groups, and variables that depend on others to avoid circular dependencies
+    v.id !== currentVariable.id && v.type !== 'repeatable-group' && !v.conditionalLogic?.enabled
   );
 }
 
@@ -203,6 +203,10 @@ export function areAllVisibleVariablesCompleted(
   for (const variable of visibleVariables) {
     const value = variableValues[variable.id];
     
+    if (variable.type === 'repeatable-group') {
+      continue;
+    }
+
     // Checkboxes are always valid (can be checked or unchecked)
     if (variable.type === 'checkbox') {
       continue; // Skip validation for checkboxes
@@ -242,6 +246,8 @@ export function getDefaultValueForHiddenVariable(variable: Variable): any {
   switch (variable.type) {
     case 'checkbox':
       return false; // Unchecked by default
+    case 'repeatable-group':
+      return 0; // Repeatable groups resolve to aggregate totals
     case 'number':
     case 'stepper':
     case 'slider':

@@ -9,13 +9,15 @@
 
 import crypto from 'crypto';
 
-const FB_PIXEL_ID = process.env.FB_PIXEL_ID || '878078334667672';
-const FB_ACCESS_TOKEN = process.env.FB_ACCESS_TOKEN;
-const FB_API_VERSION = 'v18.0';
-const FB_API_URL = `https://graph.facebook.com/${FB_API_VERSION}/${FB_PIXEL_ID}/events`;
+const META_PIXEL_ID = process.env.META_PIXEL_ID || process.env.FB_PIXEL_ID || '878078334667672';
+const META_ACCESS_TOKEN =
+  process.env.META_ACCESS_TOKEN ||
+  process.env.FACEBOOK_ACCESS_TOKEN ||
+  process.env.FB_ACCESS_TOKEN;
+const META_API_VERSION = 'v25.0';
 
-// Test event code for debugging (set via env var, remove in production)
-const FB_TEST_EVENT_CODE = process.env.FB_TEST_EVENT_CODE;
+// Test event code for debugging in Events Manager.
+const META_TEST_EVENT_CODE = process.env.META_TEST_EVENT_CODE || process.env.FB_TEST_EVENT_CODE;
 
 interface UserData {
   email?: string;
@@ -41,16 +43,27 @@ interface CustomData {
   contentType?: string;
   numItems?: number;
   status?: string;
+  plan_name?: string;
+  billing_interval?: string;
+  stripe_invoice_id?: string;
+  stripe_subscription_id?: string;
+  [key: string]: unknown;
 }
 
-interface FacebookEvent {
-  eventName: string;
-  eventTime: number;
-  eventId: string;
-  eventSourceUrl?: string;
-  userData: Record<string, string>;
-  customData?: CustomData;
+interface MetaEvent {
+  event_name: string;
+  event_time: number;
+  event_id: string;
+  event_source_url?: string;
+  user_data: Record<string, string>;
+  custom_data?: CustomData;
   actionSource: 'website' | 'email' | 'app' | 'phone_call' | 'chat' | 'physical_store' | 'system_generated' | 'other';
+}
+
+interface SendEventOptions {
+  pixelId?: string;
+  accessToken?: string;
+  testEventCode?: string | null;
 }
 
 /**
@@ -117,27 +130,90 @@ function generateEventId(): string {
   return `evt_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
 }
 
-/**
- * Send an event to Facebook Conversion API
- */
-async function sendEvent(event: FacebookEvent): Promise<{ success: boolean; eventId: string; error?: string }> {
-  if (!FB_ACCESS_TOKEN) {
-    console.warn('[Facebook CAPI] No access token configured, skipping event:', event.eventName);
-    return { success: false, eventId: event.eventId, error: 'No access token configured' };
+function getMetaApiUrl(pixelId: string): string {
+  return `https://graph.facebook.com/${META_API_VERSION}/${pixelId}/events`;
+}
+
+function normalizeActionSource(actionSource: MetaEvent["actionSource"]): string {
+  return actionSource;
+}
+
+function normalizeCustomData(customData?: CustomData) {
+  if (!customData) {
+    return undefined;
   }
 
-  const payload: any = {
-    data: [event],
-    access_token: FB_ACCESS_TOKEN,
-  };
+  const {
+    contentName,
+    contentCategory,
+    contentIds,
+    contentType,
+    numItems,
+    ...rest
+  } = customData;
 
-  // Add test event code if configured (for debugging in Events Manager)
-  if (FB_TEST_EVENT_CODE) {
-    payload.test_event_code = FB_TEST_EVENT_CODE;
+  return {
+    ...rest,
+    ...(contentName !== undefined ? { content_name: contentName } : {}),
+    ...(contentCategory !== undefined ? { content_category: contentCategory } : {}),
+    ...(contentIds !== undefined ? { content_ids: contentIds } : {}),
+    ...(contentType !== undefined ? { content_type: contentType } : {}),
+    ...(numItems !== undefined ? { num_items: numItems } : {}),
+  };
+}
+
+function toMetaPayload(event: MetaEvent) {
+  return {
+    event_name: event.event_name,
+    event_time: event.event_time,
+    event_id: event.event_id,
+    event_source_url: event.event_source_url,
+    user_data: event.user_data,
+    custom_data: normalizeCustomData(event.custom_data),
+    action_source: normalizeActionSource(event.actionSource),
+  };
+}
+
+async function readResponseBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) {
+    return null;
   }
 
   try {
-    const response = await fetch(FB_API_URL, {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * Send an event to Facebook Conversion API
+ */
+async function sendEvent(
+  event: MetaEvent,
+  options: SendEventOptions = {},
+): Promise<{ success: boolean; eventId: string; error?: string }> {
+  const pixelId = options.pixelId || META_PIXEL_ID;
+  const accessToken = options.accessToken || META_ACCESS_TOKEN;
+
+  if (!pixelId || !accessToken) {
+    console.warn('[Meta CAPI] Missing pixel or access token, skipping event:', event.event_name);
+    return { success: false, eventId: event.event_id, error: 'Missing Meta credentials' };
+  }
+
+  const payload: any = {
+    data: [toMetaPayload(event)],
+  };
+
+  // Add test event code if configured (for debugging in Events Manager)
+  const testEventCode = options.testEventCode ?? META_TEST_EVENT_CODE;
+  if (testEventCode) {
+    payload.test_event_code = testEventCode;
+  }
+
+  try {
+    const response = await fetch(`${getMetaApiUrl(pixelId)}?access_token=${encodeURIComponent(accessToken)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -145,21 +221,31 @@ async function sendEvent(event: FacebookEvent): Promise<{ success: boolean; even
       body: JSON.stringify(payload),
     });
 
-    const result = await response.json();
+    const result = await readResponseBody(response);
 
     if (response.ok) {
-      console.log(`[Facebook CAPI] Event sent successfully: ${event.eventName}`, {
-        eventId: event.eventId,
-        eventsReceived: result.events_received,
+      console.log(`[Meta CAPI] Event sent successfully: ${event.event_name}`, {
+        eventId: event.event_id,
+        pixelId,
+        response: result,
       });
-      return { success: true, eventId: event.eventId };
+      return { success: true, eventId: event.event_id };
     } else {
-      console.error(`[Facebook CAPI] Error sending event: ${event.eventName}`, result);
-      return { success: false, eventId: event.eventId, error: JSON.stringify(result.error || result) };
+      console.error(`[Meta CAPI] Error sending event: ${event.event_name}`, {
+        eventId: event.event_id,
+        pixelId,
+        status: response.status,
+        body: result,
+      });
+      return {
+        success: false,
+        eventId: event.event_id,
+        error: typeof result === 'string' ? result : JSON.stringify(result),
+      };
     }
   } catch (error) {
-    console.error(`[Facebook CAPI] Network error sending event: ${event.eventName}`, error);
-    return { success: false, eventId: event.eventId, error: (error as Error).message };
+    console.error(`[Meta CAPI] Network error sending event: ${event.event_name}`, error);
+    return { success: false, eventId: event.event_id, error: (error as Error).message };
   }
 }
 
@@ -175,13 +261,13 @@ export async function trackCompleteRegistration(
 ): Promise<{ success: boolean; eventId: string; error?: string }> {
   const eventId = generateEventId();
 
-  const event: FacebookEvent = {
-    eventName: 'CompleteRegistration',
-    eventTime: Math.floor(Date.now() / 1000),
-    eventId,
-    eventSourceUrl: options?.eventSourceUrl,
-    userData: normalizeUserData(userData),
-    customData: {
+  const event: MetaEvent = {
+    event_name: 'CompleteRegistration',
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    event_source_url: options?.eventSourceUrl,
+    user_data: normalizeUserData(userData),
+    custom_data: {
       currency: 'USD',
       status: 'registered',
       ...options?.customData,
@@ -204,13 +290,13 @@ export async function trackLead(
 ): Promise<{ success: boolean; eventId: string; error?: string }> {
   const eventId = generateEventId();
 
-  const event: FacebookEvent = {
-    eventName: 'Lead',
-    eventTime: Math.floor(Date.now() / 1000),
-    eventId,
-    eventSourceUrl: options?.eventSourceUrl,
-    userData: normalizeUserData(userData),
-    customData: options?.customData,
+  const event: MetaEvent = {
+    event_name: 'Lead',
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    event_source_url: options?.eventSourceUrl,
+    user_data: normalizeUserData(userData),
+    custom_data: options?.customData,
     actionSource: 'website',
   };
 
@@ -231,13 +317,13 @@ export async function trackStartTrial(
 ): Promise<{ success: boolean; eventId: string; error?: string }> {
   const eventId = generateEventId();
 
-  const event: FacebookEvent = {
-    eventName: 'StartTrial',
-    eventTime: Math.floor(Date.now() / 1000),
-    eventId,
-    eventSourceUrl: options?.eventSourceUrl,
-    userData: normalizeUserData(userData),
-    customData: {
+  const event: MetaEvent = {
+    event_name: 'StartTrial',
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    event_source_url: options?.eventSourceUrl,
+    user_data: normalizeUserData(userData),
+    custom_data: {
       currency: options?.currency || 'USD',
       value: options?.value || 0,
     },
@@ -257,19 +343,23 @@ export async function trackSubscribe(
     value: number;
     currency?: string;
     predictedLtv?: number;
+    eventId?: string;
+    eventTime?: number;
+    customData?: CustomData;
   }
 ): Promise<{ success: boolean; eventId: string; error?: string }> {
-  const eventId = generateEventId();
+  const eventId = options?.eventId || generateEventId();
 
-  const event: FacebookEvent = {
-    eventName: 'Subscribe',
-    eventTime: Math.floor(Date.now() / 1000),
-    eventId,
-    eventSourceUrl: options?.eventSourceUrl,
-    userData: normalizeUserData(userData),
-    customData: {
+  const event: MetaEvent = {
+    event_name: 'Subscribe',
+    event_time: options?.eventTime || Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    event_source_url: options?.eventSourceUrl,
+    user_data: normalizeUserData(userData),
+    custom_data: {
       currency: options?.currency || 'USD',
       value: options?.value || 0,
+      ...options?.customData,
     },
     actionSource: 'website',
   };
@@ -290,23 +380,27 @@ export async function trackPurchase(
     contentName?: string;
     contentType?: string;
     numItems?: number;
+    eventId?: string;
+    eventTime?: number;
+    customData?: CustomData;
   }
 ): Promise<{ success: boolean; eventId: string; error?: string }> {
-  const eventId = generateEventId();
+  const eventId = options.eventId || generateEventId();
 
-  const event: FacebookEvent = {
-    eventName: 'Purchase',
-    eventTime: Math.floor(Date.now() / 1000),
-    eventId,
-    eventSourceUrl: options?.eventSourceUrl,
-    userData: normalizeUserData(userData),
-    customData: {
+  const event: MetaEvent = {
+    event_name: 'Purchase',
+    event_time: options.eventTime || Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    event_source_url: options?.eventSourceUrl,
+    user_data: normalizeUserData(userData),
+    custom_data: {
       currency: options?.currency || 'USD',
       value: options.value,
       contentIds: options.contentIds,
       contentName: options.contentName,
       contentType: options.contentType,
       numItems: options.numItems,
+      ...options.customData,
     },
     actionSource: 'website',
   };
@@ -327,13 +421,13 @@ export async function trackCustomEvent(
 ): Promise<{ success: boolean; eventId: string; error?: string }> {
   const eventId = generateEventId();
 
-  const event: FacebookEvent = {
-    eventName,
-    eventTime: Math.floor(Date.now() / 1000),
-    eventId,
-    eventSourceUrl: options?.eventSourceUrl,
-    userData: normalizeUserData(userData),
-    customData: options?.customData,
+  const event: MetaEvent = {
+    event_name: eventName,
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    event_source_url: options?.eventSourceUrl,
+    user_data: normalizeUserData(userData),
+    custom_data: options?.customData,
     actionSource: 'website',
   };
 
@@ -358,53 +452,21 @@ interface UserEventOptions {
  * This enables business owners to track conversions on their own Facebook Ads account
  */
 export async function sendUserLeadEvent(options: UserEventOptions): Promise<{ success: boolean; eventId: string; error?: string }> {
-  const apiUrl = `https://graph.facebook.com/${FB_API_VERSION}/${options.pixelId}/events`;
-
-  const event: FacebookEvent = {
-    eventName: 'Lead',
-    eventTime: Math.floor(Date.now() / 1000),
-    eventId: options.eventId,
-    eventSourceUrl: options.eventSourceUrl || undefined,
-    userData: normalizeUserData(options.userData),
-    customData: options.customData,
+  const event: MetaEvent = {
+    event_name: 'Lead',
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: options.eventId,
+    event_source_url: options.eventSourceUrl || undefined,
+    user_data: normalizeUserData(options.userData),
+    custom_data: options.customData,
     actionSource: 'website',
   };
 
-  const payload: any = {
-    data: [event],
-    access_token: options.accessToken,
-  };
-
-  // Add test event code if configured (for debugging in Events Manager)
-  if (options.testEventCode) {
-    payload.test_event_code = options.testEventCode;
-  }
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      console.log(`[Facebook CAPI] User Lead event sent successfully for pixel ${options.pixelId}`, {
-        eventId: options.eventId,
-        eventsReceived: result.events_received,
-      });
-      return { success: true, eventId: options.eventId };
-    } else {
-      console.error(`[Facebook CAPI] Error sending user Lead event for pixel ${options.pixelId}`, result);
-      return { success: false, eventId: options.eventId, error: JSON.stringify(result.error || result) };
-    }
-  } catch (error) {
-    console.error(`[Facebook CAPI] Network error sending user Lead event for pixel ${options.pixelId}`, error);
-    return { success: false, eventId: options.eventId, error: (error as Error).message };
-  }
+  return sendEvent(event, {
+    pixelId: options.pixelId,
+    accessToken: options.accessToken,
+    testEventCode: options.testEventCode,
+  });
 }
 
 // Export types for use in other modules

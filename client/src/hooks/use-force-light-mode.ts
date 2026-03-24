@@ -8,14 +8,36 @@ export function useForceLightMode() {
   useEffect(() => {
     const root = document.documentElement;
     const wasDark = root.classList.contains("dark");
+    const previousTheme = window.localStorage.getItem("autobidder-theme");
 
-    if (wasDark) {
+    const applyLightMode = () => {
       root.classList.remove("dark");
-    }
+      window.localStorage.setItem("autobidder-theme", "light");
+    };
+
+    applyLightMode();
+
+    const observer = new MutationObserver(() => {
+      if (root.classList.contains("dark")) {
+        root.classList.remove("dark");
+      }
+    });
+
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
 
     return () => {
-      if (wasDark) {
+      observer.disconnect();
+
+      if (previousTheme === null) {
+        window.localStorage.removeItem("autobidder-theme");
+      } else {
+        window.localStorage.setItem("autobidder-theme", previousTheme);
+      }
+
+      if (wasDark || previousTheme === "dark") {
         root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
       }
     };
   }, []);

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRoute } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,8 @@ import { CheckCircle2, XCircle, MessageSquare, DollarSign, Calendar, MapPin, Pho
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import AppHeader from '@/components/app-header';
-import type { Proposal } from '@shared/schema';
+import SubmittedVariableDetails from '@/components/submitted-variable-details';
+import type { Formula, Proposal } from '@shared/schema';
 
 interface BidRequest {
   id: number;
@@ -21,6 +23,7 @@ interface BidRequest {
   finalPrice?: number;
   bidStatus: string;
   services: Array<{
+    formulaId?: number;
     formulaName: string;
     calculatedPrice: number;
     variables: Record<string, any>;
@@ -74,6 +77,20 @@ export default function BidResponsePage() {
   const [responseType, setResponseType] = useState<'approve' | 'deny' | 'request_edits' | null>(null);
   const [message, setMessage] = useState('');
   const { toast } = useToast();
+
+  const { data: formulas = [] } = useQuery<Formula[]>({
+    queryKey: ["/api/public/formulas", bidRequest?.businessOwnerId],
+    enabled: !!bidRequest?.businessOwnerId,
+    queryFn: async () => {
+      const res = await fetch('/api/public/formulas?userId=' + bidRequest?.businessOwnerId);
+      if (!res.ok) {
+        throw new Error('Failed to fetch formulas');
+      }
+      return res.json();
+    },
+  });
+
+  const formulasById = new Map(formulas.map((formula) => [formula.id, formula]));
 
   useEffect(() => {
     if (match && params?.token) {
@@ -380,25 +397,10 @@ export default function BidResponsePage() {
                       {service.variables && Object.keys(service.variables).length > 0 && (
                         <div className="space-y-2">
                           <h4 className="text-sm font-medium text-gray-700 mb-2">Selection Details:</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {Object.entries(service.variables).map(([key, value]) => {
-                              // Format the key to be more readable
-                              const formattedKey = key
-                                .replace(/([A-Z])/g, ' $1')
-                                .replace(/^./, str => str.toUpperCase())
-                                .trim();
-                              
-                              // Handle array values (from multi-select fields)
-                              const displayValue = Array.isArray(value) ? value.join(', ') : String(value);
-                              
-                              return (
-                                <div key={key} className="text-sm">
-                                  <span className="text-gray-600">{formattedKey}:</span>
-                                  <span className="ml-2 font-medium">{displayValue}</span>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          <SubmittedVariableDetails
+                            values={service.variables}
+                            formula={service.formulaId ? formulasById.get(service.formulaId) : undefined}
+                          />
                         </div>
                       )}
                     </div>

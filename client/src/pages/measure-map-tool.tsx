@@ -174,7 +174,7 @@ export default function MeasureMapTool() {
                 {lastMeasurement && (
                   <div className="ml-auto">
                     <Badge variant="secondary" className="text-lg px-4 py-2" data-testid="badge-last-measurement">
-                      Last: {lastMeasurement.value.toLocaleString()} {lastMeasurement.unit}
+                      Last: {Math.round(lastMeasurement.value).toLocaleString()} {lastMeasurement.unit}
                     </Badge>
                   </div>
                 )}

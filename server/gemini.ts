@@ -13,10 +13,21 @@ function getGemini(): GoogleGenAI {
   return gemini;
 }
 
+interface RepeatableConfig {
+  countSourceMode?: 'variable' | 'fixed';
+  countVariableId?: string;
+  fixedCount?: number;
+  minInstances?: number;
+  maxInstances?: number;
+  itemLabelTemplate?: string;
+  instanceFormula?: string;
+  childVariables?: Variable[];
+}
+
 interface Variable {
   id: string;
   name: string;
-  type: 'number' | 'select' | 'text' | 'multiple-choice' | 'dropdown';
+  type: 'number' | 'select' | 'text' | 'multiple-choice' | 'dropdown' | 'repeatable-group';
   unit?: string;
   options?: Array<{
     id?: string;
@@ -28,6 +39,7 @@ interface Variable {
   defaultValue?: string | number | boolean | Array<string | number>;
   allowMultipleSelection?: boolean;
   conditionalLogic?: any;
+  repeatableConfig?: RepeatableConfig;
 }
 
 export interface AIFormulaResponse {
@@ -48,13 +60,14 @@ export async function generateFormula(description: string): Promise<AIFormulaRes
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+3. Every top-level variable in "variables" must appear at least once in the main formula. Exception: childVariables inside a repeatable-group must appear in repeatableConfig.instanceFormula, while the repeatable-group variable ID itself must appear in the main formula.
 4. Use realistic contractor pricing (research actual market rates)
 5. Include 3-8 relevant variables that affect pricing
 6. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
 7. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
 8. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
 9. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
+10. When pricing repeated items like trees, windows, rooms, fixtures, fence panels, or posts, you may use a repeatable-group variable
 
 *** CRITICAL FORMULA REQUIREMENT ***
 The formula field MUST be simple arithmetic using ONLY:
@@ -99,6 +112,19 @@ DROPDOWN GUIDELINES (USE MODERATELY):
 - Examples: "Basic/Standard/Premium quality", "Small/Medium/Large project", "1-3 days/1 week/2+ weeks"
 
 IMPORTANT: Do NOT use checkbox inputs. Convert any yes/no options to multiple-choice with "Yes"/"No" options instead.
+
+REPEATABLE GROUP GUIDELINES:
+- Use a "repeatable-group" variable when the service prices multiple similar items and each item needs the same sub-questions
+- A repeatable group needs a top-level count question such as "numberOfTrees" or a fixed count
+- Put the per-item questions inside "repeatableConfig.childVariables"
+- Put the per-item pricing logic inside "repeatableConfig.instanceFormula"
+- The repeatable-group variable ID is an aggregate token for the main formula. It already equals the SUM of all repeated item totals.
+- Do NOT multiply a repeatable-group token by its count variable again in the main formula
+- Good pattern:
+  * top-level variable: "numberOfTrees"
+  * repeatable-group variable: "treeDetails"
+  * repeatableConfig.instanceFormula: "treeHeight * 20 + treeDiameter * 150"
+  * main formula: "treeDetails + haulAway"
 
 CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
 - Use conditional logic to show/hide questions based on previous answers
@@ -183,11 +209,20 @@ Response format (JSON):
     {
       "id": "camelCaseId",
       "name": "Human Readable Name",
-      "type": "number|multiple-choice|dropdown",
+      "type": "number|multiple-choice|dropdown|repeatable-group",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
       "allowMultipleSelection": true, // OPTIONAL for multiple-choice when options should be independently toggled
       "options": [{"id": "option_id", "label": "Option Name", "value": "option_value", "numericValue": 123, "defaultUnselectedValue": 0}], // only for dropdown/multiple-choice
+      "repeatableConfig": {
+        "countSourceMode": "variable",
+        "countVariableId": "numberOfTrees",
+        "itemLabelTemplate": "Tree {index}",
+        "instanceFormula": "treeHeight * 20 + treeDiameter * 150",
+        "childVariables": [
+          {"id": "treeHeight", "name": "Tree Height", "type": "number", "unit": "ft"}
+        ]
+      },
       "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
         "enabled": true,
         "operator": "AND",
@@ -230,6 +265,47 @@ Response format (JSON):
                   unit: { type: "string" },
                   allowMultipleSelection: { type: "boolean" },
                   defaultValue: { type: ["string", "number", "boolean"] },
+                  repeatableConfig: {
+                    type: "object",
+                    properties: {
+                      countSourceMode: { type: "string" },
+                      countVariableId: { type: "string" },
+                      fixedCount: { type: "number" },
+                      minInstances: { type: "number" },
+                      maxInstances: { type: "number" },
+                      itemLabelTemplate: { type: "string" },
+                      instanceFormula: { type: "string" },
+                      childVariables: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string" },
+                            name: { type: "string" },
+                            type: { type: "string" },
+                            unit: { type: "string" },
+                            allowMultipleSelection: { type: "boolean" },
+                            defaultValue: { type: ["string", "number", "boolean"] },
+                            options: {
+                              type: "array",
+                              items: {
+                                type: "object",
+                                properties: {
+                                  id: { type: "string" },
+                                  label: { type: "string" },
+                                  value: { type: ["string", "number"] },
+                                  numericValue: { type: "number" },
+                                  defaultUnselectedValue: { type: "number" }
+                                },
+                                required: ["label", "value"]
+                              }
+                            }
+                          },
+                          required: ["id", "name", "type"]
+                        }
+                      }
+                    }
+                  },
                   options: {
                     type: "array",
                     items: {
@@ -290,13 +366,14 @@ export async function editFormula(
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+3. Every top-level variable in "variables" must appear at least once in the main formula. Exception: childVariables inside a repeatable-group must appear in repeatableConfig.instanceFormula, while the repeatable-group variable ID itself must appear in the main formula.
 4. Use realistic contractor pricing (research actual market rates)
 5. Use short units (max 15 chars): sq ft, linear ft, hours, lbs, etc.
 6. EVERY dropdown/multiple-choice option MUST have a numericValue field
 7. You can add, remove, or modify variables as needed
 8. Update descriptions and bullet points to reflect changes
 9. Maintain service quality and professionalism
+10. You may use repeatable-group variables for pricing repeated items like trees, windows, fixtures, doors, rooms, fence sections, or vents
 
 *** CRITICAL FORMULA REQUIREMENT ***
 The formula field MUST be simple arithmetic using ONLY:
@@ -337,6 +414,14 @@ DROPDOWN GUIDELINES (USE MODERATELY):
 - Examples: "Basic/Standard/Premium quality", "Small/Medium/Large project", "1-3 days/1 week/2+ weeks"
 
 IMPORTANT: Do NOT use checkbox inputs. Convert any yes/no options to multiple-choice with "Yes"/"No" options instead.
+
+REPEATABLE GROUP RULES:
+- A variable with "type": "repeatable-group" must include "repeatableConfig"
+- "repeatableConfig.childVariables" are the per-item questions
+- "repeatableConfig.instanceFormula" calculates ONE repeated item using those childVariables
+- The repeatable-group variable ID is a summed total across all repeated items
+- The main formula should reference the repeatable-group variable ID directly
+- Do NOT multiply the repeatable-group variable ID by its count variable again unless the user explicitly asks for that behavior
 
 CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
 - Use conditional logic to show/hide questions based on previous answers
@@ -421,11 +506,20 @@ Response format (JSON):
     {
       "id": "camelCaseId",
       "name": "Human Readable Name",
-      "type": "number|multiple-choice|dropdown",
+      "type": "number|multiple-choice|dropdown|repeatable-group",
       "unit": "sq ft|hours|lbs|etc (max 15 chars)",
       "defaultValue": number,
       "allowMultipleSelection": true, // OPTIONAL for multiple-choice when options should be independently toggled
       "options": [{"id": "option_id", "label": "Option Name", "value": "option_value", "numericValue": 123, "defaultUnselectedValue": 0}], // only for dropdown/multiple-choice
+      "repeatableConfig": {
+        "countSourceMode": "variable",
+        "countVariableId": "numberOfTrees",
+        "itemLabelTemplate": "Tree {index}",
+        "instanceFormula": "treeHeight * 20 + treeDiameter * 150",
+        "childVariables": [
+          {"id": "treeHeight", "name": "Tree Height", "type": "number", "unit": "ft"}
+        ]
+      },
       "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
         "enabled": true,
         "operator": "AND",
@@ -469,6 +563,47 @@ Response format (JSON):
                   unit: { type: "string" },
                   allowMultipleSelection: { type: "boolean" },
                   defaultValue: { type: ["string", "number", "boolean"] },
+                  repeatableConfig: {
+                    type: "object",
+                    properties: {
+                      countSourceMode: { type: "string" },
+                      countVariableId: { type: "string" },
+                      fixedCount: { type: "number" },
+                      minInstances: { type: "number" },
+                      maxInstances: { type: "number" },
+                      itemLabelTemplate: { type: "string" },
+                      instanceFormula: { type: "string" },
+                      childVariables: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string" },
+                            name: { type: "string" },
+                            type: { type: "string" },
+                            unit: { type: "string" },
+                            allowMultipleSelection: { type: "boolean" },
+                            defaultValue: { type: ["string", "number", "boolean"] },
+                            options: {
+                              type: "array",
+                              items: {
+                                type: "object",
+                                properties: {
+                                  id: { type: "string" },
+                                  label: { type: "string" },
+                                  value: { type: ["string", "number"] },
+                                  numericValue: { type: "number" },
+                                  defaultUnselectedValue: { type: "number" }
+                                },
+                                required: ["label", "value"]
+                              }
+                            }
+                          },
+                          required: ["id", "name", "type"]
+                        }
+                      }
+                    }
+                  },
                   options: {
                     type: "array",
                     items: {

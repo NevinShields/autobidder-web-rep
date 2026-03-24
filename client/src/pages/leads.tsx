@@ -29,6 +29,8 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { LeadsMapView } from "@/components/leads-map-view";
 import { GoogleMapsLoader } from "@/components/google-maps-loader";
+import SubmittedVariableDetails from "@/components/submitted-variable-details";
+import type { Formula } from "@shared/schema";
 
 interface Lead {
   id: number;
@@ -230,11 +232,14 @@ function DraggableKanbanCard({ lead, onClick }: { lead: KanbanLead; onClick: () 
   );
 }
 
-function KanbanLeadDetailDialog({ lead, open, onOpenChange }: { lead: KanbanLead | null; open: boolean; onOpenChange: (open: boolean) => void }) {
+function KanbanLeadDetailDialog({ lead, open, onOpenChange, formulaLookup }: { lead: KanbanLead | null; open: boolean; onOpenChange: (open: boolean) => void; formulaLookup: Map<number, Formula>; }) {
   if (!lead) return null;
   
   const price = lead.calculatedPrice || ("totalPrice" in lead ? lead.totalPrice : 0);
   const stageHistory = lead.stageHistory || [];
+  const singleLeadFormula = lead.type === "single" && "formulaId" in lead && typeof lead.formulaId === "number"
+    ? formulaLookup.get(lead.formulaId)
+    : undefined;
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -278,6 +283,33 @@ function KanbanLeadDetailDialog({ lead, open, onOpenChange }: { lead: KanbanLead
               </div>
             </div>
             
+            {lead.type === "multi" && "services" in lead && lead.services.length > 0 && (
+              <div className="col-span-2 space-y-3">
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Customer Selections</label>
+                {lead.services.map((service, index) => (
+                  <div key={service.formulaId + "-" + index} className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-gray-50/80 dark:bg-gray-800/60">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">{service.formulaName}</span>
+                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">${(service.calculatedPrice / 100).toFixed(2)}</span>
+                    </div>
+                    <SubmittedVariableDetails
+                      values={service.variables}
+                      formula={formulaLookup.get(service.formulaId)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {lead.type === "single" && "variables" in lead && lead.variables && Object.keys(lead.variables).length > 0 && (
+              <div className="col-span-2">
+                <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Customer Selections</label>
+                <div className="mt-2">
+                  <SubmittedVariableDetails values={lead.variables} formula={singleLeadFormula} />
+                </div>
+              </div>
+            )}
+
             {lead.notes && (
               <div>
                 <label className="text-sm font-medium text-gray-900 dark:text-white dark:text-gray-100">Notes</label>
@@ -426,7 +458,7 @@ export default function LeadsPage() {
     queryKey: ["/api/multi-service-leads?includeTags=true"],
   });
 
-  const { data: formulas } = useQuery({
+  const { data: formulas } = useQuery<Formula[]>({
     queryKey: ["/api/formulas"],
   });
   
@@ -963,6 +995,7 @@ export default function LeadsPage() {
   }));
 
   const allLeads = [...processedSingleLeads, ...processedMultiServiceLeads];
+  const formulaLookup = new globalThis.Map(((formulas as Formula[] | undefined) || []).map((formula) => [formula.id, formula]));
 
   // Extract unique services from all leads for the service filter
   const uniqueServices = Array.from(new Set(
@@ -2053,6 +2086,7 @@ export default function LeadsPage() {
               lead={kanbanSelectedLead}
               open={kanbanDetailDialogOpen}
               onOpenChange={setKanbanDetailDialogOpen}
+              formulaLookup={formulaLookup}
             />
           </>
         )}
@@ -2879,6 +2913,7 @@ export default function LeadsPage() {
           lead={kanbanSelectedLead}
           open={kanbanDetailDialogOpen}
           onOpenChange={setKanbanDetailDialogOpen}
+          formulaLookup={formulaLookup}
         />
 
         <EditEstimateDialog

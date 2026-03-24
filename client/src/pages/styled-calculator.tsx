@@ -14,7 +14,17 @@ import { useAuth } from "@/hooks/useAuth";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import { ChevronDown, ChevronUp, Map, Search, User, Mail, Phone, MapPin, X, Home, Loader2 } from "lucide-react";
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead, PropertyAttributes } from "@shared/schema";
-import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
+import { evaluateConditionalLogic } from "@shared/conditional-logic";
+import {
+  REPEATABLE_GROUP_VALUES_KEY,
+  evaluateFormulaWithRepeatableGroups,
+  getFlatFormulaValues,
+  getFormulaCompletionStatus,
+  getRepeatableGroupCount,
+  getRepeatableGroupLabel,
+  getRepeatableGroupValues,
+  isRepeatableGroupVariable,
+} from "@shared/formula-runtime";
 import { injectCSSVariables } from "@shared/css-variables";
 
 // Lazy load heavy components for better performance
@@ -598,6 +608,14 @@ export default function StyledCalculator(props: any = {}) {
   const [prefilledFields, setPrefilledFields] = useState<Record<string, string>>({});
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+
+  const hasPropertyPrefillMappings = (variables: any[] = []) => {
+    return variables.some((variable: any) =>
+      Boolean(variable.prefillSourceKey) ||
+      (variable.type === 'repeatable-group' &&
+        variable.repeatableConfig?.childVariables?.some((child: any) => Boolean(child.prefillSourceKey)))
+    );
+  };
   
   // Call screen mode state
   const [callScreenLeadMode, setCallScreenLeadMode] = useState<"select" | "new">("select");
@@ -1127,11 +1145,11 @@ export default function StyledCalculator(props: any = {}) {
       setExpandedServices(new Set([serviceId]));
       // Check if address step should show for this single service
       const hasPropertyMappings = businessSettings?.styling?.enablePropertyAutofill &&
-        formulas[0].variables?.some((v: any) => v.prefillSourceKey);
+        hasPropertyPrefillMappings(formulas[0].variables);
       setCurrentStep(hasPropertyMappings ? "address" : "configuration");
       setSingleServiceInitialized(true);
     }
-  }, [isSingleServiceMode, formulas, singleServiceInitialized]);
+  }, [isSingleServiceMode, formulas, singleServiceInitialized, businessSettings]);
 
   // Pre-fill connected variables when services are selected
   // This ensures that when a user selects a new service, any variables with matching
@@ -1208,7 +1226,7 @@ export default function StyledCalculator(props: any = {}) {
       const service = formulas?.find((f: any) => f.id === serviceId);
       if (!service) return false;
       const variables = serviceVariables[serviceId] || {};
-      const { isCompleted } = areAllVisibleVariablesCompleted(service.variables, variables);
+      const { isCompleted } = getFormulaCompletionStatus(service.variables, variables);
       return isCompleted;
     };
 
@@ -1731,7 +1749,7 @@ export default function StyledCalculator(props: any = {}) {
     if (!businessSettings?.styling?.enablePropertyAutofill) return false;
     return selectedServices.some(serviceId => {
       const formula = formulas?.find((f: Formula) => f.id === serviceId);
-      return formula?.variables?.some((v: any) => v.prefillSourceKey);
+      return hasPropertyPrefillMappings(formula?.variables || []);
     });
   }, [selectedServices, formulas, businessSettings]);
 
@@ -1855,6 +1873,35 @@ export default function StyledCalculator(props: any = {}) {
     });
   };
 
+  const handleRepeatableServiceVariableChange = (
+    serviceId: number,
+    groupId: string,
+    instanceIndex: number,
+    childVariableId: string,
+    value: any,
+  ) => {
+    setServiceVariables(prev => {
+      const currentServiceValues = prev[serviceId] || {};
+      const nextRepeatableGroups = {
+        ...getRepeatableGroupValues(currentServiceValues),
+      };
+      const nextInstances = [...(nextRepeatableGroups[groupId] || [])];
+      nextInstances[instanceIndex] = {
+        ...(nextInstances[instanceIndex] || {}),
+        [childVariableId]: value,
+      };
+      nextRepeatableGroups[groupId] = nextInstances;
+
+      return {
+        ...prev,
+        [serviceId]: {
+          ...currentServiceValues,
+          [REPEATABLE_GROUP_VALUES_KEY]: nextRepeatableGroups,
+        },
+      };
+    });
+  };
+
   // Apply property data prefill to service variables
   const applyPropertyPrefill = (attributes: PropertyAttributes) => {
     const newPrefilledFields: Record<string, string> = {};
@@ -1864,7 +1911,14 @@ export default function StyledCalculator(props: any = {}) {
 
     // Collect all prefill values first, then apply in a single state update
     // to avoid stale closure issues when reading serviceVariables
-    const prefillUpdates: Array<{ serviceId: number; variableId: string; value: any; connectionKey?: string }> = [];
+    const prefillUpdates: Array<{
+      serviceId: number;
+      variableId: string;
+      value: any;
+      connectionKey?: string;
+      repeatableGroupId?: string;
+      repeatableIndex?: number;
+    }> = [];
 
     selectedServices.forEach(serviceId => {
       const formula = formulas?.find((f: Formula) => f.id === serviceId);
@@ -1873,7 +1927,13 @@ export default function StyledCalculator(props: any = {}) {
         return;
       }
 
+      const serviceDraftValues: Record<string, any> = { ...(serviceVariables[serviceId] || {}) };
+      const repeatableGroupDraft = { ...getRepeatableGroupValues(serviceDraftValues) };
+
       formula.variables.forEach((variable: any) => {
+        if (isRepeatableGroupVariable(variable)) {
+          return;
+        }
         if (!variable.prefillSourceKey) {
           console.log(`[PropertyPrefill] Variable "${variable.name}" (${variable.id}, type=${variable.type}): no prefillSourceKey set, skipping. connectionKey=${variable.connectionKey || 'none'}`);
           return;
@@ -2030,7 +2090,81 @@ export default function StyledCalculator(props: any = {}) {
           value: convertedValue,
           connectionKey: variable.connectionKey,
         });
+        serviceDraftValues[variable.id] = convertedValue;
         newPrefilledFields[`${serviceId}_${variable.id}`] = variable.prefillSourceKey;
+      });
+
+      formula.variables.forEach((variable: any) => {
+        if (!isRepeatableGroupVariable(variable)) {
+          return;
+        }
+
+        const childVariables = variable.repeatableConfig?.childVariables || [];
+        const instanceCount = getRepeatableGroupCount(variable, formula.variables, getFlatFormulaValues(serviceDraftValues));
+        if (instanceCount <= 0) {
+          return;
+        }
+
+        childVariables.forEach((childVariable: any) => {
+          if (!childVariable.prefillSourceKey) {
+            return;
+          }
+
+          const attrValue = (attributes as any)[childVariable.prefillSourceKey];
+          if (attrValue === undefined || attrValue === null) {
+            return;
+          }
+
+          let convertedValue: any = attrValue;
+          if (['number', 'slider', 'stepper'].includes(childVariable.type)) {
+            convertedValue = typeof attrValue === 'number' ? attrValue : parseFloat(attrValue);
+            if (isNaN(convertedValue)) return;
+          } else if (['select', 'dropdown'].includes(childVariable.type) && childVariable.options) {
+            const strValue = String(attrValue).toLowerCase();
+            const matchedOption = childVariable.options.find((opt: any) =>
+              String(opt.label).toLowerCase().includes(strValue) ||
+              String(opt.value).toLowerCase().includes(strValue) ||
+              strValue.includes(String(opt.label).toLowerCase())
+            );
+            if (!matchedOption) return;
+            convertedValue = String(matchedOption.value);
+          } else if (childVariable.type === 'multiple-choice' && childVariable.options) {
+            const raw = String(attrValue || '').trim().toLowerCase();
+            if (!raw) return;
+
+            const matchedOptions = childVariable.options.filter((opt: any) => {
+              const label = String(opt.label || '').toLowerCase();
+              const value = String(opt.value || '').toLowerCase();
+              return label === raw || value === raw || label.includes(raw) || value.includes(raw) || raw.includes(label) || raw.includes(value);
+            });
+
+            if (matchedOptions.length === 0) return;
+            convertedValue = childVariable.allowMultipleSelection
+              ? matchedOptions.map((opt: any) => opt.value.toString())
+              : [matchedOptions[0].value.toString()];
+          }
+
+          for (let repeatableIndex = 0; repeatableIndex < instanceCount; repeatableIndex++) {
+            const groupInstances = [...(repeatableGroupDraft[variable.id] || [])];
+            groupInstances[repeatableIndex] = {
+              ...(groupInstances[repeatableIndex] || {}),
+              [childVariable.id]: convertedValue,
+            };
+            repeatableGroupDraft[variable.id] = groupInstances;
+
+            prefillUpdates.push({
+              serviceId,
+              variableId: childVariable.id,
+              value: convertedValue,
+              connectionKey: childVariable.connectionKey,
+              repeatableGroupId: variable.id,
+              repeatableIndex,
+            });
+          }
+
+          serviceDraftValues[REPEATABLE_GROUP_VALUES_KEY] = repeatableGroupDraft;
+          newPrefilledFields[`${serviceId}_${childVariable.id}`] = childVariable.prefillSourceKey;
+        });
       });
     });
 
@@ -2040,15 +2174,32 @@ export default function StyledCalculator(props: any = {}) {
       setServiceVariables(prev => {
         const updated = { ...prev };
 
-        for (const { serviceId, variableId, value, connectionKey } of prefillUpdates) {
+        for (const { serviceId, variableId, value, connectionKey, repeatableGroupId, repeatableIndex } of prefillUpdates) {
           console.log(`[PropertyPrefill] Setting ${variableId} = ${value} (type: ${typeof value})`);
-          updated[serviceId] = {
-            ...updated[serviceId],
-            [variableId]: value,
-          };
+          if (repeatableGroupId) {
+            const currentServiceValues = updated[serviceId] || {};
+            const currentRepeatableGroups = { ...getRepeatableGroupValues(currentServiceValues) };
+            const instances = [...(currentRepeatableGroups[repeatableGroupId] || [])];
+            const index = repeatableIndex ?? 0;
+            instances[index] = {
+              ...(instances[index] || {}),
+              [variableId]: value,
+            };
+            currentRepeatableGroups[repeatableGroupId] = instances;
+
+            updated[serviceId] = {
+              ...currentServiceValues,
+              [REPEATABLE_GROUP_VALUES_KEY]: currentRepeatableGroups,
+            };
+          } else {
+            updated[serviceId] = {
+              ...updated[serviceId],
+              [variableId]: value,
+            };
+          }
 
           // Propagate via connectionKey to other services
-          if (connectionKey) {
+          if (connectionKey && !repeatableGroupId) {
             selectedServices.forEach(svcId => {
               const svc = formulas?.find((f: Formula) => f.id === svcId);
               svc?.variables?.forEach((v: any) => {
@@ -2119,7 +2270,7 @@ export default function StyledCalculator(props: any = {}) {
     if (!service) return false;
 
     const variables = serviceVariables[serviceId] || {};
-    const { isCompleted } = areAllVisibleVariablesCompleted(service.variables, variables);
+    const { isCompleted } = getFormulaCompletionStatus(service.variables, variables);
     return isCompleted;
   };
 
@@ -2140,149 +2291,12 @@ export default function StyledCalculator(props: any = {}) {
     const service = formulas?.find((f: any) => f.id === serviceId);
     if (!service) return 0;
 
-    const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
-      const base = String(rawValue ?? '').trim().toLowerCase();
-      const normalized = base
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_+|_+$/g, '')
-        .slice(0, 40);
-      return normalized || `option_${fallbackIndex}`;
-    };
-
     try {
-      let formulaExpression = service.formula;
-      const variables = serviceVariables[serviceId] || {};
-      
-      // First, replace individual option references for multiple-choice with allowMultipleSelection
-      service.variables.forEach((variable: any) => {
-        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
-          const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
-          
-          variable.options.forEach((option: any, optionIndex: number) => {
-            const optionId = toOptionId(option.id ?? option.value, optionIndex + 1);
-            if (optionId) {
-              const optionReference = `${variable.id}_${optionId}`;
-              const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
-              // Use defaultUnselectedValue if set, otherwise default to 0 (for addition formulas)
-              const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
-              const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
-              
-              formulaExpression = formulaExpression.replace(
-                new RegExp(`\\b${optionReference}\\b`, 'g'),
-                String(optionValue)
-              );
-            }
-          });
-        }
-      });
-      
-      service.variables.forEach((variable: any) => {
-        // For multiple-choice with allowMultipleSelection, also handle the variable ID itself (sum of selected values)
-        // This is needed when the formula uses variableId directly instead of variableId_optionId
-        if (variable.type === 'multiple-choice' && variable.allowMultipleSelection) {
-          const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
-          // Calculate sum of selected options' numeric values
-          const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
-            const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue.toString());
-            return total + (option?.numericValue || 0);
-          }, 0);
-          // Replace the variable ID itself with the sum (for formulas that use variableId directly)
-          formulaExpression = formulaExpression.replace(
-            new RegExp(`\\b${variable.id}\\b`, 'g'),
-            String(sumOfSelected)
-          );
-          return; // Skip the rest of this iteration
-        }
-        
-        let value = variables[variable.id];
-        
-        // Check if this variable should be visible based on conditional logic
-        const shouldShow = !variable.conditionalLogic?.enabled || 
-          evaluateConditionalLogic(variable, variables, service.variables);
-        
-        // If variable is hidden by conditional logic, use default value
-        if (!shouldShow) {
-          const defaultValue = getDefaultValueForHiddenVariable(variable);
-          
-          // Convert default value to numeric for calculation
-          if (variable.type === 'checkbox') {
-            const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
-            const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
-            value = defaultValue ? checkedVal : uncheckedVal;
-          } else if (variable.type === 'select' && variable.options) {
-            const option = variable.options.find((opt: any) => opt.value === defaultValue);
-            value = option?.multiplier || option?.numericValue || Number(defaultValue) || 0;
-          } else if (variable.type === 'dropdown' && variable.options) {
-            const option = variable.options.find((opt: any) => opt.value === defaultValue);
-            value = option?.numericValue || Number(defaultValue) || 0;
-          } else if (variable.type === 'multiple-choice' && variable.options) {
-            // For multiple-choice, handle both array and single value defaults
-            if (Array.isArray(defaultValue)) {
-              // Sum up numericValue for each selected option in the array
-              value = defaultValue.reduce((total: number, selectedValue: any) => {
-                const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue.toString());
-                return total + (option?.numericValue || 0);
-              }, 0);
-            } else {
-              // Try to find option by value first
-              const option = variable.options.find((opt: any) => opt.value === defaultValue);
-              if (option) {
-                value = option.numericValue || 0;
-              } else {
-                // If no option matches, treat defaultValue as a number (for multiplier use cases)
-                value = Number(defaultValue) || 0;
-              }
-            }
-          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
-            value = Number(defaultValue) || 0;
-          } else {
-            value = 0; // Safe fallback for calculation
-          }
-        } else {
-          // Handle case where single-select values are accidentally stored as arrays
-          if (Array.isArray(value) && (variable.type === 'select' || variable.type === 'dropdown')) {
-            value = value[0]; // Take the first value for single-select inputs
-          }
-          
-          if (variable.type === 'select' && variable.options) {
-            const option = variable.options.find((opt: any) => opt.value === value);
-            value = option?.multiplier || option?.numericValue || 0;
-          } else if (variable.type === 'dropdown' && variable.options) {
-            const option = variable.options.find((opt: any) => opt.value === value);
-            value = option?.numericValue || 0;
-          } else if (variable.type === 'multiple-choice' && variable.options) {
-            if (Array.isArray(value)) {
-              value = value.reduce((total: number, selectedValue: string) => {
-                const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue);
-                return total + (option?.numericValue || 0);
-              }, 0);
-            } else if (value !== undefined && value !== null && value !== '') {
-              // Defensive fallback: handle scalar values (e.g. legacy/state-preloaded data)
-              const option = variable.options.find((opt: any) => opt.value.toString() === value.toString());
-              value = option?.numericValue || Number(value) || 0;
-            } else {
-              value = 0;
-            }
-          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
-            value = Number(value) || 0;
-          } else if (variable.type === 'checkbox') {
-            const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
-            const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
-            value = value ? checkedVal : uncheckedVal;
-          } else {
-            value = 0;
-          }
-        }
-        
-        formulaExpression = formulaExpression.replace(
-          new RegExp(`\\b${variable.id}\\b`, 'g'),
-          String(value)
-        );
-      });
-      
-      const result = Function(`"use strict"; return (${formulaExpression})`)();
-      let finalPrice = Math.round(result);
-      
+      const values = serviceVariables[serviceId] || {};
+      let finalPrice = Math.round(
+        evaluateFormulaWithRepeatableGroups(service.formula || '', service.variables || [], values as any)
+      );
+
       // Apply min/max price constraints (stored in cents in database)
       if (service.minPrice !== null && service.minPrice !== undefined) {
         const minPriceDollars = service.minPrice / 100;
@@ -2296,7 +2310,7 @@ export default function StyledCalculator(props: any = {}) {
           finalPrice = maxPriceDollars;
         }
       }
-      
+
       return Math.round(finalPrice);
     } catch (error) {
       console.error('Formula calculation error:', error);
@@ -2336,7 +2350,7 @@ export default function StyledCalculator(props: any = {}) {
       if (!service) continue;
 
       const serviceVars = serviceVariables[serviceId] || {};
-      const { isCompleted, missingVariables } = areAllVisibleVariablesCompleted(
+      const { isCompleted, missingVariables } = getFormulaCompletionStatus(
         service.variables, 
         serviceVars
       );
@@ -2372,13 +2386,17 @@ export default function StyledCalculator(props: any = {}) {
         if (!service) continue;
         
         const serviceVars = serviceVariables[serviceId] || {};
-        const { missingVariables } = areAllVisibleVariablesCompleted(service.variables, serviceVars);
+        const { missingVariables } = getFormulaCompletionStatus(service.variables, serviceVars as any);
         
         missingVariables.forEach(varName => {
-          // Find the variable by name and add visual indicator
-          const variable = service.variables.find((v: any) => v.name === varName);
+          const normalizedName = varName.includes(': ') ? varName.split(': ').pop() || varName : varName;
+          const topLevelVariable = service.variables.find((v: any) => v.name === normalizedName);
+          const childVariable = service.variables
+            .filter((v: any) => v.type === 'repeatable-group')
+            .flatMap((v: any) => v.repeatableConfig?.childVariables || [])
+            .find((child: any) => child.name === normalizedName);
+          const variable = topLevelVariable || childVariable;
           if (variable) {
-            // Find the input element and add visual indicator
             const fieldElement = document.querySelector(`[data-variable-id="${variable.id}"]`);
             if (fieldElement) {
               fieldElement.setAttribute('data-missing-field', 'true');
@@ -3259,20 +3277,81 @@ export default function StyledCalculator(props: any = {}) {
                         </div>
                       )}
                     >
-                      {service.variables.map((variable: any) => (
-                        <EnhancedVariableInput
-                          key={variable.id}
-                          variable={variable}
-                          value={serviceVariables[serviceId]?.[variable.id]}
-                          onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
-                          styling={styling}
-                          componentStyles={componentStyles}
-                          allVariables={service.variables}
-                          currentValues={serviceVariables[serviceId] || {}}
-                          hasCustomCSS={!!designSettings?.customCSS}
-                          prefillSource={prefilledFields[`${serviceId}_${variable.id}`]}
-                        />
-                      ))}
+                      {(() => {
+                        const currentServiceValues = serviceVariables[serviceId] || {};
+                        const topLevelValues = getFlatFormulaValues(currentServiceValues);
+                        const repeatableValues = getRepeatableGroupValues(currentServiceValues);
+
+                        return service.variables.map((variable: any) => {
+                          if (!isRepeatableGroupVariable(variable)) {
+                            return (
+                              <EnhancedVariableInput
+                                key={variable.id}
+                                variable={variable}
+                                value={topLevelValues[variable.id]}
+                                onChange={(value) => handleServiceVariableChange(serviceId, variable.id, value)}
+                                styling={styling}
+                                componentStyles={componentStyles}
+                                allVariables={service.variables}
+                                currentValues={topLevelValues}
+                                hasCustomCSS={!!designSettings?.customCSS}
+                                prefillSource={prefilledFields[`${serviceId}_${variable.id}`]}
+                              />
+                            );
+                          }
+
+                          const shouldShow = !variable.conditionalLogic?.enabled || evaluateConditionalLogic(variable, topLevelValues, service.variables);
+                          if (!shouldShow) {
+                            return null;
+                          }
+
+                          const childVariables = variable.repeatableConfig?.childVariables || [];
+                          const count = getRepeatableGroupCount(variable, service.variables, topLevelValues);
+                          const groupInstances = repeatableValues[variable.id] || [];
+
+                          return (
+                            <div key={variable.id} className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                              <div>
+                                <p className="font-medium text-gray-900">{variable.name}</p>
+                                {variable.tooltip && (
+                                  <p className="text-sm text-gray-600">{variable.tooltip}</p>
+                                )}
+                              </div>
+
+                              {count > 0 ? (
+                                Array.from({ length: count }, (_, index) => {
+                                  const instanceValues = groupInstances[index] || {};
+                                  return (
+                                    <div key={`${variable.id}-${index}`} className="space-y-3 rounded-lg border border-white bg-white p-3 shadow-sm">
+                                      <p className="text-sm font-medium text-gray-700">
+                                        {getRepeatableGroupLabel(variable, index)}
+                                      </p>
+                                      {childVariables.map((childVariable: any) => (
+                                        <div key={`${variable.id}-${index}-${childVariable.id}`} data-variable-id={childVariable.id}>
+                                          <EnhancedVariableInput
+                                            variable={childVariable}
+                                            value={instanceValues[childVariable.id]}
+                                            onChange={(value) => handleRepeatableServiceVariableChange(serviceId, variable.id, index, childVariable.id, value)}
+                                            styling={styling}
+                                            componentStyles={componentStyles}
+                                            allVariables={childVariables}
+                                            currentValues={instanceValues}
+                                            hasCustomCSS={!!designSettings?.customCSS}
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  );
+                                })
+                              ) : (
+                                <div className="rounded-lg border border-dashed border-amber-300 bg-white/80 px-4 py-3 text-sm text-amber-900">
+                                  Answer the count question first to create repeated items here.
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
                     </Suspense>
                   </div>
                 </div>

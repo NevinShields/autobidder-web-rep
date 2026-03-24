@@ -3,10 +3,22 @@
 
 // Helper function to get the correct base URL
 function getBaseUrl(): string {
+  if (process.env.PUBLIC_ASSET_BASE_URL) {
+    return process.env.PUBLIC_ASSET_BASE_URL;
+  }
+  if (process.env.APP_BASE_URL) {
+    return process.env.APP_BASE_URL;
+  }
+  if (process.env.APP_URL) {
+    return process.env.APP_URL;
+  }
+  if (process.env.DOMAIN) {
+    return process.env.DOMAIN;
+  }
   if (process.env.REPLIT_DEV_DOMAIN) {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
-  return process.env.DOMAIN || 'https://localhost:5000';
+  return 'https://rep.autobidder.org';
 }
 
 // Template variable replacement system
@@ -1530,8 +1542,14 @@ export async function sendLeadSubmittedEmail(
   const userId = leadDetails.businessOwnerId;
   
   try {
+    if (userId) {
+      businessSettings = await storage.getBusinessSettingsByUserId(userId);
+    }
+
     // Get business settings for fallback values
-    businessSettings = await storage.getBusinessSettings();
+    if (!businessSettings) {
+      businessSettings = await storage.getBusinessSettings();
+    }
     
     // If no userId provided but we have business settings, use that
     if (!userId && businessSettings?.userId) {

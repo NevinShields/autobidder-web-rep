@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import type { BusinessSettings, EmailTemplate } from "@shared/schema";
+import type { BusinessSettings, EmailTemplate, Formula } from "@shared/schema";
 import {
   Phone,
   MessageSquare,
@@ -53,6 +53,7 @@ import { useAutomationApproval } from "@/hooks/useAutomationApproval";
 import { AutomationConfirmationDialog } from "./AutomationConfirmationDialog";
 import WorkOrderNotificationDialog from "./notifications/work-order-notification-dialog";
 import SendBidDialog from "./notifications/send-bid-dialog";
+import SubmittedVariableDetails from "./submitted-variable-details";
 
 interface Lead {
   id: number;
@@ -207,6 +208,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     refetchOnWindowFocus: true,
     refetchInterval: isOpen ? 15000 : false,
     staleTime: 0,
+  });
+
+  const { data: formulas = [] } = useQuery<Formula[]>({
+    queryKey: ["/api/formulas"],
+    enabled: isOpen,
   });
 
   // Fetch work orders for this user
@@ -963,6 +969,8 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     calculatedPrice: lead.calculatedPrice / 100 // Convert from cents to dollars for display
   } : null;
 
+  const formulasById = new Map(formulas.map((formula) => [formula.id, formula]));
+
   const softBookings = leadBookings.filter(booking => booking.status === 'tentative');
   const canConfirmSoftBooking = processedLead?.stage === 'estimate_approved'
     || processedLead?.stage === 'booked'
@@ -1653,18 +1661,10 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                           {service.variables && Object.keys(service.variables).length > 0 && (
                             <div className="mt-3">
                               <h6 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Customer Selections:</h6>
-                              <div className="grid grid-cols-1 gap-2">
-                                {Object.entries(service.variables).map(([key, value]) => (
-                                  <div key={key} className="flex justify-between text-xs bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
-                                    <span className="text-gray-600 dark:text-gray-300 capitalize font-medium">
-                                      {key.replace(/([A-Z])/g, ' $1').trim()}:
-                                    </span>
-                                    <span className="text-gray-800 dark:text-gray-100 font-medium">
-                                      {Array.isArray(value) ? value.join(', ') : String(value)}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
+                              <SubmittedVariableDetails
+                                values={service.variables}
+                                formula={service.formulaId ? formulasById.get(service.formulaId) : undefined}
+                              />
                             </div>
                           )}
                           
@@ -1695,18 +1695,11 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                         {processedLead.variables && Object.keys(processedLead.variables).length > 0 && (
                           <div className="mt-3">
                             <h6 className="text-xs font-medium text-gray-600 dark:text-gray-300 mb-2">Customer Selections & Answers:</h6>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {Object.entries(processedLead.variables).map(([key, value]) => (
-                                <div key={key} className="flex justify-between text-xs bg-gray-50 dark:bg-gray-700/50 p-2 rounded">
-                                  <span className="text-gray-600 dark:text-gray-300 capitalize font-medium">
-                                    {key.replace(/([A-Z])/g, ' $1').trim()}:
-                                  </span>
-                                  <span className="text-gray-800 dark:text-gray-100 font-medium">
-                                    {Array.isArray(value) ? value.join(', ') : String(value)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
+                            <SubmittedVariableDetails
+                              values={processedLead.variables}
+                              formula={processedLead.formulaId ? formulasById.get(processedLead.formulaId) : undefined}
+                              className="space-y-3"
+                            />
                           </div>
                         )}
                         

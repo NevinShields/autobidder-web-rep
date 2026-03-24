@@ -13,10 +13,21 @@ function getOpenAI(): OpenAI {
   return openai;
 }
 
+interface RepeatableConfig {
+  countSourceMode?: 'variable' | 'fixed';
+  countVariableId?: string;
+  fixedCount?: number;
+  minInstances?: number;
+  maxInstances?: number;
+  itemLabelTemplate?: string;
+  instanceFormula?: string;
+  childVariables?: Variable[];
+}
+
 interface Variable {
   id: string;
   name: string;
-  type: 'number' | 'select' | 'text' | 'multiple-choice' | 'dropdown';
+  type: 'number' | 'select' | 'text' | 'multiple-choice' | 'dropdown' | 'repeatable-group';
   unit?: string;
   options?: Array<{
     id?: string;
@@ -28,6 +39,7 @@ interface Variable {
   defaultValue?: string | number | boolean | Array<string | number>;
   allowMultipleSelection?: boolean;
   conditionalLogic?: any;
+  repeatableConfig?: RepeatableConfig;
 }
 
 export interface AIFormulaResponse {
@@ -1015,13 +1027,14 @@ export async function generateFormula(description: string): Promise<AIFormulaRes
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+3. Every top-level variable in "variables" must appear at least once in the main formula. Exception: childVariables inside a repeatable-group must appear in repeatableConfig.instanceFormula, while the repeatable-group variable ID itself must appear in the main formula.
 4. Use realistic contractor pricing (research actual market rates)
 5. Include 3-8 relevant variables that affect pricing
 6. Use appropriate units (sq ft, linear ft, hours, etc.)
 7. EVERY dropdown/multiple-choice option MUST have a numericValue field - this is the number used in the formula
 8. Create compelling service descriptions and 4-6 bullet points highlighting key benefits
 9. Provide a relevant emoji icon (e.g., 🏠, 🔧, 🎨)
+10. When pricing repeated items like trees, windows, rooms, fixtures, fence panels, or posts, you may use a repeatable-group variable
 
 *** CRITICAL FORMULA REQUIREMENT ***
 The formula field MUST be simple arithmetic using ONLY:
@@ -1066,6 +1079,21 @@ DROPDOWN GUIDELINES (USE MODERATELY):
 - Examples: "Basic/Standard/Premium quality", "Small/Medium/Large project", "1-3 days/1 week/2+ weeks"
 
 IMPORTANT: Do NOT use checkbox inputs. Convert any yes/no options to multiple-choice with "Yes"/"No" options instead.
+
+REPEATABLE GROUP GUIDELINES:
+- Use a "repeatable-group" variable when the service prices multiple similar items and each item needs the same sub-questions
+- Examples: tree removal, window cleaning, light fixtures, doors, fence sections, stumps, rooms, vents
+- A repeatable group needs a top-level count question such as "numberOfTrees" or a fixed count
+- Set "repeatableConfig.countSourceMode" to "variable" and "repeatableConfig.countVariableId" to that top-level count variable when item count comes from another question
+- Put the per-item questions inside "repeatableConfig.childVariables"
+- Put the per-item pricing logic inside "repeatableConfig.instanceFormula"
+- The repeatable-group variable ID is an aggregate token for the main formula. It already equals the SUM of all repeated item totals.
+- Do NOT multiply a repeatable-group token by its count variable again in the main formula
+- Good pattern:
+  * top-level variable: "numberOfTrees"
+  * repeatable-group variable: "treeDetails"
+  * repeatableConfig.instanceFormula: "treeHeight * 20 + treeDiameter * 150"
+  * main formula: "treeDetails + haulAway"
 
 CONDITIONAL QUESTIONS (SMART FOLLOW-UPS):
 - Use conditional logic to show/hide questions based on previous answers
@@ -1162,10 +1190,30 @@ VARIABLE STRUCTURE:
 {
   "id": "camelCaseId",
   "name": "Display Name",
-  "type": "number|multiple-choice|dropdown|select",
+  "type": "number|multiple-choice|dropdown|select|repeatable-group",
   "unit": "optional unit",
   "allowMultipleSelection": true, // OPTIONAL for multiple-choice when options can be toggled independently
   "options": [{"id": "option_id", "label": "Option", "value": "value", "numericValue": 123, "defaultUnselectedValue": 0}],
+  "repeatableConfig": { // REQUIRED when type is "repeatable-group"
+    "countSourceMode": "variable",
+    "countVariableId": "numberOfTrees",
+    "itemLabelTemplate": "Tree {index}",
+    "instanceFormula": "treeHeight * 20 + treeDiameter * 150",
+    "childVariables": [
+      {
+        "id": "treeHeight",
+        "name": "Tree Height",
+        "type": "number",
+        "unit": "ft"
+      },
+      {
+        "id": "treeDiameter",
+        "name": "Tree Diameter",
+        "type": "number",
+        "unit": "ft"
+      }
+    ]
+  },
   "defaultValue": "optional default",
   "conditionalLogic": { // OPTIONAL - add when question should show/hide based on other answers
     "enabled": true,
@@ -1234,7 +1282,7 @@ export async function editFormula(
 IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Every variable in "variables" must appear at least once in the formula (use variableId or variableId_optionId)
+3. Every top-level variable in "variables" must appear at least once in the main formula. Exception: childVariables inside a repeatable-group must appear in repeatableConfig.instanceFormula, while the repeatable-group variable ID itself must appear in the main formula.
 4. Use realistic contractor pricing
 5. Use simple arithmetic formulas with + and * only
 6. Preserve unchanged parts of the current calculator unless user asks otherwise
@@ -1244,6 +1292,15 @@ IMPORTANT RULES:
    - formula references like variableId_optionId when needed
 8. Every dropdown/multiple-choice option must include numericValue
 9. If multi-select options are used in multiplication, include defaultUnselectedValue: 1 for those options
+10. You may use repeatable-group variables for pricing repeated items like trees, windows, fixtures, doors, rooms, fence sections, or vents
+
+REPEATABLE GROUP RULES:
+- A variable with "type": "repeatable-group" must include "repeatableConfig"
+- "repeatableConfig.childVariables" are the per-item questions
+- "repeatableConfig.instanceFormula" calculates ONE repeated item using those childVariables
+- The repeatable-group variable ID is a summed total across all repeated items
+- The main formula should reference the repeatable-group variable ID directly
+- Do NOT multiply the repeatable-group variable ID by its count variable again unless the user explicitly asks for that behavior
 
 RESPONSE FORMAT: Return valid JSON with these fields:
 {
@@ -1256,7 +1313,7 @@ RESPONSE FORMAT: Return valid JSON with these fields:
     {
       "id": "camelCaseId",
       "name": "Display Name",
-      "type": "number|multiple-choice|dropdown|select",
+      "type": "number|multiple-choice|dropdown|select|repeatable-group",
       "unit": "optional unit",
       "allowMultipleSelection": true,
       "options": [
@@ -1268,6 +1325,20 @@ RESPONSE FORMAT: Return valid JSON with these fields:
           "defaultUnselectedValue": 0
         }
       ],
+      "repeatableConfig": {
+        "countSourceMode": "variable",
+        "countVariableId": "numberOfTrees",
+        "itemLabelTemplate": "Tree {index}",
+        "instanceFormula": "treeHeight * 20 + treeDiameter * 150",
+        "childVariables": [
+          {
+            "id": "treeHeight",
+            "name": "Tree Height",
+            "type": "number",
+            "unit": "ft"
+          }
+        ]
+      },
       "defaultValue": "optional default",
       "conditionalLogic": {
         "enabled": true

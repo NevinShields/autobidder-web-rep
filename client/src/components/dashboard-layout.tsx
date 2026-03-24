@@ -17,8 +17,11 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const MOBILE_MENU_ANIMATION_MS = 300;
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuMounted, setMobileMenuMounted] = useState(false);
+  const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState(false);
   const { user, isSuperAdmin } = useAuth();
@@ -62,6 +65,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => {
       document.body.style.overflow = 'unset';
     };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      setMobileMenuMounted(true);
+      const frameId = window.requestAnimationFrame(() => {
+        setMobileMenuVisible(true);
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    setMobileMenuVisible(false);
+    const timeoutId = window.setTimeout(() => {
+      setMobileMenuMounted(false);
+    }, MOBILE_MENU_ANIMATION_MS);
+
+    return () => window.clearTimeout(timeoutId);
   }, [mobileMenuOpen]);
 
   // Auto-expand the group containing the active page
@@ -111,7 +132,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         { name: "Logic", href: "/form-settings", icon: Settings },
         { name: "Formulas", href: "/formulas", icon: Calculator },
         { name: "Custom Forms", href: "/custom-forms", icon: FileText },
-        { name: "Website", href: "/website", icon: Globe },
+        {
+          name: "Website",
+          href: "/website",
+          icon: Globe,
+          subItems: ((user as any)?.showLandingPageNav ?? (user as any)?.businessInfo?.showLandingPageNav)
+            ? [{ name: "Landing Page", href: "/dashboard/landing-page", icon: Globe }]
+            : [],
+        },
       ]
     },
     manage: {
@@ -195,18 +223,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             {group.title}
           </div>
           <ChevronDown className={cn(
-            "w-3.5 h-3.5 transition-transform duration-200",
+            "w-3.5 h-3.5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
             !isExpanded && "-rotate-90"
           )} />
         </button>
 
         <div
           className={cn(
-            "overflow-hidden transition-all duration-200",
-            isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+            "grid overflow-hidden transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
           )}
         >
-          <div className="mt-0.5 space-y-0.5 pl-1">
+          <div
+            className={cn(
+              "min-h-0 mt-0.5 space-y-0.5 pl-1 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              isExpanded ? "translate-y-0" : "-translate-y-2"
+            )}
+          >
             {group.items.map((item: any) => {
               const hasSubItems = item.subItems && item.subItems.length > 0;
               return (
@@ -329,13 +362,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Mobile Sidebar */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
+      {mobileMenuMounted && (
+        <div
+          className={cn(
+            "fixed inset-0 z-[60] lg:hidden",
+            mobileMenuVisible ? "pointer-events-auto" : "pointer-events-none"
+          )}
+        >
           <div
-            className="fixed inset-0 bg-gray-950/60 backdrop-blur-sm transition-opacity duration-300 ease-out"
+            className={cn(
+              "fixed inset-0 bg-gray-950/60 backdrop-blur-sm transition-opacity duration-300 ease-out",
+              mobileMenuVisible ? "opacity-100" : "opacity-0"
+            )}
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 w-[280px] max-w-[calc(100vw-3rem)] bg-white dark:bg-gray-900 shadow-2xl dark:shadow-gray-950/80 transform transition-all duration-300 ease-out animate-in slide-in-from-left overflow-hidden flex flex-col">
+          <div
+            className={cn(
+              "fixed inset-y-0 left-0 w-[280px] max-w-[calc(100vw-3rem)] bg-white dark:bg-gray-900 shadow-2xl dark:shadow-gray-950/80 overflow-hidden flex flex-col transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              mobileMenuVisible
+                ? "translate-x-0 opacity-100"
+                : "-translate-x-full opacity-0"
+            )}
+          >
             <div className="absolute top-4 right-3 z-10">
               <Button
                 variant="ghost"

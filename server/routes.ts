@@ -466,6 +466,62 @@ const cleanupRecentMultiServiceSubmissions = () => {
     }
   }
 };
+const DIRECTORY_NEARBY_CITY_AUTOFILL_LIMIT = 10;
+const DIRECTORY_NEARBY_CITY_MAX_GEOCODE_ATTEMPTS = 120;
+const DIRECTORY_NEARBY_CITY_GEOCODE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+type DirectoryCityCoordinateCacheEntry = {
+  latitude: number | null;
+  longitude: number | null;
+  cachedAt: number;
+};
+
+const directoryCityCoordinateCache = new Map<string, DirectoryCityCoordinateCacheEntry>();
+
+function getDirectoryCityStateKey(city: string, state: string): string {
+  return `${city.trim().toLowerCase()}|${state.trim().toLowerCase()}`;
+}
+
+async function geocodeDirectoryCityWithCache(
+  city: string,
+  state: string,
+): Promise<{ latitude: number; longitude: number } | null> {
+  const key = getDirectoryCityStateKey(city, state);
+  const now = Date.now();
+  const cached = directoryCityCoordinateCache.get(key);
+
+  if (cached && now - cached.cachedAt < DIRECTORY_NEARBY_CITY_GEOCODE_CACHE_TTL_MS) {
+    if (cached.latitude === null || cached.longitude === null) {
+      return null;
+    }
+
+    return {
+      latitude: cached.latitude,
+      longitude: cached.longitude,
+    };
+  }
+
+  const geo = await geocodeAddress(`${city}, ${state}`);
+  if (!geo) {
+    directoryCityCoordinateCache.set(key, {
+      latitude: null,
+      longitude: null,
+      cachedAt: now,
+    });
+    return null;
+  }
+
+  directoryCityCoordinateCache.set(key, {
+    latitude: geo.latitude,
+    longitude: geo.longitude,
+    cachedAt: now,
+  });
+
+  return {
+    latitude: geo.latitude,
+    longitude: geo.longitude,
+  };
+}
 
 // Configure web-push with VAPID keys
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -9135,15 +9191,33 @@ The Autobidder Team`;
     }
   });
 
-  // Helper function to sort templates: custom first, then duda
-  const sortTemplatesByType = <T extends { templateType?: string | null }>(templates: T[]): T[] => {
+  // Helper function to sort templates: named priorities first, then custom, then the remaining templates in their original order
+  const prioritizedTemplateNames = ['rojo', 'harbor theme', 'boom', 'penguin', 'splash', 'doctorklean'];
+
+  const normalizeTemplateName = (value: string | null | undefined): string => {
+    return (value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  };
+
+  const getTemplatePriority = (template: { templateName?: string | null; template_name?: string | null; name?: string | null }): number => {
+    const normalizedName = normalizeTemplateName(template.templateName || template.template_name || template.name);
+    const priorityIndex = prioritizedTemplateNames.indexOf(normalizedName);
+    return priorityIndex === -1 ? Number.MAX_SAFE_INTEGER : priorityIndex;
+  };
+
+  const sortTemplatesByType = <T extends { templateType?: string | null; templateName?: string | null; template_name?: string | null; name?: string | null }>(templates: T[]): T[] => {
     return [...templates].sort((a, b) => {
+      const priorityA = getTemplatePriority(a);
+      const priorityB = getTemplatePriority(b);
+      if (priorityA !== priorityB) return priorityA - priorityB;
+
       const typeA = a.templateType || '';
       const typeB = b.templateType || '';
-      // 'custom' comes before 'duda' (and before any other type)
       if (typeA === 'custom' && typeB !== 'custom') return -1;
       if (typeA !== 'custom' && typeB === 'custom') return 1;
-      return 0; // Keep original order within same type
+      return 0;
     });
   };
 
@@ -20149,7 +20223,7 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
-  // AUTHENTICATED: Suggest nearest towns to a profile's main city
+  // AUTHENTICATED: Suggest nearby towns/cities for a profile's main city
   app.get("/api/directory/nearby-cities", requireAuth, async (req, res) => {
     try {
       const userId = getEffectiveOwnerId((req as any).currentUser);
@@ -20172,12 +20246,12 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(400).json({ message: "City and state are required" });
       }
 
-      const baseGeo = await geocodeAddress(`${baseCity}, ${baseState}`);
+      const baseGeo = await geocodeDirectoryCityWithCache(baseCity, baseState);
       if (!baseGeo) {
         return res.json({ city: baseCity, state: baseState, nearbyCities: [] });
       }
 
-      const candidates = await db
+      const profileCandidates = await db
         .select({
           city: directoryProfiles.city,
           state: directoryProfiles.state,
@@ -20186,41 +20260,118 @@ This booking was created on ${new Date().toLocaleString()}.
         })
         .from(directoryProfiles)
         .where(and(
-          eq(directoryProfiles.state, baseState),
           eq(directoryProfiles.isActive, true),
           eq(directoryProfiles.showOnDirectory, true),
           eq(directoryProfiles.status, "approved")
         ));
 
-      const cityDistanceMap = new Map<string, { city: string; state: string; distanceMiles: number }>();
-      const baseCityKey = baseCity.trim().toLowerCase();
-      const baseStateKey = baseState.toLowerCase();
+      const cachedIndexCities = await db
+        .selectDistinct({
+          city: directoryIndexCache.city,
+          state: directoryIndexCache.state,
+        })
+        .from(directoryIndexCache);
 
-      for (const candidate of candidates) {
-        const city = (candidate.city || "").trim();
-        const state = (candidate.state || "").trim();
-        if (!city || !state) continue;
-        if (!candidate.latitude || !candidate.longitude) continue;
+      const parseCoordinate = (value: string | null | undefined): number | null => {
+        if (value === null || value === undefined) return null;
+        const parsed = Number.parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : null;
+      };
 
-        if (city.toLowerCase() === baseCityKey && state.toLowerCase() === baseStateKey) {
-          continue;
+      const candidateMap = new Map<string, { city: string; state: string; latitude: number | null; longitude: number | null }>();
+      const upsertCandidate = (candidate: { city: string; state: string; latitude?: number | null; longitude?: number | null }) => {
+        const city = candidate.city.trim();
+        const state = candidate.state.trim().toUpperCase();
+        if (!city || !state) return;
+
+        const key = getDirectoryCityStateKey(city, state);
+        const existing = candidateMap.get(key);
+
+        const nextLat = candidate.latitude ?? null;
+        const nextLng = candidate.longitude ?? null;
+
+        if (!existing) {
+          candidateMap.set(key, {
+            city,
+            state,
+            latitude: nextLat,
+            longitude: nextLng,
+          });
+          return;
         }
 
-        const lat = parseFloat(candidate.latitude);
-        const lng = parseFloat(candidate.longitude);
-        if (Number.isNaN(lat) || Number.isNaN(lng)) continue;
+        if ((existing.latitude === null || existing.longitude === null) && nextLat !== null && nextLng !== null) {
+          candidateMap.set(key, {
+            city,
+            state,
+            latitude: nextLat,
+            longitude: nextLng,
+          });
+        }
+      };
 
-        const distanceMiles = calculateDistance(baseGeo.latitude, baseGeo.longitude, lat, lng);
-        const key = `${city}|${state}`.toLowerCase();
-        const existing = cityDistanceMap.get(key);
-        if (!existing || distanceMiles < existing.distanceMiles) {
-          cityDistanceMap.set(key, { city, state, distanceMiles });
+      for (const candidate of profileCandidates) {
+        upsertCandidate({
+          city: candidate.city || "",
+          state: candidate.state || "",
+          latitude: parseCoordinate(candidate.latitude),
+          longitude: parseCoordinate(candidate.longitude),
+        });
+      }
+
+      for (const cachedCity of cachedIndexCities) {
+        upsertCandidate({
+          city: cachedCity.city || "",
+          state: cachedCity.state || "",
+        });
+      }
+
+      const baseKey = getDirectoryCityStateKey(baseCity, baseState);
+      candidateMap.delete(baseKey);
+
+      const resolvedCities: Array<{ city: string; state: string; distanceMiles: number }> = [];
+      const unresolvedCities: Array<{ city: string; state: string }> = [];
+
+      for (const candidate of candidateMap.values()) {
+        if (candidate.latitude !== null && candidate.longitude !== null) {
+          resolvedCities.push({
+            city: candidate.city,
+            state: candidate.state,
+            distanceMiles: calculateDistance(
+              baseGeo.latitude,
+              baseGeo.longitude,
+              candidate.latitude,
+              candidate.longitude,
+            ),
+          });
+        } else {
+          unresolvedCities.push({ city: candidate.city, state: candidate.state });
         }
       }
 
-      const nearbyCities = Array.from(cityDistanceMap.values())
+      unresolvedCities.sort((a, b) => {
+        const aSameState = a.state === baseState ? 1 : 0;
+        const bSameState = b.state === baseState ? 1 : 0;
+        if (aSameState !== bSameState) {
+          return bSameState - aSameState;
+        }
+        return a.city.localeCompare(b.city);
+      });
+
+      for (const candidate of unresolvedCities.slice(0, DIRECTORY_NEARBY_CITY_MAX_GEOCODE_ATTEMPTS)) {
+        const geo = await geocodeDirectoryCityWithCache(candidate.city, candidate.state);
+        if (!geo) continue;
+
+        resolvedCities.push({
+          city: candidate.city,
+          state: candidate.state,
+          distanceMiles: calculateDistance(baseGeo.latitude, baseGeo.longitude, geo.latitude, geo.longitude),
+        });
+      }
+
+      const nearbyCities = resolvedCities
         .sort((a, b) => a.distanceMiles - b.distanceMiles || a.city.localeCompare(b.city))
-        .slice(0, 5);
+        .slice(0, DIRECTORY_NEARBY_CITY_AUTOFILL_LIMIT);
 
       res.json({
         city: baseCity,

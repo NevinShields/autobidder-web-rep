@@ -118,6 +118,28 @@ export interface SectionRegenerateInput {
   context?: string;
 }
 
+function collectJobSpecificFacts(input: BlogGenerationInput): string[] {
+  const mergedNotes = [input.jobData?.notes, input.jobNotes]
+    .map((value) => (typeof value === "string" ? value.trim() : ""))
+    .filter(Boolean)
+    .join("\n");
+
+  if (!mergedNotes) return [];
+
+  const seen = new Set<string>();
+  const facts: string[] = [];
+  for (const rawFact of splitGuidanceNotes(mergedNotes)) {
+    const fact = String(rawFact || "").trim();
+    if (!fact) continue;
+    const normalized = normalizeGuidanceText(fact);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    facts.push(fact);
+  }
+
+  return facts.slice(0, 10);
+}
+
 // Blog generation system prompt
 function getBlogSystemPrompt(input: BlogGenerationInput): string {
   const primaryKeyword = (input.targetKeyword || input.serviceName || "").trim();
@@ -139,6 +161,7 @@ function getBlogSystemPrompt(input: BlogGenerationInput): string {
     educate: "educating potential customers about the service",
     convert: "converting readers into leads with strong calls to action"
   };
+  const jobSpecificFacts = collectJobSpecificFacts(input);
 
 return `You are an expert SEO content writer specializing in local service businesses.
 Create ${blogTypeDescriptions[input.blogType] || "a blog post"} for a ${input.serviceName} business.
@@ -167,10 +190,16 @@ USER NOTES AND CONSTRAINTS (HIGHEST PRIORITY):
 ${input.jobNotes.trim()}
 ` : ""}
 
+${jobSpecificFacts.length > 0 ? `
+JOB-SPECIFIC FACTS TO INCLUDE IN THE DRAFT (MANDATORY):
+${jobSpecificFacts.map((fact, index) => `${index + 1}. ${fact}`).join("\n")}
+` : ""}
+
 ${input.images && input.images.length > 0 ? `
 IMAGES PROVIDED BY THE USER — embed these in the content using the exact placeholder format {{IMAGE:<type>}}:
 ${input.images.map(img => `- {{IMAGE:${img.imageType}}} — "${img.caption || img.imageType + ' image'}"`).join("\n")}
 Place these image placeholders in appropriate locations within the content. For example, place {{IMAGE:hero}} near the top, {{IMAGE:before}} in the before section, {{IMAGE:after}} in the after section, etc.
+If multiple before/after images are uploaded, include multiple {{IMAGE:before}} and {{IMAGE:after}} placeholders in order so each set appears in the draft.
 Use every provided image placeholder at least once. Do not omit uploaded images.
 ` : ""}
 
@@ -195,6 +224,8 @@ GUIDANCE ADHERENCE REQUIREMENTS:
 1. Treat USER NOTES AND CONSTRAINTS as factual project context. Do not ignore, contradict, or replace them with generic filler.
 2. Cover every MANDATORY TALKING POINT explicitly in the written content.
 3. When details are uncertain, keep claims conservative and aligned with user-provided notes.
+4. If JOB-SPECIFIC FACTS are provided, weave every fact into relevant sections (or very close paraphrases) and avoid generic filler.
+5. For job_showcase posts, make the before/after and process details concrete and project-specific.
 
 SEO REQUIREMENTS:
 1. Include the target city/location naturally throughout the content (2-4 times)
@@ -655,6 +686,13 @@ function buildGuidanceItems(input: BlogGenerationInput): string[] {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     items.push(cleaned);
+  }
+
+  for (const noteLine of splitGuidanceNotes(input.jobData?.notes)) {
+    const key = normalizeGuidanceText(noteLine);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    items.push(noteLine);
   }
 
   for (const noteLine of splitGuidanceNotes(input.jobNotes)) {

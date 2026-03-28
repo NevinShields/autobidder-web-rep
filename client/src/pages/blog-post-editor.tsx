@@ -180,6 +180,10 @@ export default function BlogPostEditorPage() {
   const [photoLibraryOpen, setPhotoLibraryOpen] = useState(false);
   const [photoLibraryMode, setPhotoLibraryMode] = useState<"blog" | "featured">("blog");
   const [photoLibrarySearch, setPhotoLibrarySearch] = useState("");
+  const beforeSetInputRef = useRef<HTMLInputElement | null>(null);
+  const afterSetInputRef = useRef<HTMLInputElement | null>(null);
+  const [pendingBeforeSetFiles, setPendingBeforeSetFiles] = useState<File[]>([]);
+  const [pendingAfterSetFiles, setPendingAfterSetFiles] = useState<File[]>([]);
 
   // Fetch existing post if editing
   const { data: existingPost, isLoading: isLoadingPost } = useQuery<BlogPost & { sectionLocks: any[]; images?: any[] }>({
@@ -383,10 +387,6 @@ export default function BlogPostEditorPage() {
         return nextTalkingPoints;
       });
 
-      setJobNotes((prev) => {
-        if (prev.trim().length > 0 || !data.contextSummary) return prev;
-        return data.contextSummary;
-      });
     },
     onError: () => {
       lastSuggestionKeyRef.current = "";
@@ -429,7 +429,7 @@ export default function BlogPostEditorPage() {
         goal,
         tonePreference,
         workOrderId,
-        jobNotes: jobNotes.trim(),
+        jobNotes: combinedJobNotes || undefined,
         layoutTemplateId: selectedTemplate?.id > 0 ? selectedTemplate.id : null,
         talkingPoints: talkingPoints.filter(p => p.trim()),
         layoutTemplate: selectedTemplate?.sections || [],
@@ -707,59 +707,119 @@ export default function BlogPostEditorPage() {
     }
   };
 
+  const uploadSingleImage = async (
+    file: File,
+    options?: {
+      imageType?: string;
+      imageStyle?: "default" | "rounded" | "rounded_shadow";
+      caption?: string;
+    }
+  ) => {
+    const imageType = options?.imageType || "hero";
+    const imageStyle = options?.imageStyle || "default";
+    const caption = options?.caption || "";
+    const preview = URL.createObjectURL(file);
+    let insertIndex = -1;
+
+    setUploadedImages((prev) => {
+      insertIndex = prev.length;
+      return [...prev, {
+        preview,
+        imageType,
+        imageStyle,
+        caption,
+        uploading: true,
+      }];
+    });
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("imageType", imageType);
+    formData.append("imageStyle", imageStyle);
+    formData.append("caption", caption);
+    if (postId) {
+      formData.append("blogPostId", postId);
+    }
+
+    try {
+      const response = await fetch("/api/blog-images/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Upload failed");
+
+      const result = await response.json();
+      setUploadedImages((prev) => prev.map((img, idx) =>
+        idx === insertIndex
+          ? {
+              ...img,
+              id: result.id,
+              url: result.processedUrl || result.originalUrl,
+              preview: result.processedUrl || result.originalUrl || img.preview,
+              imageStyle: (result.imageStyle || img.imageStyle || "default") as "default" | "rounded" | "rounded_shadow",
+              uploading: false,
+            }
+          : img
+      ));
+    } catch (error) {
+      URL.revokeObjectURL(preview);
+      setUploadedImages((prev) => prev.filter((_, idx) => idx !== insertIndex));
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleImageUpload = async (files: FileList | null) => {
     if (!files) return;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const preview = URL.createObjectURL(file);
-      const currentLength = uploadedImages.length + i;
-
-      setUploadedImages(prev => [...prev, {
-        preview,
-        imageType: 'hero',
+    for (const file of Array.from(files)) {
+      await uploadSingleImage(file, {
+        imageType: "hero",
         imageStyle: "default",
-        caption: '',
-        uploading: true,
-      }]);
+        caption: "",
+      });
+    }
+  };
 
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('imageType', 'hero');
-      formData.append('imageStyle', 'default');
-      formData.append('caption', '');
-      if (postId) {
-        formData.append('blogPostId', postId);
+  const handleBeforeAfterSetUpload = async () => {
+    if (pendingBeforeSetFiles.length === 0 && pendingAfterSetFiles.length === 0) return;
+
+    if (pendingBeforeSetFiles.length !== pendingAfterSetFiles.length) {
+      toast({
+        title: "Before/After count mismatch",
+        description: "Uploading available images in order. For clean sets, select matching before and after counts.",
+      });
+    }
+
+    const pairCount = Math.max(pendingBeforeSetFiles.length, pendingAfterSetFiles.length);
+    for (let i = 0; i < pairCount; i++) {
+      const beforeFile = pendingBeforeSetFiles[i];
+      const afterFile = pendingAfterSetFiles[i];
+
+      if (beforeFile) {
+        await uploadSingleImage(beforeFile, {
+          imageType: "before",
+          imageStyle: "default",
+          caption: `Before photo set ${i + 1}`,
+        });
       }
 
-      try {
-        const response = await fetch("/api/blog-images/upload", {
-          method: "POST",
-          body: formData,
-          credentials: "include",
-        });
-        if (!response.ok) throw new Error('Upload failed');
-        const result = await response.json();
-        setUploadedImages(prev => prev.map((img, idx) =>
-          idx === currentLength
-            ? {
-                ...img,
-                id: result.id,
-                url: result.processedUrl || result.originalUrl,
-                preview: result.processedUrl || result.originalUrl || img.preview,
-                imageStyle: (result.imageStyle || img.imageStyle || "default") as "default" | "rounded" | "rounded_shadow",
-                uploading: false
-              }
-            : img
-        ));
-      } catch (err) {
-        setUploadedImages(prev => prev.filter((_, idx) => idx !== currentLength));
-        toast({
-          title: "Upload Failed",
-          description: "Failed to upload image",
-          variant: "destructive",
+      if (afterFile) {
+        await uploadSingleImage(afterFile, {
+          imageType: "after",
+          imageStyle: "default",
+          caption: `After photo set ${i + 1}`,
         });
       }
     }
+
+    setPendingBeforeSetFiles([]);
+    setPendingAfterSetFiles([]);
+    if (beforeSetInputRef.current) beforeSetInputRef.current.value = "";
+    if (afterSetInputRef.current) afterSetInputRef.current.value = "";
   };
 
   const removeUploadedImage = (index: number) => {
@@ -1096,8 +1156,8 @@ export default function BlogPostEditorPage() {
                 {BLOG_TYPES.map(type => (
                   <Label
                     key={type.value}
-                    className={`flex items-start gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
-                      blogType === type.value ? 'border-amber-500 bg-amber-50/70' : 'hover:border-amber-300'
+                    className={`flex items-start gap-4 p-4 border dark:border-slate-700 rounded-lg cursor-pointer transition-colors ${
+                      blogType === type.value ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30' : 'hover:border-amber-300 dark:hover:border-amber-700'
                     }`}
                   >
                     <RadioGroupItem value={type.value} className="mt-1" />
@@ -1106,7 +1166,7 @@ export default function BlogPostEditorPage() {
                         <type.icon className="h-5 w-5 text-amber-600" />
                         <span className="font-medium">{type.label}</span>
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">{type.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">{type.description}</p>
                     </div>
                   </Label>
                 ))}
@@ -1122,7 +1182,7 @@ export default function BlogPostEditorPage() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Blog Strategy</h2>
-                  <p className="text-sm text-gray-500">Choose any target keyword, then let AI suggest talking points and context.</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Choose any target keyword, then let AI suggest talking points and context.</p>
                 </div>
                 <Button
                   variant="outline"
@@ -1146,7 +1206,7 @@ export default function BlogPostEditorPage() {
                     onChange={e => setTargetKeyword(e.target.value)}
                     placeholder="e.g., roof cleaning cost philadelphia"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Use any keyword phrase, not just a service in your account.</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Use any keyword phrase, not just a service in your account.</p>
                 </div>
                 <div>
                   <Label>Related Service (Optional)</Label>
@@ -1201,14 +1261,14 @@ export default function BlogPostEditorPage() {
                   {GOALS.map(g => (
                     <Label
                       key={g.value}
-                      className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer ${
-                        goal === g.value ? 'border-amber-500 bg-amber-50/70' : 'hover:border-amber-300'
+                      className={`flex items-center gap-3 p-3 border dark:border-slate-700 rounded-lg cursor-pointer ${
+                        goal === g.value ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30' : 'hover:border-amber-300 dark:hover:border-amber-700'
                       }`}
                     >
                       <RadioGroupItem value={g.value} />
                       <div>
                         <span className="font-medium text-sm">{g.label}</span>
-                        <p className="text-xs text-gray-500">{g.description}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">{g.description}</p>
                       </div>
                     </Label>
                   ))}
@@ -1216,16 +1276,16 @@ export default function BlogPostEditorPage() {
               </div>
 
               {(suggestedTalkingPoints.length > 0 || suggestedAngles.length > 0 || suggestedContext) && (
-                <Card className="bg-amber-50/70 border-amber-100">
+                <Card className="bg-amber-50/70 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40">
                   <CardContent className="pt-5 space-y-4">
-                    <div className="flex items-center gap-2 text-amber-700">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
                       <Sparkles className="h-4 w-4" />
                       <span className="font-medium text-sm">AI Suggestions</span>
                     </div>
 
                     {suggestedTalkingPoints.length > 0 && (
                       <div>
-                        <Label className="text-xs uppercase tracking-wide text-gray-600">Suggested Talking Points</Label>
+                        <Label className="text-xs uppercase tracking-wide text-gray-600 dark:text-slate-300">Suggested Talking Points</Label>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {suggestedTalkingPoints.map((point, idx) => (
                             <Button
@@ -1250,15 +1310,24 @@ export default function BlogPostEditorPage() {
 
                     {suggestedContext && (
                       <div>
-                        <Label className="text-xs uppercase tracking-wide text-gray-600">Suggested Context</Label>
-                        <p className="text-sm text-gray-700 mt-1">{suggestedContext}</p>
+                        <Label className="text-xs uppercase tracking-wide text-gray-600 dark:text-slate-300">Suggested Context</Label>
+                        <p className="text-sm text-gray-700 dark:text-slate-300 mt-1">{suggestedContext}</p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setJobNotes((prev) => prev.trim().length > 0 ? `${prev}\n\n${suggestedContext}` : suggestedContext)}
+                        >
+                          Use Suggested Context in Notes
+                        </Button>
                       </div>
                     )}
 
                     {suggestedAngles.length > 0 && (
                       <div>
-                        <Label className="text-xs uppercase tracking-wide text-gray-600">Suggested Angles</Label>
-                        <ul className="mt-1 space-y-1 text-sm text-gray-700">
+                        <Label className="text-xs uppercase tracking-wide text-gray-600 dark:text-slate-300">Suggested Angles</Label>
+                        <ul className="mt-1 space-y-1 text-sm text-gray-700 dark:text-slate-300">
                           {suggestedAngles.map((angle, idx) => (
                             <li key={`${angle}-${idx}`}>• {angle}</li>
                           ))}
@@ -1272,7 +1341,7 @@ export default function BlogPostEditorPage() {
 
             <div className="space-y-6">
               <h3 className="text-lg font-semibold">Content Inputs</h3>
-              <p className="text-sm text-gray-500">Add context that helps the model produce stronger sections with less editing.</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">Add context that helps the model produce stronger sections with less editing.</p>
 
               {blogType === "job_showcase" && workOrders.length > 0 && (
                 <div>
@@ -1328,7 +1397,7 @@ export default function BlogPostEditorPage() {
 
               <div>
                 <Label className="mb-2 block">Upload Images for AI Placement</Label>
-                <p className="text-sm text-gray-500 mb-3">
+                <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">
                   Upload images and tag them so the AI can place them in the right sections of your blog post.
                 </p>
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -1343,8 +1412,58 @@ export default function BlogPostEditorPage() {
                   </Button>
                 </div>
 
+                {blogType === "job_showcase" && (
+                  <div className="mb-3 rounded-lg border border-amber-200/70 bg-amber-50/40 dark:bg-amber-950/20 p-3 space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => beforeSetInputRef.current?.click()}
+                      >
+                        Select Before ({pendingBeforeSetFiles.length})
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => afterSetInputRef.current?.click()}
+                      >
+                        Select After ({pendingAfterSetFiles.length})
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleBeforeAfterSetUpload}
+                        disabled={pendingBeforeSetFiles.length === 0 && pendingAfterSetFiles.length === 0}
+                      >
+                        Upload Before/After Set
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      Use matching before and after selections to upload paired image sets in order.
+                    </p>
+                    <input
+                      ref={beforeSetInputRef}
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => setPendingBeforeSetFiles(Array.from(e.target.files || []))}
+                    />
+                    <input
+                      ref={afterSetInputRef}
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => setPendingAfterSetFiles(Array.from(e.target.files || []))}
+                    />
+                  </div>
+                )}
+
                 <div
-                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-amber-400 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center hover:border-amber-400 transition-colors cursor-pointer"
                   onClick={() => document.getElementById('blog-image-upload')?.click()}
                   onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
                   onDrop={e => {
@@ -1353,9 +1472,9 @@ export default function BlogPostEditorPage() {
                     handleImageUpload(e.dataTransfer.files);
                   }}
                 >
-                  <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Drag & drop images here, or click to browse</p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP (max 5MB each)</p>
+                  <Upload className="h-8 w-8 mx-auto text-gray-400 dark:text-slate-400 mb-2" />
+                  <p className="text-sm text-gray-600 dark:text-slate-300">Drag & drop images here, or click to browse</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-400 mt-1">JPG, PNG, or WebP (max 5MB each)</p>
                   <input
                     id="blog-image-upload"
                     type="file"
@@ -1369,11 +1488,11 @@ export default function BlogPostEditorPage() {
                 {uploadedImages.length > 0 && (
                   <div className="space-y-3 mt-4">
                     {uploadedImages.map((img, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 border rounded-lg bg-gray-50">
-                        <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-gray-200">
+                      <div key={index} className="flex items-start gap-3 p-3 border dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/60">
+                        <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-slate-700">
                           {img.uploading ? (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                              <Loader2 className="h-5 w-5 animate-spin text-gray-400 dark:text-slate-400" />
                             </div>
                           ) : (
                             <img src={img.preview} alt="" className="w-full h-full object-cover" />
@@ -1432,7 +1551,7 @@ export default function BlogPostEditorPage() {
 
               <div className="space-y-4">
                 <h4 className="text-base font-semibold">SEO Linking and Media</h4>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Add internal links and supporting media so the blog can reinforce topical authority and on-site SEO.
                 </p>
 
@@ -1468,7 +1587,7 @@ export default function BlogPostEditorPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700">
                         <VideoIcon className="h-3 w-3" />
                       </span>
                       Video URL (Optional)
@@ -1481,7 +1600,7 @@ export default function BlogPostEditorPage() {
                   </div>
                   <div>
                     <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700">
                         <FaFacebookF className="h-2.5 w-2.5" />
                       </span>
                       Facebook Post URL (Optional)
@@ -1494,7 +1613,7 @@ export default function BlogPostEditorPage() {
                   </div>
                   <div>
                     <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
                         <FaGoogle className="h-2.5 w-2.5" />
                       </span>
                       Google Business Post URL (Optional)
@@ -1519,7 +1638,7 @@ export default function BlogPostEditorPage() {
                     className={`cursor-pointer transition-all ${
                       selectedTemplate?.id === template.id
                         ? 'ring-2 ring-amber-500 border-amber-500'
-                        : 'hover:border-amber-300'
+                        : 'hover:border-amber-300 dark:hover:border-amber-700'
                     }`}
                     onClick={() => {
                       setSelectedTemplate(template);
@@ -1541,7 +1660,7 @@ export default function BlogPostEditorPage() {
                       <div className="space-y-1">
                         {(template.sections as any[])?.map((section, i) => (
                           <div key={i} className="text-sm flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${section.required ? 'bg-amber-600' : 'bg-gray-300'}`} />
+                            <div className={`w-2 h-2 rounded-full ${section.required ? 'bg-amber-600' : 'bg-gray-300 dark:bg-slate-700'}`} />
                             <span>{section.label}</span>
                             {section.required && <Badge variant="outline" className="text-xs">Required</Badge>}
                           </div>
@@ -1606,7 +1725,7 @@ export default function BlogPostEditorPage() {
                           {lockedSections.has(section.id) ? (
                             <Lock className="h-4 w-4 text-orange-500" />
                           ) : (
-                            <Unlock className="h-4 w-4 text-gray-400" />
+                            <Unlock className="h-4 w-4 text-gray-400 dark:text-slate-400" />
                           )}
                           <span className="capitalize">{section.type.replace(/_/g, " ")}</span>
                         </div>
@@ -1660,7 +1779,7 @@ export default function BlogPostEditorPage() {
                     placeholder="SEO title (50-60 characters)"
                     maxLength={70}
                   />
-                  <p className="text-xs text-gray-500 mt-1">{metaTitle.length}/60 characters</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{metaTitle.length}/60 characters</p>
                 </div>
 
                 <div>
@@ -1672,7 +1791,7 @@ export default function BlogPostEditorPage() {
                     maxLength={170}
                     rows={3}
                   />
-                  <p className="text-xs text-gray-500 mt-1">{metaDescription.length}/160 characters</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{metaDescription.length}/160 characters</p>
                 </div>
 
                 <div>
@@ -1715,7 +1834,7 @@ export default function BlogPostEditorPage() {
                         ) : (
                           <XCircle className="h-5 w-5 text-red-500" />
                         )}
-                        <span className={item.isPassed ? 'text-gray-700' : 'text-red-700'}>
+                        <span className={item.isPassed ? 'text-gray-700 dark:text-slate-300' : 'text-red-700'}>
                           {item.label}
                         </span>
                       </div>
@@ -1730,12 +1849,12 @@ export default function BlogPostEditorPage() {
                 <CardTitle>Preview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="border rounded-lg p-4 bg-white">
+                <div className="border dark:border-slate-700 rounded-lg p-4 bg-white dark:bg-slate-900">
                   <div className="text-amber-600 text-sm truncate">{targetCity} | Your Business</div>
                   <div className="text-lg font-medium text-amber-800 hover:underline cursor-pointer truncate">
                     {metaTitle || title}
                   </div>
-                  <div className="text-sm text-gray-600 line-clamp-2">
+                  <div className="text-sm text-gray-600 dark:text-slate-300 line-clamp-2">
                     {metaDescription || excerpt}
                   </div>
                 </div>
@@ -1771,18 +1890,18 @@ export default function BlogPostEditorPage() {
               <div>
                 <Label className="mb-2 block">Featured Image</Label>
                 <div
-                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-amber-400 transition-colors cursor-pointer"
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center hover:border-amber-400 transition-colors cursor-pointer"
                   onClick={() => document.getElementById("featured-image-upload")?.click()}
                 >
                   {featuredImageUploading ? (
-                    <Loader2 className="h-8 w-8 mx-auto text-gray-400 mb-2 animate-spin" />
+                    <Loader2 className="h-8 w-8 mx-auto text-gray-400 dark:text-slate-400 mb-2 animate-spin" />
                   ) : (
-                    <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                    <Upload className="h-8 w-8 mx-auto text-gray-400 dark:text-slate-400 mb-2" />
                   )}
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-slate-300">
                     {featuredImageUploading ? "Uploading..." : "Click to upload a featured image"}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">JPG, PNG, or WebP (max 5MB)</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-400 mt-1">JPG, PNG, or WebP (max 5MB)</p>
                   <input
                     id="featured-image-upload"
                     type="file"
@@ -1804,15 +1923,15 @@ export default function BlogPostEditorPage() {
                 </div>
 
                 {featuredImageUrl && (
-                  <div className="mt-3 border rounded-lg p-3 bg-gray-50 flex items-center gap-3">
+                  <div className="mt-3 border dark:border-slate-700 rounded-lg p-3 bg-gray-50 dark:bg-slate-900/60 flex items-center gap-3">
                     <img
                       src={featuredImageUrl}
                       alt="Featured preview"
-                      className="w-20 h-20 object-cover rounded border bg-white"
+                      className="w-20 h-20 object-cover rounded border dark:border-slate-700 bg-white dark:bg-slate-900"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">Featured image selected</p>
-                      <p className="text-xs text-gray-500 truncate">{featuredImageUrl}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{featuredImageUrl}</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -1826,17 +1945,17 @@ export default function BlogPostEditorPage() {
                 )}
               </div>
 
-              <div className="space-y-4 pt-2 border-t">
+              <div className="space-y-4 pt-2 border-t dark:border-slate-700">
                 <h3 className="text-base font-semibold">CTA Controls</h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Configure a global CTA destination and optionally override it for this post.
                 </p>
 
-                <div className="rounded-lg border p-4 bg-gray-50 space-y-3">
+                <div className="rounded-lg border dark:border-slate-700 p-4 bg-gray-50 dark:bg-slate-900/60 space-y-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-medium">Global CTA Enabled</p>
-                      <p className="text-xs text-gray-500">Used by posts that keep global defaults enabled.</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">Used by posts that keep global defaults enabled.</p>
                     </div>
                     <Switch
                       checked={globalCtaEnabled}
@@ -1863,11 +1982,11 @@ export default function BlogPostEditorPage() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border p-4 space-y-3">
+                <div className="rounded-lg border dark:border-slate-700 p-4 space-y-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-medium">Use Global CTA Settings</p>
-                      <p className="text-xs text-gray-500">Turn off to override CTA behavior for this post only.</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">Turn off to override CTA behavior for this post only.</p>
                     </div>
                     <Switch
                       checked={useGlobalCtaSettings}
@@ -1897,15 +2016,15 @@ export default function BlogPostEditorPage() {
                     </>
                   )}
 
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
                     Effective CTA: {effectiveCtaEnabled ? "Enabled" : "Disabled"}{effectiveCtaEnabled ? ` (${effectiveCtaUrl || "Uses section/default URL"})` : ""}
                   </p>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-2 border-t">
+              <div className="space-y-4 pt-2 border-t dark:border-slate-700">
                 <h3 className="text-base font-semibold">SEO Enhancements</h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   Add internal links and external proof assets to strengthen on-page SEO and user trust.
                 </p>
 
@@ -1941,7 +2060,7 @@ export default function BlogPostEditorPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 text-violet-700">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700">
                         <VideoIcon className="h-3 w-3" />
                       </span>
                       Video URL (Optional)
@@ -1954,7 +2073,7 @@ export default function BlogPostEditorPage() {
                   </div>
                   <div>
                     <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700">
                         <FaFacebookF className="h-2.5 w-2.5" />
                       </span>
                       Facebook Post URL (Optional)
@@ -1967,7 +2086,7 @@ export default function BlogPostEditorPage() {
                   </div>
                   <div>
                     <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
                         <FaGoogle className="h-2.5 w-2.5" />
                       </span>
                       Google Business Post URL (Optional)
@@ -2117,7 +2236,7 @@ export default function BlogPostEditorPage() {
         return (
           <div className="space-y-4">
             {faqQuestions.map((q: any, i: number) => (
-              <div key={i} className="border rounded p-3 space-y-2">
+              <div key={i} className="border dark:border-slate-700 rounded p-3 space-y-2">
                 <div>
                   <Label>Question {i + 1}</Label>
                   <Input
@@ -2210,6 +2329,12 @@ export default function BlogPostEditorPage() {
             radial-gradient(circle at 100% 0%, rgba(234, 88, 12, 0.09) 0%, transparent 32%),
             linear-gradient(180deg, #fffef9 0%, #ffffff 28%, #ffffff 100%);
         }
+        .dark .blog-editor-grain {
+          background:
+            radial-gradient(circle at 0% 0%, rgba(245, 158, 11, 0.16) 0%, transparent 38%),
+            radial-gradient(circle at 100% 0%, rgba(234, 88, 12, 0.12) 0%, transparent 34%),
+            linear-gradient(180deg, #020617 0%, #0b1220 24%, #020617 100%);
+        }
         .blog-editor-grain::before {
           content: "";
           position: absolute;
@@ -2219,20 +2344,24 @@ export default function BlogPostEditorPage() {
           background-size: 4px 4px;
           opacity: 0.32;
         }
+        .dark .blog-editor-grain::before {
+          background-image: radial-gradient(rgba(148, 163, 184, 0.14) 0.7px, transparent 0.7px);
+          opacity: 0.22;
+        }
       `}</style>
-      <div className="blog-editor-grain relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <div className="blog-editor-grain relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-slate-900 dark:text-slate-100" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         {/* Page Header */}
-        <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 via-white to-orange-50 p-5 sm:p-6">
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-2xl border border-amber-200/60 dark:border-amber-900/50 bg-gradient-to-r from-amber-50 via-white to-orange-50 dark:from-amber-950/40 dark:via-slate-900/85 dark:to-orange-950/30 p-5 sm:p-6">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-amber-600/80 font-semibold mb-1">Content Studio</p>
-            <h1 className="text-3xl text-gray-900 leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
+            <h1 className="text-3xl text-gray-900 dark:text-slate-100 leading-tight" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
               {isEditing ? "Edit Blog Post" : "Create Blog Post"}
             </h1>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
               {isEditing ? title : "Generate SEO-optimized content for your website"}
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate("/blog-posts")} className="border-amber-200 hover:bg-amber-50">
+          <Button variant="outline" onClick={() => navigate("/blog-posts")} className="border-amber-200 dark:border-amber-800/60 hover:bg-amber-50 dark:hover:bg-amber-950/30">
             Back to Blog Posts
           </Button>
         </div>
@@ -2244,7 +2373,7 @@ export default function BlogPostEditorPage() {
             <div
               key={step.id}
               className={`flex items-center gap-2 cursor-pointer ${
-                index <= currentStep ? 'text-amber-700' : 'text-gray-400'
+                index <= currentStep ? 'text-amber-700 dark:text-amber-300' : 'text-gray-400 dark:text-slate-400'
               }`}
               onClick={() => index < currentStep && setCurrentStep(index)}
             >
@@ -2252,8 +2381,8 @@ export default function BlogPostEditorPage() {
                 index === currentStep
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/30'
                   : index < currentStep
-                  ? 'bg-amber-100 text-amber-700'
-                  : 'bg-gray-100'
+                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                  : 'bg-gray-100 dark:bg-slate-800 dark:text-slate-400'
               }`}>
                 {index < currentStep ? (
                   <CheckCircle className="h-5 w-5" />
@@ -2265,17 +2394,17 @@ export default function BlogPostEditorPage() {
             </div>
           ))}
         </div>
-        <Progress value={((currentStep + 1) / WIZARD_STEPS.length) * 100} className="h-1 bg-slate-200 [&>div]:bg-gradient-to-r [&>div]:from-amber-500 [&>div]:to-orange-600" />
+        <Progress value={((currentStep + 1) / WIZARD_STEPS.length) * 100} className="h-1 bg-slate-200 dark:bg-slate-800 [&>div]:bg-gradient-to-r [&>div]:from-amber-500 [&>div]:to-orange-600" />
       </div>
 
       {/* Step content */}
-      <Card className="border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm">
+      <Card className="border-slate-200/70 dark:border-slate-800/90 bg-white/90 dark:bg-slate-950/80 backdrop-blur-sm shadow-sm">
         <CardContent className="pt-6">
           {generateMutation.isPending ? (
             <div className="flex flex-col items-center justify-center py-16">
               <Sparkles className="h-12 w-12 text-amber-600 animate-pulse mb-4" />
               <p className="text-lg font-medium">Generating your blog content...</p>
-              <p className="text-slate-500">This may take a moment</p>
+              <p className="text-slate-500 dark:text-slate-400">This may take a moment</p>
             </div>
           ) : (
             renderStepContent()
@@ -2284,15 +2413,15 @@ export default function BlogPostEditorPage() {
       </Card>
 
       <Dialog open={photoLibraryOpen} onOpenChange={setPhotoLibraryOpen}>
-        <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col dark:bg-slate-900 dark:border-slate-800">
           <DialogHeader>
-            <DialogTitle>Photo Library</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="dark:text-slate-100">Photo Library</DialogTitle>
+            <DialogDescription className="dark:text-slate-400">
               Choose from the same images available on the `/photos` page.
             </DialogDescription>
           </DialogHeader>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-400" />
             <Input
               value={photoLibrarySearch}
               onChange={(e) => setPhotoLibrarySearch(e.target.value)}
@@ -2302,19 +2431,19 @@ export default function BlogPostEditorPage() {
           </div>
           <div className="overflow-y-auto pr-1">
             {filteredPhotoLibraryImages.length === 0 ? (
-              <div className="border rounded-lg p-8 text-center text-sm text-gray-500">
+              <div className="border dark:border-slate-700 rounded-lg p-8 text-center text-sm text-gray-500 dark:text-slate-400">
                 No matching photos found.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredPhotoLibraryImages.map((img) => (
-                  <div key={img.key} className="border rounded-lg overflow-hidden bg-white">
-                    <div className="aspect-video bg-gray-100">
+                  <div key={img.key} className="border dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-900">
+                    <div className="aspect-video bg-gray-100 dark:bg-slate-800">
                       <img src={img.url} alt={img.title} className="w-full h-full object-cover" />
                     </div>
                     <div className="p-3 space-y-2">
                       <p className="text-sm font-medium truncate">{img.title}</p>
-                      <p className="text-xs text-gray-500 truncate">{img.subtitle}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{img.subtitle}</p>
                       <Button
                         type="button"
                         size="sm"

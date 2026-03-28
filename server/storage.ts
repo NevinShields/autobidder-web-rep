@@ -3489,7 +3489,7 @@ export class DatabaseStorage implements IStorage {
   async getDudaTemplateMetadataByTags(tagIds: number[]): Promise<DudaTemplateMetadata[]> {
     if (tagIds.length === 0) return [];
     
-    const templates = await db.select({
+    const templates = await db.selectDistinct({
       id: dudaTemplateMetadata.id,
       templateId: dudaTemplateMetadata.templateId,
       templateName: dudaTemplateMetadata.templateName,

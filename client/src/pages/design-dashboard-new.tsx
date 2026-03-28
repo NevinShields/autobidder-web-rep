@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Eye, 
@@ -73,6 +74,96 @@ const formatCustomCSS = (value: string) => {
   let formatted = value.replace(/\}\s*(?=[.#a-zA-Z])/g, '}\n');
   formatted = formatted.replace(/;\s*(?=\})/g, ';\n');
   return formatted;
+};
+
+type AICssActionMode = 'generate' | 'external-prompt';
+
+const AUTOBIDDER_SELECTOR_GUIDE: Array<{ selector: string; description: string }> = [
+  { selector: '#autobidder-form.ab-form-container', description: 'Root wrapper for the full Autobidder form. Custom CSS is scoped to this element automatically.' },
+  { selector: '.ab-form-title', description: 'Primary heading for the form.' },
+  { selector: '.ab-form-subtitle', description: 'Supporting intro text below the form title.' },
+  { selector: '.ab-progress, .ab-progress-track, .ab-progress-fill, .ab-progress-label, .ab-progress-percentage', description: 'Progress bar wrapper, track, fill, and step/progress text.' },
+  { selector: '.ab-question-card', description: 'Card wrapper for a step/question block.' },
+  { selector: '.ab-question-label, .ab-label', description: 'Question and field labels.' },
+  { selector: '.ab-input, .ab-text-input, .ab-number-input, .ab-textarea, .ab-file-input', description: 'Standard text, number, textarea, and file input fields.' },
+  { selector: '.ab-select, .ab-dropdown, .ab-select-content', description: 'Dropdown/select trigger and dropdown menu content.' },
+  { selector: '.ab-checkbox', description: 'Checkbox inputs.' },
+  { selector: '.ab-slider, .ab-slider-value, .ab-slider-unit, .ab-slider-min, .ab-slider-max', description: 'Range slider control and its labels/values.' },
+  { selector: '.ab-multiple-choice, .ab-multiple-choice-label', description: 'Multiple-choice option cards and their labels.' },
+  { selector: '.ab-service-card, .ab-service-card.selected, .ab-service-title', description: 'Service selection cards, selected state, and service title text.' },
+  { selector: '.ab-service-accordion, .ab-service-accordion-text', description: 'Accordion-style service selector containers and text.' },
+  { selector: '.ab-button, .ab-button-primary', description: 'Primary action buttons such as continue, submit, and other calls to action.' },
+  { selector: '.ab-calendar-container', description: 'Calendar/date selection container.' },
+  { selector: '.ab-address-input-label, .ab-address-nav-button, .ab-address-back-button, .ab-address-skip-button', description: 'Address step labels and navigation buttons.' },
+  { selector: '.ab-pricing-card, .ab-pricing-card-title, .ab-pricing-card-description, .ab-pricing-card-price', description: 'Pricing card wrapper, title, description, and main price badge/value.' },
+  { selector: '.ab-pricing-card-bullet-icon, .ab-pricing-card-bullet-text', description: 'Feature bullets/icons inside pricing cards.' },
+  { selector: '.ab-pricing-summary-card, .ab-pricing-section-title, .ab-pricing-breakdown-title', description: 'Pricing summary and breakdown wrappers/titles.' },
+  { selector: '.ab-pricing-line-item-name, .ab-pricing-line-item-value, .ab-pricing-subtotal-label, .ab-pricing-subtotal-value, .ab-pricing-tax-label, .ab-pricing-tax-value, .ab-pricing-total-label, .ab-pricing-total-value', description: 'Line items, subtotal, tax, and total labels/values.' },
+  { selector: '.ab-pricing-disclaimer, .ab-pricing-disclaimer-label, .ab-pricing-disclaimer-text, .ab-pricing-cart-status', description: 'Pricing disclaimer/status areas.' },
+  { selector: '.ab-customer-summary, .ab-customer-summary-title, .ab-customer-summary-line', description: 'Customer summary card and summary rows.' },
+  { selector: '.ab-discount-section, .ab-discount-card, .ab-discount-title, .ab-discount-subtitle', description: 'Discount/promo section wrapper and headings.' },
+  { selector: '.ab-discount-line, .ab-discount-line-label, .ab-discount-line-value, .ab-discount-applied, .ab-discount-name, .ab-discount-percent', description: 'Discount rows and applied discount details.' },
+  { selector: '.ab-discount-savings, .ab-discount-savings-row, .ab-discount-savings-title, .ab-discount-savings-total, .ab-discount-savings-value', description: 'Savings summary panel for discounts.' },
+  { selector: '.ab-upsell-section, .ab-upsell-grid, .ab-upsell-card, .ab-upsell-card-selected', description: 'Upsell section, grid, cards, and selected card state.' },
+  { selector: '.ab-upsell-title, .ab-upsell-subtitle, .ab-upsell-heading, .ab-upsell-description, .ab-upsell-category', description: 'Upsell copy and category text.' },
+  { selector: '.ab-upsell-price, .ab-upsell-price-wrap, .ab-upsell-popular-badge, .ab-upsell-tooltip', description: 'Upsell pricing, badge, and tooltip elements.' },
+  { selector: '.ab-upsell-selected-summary, .ab-upsell-selected-row, .ab-upsell-selected-name, .ab-upsell-selected-price, .ab-upsell-selected-total', description: 'Selected upsell summary rows and totals.' },
+  { selector: '.ab-error', description: 'Validation or inline error messages.' },
+];
+
+const AUTOBIDDER_SELECTOR_INDEX = AUTOBIDDER_SELECTOR_GUIDE.map((item) => item.selector).join(', ');
+
+const buildExternalAICssPrompt = ({
+  request,
+  currentCSS,
+  styling,
+  componentStyles,
+}: {
+  request: string;
+  currentCSS: string;
+  styling: StylingOptions;
+  componentStyles: Record<string, unknown>;
+}) => {
+  const selectorGuide = AUTOBIDDER_SELECTOR_GUIDE
+    .map((item) => `- ${item.selector}: ${item.description}`)
+    .join('\n');
+
+  return [
+    'Write custom CSS for an Autobidder estimate form.',
+    '',
+    'Output requirements:',
+    '- Return CSS only.',
+    '- Do not return markdown fences, explanations, HTML, JavaScript, or JSON.',
+    '- Target Autobidder selectors only. Do not style body, html, or unrelated global selectors.',
+    '- Keep the CSS scoped to the form experience. The app automatically scopes selectors to #autobidder-form.',
+    '- .ab-form-container is the same root element as #autobidder-form.ab-form-container.',
+    '- Preserve existing interactions and accessibility states such as :hover, :focus, :disabled, and selected states when relevant.',
+    '',
+    'User request:',
+    request,
+    '',
+    'Autobidder form context:',
+    '- The form is a multi-step quote/estimate form used inside Autobidder.',
+    '- It includes a root container, form header, progress bar, question cards, service selectors, multiple-choice controls, dropdowns, text/number inputs, sliders, address step, calendar step, pricing cards, pricing summary, discounts, and upsells.',
+    '- Custom CSS should enhance the Autobidder UI without breaking layout, readability, selection states, or navigation.',
+    '',
+    'Important selector guide:',
+    selectorGuide,
+    '',
+    'Known Autobidder selectors in use:',
+    AUTOBIDDER_SELECTOR_INDEX,
+    '',
+    'Current editor styling settings JSON:',
+    JSON.stringify(styling, null, 2),
+    '',
+    'Current component styles JSON:',
+    JSON.stringify(componentStyles, null, 2),
+    '',
+    'Existing custom CSS:',
+    currentCSS.trim() || 'None yet.',
+    '',
+    'Write the final CSS now.',
+  ].join('\n');
 };
 
 type CssThemePreset = {
@@ -2807,6 +2898,8 @@ export default function DesignDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGeneratingCSS, setIsGeneratingCSS] = useState(false);
   const [aiCSSError, setAiCSSError] = useState('');
+  const [aiCssMode, setAiCssMode] = useState<AICssActionMode>('generate');
+  const [externalAIPrompt, setExternalAIPrompt] = useState('');
   const [isPreviewLabOpen, setIsPreviewLabOpen] = useState(false);
   const [isTargetedEditModalOpen, setIsTargetedEditModalOpen] = useState(false);
   const [hoveredPreviewTarget, setHoveredPreviewTarget] = useState<PreviewTarget | null>(null);
@@ -3063,6 +3156,39 @@ ${generateCSSVariables(styling)}
       cssHighlightRef.current.scrollLeft = cssInputRef.current.scrollLeft;
     }
   }, [customCSS]);
+
+  const handleCreateExternalAIPrompt = useCallback(async (description: string) => {
+    const prompt = buildExternalAICssPrompt({
+      request: description,
+      currentCSS: customCSS,
+      styling,
+      componentStyles: componentStyles as Record<string, unknown>,
+    });
+
+    setExternalAIPrompt(prompt);
+    setAiCSSError('');
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(prompt);
+        toast({
+          title: 'AI Prompt Ready',
+          description: 'The Autobidder CSS prompt has been copied to your clipboard and is shown below.',
+        });
+      } else {
+        toast({
+          title: 'AI Prompt Ready',
+          description: 'The Autobidder CSS prompt is shown below. Copy and paste it into your AI tool.',
+        });
+      }
+    } catch (error) {
+      console.error('Failed to copy external AI prompt:', error);
+      toast({
+        title: 'AI Prompt Ready',
+        description: 'The Autobidder CSS prompt is shown below. Copy and paste it into your AI tool.',
+      });
+    }
+  }, [componentStyles, customCSS, styling, toast]);
 
   // Handle AI CSS generation
   const handleGenerateCSS = useCallback(async (description: string) => {
@@ -5040,25 +5166,42 @@ ${generateCSSVariables(styling)}
                       </div>
 
                       {/* AI CSS Generation */}
-                      <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border border-purple-200 dark:border-purple-800 rounded-lg">
-                        <div className="flex items-center gap-2 mb-3">
+                      <div className="p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border border-purple-200 dark:border-purple-800 rounded-lg space-y-3">
+                        <div className="flex items-center gap-2">
                           <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                          <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-100">AI CSS Generator</h4>
+                          <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-100">AI CSS Tools</h4>
                           <Badge variant="secondary" className="text-xs">New ✨</Badge>
                         </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-                          Describe the design style you want and AI will generate custom CSS for you
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {aiCssMode === 'generate'
+                            ? 'Describe the design style you want and Autobidder AI will generate custom CSS for you.'
+                            : 'Build a copyable prompt for ChatGPT, Claude, Gemini, or another AI tool. The prompt includes Autobidder form structure, selector context, and your current styling/CSS.'}
                         </p>
-                        <div className="flex gap-2">
+                        <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)_auto]">
+                          <Select value={aiCssMode} onValueChange={(value) => setAiCssMode(value as AICssActionMode)}>
+                            <SelectTrigger className="text-sm" data-testid="select-ai-css-mode">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="generate">Generate CSS here</SelectItem>
+                              <SelectItem value="external-prompt">AI prompt</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <Input
-                            placeholder="e.g., Neumorphism, Glassmorphism, Dark mode with neon accents..."
+                            placeholder={aiCssMode === 'generate'
+                              ? 'e.g., Neumorphism, Glassmorphism, Dark mode with neon accents...'
+                              : 'e.g., Make the form feel like a premium SaaS checkout with softer cards and stronger button contrast...'}
                             className="text-sm flex-1"
                             data-testid="input-ai-css-description"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 const input = e.currentTarget as HTMLInputElement;
                                 if (input.value.trim()) {
-                                  handleGenerateCSS(input.value);
+                                  if (aiCssMode === 'external-prompt') {
+                                    void handleCreateExternalAIPrompt(input.value);
+                                  } else {
+                                    void handleGenerateCSS(input.value);
+                                  }
                                 }
                               }
                             }}
@@ -5068,7 +5211,11 @@ ${generateCSSVariables(styling)}
                             onClick={() => {
                               const input = document.querySelector('[data-testid="input-ai-css-description"]') as HTMLInputElement;
                               if (input?.value.trim()) {
-                                handleGenerateCSS(input.value);
+                                if (aiCssMode === 'external-prompt') {
+                                  void handleCreateExternalAIPrompt(input.value);
+                                } else {
+                                  void handleGenerateCSS(input.value);
+                                }
                               }
                             }}
                             disabled={isGeneratingCSS}
@@ -5079,6 +5226,11 @@ ${generateCSSVariables(styling)}
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Generating...
                               </>
+                            ) : aiCssMode === 'external-prompt' ? (
+                              <>
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Create Prompt
+                              </>
                             ) : (
                               <>
                                 <Sparkles className="h-4 w-4 mr-2" />
@@ -5088,7 +5240,47 @@ ${generateCSSVariables(styling)}
                           </Button>
                         </div>
                         {aiCSSError && (
-                          <p className="text-xs text-red-600 mt-2">{aiCSSError}</p>
+                          <p className="text-xs text-red-600">{aiCSSError}</p>
+                        )}
+                        {externalAIPrompt && (
+                          <div className="space-y-2 rounded-lg border border-purple-200 dark:border-purple-800 bg-white/80 dark:bg-gray-950/40 p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-semibold text-purple-900 dark:text-purple-100">External AI Prompt</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">Paste this into your AI tool, then paste the returned CSS into the editor below.</p>
+                              </div>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  try {
+                                    await navigator.clipboard.writeText(externalAIPrompt);
+                                    toast({
+                                      title: 'Prompt Copied',
+                                      description: 'The Autobidder CSS prompt is back on your clipboard.',
+                                    });
+                                  } catch (error) {
+                                    console.error('Failed to copy external AI prompt:', error);
+                                    toast({
+                                      title: 'Copy Failed',
+                                      description: 'Select the prompt text manually and copy it.',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                                data-testid="button-copy-ai-css-prompt"
+                              >
+                                Copy Prompt
+                              </Button>
+                            </div>
+                            <Textarea
+                              readOnly
+                              value={externalAIPrompt}
+                              className="min-h-[220px] font-mono text-xs"
+                              data-testid="textarea-ai-css-prompt"
+                            />
+                          </div>
                         )}
                       </div>
 

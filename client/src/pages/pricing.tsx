@@ -7,12 +7,18 @@ import { Link } from "wouter";
 import { useState } from "react";
 import { marketingPlans, type MarketingPlanId } from "@/lib/pricing-plans";
 import { useForceLightMode } from "@/hooks/use-force-light-mode";
+import { useAuth } from "@/hooks/useAuth";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 
 export default function Pricing() {
   useForceLightMode();
 
   const [isYearly, setIsYearly] = useState(false);
+  const [checkoutLoadingPlan, setCheckoutLoadingPlan] = useState<MarketingPlanId | null>(null);
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   const planMeta: Record<MarketingPlanId, { badge: string | null; icon: LucideIcon; tone: string }> = {
     free: { badge: null, icon: Gift, tone: "slate" },
@@ -25,6 +31,49 @@ export default function Pricing() {
     ...plan,
     ...planMeta[plan.id],
   }));
+
+  const stripePlanMap: Partial<Record<MarketingPlanId, "standard" | "plus" | "plus_seo">> = {
+    core: "standard",
+    plus: "plus",
+    "plus-seo": "plus_seo",
+  };
+
+  const handlePlanButtonClick = async (planId: MarketingPlanId) => {
+    if (!isAuthenticated) {
+      window.location.href = "/signup";
+      return;
+    }
+
+    const mappedPlanId = stripePlanMap[planId];
+    if (!mappedPlanId) {
+      window.location.href = "/dashboard";
+      return;
+    }
+
+    try {
+      setCheckoutLoadingPlan(planId);
+
+      const response = await apiRequest("POST", "/api/create-checkout-session", {
+        planId: mappedPlanId,
+        billingPeriod: isYearly ? "yearly" : "monthly",
+      });
+
+      const data = await response.json();
+      if (!data?.url) {
+        throw new Error("Failed to create checkout session");
+      }
+
+      window.location.href = data.url;
+    } catch (error) {
+      toast({
+        title: "Checkout Failed",
+        description: error instanceof Error ? error.message : "Failed to create checkout session",
+        variant: "destructive",
+      });
+    } finally {
+      setCheckoutLoadingPlan(null);
+    }
+  };
 
   const getToneClasses = (tone: string) => {
     switch (tone) {
@@ -226,11 +275,19 @@ export default function Pricing() {
                   </CardHeader>
 
                   <CardContent className="flex flex-col flex-1 pt-0">
-                    <Link href="/signup">
-                      <Button className={`w-full h-12 rounded-xl font-medium shadow-sm ${toneClasses.button}`}>
-                        {plan.monthlyPrice === 0 ? "Get Started Free" : "Start Free Trial"}
-                      </Button>
-                    </Link>
+                    <Button
+                      className={`w-full h-12 rounded-xl font-medium shadow-sm ${toneClasses.button}`}
+                      onClick={() => void handlePlanButtonClick(plan.id)}
+                      disabled={checkoutLoadingPlan !== null}
+                    >
+                      {checkoutLoadingPlan === plan.id
+                        ? "Redirecting..."
+                        : plan.monthlyPrice === 0
+                          ? "Get Started Free"
+                          : isAuthenticated
+                            ? "Upgrade Now"
+                            : "Start Free Trial"}
+                    </Button>
 
                     <div className="mt-6 pt-6 border-t border-slate-200">
                       <div className="flex items-center gap-2 mb-4">

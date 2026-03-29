@@ -260,6 +260,52 @@ const STARTER_THEME_STYLING: Partial<StylingOptions> = {
   multiChoiceSelectedBgColor: "#FFF1E8",
 };
 
+const hasMissingConditionalPriceColumns = (error: unknown): boolean => {
+  const message = (error as Error)?.message || "";
+  return message.includes("conditional_min_prices") || message.includes("conditional_max_prices");
+};
+
+const mapLegacyFormulaRow = (row: any): Formula => ({
+  ...row,
+  userId: row.user_id ?? row.userId ?? null,
+  bulletPoints: row.bullet_points ?? row.bulletPoints ?? [],
+  isActive: row.is_active ?? row.isActive ?? true,
+  isDisplayed: row.is_displayed ?? row.isDisplayed ?? true,
+  embedId: row.embed_id ?? row.embedId ?? "",
+  guideVideoUrl: row.guide_video_url ?? row.guideVideoUrl ?? null,
+  showImage: row.show_image ?? row.showImage ?? false,
+  imageUrl: row.image_url ?? row.imageUrl ?? null,
+  iconUrl: row.icon_url ?? row.iconUrl ?? null,
+  iconId: row.icon_id ?? row.iconId ?? null,
+  enableMeasureMap: row.enable_measure_map ?? row.enableMeasureMap ?? false,
+  measureMapType: row.measure_map_type ?? row.measureMapType ?? "area",
+  measureMapUnit: row.measure_map_unit ?? row.measureMapUnit ?? "sqft",
+  enablePhotoMeasurement: row.enable_photo_measurement ?? row.enablePhotoMeasurement ?? false,
+  photoMeasurementSetup: row.photo_measurement_setup ?? row.photoMeasurementSetup ?? null,
+  upsellItems: row.upsell_items ?? row.upsellItems ?? [],
+  sortOrder: row.sort_order ?? row.sortOrder ?? 0,
+  enableDistancePricing: row.enable_distance_pricing ?? row.enableDistancePricing ?? false,
+  distancePricingType: row.distance_pricing_type ?? row.distancePricingType ?? "dollar",
+  distancePricingRate: row.distance_pricing_rate ?? row.distancePricingRate ?? 0,
+  serviceRadius: row.service_radius ?? row.serviceRadius ?? 25,
+  minPrice: row.min_price ?? row.minPrice ?? null,
+  maxPrice: row.max_price ?? row.maxPrice ?? null,
+  conditionalMinPrices: row.conditional_min_prices ?? row.conditionalMinPrices ?? [],
+  conditionalMaxPrices: row.conditional_max_prices ?? row.conditionalMaxPrices ?? [],
+});
+
+async function getLegacyFormulasQuery(whereClause?: ReturnType<typeof sql>, single = false): Promise<Formula[] | Formula | undefined> {
+  const baseQuery = sql`
+    SELECT *
+    FROM formulas
+    ${whereClause ? whereClause : sql``}
+    ORDER BY sort_order, id
+  `;
+  const result = await db.execute(baseQuery);
+  const mapped = (result.rows || []).map(mapLegacyFormulaRow);
+  return single ? mapped[0] : mapped;
+}
+
 const STARTER_CUSTOM_CSS = `
 .ab-form-container {
   background: linear-gradient(180deg, #fff7ed 0%, #ffffff 48%);
@@ -1168,25 +1214,60 @@ export class DatabaseStorage implements IStorage {
 
   // Formula operations
   async getFormula(id: number): Promise<Formula | undefined> {
-    const [formula] = await db.select().from(formulas).where(eq(formulas.id, id));
-    return formula || undefined;
+    try {
+      const [formula] = await db.select().from(formulas).where(eq(formulas.id, id));
+      return formula || undefined;
+    } catch (error) {
+      if (hasMissingConditionalPriceColumns(error)) {
+        return await getLegacyFormulasQuery(sql`WHERE id = ${id}`, true) as Formula | undefined;
+      }
+      throw error;
+    }
   }
 
   async getFormulaByEmbedId(embedId: string): Promise<Formula | undefined> {
-    const [formula] = await db.select().from(formulas).where(eq(formulas.embedId, embedId));
-    return formula || undefined;
+    try {
+      const [formula] = await db.select().from(formulas).where(eq(formulas.embedId, embedId));
+      return formula || undefined;
+    } catch (error) {
+      if (hasMissingConditionalPriceColumns(error)) {
+        return await getLegacyFormulasQuery(sql`WHERE embed_id = ${embedId}`, true) as Formula | undefined;
+      }
+      throw error;
+    }
   }
 
   async getAllFormulas(): Promise<Formula[]> {
-    return await db.select().from(formulas);
+    try {
+      return await db.select().from(formulas);
+    } catch (error) {
+      if (hasMissingConditionalPriceColumns(error)) {
+        return await getLegacyFormulasQuery() as Formula[];
+      }
+      throw error;
+    }
   }
 
   async getAllDisplayedFormulas(): Promise<Formula[]> {
-    return await db.select().from(formulas).where(eq(formulas.isDisplayed, true));
+    try {
+      return await db.select().from(formulas).where(eq(formulas.isDisplayed, true));
+    } catch (error) {
+      if (hasMissingConditionalPriceColumns(error)) {
+        return await getLegacyFormulasQuery(sql`WHERE is_displayed = true`) as Formula[];
+      }
+      throw error;
+    }
   }
 
   async getFormulasByUserId(userId: string): Promise<Formula[]> {
-    return await db.select().from(formulas).where(eq(formulas.userId, userId)).orderBy(formulas.sortOrder, formulas.id);
+    try {
+      return await db.select().from(formulas).where(eq(formulas.userId, userId)).orderBy(formulas.sortOrder, formulas.id);
+    } catch (error) {
+      if (hasMissingConditionalPriceColumns(error)) {
+        return await getLegacyFormulasQuery(sql`WHERE user_id = ${userId}`) as Formula[];
+      }
+      throw error;
+    }
   }
 
   async createFormula(insertFormula: InsertFormula): Promise<Formula> {

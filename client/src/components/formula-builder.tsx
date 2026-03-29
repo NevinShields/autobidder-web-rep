@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -1959,119 +1960,166 @@ export default function FormulaBuilderComponent({
 
           {/* Formula Builder */}
           <div className="p-6">
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Pricing Formula</h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="formula-expression" className="dark:text-gray-200">Formula Expression</Label>
-                <FormulaExpressionInput
-                  value={formulaExpression}
-                  onChange={handleFormulaChange}
-                  variables={formulaVariables}
-                  placeholder="e.g., squareFootage * 25 + laborHours * 85"
-                />
-              </div>
-              
-              {/* Available Variables */}
-              {formulaVariables.length > 0 && (
-                <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3">
-                  <h4 className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">Available Variable IDs:</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {formulaVariables.map((variable) => {
-                      const insertVariable = (id: string) => {
-                        const textarea = document.getElementById('formula-expression') as HTMLTextAreaElement;
-                        if (textarea) {
-                          const cursorPos = textarea.selectionStart;
-                          const newValue = formulaExpression.slice(0, cursorPos) + id + formulaExpression.slice(cursorPos);
-                          handleFormulaChange(newValue);
-                          setTimeout(() => {
-                            textarea.setSelectionRange(cursorPos + id.length, cursorPos + id.length);
-                            textarea.focus();
-                          }, 10);
-                        }
-                      };
-
-                      const isMultiSelect = variable.type === 'multiple-choice' && variable.allowMultipleSelection;
-                      
-                      return (
-                        <div key={variable.id} className="contents">
-                          {/* Always show base variable ID */}
-                          <code
-                            className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 text-xs rounded cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
-                            onClick={() => insertVariable(variable.id)}
-                          >
-                            {variable.id}
-                          </code>
-
-                          {/* Show individual option IDs for multi-select multiple-choice */}
-                          {isMultiSelect && variable.options?.map((option, optIndex) => {
-                            const optionId = toOptionId(option.id ?? option.value ?? option.label, optIndex + 1);
-                            return (
-                              <code
-                                key={`${variable.id}_${optionId}`}
-                                className="inline-block px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 text-xs rounded cursor-pointer hover:bg-green-200 dark:hover:bg-green-700 transition-colors"
-                                onClick={() => insertVariable(`${variable.id}_${optionId}`)}
-                                title={`${option.label}: ${option.numericValue || 0}`}
-                              >
-                                {variable.id}_{optionId}
-                              </code>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-                    Click on a variable ID to insert it into your formula. <span className="text-green-700 dark:text-green-300 font-medium">Green IDs</span> are individual options from multi-select variables.
-                  </p>
-                </div>
-              )}
-
-              {repeatableGroupWarnings.length > 0 && (
-                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                  <h4 className="mb-2 font-medium">Repeatable Group Warning</h4>
-                  <div className="space-y-1">
-                    {repeatableGroupWarnings.map(({ groupId, groupName, countVariableId }) => (
-                      <p key={`${groupId}-${countVariableId}`}>
-                        <code>{groupId}</code> for {groupName} already contains the summed total for all repeated items.
-                        Using it together with <code>{countVariableId}</code> in the main formula can double-count the price.
-                      </p>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Min/Max Price Constraints */}
-              <div className="grid gap-4 md:grid-cols-2">
-                {renderConstraintSection(
-                  "min",
-                  "Default Minimum Price (optional)",
-                  minPriceDollars,
-                  handleMinPriceChange,
-                  "If no conditional minimum matches and the calculated price is below this, use this value instead.",
-                  formula.conditionalMinPrices,
-                )}
-                {renderConstraintSection(
-                  "max",
-                  "Default Maximum Price (optional)",
-                  maxPriceDollars,
-                  handleMaxPriceChange,
-                  "If no conditional maximum matches and the calculated price is above this, use this value instead.",
-                  formula.conditionalMaxPrices,
-                )}
-              </div>
-              
-              {/* Formula Help */}
-              <div className="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                <p><strong className="dark:text-gray-300">Formula Tips:</strong></p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Use basic math operators: +, -, *, /, ( )</li>
-                  <li>Reference variables by their ID (case-sensitive)</li>
-                  <li>Select variables automatically use their multiplier values</li>
-                  <li>Checkbox variables return true/false, multiply by costs</li>
-                  <li>Repeatable group IDs already represent the total across all repeated items</li>
-                </ul>
-              </div>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pricing Formula</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Define how prices are calculated based on variables</p>
             </div>
+
+            <Tabs defaultValue="formula" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsTrigger value="formula">Formula</TabsTrigger>
+                <TabsTrigger value="variables" disabled={formulaVariables.length === 0}>
+                  Variables {formulaVariables.length > 0 && <Badge className="ml-1 bg-blue-500">{formulaVariables.length}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="constraints">Constraints</TabsTrigger>
+                <TabsTrigger value="help">Help</TabsTrigger>
+              </TabsList>
+
+              {/* Formula Tab */}
+              <TabsContent value="formula" className="space-y-6">
+                <div>
+                  <Label htmlFor="formula-expression" className="text-sm font-medium dark:text-gray-200 mb-3 block">Formula Expression</Label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Enter a mathematical expression using your variables</p>
+                  <FormulaExpressionInput
+                    value={formulaExpression}
+                    onChange={handleFormulaChange}
+                    variables={formulaVariables}
+                    placeholder="e.g., squareFootage * 25 + laborHours * 85"
+                  />
+                </div>
+
+                {repeatableGroupWarnings.length > 0 && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 p-4">
+                    <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-3">⚠️ Repeatable Group Warning</h4>
+                    <div className="space-y-2 text-xs text-amber-800 dark:text-amber-200">
+                      {repeatableGroupWarnings.map(({ groupId, groupName, countVariableId }) => (
+                        <p key={`${groupId}-${countVariableId}`}>
+                          <code className="bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded">{groupId}</code> for <strong>{groupName}</strong> already contains the summed total for all repeated items. Using it together with <code className="bg-amber-100 dark:bg-amber-900/40 px-1.5 py-0.5 rounded">{countVariableId}</code> can double-count the price.
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Variables Tab */}
+              <TabsContent value="variables" className="space-y-6">
+                {formulaVariables.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="text-xs text-blue-700 dark:text-blue-300 mb-4">Click any variable to insert it into your formula:</p>
+                      <div className="space-y-3">
+                        {formulaVariables.map((variable) => {
+                          const insertVariable = (id: string) => {
+                            const textarea = document.getElementById('formula-expression') as HTMLTextAreaElement;
+                            if (textarea) {
+                              const cursorPos = textarea.selectionStart;
+                              const newValue = formulaExpression.slice(0, cursorPos) + id + formulaExpression.slice(cursorPos);
+                              handleFormulaChange(newValue);
+                              setTimeout(() => {
+                                textarea.setSelectionRange(cursorPos + id.length, cursorPos + id.length);
+                                textarea.focus();
+                              }, 10);
+                            }
+                          };
+
+                          const isMultiSelect = variable.type === 'multiple-choice' && variable.allowMultipleSelection;
+                          
+                          return (
+                            <div key={variable.id} className="border border-blue-100 dark:border-blue-800 rounded-lg p-3 bg-white dark:bg-slate-900">
+                              <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{variable.label || variable.id}</div>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  onClick={() => insertVariable(variable.id)}
+                                  className="px-3 py-1.5 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-100 text-xs rounded-md hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors font-mono"
+                                >
+                                  {variable.id}
+                                </button>
+                                {isMultiSelect && variable.options?.map((option, optIndex) => {
+                                  const optionId = toOptionId(option.id ?? option.value ?? option.label, optIndex + 1);
+                                  return (
+                                    <button
+                                      key={`${variable.id}_${optionId}`}
+                                      onClick={() => insertVariable(`${variable.id}_${optionId}`)}
+                                      className="px-3 py-1.5 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 text-xs rounded-md hover:bg-green-200 dark:hover:bg-green-700 transition-colors font-mono"
+                                      title={`${option.label}: ${option.numericValue || 0}`}
+                                    >
+                                      {variable.id}_{optionId}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p>No variables added yet. Add variables to see them here.</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Constraints Tab */}
+              <TabsContent value="constraints" className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  {renderConstraintSection(
+                    "min",
+                    "Default Minimum Price",
+                    minPriceDollars,
+                    handleMinPriceChange,
+                    "If the calculated price is below this value, use this amount instead (optional)",
+                    formula.conditionalMinPrices,
+                  )}
+                  {renderConstraintSection(
+                    "max",
+                    "Default Maximum Price",
+                    maxPriceDollars,
+                    handleMaxPriceChange,
+                    "If the calculated price is above this value, use this amount instead (optional)",
+                    formula.conditionalMaxPrices,
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Help Tab */}
+              <TabsContent value="help" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">📝 Formula Syntax</h4>
+                    <ul className="space-y-2 text-xs text-blue-800 dark:text-blue-200">
+                      <li><code className="bg-blue-200 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">+</code> Addition</li>
+                      <li><code className="bg-blue-200 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">-</code> Subtraction</li>
+                      <li><code className="bg-blue-200 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">*</code> Multiplication</li>
+                      <li><code className="bg-blue-200 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">/</code> Division</li>
+                      <li><code className="bg-blue-200 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">( )</code> Parentheses for grouping</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-100 mb-3">💡 Variable Types</h4>
+                    <ul className="space-y-2 text-xs text-purple-800 dark:text-purple-200">
+                      <li><strong>Select fields:</strong> Use their numeric value automatically</li>
+                      <li><strong>Checkboxes:</strong> Return true/false, multiply by costs</li>
+                      <li><strong>Text fields:</strong> Use their numeric value in calculations</li>
+                      <li><strong>Repeatable groups:</strong> IDs represent totals across all items</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-3">✅ Best Practices</h4>
+                    <ul className="space-y-2 text-xs text-green-800 dark:text-green-200">
+                      <li>Variable IDs are case-sensitive</li>
+                      <li>Use clear, descriptive variable names</li>
+                      <li>Test your formula with sample data</li>
+                      <li>Use constraints to ensure reasonable pricing</li>
+                    </ul>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

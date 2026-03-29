@@ -1,5 +1,5 @@
-import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, getDefaultValueForHiddenVariable } from './conditional-logic';
-import type { Variable } from './schema';
+import { areAllVisibleVariablesCompleted, evaluateConditionalLogic, evaluateConditionalRule, getDefaultValueForHiddenVariable } from './conditional-logic';
+import type { PriceConstraintRule, Variable } from './schema';
 
 export const REPEATABLE_GROUP_VALUES_KEY = '__repeatableGroups' as const;
 
@@ -309,6 +309,89 @@ export function evaluateFormulaWithRepeatableGroups(
 
   const result = Function(`"use strict"; return (${nextExpression})`)();
   return Number.isFinite(Number(result)) ? Number(result) : 0;
+}
+
+export function resolvePriceConstraintValue(
+  rules: PriceConstraintRule[] | null | undefined,
+  fallbackValue: number | null | undefined,
+  values: Record<string, any>,
+): number | null {
+  const matchingRule = (rules || []).find((rule) => {
+    if (!rule?.enabled) {
+      return false;
+    }
+
+    if (!rule.conditions || rule.conditions.length === 0) {
+      return false;
+    }
+
+    return evaluateConditionalRule(
+      {
+        enabled: true,
+        operator: rule.operator || 'AND',
+        conditions: rule.conditions,
+      },
+      values,
+    );
+  });
+
+  if (matchingRule && Number.isFinite(matchingRule.value)) {
+    return matchingRule.value;
+  }
+
+  return fallbackValue ?? null;
+}
+
+export function applyPriceConstraints(
+  rawPrice: number,
+  config: {
+    minPrice?: number | null;
+    maxPrice?: number | null;
+    conditionalMinPrices?: PriceConstraintRule[] | null;
+    conditionalMaxPrices?: PriceConstraintRule[] | null;
+  },
+  values: Record<string, any>,
+  options?: { priceUnit?: 'dollars' | 'cents'; constraintUnit?: 'dollars' | 'cents' },
+): number {
+  const priceUnit = options?.priceUnit || 'dollars';
+  const constraintUnit = options?.constraintUnit || 'cents';
+  const normalizeConstraint = (constraintValue: number | null): number | null => {
+    if (constraintValue === null || constraintValue === undefined) {
+      return null;
+    }
+
+    if (priceUnit === constraintUnit) {
+      return constraintValue;
+    }
+
+    if (priceUnit === 'dollars' && constraintUnit === 'cents') {
+      return constraintValue / 100;
+    }
+
+    if (priceUnit === 'cents' && constraintUnit === 'dollars') {
+      return Math.round(constraintValue * 100);
+    }
+
+    return constraintValue;
+  };
+
+  let nextPrice = rawPrice;
+  const resolvedMinPrice = normalizeConstraint(
+    resolvePriceConstraintValue(config.conditionalMinPrices, config.minPrice, values),
+  );
+  const resolvedMaxPrice = normalizeConstraint(
+    resolvePriceConstraintValue(config.conditionalMaxPrices, config.maxPrice, values),
+  );
+
+  if (resolvedMinPrice !== null && nextPrice < resolvedMinPrice) {
+    nextPrice = resolvedMinPrice;
+  }
+
+  if (resolvedMaxPrice !== null && nextPrice > resolvedMaxPrice) {
+    nextPrice = resolvedMaxPrice;
+  }
+
+  return nextPrice;
 }
 
 export function getFormulaCompletionStatus(

@@ -1221,7 +1221,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllFormulaTemplates(): Promise<FormulaTemplate[]> {
-    return await db.select().from(formulaTemplates).orderBy(desc(formulaTemplates.timesUsed));
+    try {
+      return await db.select().from(formulaTemplates).orderBy(desc(formulaTemplates.timesUsed));
+    } catch (error: any) {
+      // If the query fails due to missing column, try without orderBy
+      if (error?.code === '42703') {
+        try {
+          return await db.select().from(formulaTemplates);
+        } catch (fallbackError) {
+          console.error('Fallback query also failed:', fallbackError);
+          return [];
+        }
+      }
+      throw error;
+    }
   }
 
   async getActiveFormulaTemplates(): Promise<FormulaTemplate[]> {

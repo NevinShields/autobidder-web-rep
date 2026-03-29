@@ -179,6 +179,8 @@ export default function FormulaBuilder() {
         distancePricingType: "per_mile",
         distancePricingRate: 0,
         serviceRadius: 50,
+        conditionalMinPrices: [],
+        conditionalMaxPrices: [],
       } as unknown as Formula;
       setCurrentFormula(defaultFormula);
     }

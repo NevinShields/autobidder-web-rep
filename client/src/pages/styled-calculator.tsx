@@ -16,6 +16,7 @@ import { ChevronDown, ChevronUp, Map, Search, User, Mail, Phone, MapPin, X, Home
 import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead, PropertyAttributes } from "@shared/schema";
 import { evaluateConditionalLogic } from "@shared/conditional-logic";
 import {
+  applyPriceConstraints,
   REPEATABLE_GROUP_VALUES_KEY,
   evaluateFormulaWithRepeatableGroups,
   getFlatFormulaValues,
@@ -2293,23 +2294,15 @@ export default function StyledCalculator(props: any = {}) {
 
     try {
       const values = serviceVariables[serviceId] || {};
-      let finalPrice = Math.round(
+      const rawPrice = Math.round(
         evaluateFormulaWithRepeatableGroups(service.formula || '', service.variables || [], values as any)
       );
-
-      // Apply min/max price constraints (stored in cents in database)
-      if (service.minPrice !== null && service.minPrice !== undefined) {
-        const minPriceDollars = service.minPrice / 100;
-        if (finalPrice < minPriceDollars) {
-          finalPrice = minPriceDollars;
-        }
-      }
-      if (service.maxPrice !== null && service.maxPrice !== undefined) {
-        const maxPriceDollars = service.maxPrice / 100;
-        if (finalPrice > maxPriceDollars) {
-          finalPrice = maxPriceDollars;
-        }
-      }
+      const finalPrice = applyPriceConstraints(
+        rawPrice,
+        service,
+        values,
+        { priceUnit: 'dollars', constraintUnit: 'cents' },
+      );
 
       return Math.round(finalPrice);
     } catch (error) {

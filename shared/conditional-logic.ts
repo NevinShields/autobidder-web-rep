@@ -1,4 +1,4 @@
-import type { Variable } from './schema';
+import type { ConditionalLogic, Variable } from './schema';
 
 // Helper function to evaluate a single condition
 function evaluateSingleCondition(
@@ -79,18 +79,13 @@ function evaluateSingleCondition(
   }
 }
 
-// Utility function to evaluate whether a variable should be visible based on conditional logic
-export function evaluateConditionalLogic(
-  variable: Variable,
+export function evaluateConditionalRule(
+  logic: ConditionalLogic | undefined,
   variableValues: Record<string, any>,
-  allVariables: Variable[]
 ): boolean {
-  // If conditional logic is not enabled, always show the variable
-  if (!variable.conditionalLogic?.enabled) {
+  if (!logic?.enabled) {
     return true;
   }
-
-  const logic = variable.conditionalLogic;
 
   // Check if we have the new multiple conditions format
   if (logic.conditions && logic.conditions.length > 0) {
@@ -129,6 +124,16 @@ export function evaluateConditionalLogic(
 
   // If no conditions are set, show the variable
   return true;
+}
+
+// Utility function to evaluate whether a variable should be visible based on conditional logic
+export function evaluateConditionalLogic(
+  variable: Variable,
+  variableValues: Record<string, any>,
+  allVariables: Variable[]
+): boolean {
+  void allVariables;
+  return evaluateConditionalRule(variable.conditionalLogic, variableValues);
 }
 
 // Get variables that can be used as dependencies (variables that appear before the current one)

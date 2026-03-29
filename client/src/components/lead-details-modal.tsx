@@ -969,7 +969,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
     calculatedPrice: lead.calculatedPrice / 100 // Convert from cents to dollars for display
   } : null;
 
-  const formulasById = new Map(formulas.map((formula) => [formula.id, formula]));
+  const formulasById = new Map(Array.isArray(formulas) ? formulas.map((formula) => [formula.id, formula]) : []);
 
   const softBookings = leadBookings.filter(booking => booking.status === 'tentative');
   const canConfirmSoftBooking = processedLead?.stage === 'estimate_approved'

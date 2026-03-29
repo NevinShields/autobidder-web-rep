@@ -46,6 +46,8 @@ export const formulas = pgTable("formulas", {
   serviceRadius: integer("service_radius").default(25), // Override business default for this formula
   minPrice: integer("min_price"), // Minimum price in cents (optional)
   maxPrice: integer("max_price"), // Maximum price in cents (optional)
+  conditionalMinPrices: jsonb("conditional_min_prices").notNull().default([]).$type<PriceConstraintRule[]>(),
+  conditionalMaxPrices: jsonb("conditional_max_prices").notNull().default([]).$type<PriceConstraintRule[]>(),
 });
 
 // Formula Templates - Public templates available to all users
@@ -85,6 +87,8 @@ export const formulaTemplates = pgTable("formula_templates", {
   serviceRadius: integer("service_radius").default(25), // Override business default for this template
   minPrice: integer("min_price"), // Minimum price in cents (optional)
   maxPrice: integer("max_price"), // Maximum price in cents (optional)
+  conditionalMinPrices: jsonb("conditional_min_prices").notNull().default([]).$type<PriceConstraintRule[]>(),
+  conditionalMaxPrices: jsonb("conditional_max_prices").notNull().default([]).$type<PriceConstraintRule[]>(),
   // Template design settings - complete styling that gets applied when template is selected
   templateStyling: jsonb("template_styling").$type<StylingOptions>(),
   templateComponentStyles: jsonb("template_component_styles").$type<{
@@ -1512,6 +1516,14 @@ export interface ConditionalLogic {
   defaultValue?: string | number | boolean | Array<string | number>;
 }
 
+export interface PriceConstraintRule {
+  id: string;
+  enabled: boolean;
+  operator?: 'AND' | 'OR';
+  conditions?: VariableCondition[];
+  value: number;
+}
+
 const repeatableChildVariableTypeValues = [
   'number',
   'stepper',
@@ -1599,6 +1611,14 @@ const conditionalLogicSchema: z.ZodType<ConditionalLogic> = z.object({
   expectedValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
   expectedValues: z.array(z.union([z.string(), z.number()])).optional(),
   defaultValue: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()]))]).optional(),
+});
+
+const priceConstraintRuleSchema = z.object({
+  id: z.string(),
+  enabled: z.boolean().default(true),
+  operator: z.enum(['AND', 'OR']).default('AND'),
+  conditions: z.array(variableConditionSchema).default([]),
+  value: z.number().int().nonnegative(),
 });
 
 const baseVariableSchema = z.object({

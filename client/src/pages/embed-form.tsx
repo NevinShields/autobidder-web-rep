@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Formula, BusinessSettings, StylingOptions } from "@shared/schema";
 import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
+import { applyPriceConstraints, evaluateFormulaWithRepeatableGroups } from "@shared/formula-runtime";
 
 // Lazy load heavy components to improve initial loading performance
 const BookingCalendar = lazy(() => import("@/components/booking-calendar"));
@@ -178,15 +179,6 @@ export default function EmbedForm() {
   const availableFormulas = displayedFormulas;
   const businessSettings = settings as BusinessSettings;
   const styling = businessSettings?.styling || {} as StylingOptions;
-
-  const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
-    const base = String(rawValue ?? '').trim().toLowerCase();
-    const normalized = base
-      .replace(/[^a-z0-9]+/g, '_')
-      .replace(/^_+|_+$/g, '')
-      .slice(0, 40);
-    return normalized || `option_${fallbackIndex}`;
-  };
 
   // Get connected variables across selected services
   const getConnectedVariables = () => {
@@ -360,7 +352,6 @@ export default function EmbedForm() {
     console.log('📋 Found formula:', { formulaId: serviceId, formulaName: formula?.name, hasFormula: !!formula?.formula });
     
     if (formula?.formula) {
-      let formulaExpression = formula.formula;
       try {
         const variables = { ...serviceVariables[serviceId], [variableId]: value };
         
@@ -369,139 +360,21 @@ export default function EmbedForm() {
           variables,
           formulaVariables: formula.variables?.map((v: any) => ({ id: v.id, type: v.type, name: v.name }))
         });
-        
-        // First, replace individual option references for multiple-choice with allowMultipleSelection
-        formula.variables.forEach((variable: any) => {
-          if (variable?.type === 'multiple-choice' && variable.allowMultipleSelection && variable.options) {
-            const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
-            
-            variable.options.forEach((option: any, optionIndex: number) => {
-              const optionId = toOptionId(option.id ?? option.value, optionIndex + 1);
-              if (optionId) {
-                const optionReference = `${variable.id}_${optionId}`;
-                const isSelected = selectedValues.some((val: any) => val.toString() === option.value.toString());
-                const unselectedDefault = option.defaultUnselectedValue !== undefined ? option.defaultUnselectedValue : 0;
-                const optionValue = isSelected ? (option.numericValue || 0) : unselectedDefault;
-                
-                formulaExpression = formulaExpression.replace(
-                  new RegExp(`\\b${optionReference}\\b`, 'g'),
-                  String(optionValue)
-                );
-                console.log(`🔄 Replaced ${optionReference} with ${optionValue} (selected: ${isSelected})`);
-              }
-            });
-          }
-        });
-        
-        // Then ensure all formula variables have default values
-        formula.variables.forEach((variable: any) => {
-          if (variable?.type === 'multiple-choice' && variable.allowMultipleSelection) {
-            const selectedValues = Array.isArray(variables[variable.id]) ? variables[variable.id] : [];
-            const sumOfSelected = selectedValues.reduce((total: number, selectedValue: any) => {
-              const option = variable.options?.find((opt: any) => opt.value.toString() === selectedValue.toString());
-              return total + (option?.numericValue || 0);
-            }, 0);
+        const rawPrice = evaluateFormulaWithRepeatableGroups(
+          formula.formula || '',
+          formula.variables || [],
+          variables as any,
+        );
+        const price = Math.round(
+          applyPriceConstraints(
+            Math.round(Number(rawPrice) || 0),
+            formula,
+            variables,
+            { priceUnit: 'dollars', constraintUnit: 'cents' },
+          ),
+        );
 
-            formulaExpression = formulaExpression.replace(
-              new RegExp(`\\b${variable.id}\\b`, 'g'),
-              String(sumOfSelected)
-            );
-            console.log(`🔄 Replaced ${variable.id} (multi-select sum) with ${sumOfSelected}`);
-            return;
-          }
-          
-          const regex = new RegExp(`\\b${variable.id}\\b`, 'g');
-          const shouldShow = !variable.conditionalLogic?.enabled ||
-            evaluateConditionalLogic(variable, variables, formula.variables);
-
-          if (!shouldShow) {
-            const defaultValue = getDefaultValueForHiddenVariable(variable);
-            let hiddenValue = 0;
-
-            if (variable?.type === 'multiple-choice' && variable.options) {
-              if (Array.isArray(defaultValue)) {
-                hiddenValue = defaultValue.reduce((sum: number, selectedValue: any) => {
-                  const selectedOption = variable.options.find((opt: any) => opt.value?.toString() === selectedValue?.toString());
-                  return sum + (selectedOption?.numericValue || 0);
-                }, 0);
-              } else {
-                const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
-                hiddenValue = selectedOption?.numericValue || Number(defaultValue) || 0;
-              }
-            } else if (variable?.type === 'dropdown' && variable.options) {
-              const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
-              hiddenValue = selectedOption?.numericValue || Number(defaultValue) || 0;
-            } else if (variable?.type === 'select' && variable.options) {
-              const selectedOption = variable.options.find((opt: any) => opt.value === defaultValue);
-              hiddenValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(defaultValue) || 0;
-            } else if (variable?.type === 'checkbox') {
-              const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
-              const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
-              hiddenValue = defaultValue ? checkedVal : uncheckedVal;
-            } else {
-              hiddenValue = Number(defaultValue) || 0;
-            }
-
-            formulaExpression = formulaExpression.replace(regex, String(hiddenValue));
-            console.log(`🔄 Replaced ${variable.id} (hidden default) with ${hiddenValue}`);
-            return;
-          }
-
-          const val = variables[variable.id];
-          let numericValue = 0;
-          
-          if (variable?.type === 'multiple-choice' && variable.options) {
-            // For multiple choice, sum up values from selected options (fallback or when allowMultipleSelection is false)
-            if (Array.isArray(val)) {
-              numericValue = val.reduce((sum: number, selectedValue: string) => {
-                const selectedOption = variable.options.find((opt: any) => opt.value === selectedValue);
-                return sum + (selectedOption?.numericValue || 0);
-              }, 0);
-            } else if (val !== undefined && val !== null && val !== '') {
-              const selectedOption = variable.options.find((opt: any) => opt.value === val);
-              numericValue = selectedOption?.numericValue || 0;
-            }
-          } else if (variable?.type === 'dropdown' && variable.options) {
-            // For dropdown, use numericValue from the selected option
-            if (val !== undefined && val !== null && val !== '') {
-              const selectedOption = variable.options.find((opt: any) => opt.value === val);
-              numericValue = selectedOption?.numericValue || Number(val) || 0;
-            }
-          } else if (variable?.type === 'select' && variable.options) {
-            // For select, use multiplier or numeric value
-            if (val !== undefined && val !== null && val !== '') {
-              const selectedOption = variable.options.find((opt: any) => opt.value === val);
-              numericValue = selectedOption?.multiplier || selectedOption?.numericValue || Number(val) || 0;
-            }
-          } else if (variable?.type === 'checkbox') {
-            // For checkbox, use custom values if defined, otherwise default to 1/0
-            const checkedVal = variable.checkedValue !== undefined ? variable.checkedValue : 1;
-            const uncheckedVal = variable.uncheckedValue !== undefined ? variable.uncheckedValue : 0;
-            numericValue = val ? checkedVal : uncheckedVal;
-          } else {
-            // For number and text inputs
-            numericValue = Number(val) || 0;
-          }
-          
-          formulaExpression = formulaExpression.replace(regex, String(numericValue));
-          console.log(`🔄 Replaced ${variable.id} (${variable.type}) with ${numericValue}`);
-        });
-        
-        console.log('🏁 Final formula expression:', formulaExpression);
-        const result = Function(`"use strict"; return (${formulaExpression})`)();
-        let price = Math.round(Number(result) || 0);
-        
-        // Apply min/max price constraints if they exist
-        if (formula.minPrice !== null && formula.minPrice !== undefined && price < formula.minPrice) {
-          console.log(`📊 Applied minimum price constraint: ${price} -> ${formula.minPrice}`);
-          price = formula.minPrice;
-        }
-        if (formula.maxPrice !== null && formula.maxPrice !== undefined && price > formula.maxPrice) {
-          console.log(`📊 Applied maximum price constraint: ${price} -> ${formula.maxPrice}`);
-          price = formula.maxPrice;
-        }
-        
-        console.log('💰 Calculated price:', { result, price });
+        console.log('💰 Calculated price:', { rawPrice, price });
         
         setServiceCalculations(prev => ({
           ...prev,
@@ -513,7 +386,7 @@ export default function EmbedForm() {
         console.error('Error details:', { 
           serviceId, 
           formula: formula?.formula,
-          finalExpression: formulaExpression,
+          finalExpression: formula?.formula,
           variables: serviceVariables[serviceId],
           availableVariables: formula.variables?.map((v: any) => v.id)
         });

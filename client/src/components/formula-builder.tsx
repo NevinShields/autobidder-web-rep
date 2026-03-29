@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Formula, Variable } from "@shared/schema";
+import { Formula, PriceConstraintRule, Variable, VariableCondition } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import FormulaExpressionInput from "./formula-expression-input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { getAvailableConditions, getConditionLabel } from "@shared/conditional-logic";
 import {
   DndContext,
   closestCenter,
@@ -187,6 +188,33 @@ function RefinePromptButton({ formula, onUpdate }: { formula: Formula; onUpdate:
   );
 }
 
+type PriceConstraintType = "min" | "max";
+
+function createEmptyPriceConstraintRule(): PriceConstraintRule {
+  return {
+    id: crypto.randomUUID(),
+    enabled: true,
+    operator: "AND",
+    conditions: [
+      {
+        id: crypto.randomUUID(),
+        dependsOnVariable: "",
+        condition: "equals",
+        expectedValue: "",
+      },
+    ],
+    value: 0,
+  };
+}
+
+function formatConstraintValue(valueInCents: number | null | undefined): string {
+  if (valueInCents === null || valueInCents === undefined) {
+    return "";
+  }
+
+  return (valueInCents / 100).toString();
+}
+
 interface FormulaBuilderProps {
   formula: Formula;
   onUpdate: (formula: Partial<Formula>) => void;
@@ -297,6 +325,14 @@ export default function FormulaBuilderComponent({
   useEffect(() => {
     setFormulaExpression(formulaExpressionValue);
   }, [formulaExpressionValue]);
+
+  useEffect(() => {
+    setMinPriceDollars(formatConstraintValue(formula.minPrice));
+  }, [formula.minPrice]);
+
+  useEffect(() => {
+    setMaxPriceDollars(formatConstraintValue(formula.maxPrice));
+  }, [formula.maxPrice]);
 
   // Fetch template categories for the save as template dialog
   const { data: templateCategories } = useQuery<Array<{ id: number; name: string; isActive: boolean }>>({
@@ -536,6 +572,469 @@ export default function FormulaBuilderComponent({
     } else {
       onUpdate({ maxPrice: Math.round(numValue * 100) });
     }
+  };
+
+  const getPriceConstraintDependencies = () =>
+    formulaVariables.filter((variable) => variable.type !== "repeatable-group");
+
+  const updateConstraintRules = (type: PriceConstraintType, rules: PriceConstraintRule[]) => {
+    if (type === "min") {
+      onUpdate({ conditionalMinPrices: rules });
+      return;
+    }
+
+    onUpdate({ conditionalMaxPrices: rules });
+  };
+
+  const toggleConstraintRules = (type: PriceConstraintType, enabled: boolean) => {
+    updateConstraintRules(type, enabled ? [createEmptyPriceConstraintRule()] : []);
+  };
+
+  const addConstraintRule = (type: PriceConstraintType) => {
+    const currentRules = type === "min" ? (formula.conditionalMinPrices || []) : (formula.conditionalMaxPrices || []);
+    updateConstraintRules(type, [...currentRules, createEmptyPriceConstraintRule()]);
+  };
+
+  const removeConstraintRule = (type: PriceConstraintType, ruleId: string) => {
+    const currentRules = type === "min" ? (formula.conditionalMinPrices || []) : (formula.conditionalMaxPrices || []);
+    updateConstraintRules(
+      type,
+      currentRules.filter((rule) => rule.id !== ruleId),
+    );
+  };
+
+  const updateConstraintRule = (
+    type: PriceConstraintType,
+    ruleId: string,
+    updates: Partial<PriceConstraintRule>,
+  ) => {
+    const currentRules = type === "min" ? (formula.conditionalMinPrices || []) : (formula.conditionalMaxPrices || []);
+    updateConstraintRules(
+      type,
+      currentRules.map((rule) => (rule.id === ruleId ? { ...rule, ...updates } : rule)),
+    );
+  };
+
+  const addConstraintCondition = (type: PriceConstraintType, ruleId: string) => {
+    const ruleSet = type === "min" ? (formula.conditionalMinPrices || []) : (formula.conditionalMaxPrices || []);
+    const rule = ruleSet.find((entry) => entry.id === ruleId);
+    if (!rule) {
+      return;
+    }
+
+    const nextCondition: VariableCondition = {
+      id: crypto.randomUUID(),
+      dependsOnVariable: "",
+      condition: "equals",
+      expectedValue: "",
+    };
+
+    updateConstraintRule(type, ruleId, {
+      conditions: [...(rule.conditions || []), nextCondition],
+    });
+  };
+
+  const removeConstraintCondition = (type: PriceConstraintType, ruleId: string, conditionId: string) => {
+    const ruleSet = type === "min" ? (formula.conditionalMinPrices || []) : (formula.conditionalMaxPrices || []);
+    const rule = ruleSet.find((entry) => entry.id === ruleId);
+    if (!rule) {
+      return;
+    }
+
+    updateConstraintRule(type, ruleId, {
+      conditions: (rule.conditions || []).filter((condition) => condition.id !== conditionId),
+    });
+  };
+
+  const updateConstraintCondition = (
+    type: PriceConstraintType,
+    ruleId: string,
+    conditionId: string,
+    updates: Partial<VariableCondition>,
+  ) => {
+    const ruleSet = type === "min" ? (formula.conditionalMinPrices || []) : (formula.conditionalMaxPrices || []);
+    const rule = ruleSet.find((entry) => entry.id === ruleId);
+    if (!rule) {
+      return;
+    }
+
+    updateConstraintRule(type, ruleId, {
+      conditions: (rule.conditions || []).map((condition) =>
+        condition.id === conditionId ? { ...condition, ...updates } : condition,
+      ),
+    });
+  };
+
+  const getConstraintSummary = (rule: PriceConstraintRule, type: PriceConstraintType) => {
+    const resolvedConditions = (rule.conditions || []).filter(
+      (condition) => condition.dependsOnVariable && condition.condition,
+    );
+
+    if (resolvedConditions.length === 0) {
+      return `Always use ${type === "min" ? "minimum" : "maximum"} $${(rule.value / 100).toFixed(2)}`;
+    }
+
+    const parts = resolvedConditions.map((condition) => {
+      const dependency = formulaVariables.find((variable) => variable.id === condition.dependsOnVariable);
+      const conditionLabel = getConditionLabel(condition.condition);
+      const expectedLabel =
+        condition.condition === "is_empty" || condition.condition === "is_not_empty"
+          ? ""
+          : ` ${String(condition.expectedValue ?? "")}`.trimEnd();
+
+      return `${dependency?.name || condition.dependsOnVariable} ${conditionLabel}${expectedLabel ? ` ${expectedLabel}` : ""}`;
+    });
+
+    const joiner = ` ${rule.operator || "AND"} `;
+    return `If ${parts.join(joiner)}, use ${type === "min" ? "minimum" : "maximum"} $${(rule.value / 100).toFixed(2)}`;
+  };
+
+  const renderConstraintSection = (
+    type: PriceConstraintType,
+    title: string,
+    value: string,
+    onValueChange: (nextValue: string) => void,
+    description: string,
+    rules: PriceConstraintRule[] | undefined,
+  ) => {
+    const enabled = (rules || []).length > 0;
+    const tone = type === "min"
+      ? {
+          shell: "border-emerald-200/80 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/50 dark:border-emerald-900/70 dark:from-emerald-950/40 dark:via-slate-950 dark:to-emerald-900/20",
+          accent: "text-emerald-700 dark:text-emerald-300",
+          badge: "border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
+          ruleBorder: "border-emerald-200/80 dark:border-emerald-900/70",
+          soft: "bg-emerald-50/80 dark:bg-emerald-950/20",
+          switchCopy: "Use smarter minimum floors for different job shapes.",
+          emptyCopy: "Example: if square footage is under 500, use a $149 minimum. If over 2,000, use a $349 minimum.",
+        }
+      : {
+          shell: "border-amber-200/80 bg-gradient-to-br from-amber-50 via-white to-orange-100/50 dark:border-amber-900/70 dark:from-amber-950/40 dark:via-slate-950 dark:to-orange-900/20",
+          accent: "text-amber-700 dark:text-amber-300",
+          badge: "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+          ruleBorder: "border-amber-200/80 dark:border-amber-900/70",
+          soft: "bg-amber-50/80 dark:bg-amber-950/20",
+          switchCopy: "Cap pricing differently for larger or more complex answers.",
+          emptyCopy: "Example: if the customer selects a premium package, cap the quote at $1,200 instead of the default max.",
+        };
+
+    return (
+      <div className={cn("space-y-4 rounded-2xl border p-4 shadow-sm", tone.shell)}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className={cn("font-medium", tone.badge)}>
+                {type === "min" ? "Minimum logic" : "Maximum logic"}
+              </Badge>
+              <span className="text-xs uppercase tracking-[0.18em] text-slate-400">Pricing guardrail</span>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
+            </div>
+          </div>
+          <div className="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
+            {enabled ? `${rules?.length || 0} override${(rules?.length || 0) === 1 ? "" : "s"}` : "Default only"}
+          </div>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+          <div className="rounded-xl border border-white/70 bg-white/85 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <Label htmlFor={`${type}-price`} className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                Default fallback
+              </Label>
+              <span className={cn("text-xs font-medium", tone.accent)}>
+                {type === "min" ? "Applied below threshold" : "Applied above threshold"}
+              </span>
+            </div>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
+              <Input
+                id={`${type}-price`}
+                type="number"
+                step="0.01"
+                min="0"
+                value={value}
+                onChange={(e) => onValueChange(e.target.value)}
+                placeholder="0.00"
+                className="h-11 border-white/70 bg-white pl-7 text-base font-semibold shadow-sm dark:border-slate-700 dark:bg-slate-900"
+                data-testid={`input-${type}-price`}
+              />
+            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              This is the base {type} price used when no conditional override matches.
+            </p>
+          </div>
+
+          <div className={cn("rounded-xl border p-4 shadow-sm", tone.ruleBorder, tone.soft)}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Conditional overrides
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {tone.switchCopy}
+                </p>
+              </div>
+              <Switch
+                checked={enabled}
+                onCheckedChange={(checked) => toggleConstraintRules(type, checked)}
+                data-testid={`switch-conditional-${type}-prices`}
+              />
+            </div>
+
+            {!enabled && (
+              <div className="mt-3 rounded-xl border border-dashed border-slate-300/80 bg-white/70 p-4 dark:border-slate-700 dark:bg-slate-950/30">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  Add rule-based pricing only when you need it.
+                </p>
+                <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  {tone.emptyCopy}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleConstraintRules(type, true)}
+                  className="mt-3 h-9 text-sm"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Enable Conditional {type === "min" ? "Minimums" : "Maximums"}
+                </Button>
+              </div>
+            )}
+
+            {enabled && (
+              <div className="mt-4 space-y-3">
+                {(rules || []).map((rule, ruleIndex) => (
+                  <div
+                    key={rule.id}
+                    className={cn(
+                      "rounded-2xl border bg-white p-4 shadow-sm transition-colors dark:bg-slate-950/60",
+                      tone.ruleBorder,
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="border-slate-200 bg-slate-100/80 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                            Rule {ruleIndex + 1}
+                          </Badge>
+                          <Badge variant="outline" className={cn("font-medium", tone.badge)}>
+                            {rule.operator || "AND"} logic
+                          </Badge>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                            {getConstraintSummary(rule, type)}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Matching answers override the default fallback above.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeConstraintRule(type, rule.id)}
+                        className="h-9 w-9 rounded-full p-0 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="mt-4 grid gap-4 xl:grid-cols-[160px_minmax(0,1fr)]">
+                      <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                        <Label className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                          Override value
+                        </Label>
+                        <div className="relative mt-2">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={formatConstraintValue(rule.value)}
+                            onChange={(e) => {
+                              const amount = parseFloat(e.target.value);
+                              updateConstraintRule(type, rule.id, { value: Number.isFinite(amount) ? Math.round(amount * 100) : 0 });
+                            }}
+                            className="h-11 bg-white pl-7 text-base font-semibold dark:bg-slate-950"
+                          />
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                          Use this {type} price when the rule matches.
+                        </p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Match these conditions</Label>
+                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              Decide when this override becomes active.
+                            </p>
+                          </div>
+                          {(rule.conditions?.length || 0) > 1 && (
+                            <Select
+                              value={rule.operator || "AND"}
+                              onValueChange={(nextValue) => updateConstraintRule(type, rule.id, { operator: nextValue as "AND" | "OR" })}
+                            >
+                              <SelectTrigger className="h-9 w-28 bg-white text-xs dark:bg-slate-950">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="AND" className="text-xs">Match ALL</SelectItem>
+                                <SelectItem value="OR" className="text-xs">Match ANY</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {(rule.conditions || []).map((condition, conditionIndex) => {
+                          const dependency = formulaVariables.find((variable) => variable.id === condition.dependsOnVariable);
+                          const availableDependencies = getPriceConstraintDependencies();
+                          const dependencyConditions = dependency ? getAvailableConditions(dependency.type) : [];
+                          const isNumericDependency = ["number", "slider", "stepper"].includes(dependency?.type || "");
+
+                          return (
+                            <div key={condition.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                              <div className="mb-3 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-slate-500 shadow-sm dark:bg-slate-950 dark:text-slate-300">
+                                    {conditionIndex + 1}
+                                  </span>
+                                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Condition</span>
+                                </div>
+                                {(rule.conditions?.length || 0) > 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeConstraintCondition(type, rule.id, condition.id)}
+                                    className="h-7 w-7 rounded-full p-0 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+
+                              <div className="grid gap-2 xl:grid-cols-3">
+                                <Select
+                                  value={condition.dependsOnVariable || ""}
+                                  onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { dependsOnVariable: nextValue })}
+                                >
+                                  <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                    <SelectValue placeholder="Question or variable" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {availableDependencies.map((dependencyVariable) => (
+                                      <SelectItem key={dependencyVariable.id} value={dependencyVariable.id} className="text-sm">
+                                        {dependencyVariable.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
+                                <Select
+                                  value={condition.condition || ""}
+                                  onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { condition: nextValue as VariableCondition["condition"] })}
+                                  disabled={!condition.dependsOnVariable}
+                                >
+                                  <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                    <SelectValue placeholder="Comparison" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {dependencyConditions.map((dependencyCondition) => (
+                                      <SelectItem key={dependencyCondition} value={dependencyCondition} className="text-sm">
+                                        {getConditionLabel(dependencyCondition)}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+
+                                {condition.condition && !["is_empty", "is_not_empty"].includes(condition.condition) ? (
+                                  dependency && ["select", "dropdown", "multiple-choice"].includes(dependency.type) && dependency.options ? (
+                                    <Select
+                                      value={String(condition.expectedValue ?? "")}
+                                      onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { expectedValue: nextValue })}
+                                    >
+                                      <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                        <SelectValue placeholder="Expected value" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {dependency.options.map((option, optionIndex) => (
+                                          <SelectItem key={`${dependency.id}-${optionIndex}`} value={String(option.value)} className="text-sm">
+                                            {option.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  ) : dependency?.type === "checkbox" ? (
+                                    <Select
+                                      value={String(condition.expectedValue ?? "")}
+                                      onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { expectedValue: nextValue === "true" })}
+                                    >
+                                      <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                        <SelectValue placeholder="Expected value" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="true" className="text-sm">Checked</SelectItem>
+                                        <SelectItem value="false" className="text-sm">Unchecked</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  ) : (
+                                    <Input
+                                      type={isNumericDependency ? "number" : "text"}
+                                      className="h-10 bg-white text-sm dark:bg-slate-950"
+                                      value={String(condition.expectedValue ?? "")}
+                                      onChange={(e) =>
+                                        updateConstraintCondition(type, rule.id, condition.id, {
+                                          expectedValue: isNumericDependency
+                                            ? (e.target.value === "" ? "" : Number(e.target.value))
+                                            : e.target.value,
+                                        })
+                                      }
+                                      placeholder="Expected value"
+                                    />
+                                  )
+                                ) : (
+                                  <div className="flex h-10 items-center rounded-md border border-dashed border-slate-200 bg-white px-3 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-950">
+                                    No value needed for this comparison
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addConstraintCondition(type, rule.id)}
+                          className="h-9 w-full border-dashed text-sm"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Another Condition
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <Button type="button" variant="outline" size="sm" onClick={() => addConstraintRule(type)} className="h-10 w-full border-dashed bg-white/70 text-sm dark:bg-slate-950/30">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Conditional {type === "min" ? "Minimum" : "Maximum"} Rule
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1542,47 +2041,23 @@ export default function FormulaBuilderComponent({
               )}
               
               {/* Min/Max Price Constraints */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="min-price" className="dark:text-gray-200">Minimum Price (optional)</Label>
-                  <div className="relative mt-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
-                    <Input
-                      id="min-price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={minPriceDollars}
-                      onChange={(e) => handleMinPriceChange(e.target.value)}
-                      placeholder="0.00"
-                      className="pl-7"
-                      data-testid="input-min-price"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    If the calculated price is below this, show this minimum instead
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="max-price" className="dark:text-gray-200">Maximum Price (optional)</Label>
-                  <div className="relative mt-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
-                    <Input
-                      id="max-price"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={maxPriceDollars}
-                      onChange={(e) => handleMaxPriceChange(e.target.value)}
-                      placeholder="0.00"
-                      className="pl-7"
-                      data-testid="input-max-price"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    If the calculated price is above this, show this maximum instead
-                  </p>
-                </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {renderConstraintSection(
+                  "min",
+                  "Default Minimum Price (optional)",
+                  minPriceDollars,
+                  handleMinPriceChange,
+                  "If no conditional minimum matches and the calculated price is below this, use this value instead.",
+                  formula.conditionalMinPrices,
+                )}
+                {renderConstraintSection(
+                  "max",
+                  "Default Maximum Price (optional)",
+                  maxPriceDollars,
+                  handleMaxPriceChange,
+                  "If no conditional maximum matches and the calculated price is above this, use this value instead.",
+                  formula.conditionalMaxPrices,
+                )}
               </div>
               
               {/* Formula Help */}

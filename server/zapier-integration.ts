@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { nanoid } from "nanoid";
 import { db } from "./db";
 import { zapierWebhooks, zapierApiKeys, leads, formulas, estimates, type ZapierWebhook, type ZapierApiKey } from "@shared/schema";
@@ -6,17 +7,21 @@ import type { Request, Response } from "express";
 
 // Zapier integration service for managing webhooks and API authentication
 export class ZapierIntegrationService {
+  static hashApiKey(apiKey: string): string {
+    return createHash("sha256").update(apiKey).digest("hex");
+  }
   
   // Generate a new API key for Zapier authentication
   static async generateApiKey(userId: string, name: string = "Zapier Integration"): Promise<ZapierApiKey> {
     const apiKey = `zap_${nanoid(32)}`;
+    const keyHash = this.hashApiKey(apiKey);
     
     const [zapierKey] = await db
       .insert(zapierApiKeys)
       .values({
         userId,
         name,
-        keyHash: apiKey, // In production, this should be hashed
+        keyHash,
         createdAt: new Date(),
         lastUsed: null,
         isActive: true
@@ -32,23 +37,46 @@ export class ZapierIntegrationService {
       return null;
     }
 
+    const hashedKey = this.hashApiKey(apiKey);
+
     const [key] = await db
       .select()
       .from(zapierApiKeys)
       .where(and(
-        eq(zapierApiKeys.keyHash, apiKey),
+        eq(zapierApiKeys.keyHash, hashedKey),
         eq(zapierApiKeys.isActive, true)
       ));
 
-    if (key) {
+    let validatedKey = key || null;
+
+    if (!validatedKey) {
+      const [legacyKey] = await db
+        .select()
+        .from(zapierApiKeys)
+        .where(and(
+          eq(zapierApiKeys.keyHash, apiKey),
+          eq(zapierApiKeys.isActive, true)
+        ));
+
+      if (legacyKey) {
+        await db
+          .update(zapierApiKeys)
+          .set({ keyHash: hashedKey, lastUsed: new Date() })
+          .where(eq(zapierApiKeys.id, legacyKey.id));
+
+        validatedKey = { ...legacyKey, keyHash: hashedKey };
+      }
+    }
+
+    if (validatedKey) {
       // Update last used timestamp
       await db
         .update(zapierApiKeys)
         .set({ lastUsed: new Date() })
-        .where(eq(zapierApiKeys.id, key.id));
+        .where(eq(zapierApiKeys.id, validatedKey.id));
     }
 
-    return key || null;
+    return validatedKey;
   }
 
   // Subscribe to webhook for instant triggers
@@ -87,14 +115,21 @@ export class ZapierIntegrationService {
   }
 
   // Unsubscribe webhook by URL (used by Zapier unsubscribe)
-  static async unsubscribeWebhookByUrl(targetUrl: string, userId: string): Promise<boolean> {
+  static async unsubscribeWebhookByUrl(targetUrl: string, userId: string, event?: string): Promise<boolean> {
+    const conditions = [
+      eq(zapierWebhooks.targetUrl, targetUrl),
+      eq(zapierWebhooks.userId, userId),
+      eq(zapierWebhooks.isActive, true),
+    ];
+
+    if (event) {
+      conditions.push(eq(zapierWebhooks.event, event));
+    }
+
     const result = await db
       .update(zapierWebhooks)
       .set({ isActive: false })
-      .where(and(
-        eq(zapierWebhooks.targetUrl, targetUrl),
-        eq(zapierWebhooks.userId, userId)
-      ));
+      .where(and(...conditions));
 
     return (result?.rowCount || 0) > 0;
   }

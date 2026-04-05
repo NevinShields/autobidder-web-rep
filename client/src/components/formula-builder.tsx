@@ -720,9 +720,9 @@ export default function FormulaBuilderComponent({
 
     return (
       <div className={cn("space-y-4 rounded-2xl border p-4 shadow-sm", tone.shell)}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className={cn("font-medium", tone.badge)}>
                 {type === "min" ? "Minimum logic" : "Maximum logic"}
               </Badge>
@@ -730,17 +730,17 @@ export default function FormulaBuilderComponent({
             </div>
             <div>
               <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{description}</p>
+              <p className="break-words text-xs text-slate-500 dark:text-slate-400">{description}</p>
             </div>
           </div>
-          <div className="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
+          <div className="w-fit max-w-full rounded-full border border-white/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
             {enabled ? `${rules?.length || 0} override${(rules?.length || 0) === 1 ? "" : "s"}` : "Default only"}
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+        <div className="grid gap-3 2xl:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
           <div className="rounded-xl border border-white/70 bg-white/85 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50">
-            <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="mb-2 flex flex-col gap-1">
               <Label htmlFor={`${type}-price`} className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 Default fallback
               </Label>
@@ -768,12 +768,12 @@ export default function FormulaBuilderComponent({
           </div>
 
           <div className={cn("rounded-xl border p-4 shadow-sm", tone.ruleBorder, tone.soft)}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
+            <div className="flex flex-col gap-3">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Conditional overrides
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="break-words text-xs text-slate-500 dark:text-slate-400">
                   {tone.switchCopy}
                 </p>
               </div>
@@ -797,7 +797,7 @@ export default function FormulaBuilderComponent({
                   variant="outline"
                   size="sm"
                   onClick={() => toggleConstraintRules(type, true)}
-                  className="mt-3 h-9 text-sm"
+                  className="mt-3 h-9 w-full text-sm sm:w-auto"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Enable Conditional {type === "min" ? "Minimums" : "Maximums"}
@@ -815,8 +815,8 @@ export default function FormulaBuilderComponent({
                       tone.ruleBorder,
                     )}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-2">
+                    <div className="flex flex-col gap-3">
+                      <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant="outline" className="border-slate-200 bg-slate-100/80 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                             Rule {ruleIndex + 1}
@@ -825,11 +825,11 @@ export default function FormulaBuilderComponent({
                             {rule.operator || "AND"} logic
                           </Badge>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                        <div className="min-w-0">
+                          <p className="break-words text-sm font-medium text-slate-900 dark:text-slate-100">
                             {getConstraintSummary(rule, type)}
                           </p>
-                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          <p className="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">
                             Matching answers override the default fallback above.
                           </p>
                         </div>
@@ -839,13 +839,13 @@ export default function FormulaBuilderComponent({
                         variant="ghost"
                         size="sm"
                         onClick={() => removeConstraintRule(type, rule.id)}
-                        className="h-9 w-9 rounded-full p-0 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                        className="h-9 w-9 shrink-0 rounded-full p-0 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
 
-                    <div className="mt-4 grid gap-4 xl:grid-cols-[160px_minmax(0,1fr)]">
+                    <div className="mt-4 grid gap-4 2xl:grid-cols-[160px_minmax(0,1fr)]">
                       <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/50">
                         <Label className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                           Override value
@@ -869,11 +869,11 @@ export default function FormulaBuilderComponent({
                         </p>
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div>
+                      <div className="min-w-0 space-y-3">
+                        <div className="flex flex-col gap-3">
+                          <div className="min-w-0 flex-1">
                             <Label className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Match these conditions</Label>
-                            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            <p className="mt-1 break-words text-xs text-slate-500 dark:text-slate-400">
                               Decide when this override becomes active.
                             </p>
                           </div>
@@ -882,7 +882,7 @@ export default function FormulaBuilderComponent({
                               value={rule.operator || "AND"}
                               onValueChange={(nextValue) => updateConstraintRule(type, rule.id, { operator: nextValue as "AND" | "OR" })}
                             >
-                              <SelectTrigger className="h-9 w-28 bg-white text-xs dark:bg-slate-950">
+                              <SelectTrigger className="h-9 w-full bg-white text-xs dark:bg-slate-950">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -921,12 +921,12 @@ export default function FormulaBuilderComponent({
                                 )}
                               </div>
 
-                              <div className="grid gap-2 xl:grid-cols-3">
+                              <div className="grid gap-2 2xl:grid-cols-3">
                                 <Select
                                   value={condition.dependsOnVariable || ""}
                                   onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { dependsOnVariable: nextValue })}
                                 >
-                                  <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                  <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
                                     <SelectValue placeholder="Question or variable" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -943,7 +943,7 @@ export default function FormulaBuilderComponent({
                                   onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { condition: nextValue as VariableCondition["condition"] })}
                                   disabled={!condition.dependsOnVariable}
                                 >
-                                  <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                  <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
                                     <SelectValue placeholder="Comparison" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -961,7 +961,7 @@ export default function FormulaBuilderComponent({
                                       value={String(condition.expectedValue ?? "")}
                                       onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { expectedValue: nextValue })}
                                     >
-                                      <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                      <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
                                         <SelectValue placeholder="Expected value" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -977,7 +977,7 @@ export default function FormulaBuilderComponent({
                                       value={String(condition.expectedValue ?? "")}
                                       onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { expectedValue: nextValue === "true" })}
                                     >
-                                      <SelectTrigger className="h-10 bg-white text-sm dark:bg-slate-950">
+                                      <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
                                         <SelectValue placeholder="Expected value" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -988,7 +988,7 @@ export default function FormulaBuilderComponent({
                                   ) : (
                                     <Input
                                       type={isNumericDependency ? "number" : "text"}
-                                      className="h-10 bg-white text-sm dark:bg-slate-950"
+                                      className="h-10 w-full bg-white text-sm dark:bg-slate-950"
                                       value={String(condition.expectedValue ?? "")}
                                       onChange={(e) =>
                                         updateConstraintCondition(type, rule.id, condition.id, {
@@ -1001,7 +1001,7 @@ export default function FormulaBuilderComponent({
                                     />
                                   )
                                 ) : (
-                                  <div className="flex h-10 items-center rounded-md border border-dashed border-slate-200 bg-white px-3 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-950">
+                                  <div className="flex min-w-0 h-10 items-center rounded-md border border-dashed border-slate-200 bg-white px-3 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-950">
                                     No value needed for this comparison
                                   </div>
                                 )}

@@ -46,7 +46,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
   const [type, setType] = useState<Variable["type"]>("number");
   const [unit, setUnit] = useState("");
   const [allowMultipleSelection, setAllowMultipleSelection] = useState(false);
-  const [options, setOptions] = useState([{ label: "", value: "", numericValue: 0, image: "" }]);
+  const [options, setOptions] = useState([{ label: "", value: "", numericValue: 0, image: "", questionCardImage: "" }]);
   const [min, setMin] = useState<number>(0);
   const [max, setMax] = useState<number>(100);
   const [step, setStep] = useState<number>(1);
@@ -189,7 +189,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
         label: opt.label || "",
         value: opt.value?.toString() || "",
         numericValue: opt.numericValue || 0,
-        image: opt.image || ""
+        image: opt.image || "",
+        questionCardImage: opt.questionCardImage || ""
       })));
     }
     if (linkable.variable.tooltip) {
@@ -265,7 +266,8 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
               label: opt.label.trim(),
               value: opt.value || opt.label.trim(),
               numericValue: opt.numericValue || 0,
-              image: opt.image || undefined
+              image: opt.image || undefined,
+              questionCardImage: opt.questionCardImage || undefined
             }));
 
             if (type === 'multiple-choice' && allowMultipleSelection) {
@@ -305,7 +307,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
     setType("number");
     setUnit("");
     setAllowMultipleSelection(false);
-    setOptions([{ label: "", value: "", numericValue: 0, image: "" }]);
+    setOptions([{ label: "", value: "", numericValue: 0, image: "", questionCardImage: "" }]);
     setMin(0);
     setMax(100);
     setStep(1);
@@ -337,7 +339,7 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
   };
 
   const addOption = () => {
-    setOptions([...options, { label: "", value: "", numericValue: 0, image: "" }]);
+    setOptions([...options, { label: "", value: "", numericValue: 0, image: "", questionCardImage: "" }]);
   };
 
   const removeOption = (index: number) => {
@@ -353,12 +355,12 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
     setOptions(updatedOptions);
   };
 
-  const handleImageUpload = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (index: number, field: 'image' | 'questionCardImage', event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        updateOption(index, 'image', e.target?.result as string);
+        updateOption(index, field, e.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -669,35 +671,69 @@ export default function AddVariableModal({ isOpen, onClose, onAddVariable, other
                     className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 space-y-3"
                   >
                     <div className="flex items-start gap-3">
-                      {/* Image upload for multiple-choice */}
-                      {type === 'multiple-choice' && (
-                        <div className="flex-shrink-0">
-                          {option.image ? (
-                            <div className="relative">
-                              <img
-                                src={option.image}
-                                alt="Option"
-                                className="w-12 h-12 object-cover rounded-lg border"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => updateOption(index, 'image', '')}
-                                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
+                      {(type === 'multiple-choice' || type === 'dropdown') && (
+                        <div className="flex-shrink-0 flex gap-2">
+                          {type === 'multiple-choice' && (
+                            <div className="space-y-1">
+                              <div className="text-[10px] text-gray-500 text-center">Icon</div>
+                              {option.image ? (
+                                <div className="relative">
+                                  <img
+                                    src={option.image}
+                                    alt="Option icon"
+                                    className="w-12 h-12 object-cover rounded-lg border"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => updateOption(index, 'image', '')}
+                                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="w-12 h-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                                  <Upload className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(index, 'image', e)}
+                                    className="hidden"
+                                  />
+                                </label>
+                              )}
                             </div>
-                          ) : (
-                            <label className="w-12 h-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
-                              <Upload className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => handleImageUpload(index, e)}
-                                className="hidden"
-                              />
-                            </label>
                           )}
+
+                          <div className="space-y-1">
+                            <div className="text-[10px] text-gray-500 text-center">Card</div>
+                            {option.questionCardImage ? (
+                              <div className="relative">
+                                <img
+                                  src={option.questionCardImage}
+                                  alt="Question card option"
+                                  className="w-12 h-12 object-cover rounded-lg border"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => updateOption(index, 'questionCardImage', '')}
+                                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="w-12 h-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors">
+                                <Upload className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleImageUpload(index, 'questionCardImage', e)}
+                                  className="hidden"
+                                />
+                              </label>
+                            )}
+                          </div>
                         </div>
                       )}
 

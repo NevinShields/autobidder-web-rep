@@ -60,7 +60,7 @@ export default function DirectoryCategoryPage() {
   useEffect(() => {
     if (data?.category) {
       const name = data.category.name;
-      document.title = data.category.seoTitle || `${name} Prices & Cost Calculator | Compare Local ${name} Costs`;
+      document.title = `${name} Prices`;
       const desc = data.category.seoDescription || `Check ${name.toLowerCase()} prices and costs in your city. Use our free ${name.toLowerCase()} cost calculator to compare prices from verified local providers.`;
       const meta = document.querySelector('meta[name="description"]');
       if (meta) {
@@ -112,7 +112,7 @@ export default function DirectoryCategoryPage() {
           ) : (
             <>
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-3">
-                {data?.category?.seoTitle || `${data?.category?.name} Prices & Cost Calculator`}
+                {data?.category?.name} Prices
               </h1>
               <p className="text-gray-500 max-w-2xl text-lg leading-relaxed">
                 {data?.category?.seoDescription || `Compare ${data?.category?.name?.toLowerCase()} prices and costs in your city. Use our free calculator to get instant pricing from verified local providers.`}

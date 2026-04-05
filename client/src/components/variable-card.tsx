@@ -45,11 +45,12 @@ interface VariableCardProps {
 }
 
 interface SortableOptionItemProps {
-  option: { label: string; value: string | number; numericValue?: number; image?: string; id?: string; defaultUnselectedValue?: number };
+  option: { label: string; value: string | number; numericValue?: number; image?: string; questionCardImage?: string; id?: string; defaultUnselectedValue?: number };
   index: number;
-  showImage?: boolean;
+  showIconImage?: boolean;
+  showQuestionCardImage?: boolean;
   showDefaultUnselected?: boolean;
-  onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string; defaultUnselectedValue?: number }) => void;
+  onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string; questionCardImage?: string; defaultUnselectedValue?: number }) => void;
   onDelete: (index: number) => void;
   onAIGenerate?: (index: number) => void;
 }
@@ -65,7 +66,7 @@ const typeConfig: Record<string, { icon: any; label: string; color: string }> = 
   select: { icon: List, label: "Select", color: "bg-orange-100 text-orange-700 border-orange-200" },
 };
 
-function SortableOptionItem({ option, index, showImage = false, showDefaultUnselected = false, onUpdate, onDelete, onAIGenerate }: SortableOptionItemProps) {
+function SortableOptionItem({ option, index, showIconImage = false, showQuestionCardImage = false, showDefaultUnselected = false, onUpdate, onDelete, onAIGenerate }: SortableOptionItemProps) {
   const {
     attributes,
     listeners,
@@ -81,7 +82,7 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (field: 'image' | 'questionCardImage', event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
@@ -94,7 +95,7 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
       }
       const reader = new FileReader();
       reader.onload = (e) => {
-        onUpdate(index, { image: e.target?.result as string });
+        onUpdate(index, { [field]: e.target?.result as string });
       };
       reader.readAsDataURL(file);
     }
@@ -114,33 +115,69 @@ function SortableOptionItem({ option, index, showImage = false, showDefaultUnsel
         <GripVertical className="w-4 h-4" />
       </div>
 
-      {showImage && (
-        <div className="flex-shrink-0">
-          {option.image ? (
-            <div className="relative group">
-              <img
-                src={option.image}
-                alt={option.label}
-                className="w-10 h-10 object-cover rounded-lg border dark:border-gray-600"
-              />
-              <button
-                type="button"
-                onClick={() => onUpdate(index, { image: '' })}
-                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-3 h-3" />
-              </button>
+      {(showIconImage || showQuestionCardImage) && (
+        <div className="flex-shrink-0 flex gap-2">
+          {showIconImage && (
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 text-center">Icon</div>
+              {option.image ? (
+                <div className="relative group">
+                  <img
+                    src={option.image}
+                    alt={option.label}
+                    className="w-10 h-10 object-cover rounded-lg border dark:border-gray-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onUpdate(index, { image: '' })}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="w-10 h-10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Upload icon image">
+                  <Upload className="w-4 h-4 text-gray-400" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImageUpload('image', event)}
+                    className="hidden"
+                  />
+                </label>
+              )}
             </div>
-          ) : (
-            <label className="w-10 h-10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Upload image">
-              <Upload className="w-4 h-4 text-gray-400" />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </label>
+          )}
+          {showQuestionCardImage && (
+            <div className="space-y-1">
+              <div className="text-[10px] text-gray-500 text-center">Card</div>
+              {option.questionCardImage ? (
+                <div className="relative group">
+                  <img
+                    src={option.questionCardImage}
+                    alt={option.label}
+                    className="w-10 h-10 object-cover rounded-lg border dark:border-gray-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onUpdate(index, { questionCardImage: '' })}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="w-10 h-10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Upload question card image">
+                  <Upload className="w-4 h-4 text-gray-400" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImageUpload('questionCardImage', event)}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -390,7 +427,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
       let updates: Partial<Variable> = { type: editType };
 
       if (needsOptions && !hadOptions) {
-        updates.options = [{ id: "option_1", label: "Option 1", value: "option_1", numericValue: 0, image: "" }];
+        updates.options = [{ id: "option_1", label: "Option 1", value: "option_1", numericValue: 0, image: "", questionCardImage: "" }];
       } else if (!needsOptions && hadOptions) {
         updates.options = undefined;
       }
@@ -463,7 +500,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
     if (!onUpdate) return;
     const num = (variable.options?.length || 0) + 1;
     const optionId = `option_${num}`;
-    const newOption = { id: optionId, label: `Option ${num}`, value: optionId, numericValue: 0, image: "" };
+    const newOption = { id: optionId, label: `Option ${num}`, value: optionId, numericValue: 0, image: "", questionCardImage: "" };
     onUpdate(variable.id, { options: [...(variable.options || []), newOption] });
   };
 
@@ -1349,7 +1386,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           key={`option-${index}`}
                           option={option}
                           index={index}
-                          showImage={variable.type === 'multiple-choice'}
+                          showIconImage={variable.type === 'multiple-choice'}
+                          showQuestionCardImage={variable.type === 'multiple-choice' || variable.type === 'dropdown'}
                           showDefaultUnselected={variable.type === 'multiple-choice' && variable.allowMultipleSelection}
                           onUpdate={handleOptionUpdate}
                           onDelete={handleDeleteOption}

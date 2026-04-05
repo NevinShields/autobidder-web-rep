@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calculator, Plus, Edit, Trash2, ExternalLink, Copy, Settings, GripVertical, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ import type { Formula } from "@shared/schema";
 
 
 // Sortable Formula Card Component
-function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onToggleActive, getServiceIcon, onUpdateIcon, onUploadIcon, isIconSaving, isIconUploading }: {
+function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onToggleActive, getServiceIcon, onUpdateIcon, onUploadIcon, onApplyIconGroupToAllServices, isIconSaving, isIconUploading, isApplyingIconGroupToAllServices }: {
   formula: Formula;
   onPreview: (formula: Formula) => void;
   onDelete: (formula: Formula) => void;
@@ -58,8 +58,10 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
   getServiceIcon: (formula: Formula) => any;
   onUpdateIcon: (id: number, iconId: number | null, iconUrl: string | null) => void;
   onUploadIcon: (id: number, file: File) => void;
+  onApplyIconGroupToAllServices: (groupId: number) => void;
   isIconSaving: boolean;
   isIconUploading: boolean;
+  isApplyingIconGroupToAllServices: boolean;
 }) {
   const [showIconOptions, setShowIconOptions] = useState(false);
   const {
@@ -162,6 +164,9 @@ function SortableFormulaCard({ formula, onPreview, onDelete, onCopyEmbed, onTogg
               <IconSelector
                 selectedIconId={formula.iconId || undefined}
                 onIconSelect={(iconId, iconUrl) => onUpdateIcon(formula.id, iconId, iconUrl)}
+                showApplyGroupToAllServices
+                onApplyGroupToAllServices={onApplyIconGroupToAllServices}
+                isApplyingGroupToAllServices={isApplyingIconGroupToAllServices}
                 triggerText="Library"
                 size="sm"
                 triggerVariant="outline"
@@ -222,7 +227,6 @@ export default function FormulasPage() {
   const { data: formulas = [], isLoading } = useQuery<Formula[]>({
     queryKey: ['/api/formulas'],
   });
-
 
   // Drag and drop sensors with activation constraints
   const sensors = useSensors(
@@ -371,6 +375,27 @@ export default function FormulasPage() {
     onSettled: () => {
       setSavingIconFormulaId(null);
       queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
+    },
+  });
+
+  const applyIconGroupMutation = useMutation({
+    mutationFn: async (groupId: number) => {
+      const response = await apiRequest('POST', '/api/formulas/apply-icon-group', { groupId });
+      return response.json();
+    },
+    onSuccess: (result: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/formulas'] });
+      toast({
+        title: "Icon group applied",
+        description: `Updated ${result.updatedCount || 0} services${result.skippedCount ? `, skipped ${result.skippedCount}` : ''}.`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Apply failed",
+        description: "Could not update service icons from the selected group.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -569,8 +594,10 @@ export default function FormulasPage() {
                     getServiceIcon={getServiceIcon}
                     onUpdateIcon={(id, iconId, iconUrl) => updateFormulaIconMutation.mutate({ id, iconId, iconUrl })}
                     onUploadIcon={handleUploadFormulaIcon}
+                    onApplyIconGroupToAllServices={(groupId) => applyIconGroupMutation.mutate(groupId)}
                     isIconSaving={savingIconFormulaId === formula.id}
                     isIconUploading={uploadingIconFormulaId === formula.id}
+                    isApplyingIconGroupToAllServices={applyIconGroupMutation.isPending}
                   />
                 ))}
               </div>

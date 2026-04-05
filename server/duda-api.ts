@@ -109,6 +109,7 @@ interface DudaImportBlogPostRequest {
 // Blog API Types — Update (PATCH .../blog/posts/{id})
 interface DudaUpdateBlogPostRequest {
   title?: string;
+  content?: string;
   meta_title?: string;
   description?: string;
   author_name?: string;
@@ -116,6 +117,8 @@ interface DudaUpdateBlogPostRequest {
   path?: string;           // URL slug
   no_index?: boolean;
   schedule_publish_date?: string;
+  main_image?: { url: string };
+  thumbnail?: { url: string };
 }
 
 interface DudaBlogPostResponse {
@@ -145,6 +148,19 @@ interface DudaBlogPostResponse {
 interface DudaBlogPostListResponse {
   results: DudaBlogPostResponse[];
   total_responses: number;
+}
+
+interface DudaBlogResponse {
+  id?: string;
+  name?: string;
+  status?: string;
+}
+
+interface DudaSnippet {
+  id: string;
+  markup?: string;
+  location?: string;
+  published?: boolean;
 }
 
 export class DudaApiService {
@@ -569,6 +585,109 @@ export class DudaApiService {
 
   // ==================== Blog API Methods ====================
 
+  async getBlog(siteName: string): Promise<DudaBlogResponse> {
+    try {
+      console.log(`📝 Getting blog for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      console.log(`📝 Duda get blog response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda get blog error (${response.status}):`, error);
+        throw new Error(`Duda API error getting blog: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        return {};
+      }
+
+      try {
+        return JSON.parse(responseText);
+      } catch {
+        return {};
+      }
+    } catch (error) {
+      console.error('❌ Full error in getBlog:', error);
+      throw error;
+    }
+  }
+
+  async createBlog(siteName: string): Promise<DudaBlogResponse> {
+    try {
+      console.log(`📝 Creating blog for site: ${siteName}`);
+
+      const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({})
+      });
+
+      console.log(`📝 Duda create blog response status: ${response.status}`);
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error(`❌ Duda create blog error (${response.status}):`, error);
+        throw new Error(`Duda API error creating blog: ${response.status} - ${error}`);
+      }
+
+      const responseText = await response.text();
+      if (!responseText.trim()) {
+        return {};
+      }
+
+      try {
+        return JSON.parse(responseText);
+      } catch {
+        return {};
+      }
+    } catch (error) {
+      console.error('❌ Full error in createBlog:', error);
+      throw error;
+    }
+  }
+
+  async ensureBlogExists(siteName: string): Promise<void> {
+    try {
+      await this.getBlog(siteName);
+      console.log(`✅ Blog already exists for site: ${siteName}`);
+      return;
+    } catch (error: any) {
+      const message = String(error?.message || "");
+      const missingBlog =
+        message.includes("Duda API error getting blog: 404") ||
+        /blog.*not found/i.test(message) ||
+        /not found.*blog/i.test(message);
+
+      if (!missingBlog) {
+        throw error;
+      }
+    }
+
+    try {
+      await this.createBlog(siteName);
+      console.log(`✅ Blog created for site: ${siteName}`);
+    } catch (error: any) {
+      const message = String(error?.message || "");
+      const alreadyExists =
+        message.includes("409") ||
+        /already exists/i.test(message) ||
+        /duplicate/i.test(message);
+
+      if (alreadyExists) {
+        console.log(`✅ Blog already existed during create for site: ${siteName}`);
+        return;
+      }
+
+      throw error;
+    }
+  }
+
   async createBlogPost(siteName: string, post: DudaImportBlogPostRequest): Promise<DudaBlogPostResponse> {
     try {
       const url = `${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/blog/posts/import`;
@@ -854,6 +973,69 @@ export class DudaApiService {
     } catch (error) {
       console.error('❌ Full error in uploadResources:', error);
       throw error;
+    }
+  }
+
+  async listSnippets(siteName: string): Promise<DudaSnippet[]> {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/snippets`, {
+      method: 'GET',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error listing snippets: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data : (data?.results || []);
+  }
+
+  async createSnippet(siteName: string, input: { markup: string; location?: string }): Promise<DudaSnippet> {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/snippets`, {
+      method: 'POST',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({
+        markup: input.markup,
+        location: input.location || 'BODY'
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error creating snippet: ${response.status} - ${error}`);
+    }
+
+    return await response.json();
+  }
+
+  async updateSnippet(siteName: string, snippetId: string, input: { markup: string; location?: string }): Promise<DudaSnippet> {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/snippets/${encodeURIComponent(snippetId)}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+      body: JSON.stringify({
+        markup: input.markup,
+        location: input.location || 'BODY'
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error updating snippet: ${response.status} - ${error}`);
+    }
+
+    return await response.json();
+  }
+
+  async publishSnippet(siteName: string, snippetId: string): Promise<void> {
+    const response = await fetch(`${this.config.baseUrl}/sites/multiscreen/${encodeURIComponent(siteName)}/snippets/${encodeURIComponent(snippetId)}/publish`, {
+      method: 'POST',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Duda API error publishing snippet: ${response.status} - ${error}`);
     }
   }
 

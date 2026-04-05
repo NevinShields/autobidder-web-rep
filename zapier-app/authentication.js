@@ -56,5 +56,5 @@ module.exports = {
     },
   ],
   test: testAuth,
-  connectionLabel: '{{user.username}} - {{user.businessName}}',
+  connectionLabel: '{{user.email}}',
 };

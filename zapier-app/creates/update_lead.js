@@ -8,13 +8,13 @@ const perform = async (z, bundle) => {
     },
     body: {
       leadId: bundle.inputData.leadId,
-      status: bundle.inputData.status,
+      stage: bundle.inputData.status,
       notes: bundle.inputData.notes,
       totalPrice: bundle.inputData.totalPrice,
     },
   });
 
-  return response.data;
+  return response.data.lead;
 };
 
 module.exports = {
@@ -66,21 +66,17 @@ module.exports = {
       },
     ],
     sample: {
-      success: true,
-      lead: {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        stage: "contacted",
-        notes: "Customer confirmed appointment"
-      },
-      message: "Lead updated successfully"
+      id: "1",
+      name: "John Doe",
+      email: "john@example.com",
+      stage: "contacted",
+      notes: "Customer confirmed appointment"
     },
     outputFields: [
       { key: 'id', label: 'Lead ID', type: 'string' },
       { key: 'name', label: 'Customer Name', type: 'string' },
       { key: 'email', label: 'Customer Email', type: 'string' },
-      { key: 'status', label: 'Status', type: 'string' },
+      { key: 'stage', label: 'Status', type: 'string' },
       { key: 'totalPrice', label: 'Total Price', type: 'number' },
       { key: 'updatedAt', label: 'Updated At', type: 'datetime' },
     ],

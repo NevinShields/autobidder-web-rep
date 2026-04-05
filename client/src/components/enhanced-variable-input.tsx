@@ -383,6 +383,18 @@ export default function EnhancedVariableInput({
   };
 
   const labelStyle = hasCustomCSS ? {} : getLabelStyle();
+  const getOptionIconImage = (option?: { image?: string }) => option?.image;
+  const getOptionQuestionCardImage = (option?: { questionCardImage?: string; image?: string }) =>
+    option?.questionCardImage || option?.image;
+  const selectedOption = variable.options?.find(
+    (option) => option.value?.toString() === value?.toString()
+  );
+  const selectedMultipleChoiceQuestionCardOptions = variable.type === 'multiple-choice'
+    ? (variable.options?.filter((option, optionIndex) => {
+        const uniqueId = `${option.value}_${optionIndex}`;
+        return selectedOptions.includes(uniqueId) && option.questionCardImage;
+      }) || [])
+    : [];
 
   switch (variable.type) {
     case 'number':
@@ -633,12 +645,34 @@ export default function EnhancedVariableInput({
             <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full" data-testid={`select-${variable.id}`} data-variable-id={variable.id}>
-                <SelectValue placeholder="Select an option" />
+                {selectedOption ? (
+                  <div className="flex items-center gap-2 min-w-0">
+                    {getOptionQuestionCardImage(selectedOption) ? (
+                      <img
+                        src={getOptionQuestionCardImage(selectedOption)}
+                        alt={selectedOption.label}
+                        className="w-6 h-6 rounded object-cover flex-shrink-0"
+                      />
+                    ) : null}
+                    <span className="truncate">{selectedOption.label}</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="Select an option" />
+                )}
               </SelectTrigger>
               <SelectContent className="ab-select-content">
                 {variable.options?.map((option) => (
                   <SelectItem key={option.value} value={option.value.toString()}>
-                    {option.label}
+                    <div className="flex items-center gap-2">
+                      {getOptionQuestionCardImage(option) ? (
+                        <img
+                          src={getOptionQuestionCardImage(option)}
+                          alt={option.label}
+                          className="w-6 h-6 rounded object-cover flex-shrink-0"
+                        />
+                      ) : null}
+                      <span>{option.label}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -733,6 +767,25 @@ export default function EnhancedVariableInput({
               style={hasCustomCSS ? {} : { ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }}
               prefillSource={prefillSource}
             />
+          {selectedMultipleChoiceQuestionCardOptions.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-1">
+              {selectedMultipleChoiceQuestionCardOptions.map((option) => (
+                <div
+                  key={`selected-preview-${option.value}`}
+                  className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+                >
+                  <img
+                    src={option.questionCardImage}
+                    alt={option.label}
+                    className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                  />
+                  <div className="px-3 py-2 text-sm font-medium text-gray-900">
+                    {option.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           {variable.allowMultipleSelection && (
             <p className="text-xs text-gray-500">Multiple selections allowed</p>
           )}
@@ -788,9 +841,9 @@ export default function EnhancedVariableInput({
                     {(() => {
                       const imageSize = getImageSize(normalizedMultiChoiceImageSize);
                       
-                      return option.image ? (
+                      return getOptionIconImage(option) ? (
                         <img 
-                          src={option.image} 
+                          src={getOptionIconImage(option)} 
                           alt={option.label}
                           className={imageSize.className}
                           style={{
@@ -849,12 +902,34 @@ export default function EnhancedVariableInput({
             <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full">
-                <SelectValue placeholder="Select an option" />
+                {selectedOption ? (
+                  <div className="flex items-center gap-2 min-w-0">
+                    {getOptionQuestionCardImage(selectedOption) ? (
+                      <img
+                        src={getOptionQuestionCardImage(selectedOption)}
+                        alt={selectedOption.label}
+                        className="w-6 h-6 rounded object-cover flex-shrink-0"
+                      />
+                    ) : null}
+                    <span className="truncate">{selectedOption.label}</span>
+                  </div>
+                ) : (
+                  <SelectValue placeholder="Select an option" />
+                )}
               </SelectTrigger>
               <SelectContent className="ab-select-content">
                 {variable.options?.map((option) => (
                   <SelectItem key={option.value} value={option.value.toString()}>
-                    {option.label}
+                    <div className="flex items-center gap-2">
+                      {getOptionQuestionCardImage(option) ? (
+                        <img
+                          src={getOptionQuestionCardImage(option)}
+                          alt={option.label}
+                          className="w-6 h-6 rounded object-cover flex-shrink-0"
+                        />
+                      ) : null}
+                      <span>{option.label}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>

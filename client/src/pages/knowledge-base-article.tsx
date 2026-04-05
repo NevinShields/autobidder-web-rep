@@ -394,7 +394,7 @@ function ArticleContent() {
                       <div className="group flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-200 dark:hover:border-amber-700 hover:shadow-sm cursor-pointer transition-all">
                         <BookMarked className="w-4 h-4 text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-2">{rel.title}</p>
+                          <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-none sm:line-clamp-2">{rel.title}</p>
                           {rel.summary && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{rel.summary}</p>}
                         </div>
                         <ArrowRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />

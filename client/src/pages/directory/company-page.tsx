@@ -97,7 +97,7 @@ export default function DirectoryCompanyPage() {
   // SEO: Set page title and meta description
   useEffect(() => {
     if (profile) {
-      document.title = `${profile.companyName} Prices & Cost Calculator | ${profile.city}, ${profile.state}`;
+      document.title = `${profile.companyName} Prices in ${profile.city}, ${profile.state}`;
       const desc = `Check prices and costs from ${profile.companyName} in ${profile.city}, ${profile.state}. Use free pricing calculators to get instant quotes for ${profile.totalServices} service${profile.totalServices !== 1 ? 's' : ''}.`;
       const meta = document.querySelector('meta[name="description"]');
       if (meta) {
@@ -108,19 +108,17 @@ export default function DirectoryCompanyPage() {
         tag.content = desc;
         document.head.appendChild(tag);
       }
-      if (!landingPagePublished) {
-        const robots = document.querySelector('meta[name="robots"]');
-        if (robots) {
-          robots.setAttribute("content", "noindex, nofollow");
-        } else {
-          const tag = document.createElement("meta");
-          tag.name = "robots";
-          tag.content = "noindex, nofollow";
-          document.head.appendChild(tag);
-        }
+      const robots = document.querySelector('meta[name="robots"]');
+      if (robots) {
+        robots.setAttribute("content", "index, follow");
+      } else {
+        const tag = document.createElement("meta");
+        tag.name = "robots";
+        tag.content = "index, follow";
+        document.head.appendChild(tag);
       }
     }
-  }, [profile, landingPagePublished]);
+  }, [profile]);
 
   return (
     <div className="min-h-screen bg-gray-50/50">

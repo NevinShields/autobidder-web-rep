@@ -297,7 +297,7 @@ function ArticleCard({ article }: { article: KbArticle }) {
     <Link href={`/knowledge-base/article/${article.slug}`}>
       <div className="group flex flex-col h-full p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 hover:border-amber-200 dark:hover:border-amber-700 hover:shadow-md hover:shadow-amber-500/5 transition-all duration-200 cursor-pointer hover:-translate-y-0.5">
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-2 mb-2">
+          <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-none sm:line-clamp-2 mb-2">
             {article.title}
           </h3>
           {article.summary && (

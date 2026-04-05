@@ -236,6 +236,7 @@ export const businessSettings = pgTable("business_settings", {
   // Blog CTA defaults
   blogCtaEnabled: boolean("blog_cta_enabled").notNull().default(true),
   blogCtaUrl: text("blog_cta_url"),
+  blogLogoUrl: text("blog_logo_url"),
   // Stripe configuration
   stripeConfig: jsonb("stripe_config").$type<{
     standard: {
@@ -734,11 +735,24 @@ export const calendarEvents = pgTable("calendar_events", {
   userTypeIdx: index("calendar_events_user_type_idx").on(table.userId, table.type),
 }));
 
+export const iconGroups = pgTable("icon_groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  displayOrder: integer("display_order").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const icons = pgTable("icons", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   filename: text("filename").notNull().unique(),
   category: text("category").notNull().default("general"), // "general", "construction", "cleaning", "automotive", etc.
+  groupId: integer("group_id").references(() => iconGroups.id),
   description: text("description"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -1493,6 +1507,7 @@ export interface VariableOption {
   value: string | number;
   multiplier?: number;
   image?: string;
+  questionCardImage?: string;
   numericValue?: number;
   defaultUnselectedValue?: number;
 }
@@ -1590,6 +1605,7 @@ const variableOptionSchema: z.ZodType<VariableOption> = z.object({
   value: z.union([z.string(), z.number()]),
   multiplier: z.number().optional(),
   image: z.string().optional(),
+  questionCardImage: z.string().optional(),
   numericValue: z.number().optional(),
   defaultUnselectedValue: z.number().optional(),
 });
@@ -2137,6 +2153,14 @@ export type TemplateCategory = typeof templateCategories.$inferSelect;
 export type InsertTemplateCategory = z.infer<typeof insertTemplateCategorySchema>;
 
 // Icon types
+export type IconGroup = typeof iconGroups.$inferSelect;
+export type InsertIconGroup = z.infer<typeof insertIconGroupSchema>;
+export const insertIconGroupSchema = createInsertSchema(iconGroups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Icon = typeof icons.$inferSelect;
 export type InsertIcon = typeof icons.$inferInsert;
 export const insertIconSchema = createInsertSchema(icons).omit({
@@ -2160,6 +2184,14 @@ export const insertIconTagAssignmentSchema = createInsertSchema(iconTagAssignmen
 });
 
 // Icon Tag Relations
+export const iconGroupsRelations = relations(iconGroups, ({ many, one }) => ({
+  icons: many(icons),
+  createdBy: one(users, {
+    fields: [iconGroups.createdBy],
+    references: [users.id],
+  }),
+}));
+
 export const iconTagsRelations = relations(iconTags, ({ many, one }) => ({
   assignments: many(iconTagAssignments),
   createdBy: one(users, {
@@ -2168,8 +2200,12 @@ export const iconTagsRelations = relations(iconTags, ({ many, one }) => ({
   }),
 }));
 
-export const iconsRelations = relations(icons, ({ many }) => ({
+export const iconsRelations = relations(icons, ({ many, one }) => ({
   tagAssignments: many(iconTagAssignments),
+  group: one(iconGroups, {
+    fields: [icons.groupId],
+    references: [iconGroups.id],
+  }),
 }));
 
 export const iconTagAssignmentsRelations = relations(iconTagAssignments, ({ one }) => ({
@@ -3415,9 +3451,10 @@ export const directoryIndexCacheRelations = relations(directoryIndexCache, ({ on
 // TypeScript interfaces for JSONB columns
 export interface BlogContentSection {
   id: string;
-  type: "hero" | "text" | "job_summary" | "before_after" | "process_timeline" | "pricing_factors" | "faq" | "cta";
+  type: "hero" | "text" | "job_summary" | "before_after" | "process_timeline" | "pricing_factors" | "pricing_table" | "pricing_chart" | "faq" | "cta" | "autobidder_form" | "map_embed";
   content: any;
   isLocked: boolean;
+  enabled?: boolean;
 }
 
 export interface SeoChecklistItem {
@@ -3451,7 +3488,7 @@ export const blogPosts = pgTable("blog_posts", {
   userId: varchar("user_id").notNull().references(() => users.id),
 
   // Type & Targeting
-  blogType: text("blog_type").notNull(), // "job_showcase", "expert_opinion", "seasonal_tip", "faq_educational"
+  blogType: text("blog_type").notNull(), // "job_showcase", "job_type_keyword_targeting", "pricing_keyword_targeting", "faq_educational"
   primaryServiceId: integer("primary_service_id").references(() => formulas.id),
   targetCity: text("target_city"),
   targetNeighborhood: text("target_neighborhood"),
@@ -3466,6 +3503,7 @@ export const blogPosts = pgTable("blog_posts", {
   jobNotes: text("job_notes"),
   talkingPoints: jsonb("talking_points").$type<string[]>(),
   tonePreference: text("tone_preference"), // "professional", "friendly", "technical"
+  designStyle: text("design_style").default("classic_blue"),
 
   // Generated Content
   title: text("title").notNull(),

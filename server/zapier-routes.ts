@@ -8,9 +8,14 @@ import { eq, and } from "drizzle-orm";
 
 // Plans that have access to Zapier
 const ZAPIER_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
+const AUTOMATIONS_ALLOWED_PLANS = ['trial', 'standard', 'plus', 'plus_seo'];
 
 function canAccessZapier(plan: string | null | undefined): boolean {
   return ZAPIER_ALLOWED_PLANS.includes(plan || 'free');
+}
+
+function canAccessAutomations(plan: string | null | undefined): boolean {
+  return AUTOMATIONS_ALLOWED_PLANS.includes(plan || 'free');
 }
 
 async function getFreshZapierUser(req: any) {
@@ -20,6 +25,116 @@ async function getFreshZapierUser(req: any) {
   // Always read from DB to avoid stale session snapshots (common after upgrades/impersonation).
   const dbUser = await storage.getUserById(sessionUser.id);
   return dbUser || sessionUser;
+}
+
+async function resolveZapierLeadForUser(userId: string, leadId: number) {
+  const lead = await storage.getLead(leadId);
+  if (!lead) {
+    return null;
+  }
+
+  if (lead.userId === userId) {
+    return lead;
+  }
+
+  if (lead.formulaId) {
+    const formula = await storage.getFormula(lead.formulaId);
+    if (formula?.userId === userId) {
+      return lead;
+    }
+  }
+
+  return null;
+}
+
+function parseZapierImageUrls(value: unknown): string[] {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean);
+  }
+
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item).trim()).filter(Boolean);
+    }
+  } catch {
+    // Fall through to delimited parsing.
+  }
+
+  return trimmed
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function fileExtensionFromMimeType(mimeType: string): string {
+  if (mimeType.includes("jpeg")) return ".jpg";
+  if (mimeType.includes("png")) return ".png";
+  if (mimeType.includes("webp")) return ".webp";
+  if (mimeType.includes("gif")) return ".gif";
+  return ".jpg";
+}
+
+async function importZapierLeadImagesFromUrls(userId: string, imageUrlsValue: unknown): Promise<string[]> {
+  const imageUrls = parseZapierImageUrls(imageUrlsValue).slice(0, 5);
+  const uploadedImages: string[] = [];
+
+  for (const imageUrl of imageUrls) {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(imageUrl);
+    } catch {
+      continue;
+    }
+
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+      continue;
+    }
+
+    const response = await fetch(parsedUrl.toString());
+    if (!response.ok) {
+      continue;
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.startsWith("image/")) {
+      continue;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    if (buffer.length === 0 || buffer.length > 10 * 1024 * 1024) {
+      continue;
+    }
+
+    const fileExtension = path.extname(parsedUrl.pathname) || fileExtensionFromMimeType(contentType);
+    const objectPath = await uploadImageBufferToObjectStorage({
+      file: {
+        originalname: `zapier-lead-image${fileExtension}`,
+        mimetype: contentType,
+        size: buffer.length,
+        buffer,
+      } as Express.Multer.File,
+      ownerId: userId,
+    });
+
+    uploadedImages.push(objectPath);
+  }
+
+  return uploadedImages;
 }
 
 // CRM Pipeline stages
@@ -54,7 +169,9 @@ export function registerZapierRoutes(app: Express): void {
         success: true,
         user: {
           id: user.id,
-          email: user.email
+          email: user.email,
+          username: user.email,
+          businessName: user.organizationName || user.email
         },
         message: "Authentication successful"
       });
@@ -102,6 +219,66 @@ export function registerZapierRoutes(app: Express): void {
     } catch (error) {
       console.error("Zapier tags options error:", error);
       res.status(500).json({ error: "Failed to fetch tags" });
+    }
+  });
+
+  app.get("/api/zapier/options/automations", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const automations = await storage.getCrmAutomationsByUserId(userId);
+
+      res.json(automations.map((automation) => ({
+        id: automation.id,
+        name: automation.name,
+      })));
+    } catch (error) {
+      console.error("Zapier automations options error:", error);
+      res.status(500).json({ error: "Failed to fetch automations" });
+    }
+  });
+
+  app.get("/api/zapier/options/leads", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const leads = await storage.getLeadsByUserId(userId);
+
+      res.json(leads.slice(0, 100).map((lead: any) => ({
+        id: lead.id,
+        name: `${lead.name || "Lead"}${lead.email ? ` (${lead.email})` : ""}`,
+      })));
+    } catch (error) {
+      console.error("Zapier leads options error:", error);
+      res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  app.get("/api/zapier/options/estimates", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const estimates = await storage.getEstimatesByUserId(userId);
+
+      res.json(estimates.slice(0, 100).map((estimate: any) => ({
+        id: estimate.id,
+        name: `${estimate.estimateNumber || `Estimate ${estimate.id}`} - ${estimate.customerName || estimate.customerEmail || "Customer"}`,
+      })));
+    } catch (error) {
+      console.error("Zapier estimates options error:", error);
+      res.status(500).json({ error: "Failed to fetch estimates" });
+    }
+  });
+
+  app.get("/api/zapier/options/pending-automation-runs", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const runs = await storage.getPendingAutomationRuns(userId);
+
+      res.json(runs.map((run) => ({
+        id: run.id,
+        name: `Run #${run.id} for automation ${run.automationId}`,
+      })));
+    } catch (error) {
+      console.error("Zapier pending automation runs options error:", error);
+      res.status(500).json({ error: "Failed to fetch pending automation runs" });
     }
   });
 
@@ -277,7 +454,8 @@ export function registerZapierRoutes(app: Express): void {
   app.post("/api/zapier/webhooks/subscribe", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
-      const { target_url } = req.body;
+      const { target_url, event } = req.body;
+      const webhookEvent = typeof event === "string" && event.trim() ? event.trim() : "new_lead";
 
       if (!target_url) {
         return res.status(400).json({ error: "target_url is required" });
@@ -286,13 +464,13 @@ export function registerZapierRoutes(app: Express): void {
       const webhook = await ZapierIntegrationService.subscribeWebhook(
         userId,
         target_url,
-        'new_lead'
+        webhookEvent
       );
 
       res.json({
         success: true,
         webhook_id: webhook.id,
-        message: "Successfully subscribed to new leads"
+        message: `Successfully subscribed to ${webhookEvent}`
       });
     } catch (error) {
       console.error("Zapier new leads subscribe error:", error);
@@ -304,14 +482,15 @@ export function registerZapierRoutes(app: Express): void {
   app.delete("/api/zapier/webhooks/unsubscribe", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
-      const { target_url } = req.body;
+      const { target_url, event } = req.body;
+      const webhookEvent = typeof event === "string" && event.trim() ? event.trim() : undefined;
 
       if (!target_url) {
         return res.status(400).json({ error: "target_url is required" });
       }
 
       // Find and deactivate webhook by target_url and userId
-      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId);
+      const success = await ZapierIntegrationService.unsubscribeWebhookByUrl(target_url, userId, webhookEvent);
 
       if (success) {
         res.json({
@@ -710,7 +889,7 @@ export function registerZapierRoutes(app: Express): void {
   app.post("/api/zapier/actions/create-lead", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
-      const { name, email, phone, address, formulaId, variables, notes } = req.body;
+      const { name, email, phone, address, formulaId, variables, notes, imageUrls } = req.body;
 
       // Validate required fields
       if (!name || !email) {
@@ -719,18 +898,35 @@ export function registerZapierRoutes(app: Express): void {
         });
       }
 
+      let validatedFormulaId: number | null = null;
+      if (formulaId !== undefined && formulaId !== null && String(formulaId).trim() !== "") {
+        const parsedFormulaId = Number(formulaId);
+        if (!Number.isInteger(parsedFormulaId) || parsedFormulaId <= 0) {
+          return res.status(400).json({ error: "formulaId must be a valid calculator ID" });
+        }
+
+        const formula = await storage.getFormula(parsedFormulaId);
+        if (!formula || formula.userId !== userId) {
+          return res.status(403).json({ error: "Calculator not found for this account" });
+        }
+
+        validatedFormulaId = parsedFormulaId;
+      }
+
       // Create the lead
       const leadData = {
+        userId,
         name,
         email,
         phone: phone || null,
         address: address || null,
-        formulaId: formulaId || 1, // Default formula if not provided
+        formulaId: validatedFormulaId,
         variables: variables || {},
         calculatedPrice: 0, // Default calculated price
         notes: notes || null,
         source: 'zapier',
-        stage: 'new'
+        stage: 'new',
+        uploadedImages: await importZapierLeadImagesFromUrls(userId, imageUrls),
       };
 
       const lead = await storage.createLead(leadData);
@@ -742,6 +938,7 @@ export function registerZapierRoutes(app: Express): void {
           name: lead.name,
           email: lead.email,
           phone: lead.phone,
+          uploadedImages: lead.uploadedImages || [],
           createdAt: lead.createdAt
         },
         message: "Lead created successfully"
@@ -752,25 +949,87 @@ export function registerZapierRoutes(app: Express): void {
     }
   });
 
+  app.post("/api/zapier/actions/add-images-to-lead-by-email", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { email, imageUrls } = req.body || {};
+
+      if (!email || typeof email !== "string" || !email.trim()) {
+        return res.status(400).json({ error: "email is required" });
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      const imagePaths = await importZapierLeadImagesFromUrls(userId, imageUrls);
+
+      if (imagePaths.length === 0) {
+        return res.status(400).json({ error: "No valid image URLs were provided" });
+      }
+
+      const userLeads = await storage.getLeadsByUserId(userId);
+      const matchingLead = userLeads.find((lead: any) => String(lead.email || "").trim().toLowerCase() === normalizedEmail);
+
+      if (!matchingLead) {
+        return res.status(404).json({ error: "Lead not found for this email" });
+      }
+
+      const updatedLead = await storage.updateLead(Number(matchingLead.id), {
+        uploadedImages: [...(matchingLead.uploadedImages || []), ...imagePaths],
+      });
+
+      if (!updatedLead) {
+        return res.status(500).json({ error: "Failed to update lead images" });
+      }
+
+      res.json({
+        id: updatedLead.id,
+        name: updatedLead.name,
+        email: updatedLead.email,
+        uploadedImages: updatedLead.uploadedImages || [],
+        addedImageCount: imagePaths.length,
+      });
+    } catch (error) {
+      console.error("Zapier add images to lead by email error:", error);
+      res.status(500).json({ error: "Failed to add images to lead" });
+    }
+  });
+
   // Action: Update lead status
   app.post("/api/zapier/actions/update-lead", requireZapierAuth, async (req, res) => {
     try {
       const { userId } = (req as any).zapierAuth;
-      const { leadId, stage, notes } = req.body;
+      const { leadId, stage, status, notes } = req.body;
 
       if (!leadId) {
         return res.status(400).json({ error: "leadId is required" });
       }
 
       // Get the lead first
-      const existingLead = await storage.getLead(leadId);
+      const existingLead = await storage.getLead(Number(leadId));
       if (!existingLead) {
         return res.status(404).json({ error: "Lead not found" });
       }
 
+      const ownsLead = existingLead.userId === userId;
+      let canAccessLead = ownsLead;
+
+      if (!canAccessLead && existingLead.formulaId) {
+        const formula = await storage.getFormula(existingLead.formulaId);
+        canAccessLead = !!formula && formula.userId === userId;
+      }
+
+      if (!canAccessLead) {
+        return res.status(403).json({ error: "Lead not found for this account" });
+      }
+
+      const nextStage = typeof stage === "string" && stage.trim()
+        ? stage.trim()
+        : typeof status === "string" && status.trim()
+          ? status.trim()
+          : existingLead.stage;
+
       // Update the lead
-      const updatedLead = await storage.updateLead(leadId, {
-        stage: stage || existingLead.stage,
+      const updatedLead = await storage.updateLead(Number(leadId), {
+        stage: nextStage,
         notes: notes !== undefined ? notes : existingLead.notes
       });
 
@@ -792,6 +1051,213 @@ export function registerZapierRoutes(app: Express): void {
     } catch (error) {
       console.error("Zapier update lead error:", error);
       res.status(500).json({ error: "Failed to update lead" });
+    }
+  });
+
+  app.post("/api/zapier/actions/run-automation", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { automationId, leadId, estimateId, autoConfirm } = req.body || {};
+
+      const parsedAutomationId = Number(automationId);
+      if (!Number.isInteger(parsedAutomationId) || parsedAutomationId <= 0) {
+        return res.status(400).json({ error: "automationId is required" });
+      }
+
+      const automation = await storage.getCrmAutomation(parsedAutomationId);
+      if (!automation || automation.userId !== userId) {
+        return res.status(404).json({ error: "Automation not found" });
+      }
+
+      const currentUser = await storage.getUserById(userId);
+      if (!currentUser || !canAccessAutomations(currentUser.plan)) {
+        return res.status(403).json({
+          error: "CRM automations not available on this plan",
+          message: "Upgrade to run CRM automations through Zapier.",
+          upgradeRequired: true,
+        });
+      }
+
+      const context: any = { userId };
+
+      if (leadId !== undefined && leadId !== null && String(leadId).trim() !== "") {
+        const parsedLeadId = Number(leadId);
+        if (!Number.isInteger(parsedLeadId) || parsedLeadId <= 0) {
+          return res.status(400).json({ error: "leadId must be a valid lead ID" });
+        }
+
+        const lead = await resolveZapierLeadForUser(userId, parsedLeadId);
+        if (!lead) {
+          return res.status(404).json({ error: "Lead not found for this account" });
+        }
+
+        context.leadId = lead.id;
+        context.leadData = {
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone || undefined,
+          calculatedPrice: lead.calculatedPrice ?? undefined,
+          stage: lead.stage,
+          source: lead.source || undefined,
+        };
+      }
+
+      if (estimateId !== undefined && estimateId !== null && String(estimateId).trim() !== "") {
+        const parsedEstimateId = Number(estimateId);
+        if (!Number.isInteger(parsedEstimateId) || parsedEstimateId <= 0) {
+          return res.status(400).json({ error: "estimateId must be a valid estimate ID" });
+        }
+
+        const estimate = await storage.getEstimate(parsedEstimateId);
+        if (!estimate || estimate.userId !== userId) {
+          return res.status(404).json({ error: "Estimate not found for this account" });
+        }
+
+        context.estimateId = estimate.id;
+        context.estimateData = {
+          id: estimate.id,
+          estimateNumber: estimate.estimateNumber,
+          total: estimate.totalAmount,
+          status: estimate.status,
+          estimateType: estimate.estimateType,
+          customerName: estimate.customerName,
+          customerEmail: estimate.customerEmail,
+          validUntil: estimate.validUntil || undefined,
+        };
+
+        if (estimate.leadId && !context.leadId) {
+          const lead = await resolveZapierLeadForUser(userId, estimate.leadId);
+          if (lead) {
+            context.leadId = lead.id;
+            context.leadData = {
+              name: lead.name,
+              email: lead.email,
+              phone: lead.phone || undefined,
+              calculatedPrice: lead.calculatedPrice ?? undefined,
+              stage: lead.stage,
+              source: lead.source || undefined,
+              estimateNumber: estimate.estimateNumber,
+            };
+          }
+        } else if (!context.leadData) {
+          context.leadData = {
+            name: estimate.customerName,
+            email: estimate.customerEmail,
+            estimateNumber: estimate.estimateNumber,
+          };
+        }
+      }
+
+      if (!context.leadId && !context.estimateId) {
+        return res.status(400).json({ error: "leadId or estimateId is required to run an automation" });
+      }
+
+      if (automation.requiresConfirmation) {
+        const runId = await automationService.createPendingAutomationRun(parsedAutomationId, context);
+        if (!runId) {
+          return res.status(500).json({ error: "Failed to create pending automation run" });
+        }
+
+        if (autoConfirm === true || autoConfirm === "true") {
+          await automationService.confirmPendingRun(runId);
+          const confirmedRun = await storage.getCrmAutomationRun(runId);
+          return res.json({
+            automationId: automation.id,
+            automationName: automation.name,
+            runId,
+            status: confirmedRun?.status || "completed",
+            requiresConfirmation: true,
+          });
+        }
+
+        return res.json({
+          automationId: automation.id,
+          automationName: automation.name,
+          runId,
+          status: "pending_confirmation",
+          requiresConfirmation: true,
+        });
+      }
+
+      await automationService.executeAutomation(parsedAutomationId, context);
+      res.json({
+        automationId: automation.id,
+        automationName: automation.name,
+        status: "completed",
+        requiresConfirmation: false,
+      });
+    } catch (error) {
+      console.error("Zapier run automation error:", error);
+      res.status(500).json({ error: "Failed to run automation" });
+    }
+  });
+
+  app.post("/api/zapier/actions/confirm-pending-automation-run", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { runId } = req.body || {};
+      const parsedRunId = Number(runId);
+
+      if (!Number.isInteger(parsedRunId) || parsedRunId <= 0) {
+        return res.status(400).json({ error: "runId is required" });
+      }
+
+      const run = await storage.getCrmAutomationRun(parsedRunId);
+      if (!run || run.userId !== userId) {
+        return res.status(404).json({ error: "Automation run not found" });
+      }
+
+      if (run.status !== "pending_confirmation") {
+        return res.status(400).json({ error: "Automation run is not pending confirmation" });
+      }
+
+      await automationService.confirmPendingRun(parsedRunId);
+      const updatedRun = await storage.getCrmAutomationRun(parsedRunId);
+
+      res.json({
+        runId: parsedRunId,
+        automationId: updatedRun?.automationId,
+        status: updatedRun?.status || "completed",
+      });
+    } catch (error) {
+      console.error("Zapier confirm pending automation run error:", error);
+      res.status(500).json({ error: "Failed to confirm automation run" });
+    }
+  });
+
+  app.post("/api/zapier/actions/toggle-automation", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const { automationId, isActive } = req.body || {};
+      const parsedAutomationId = Number(automationId);
+
+      if (!Number.isInteger(parsedAutomationId) || parsedAutomationId <= 0) {
+        return res.status(400).json({ error: "automationId is required" });
+      }
+
+      if (typeof isActive !== "boolean") {
+        return res.status(400).json({ error: "isActive must be true or false" });
+      }
+
+      const automation = await storage.getCrmAutomation(parsedAutomationId);
+      if (!automation || automation.userId !== userId) {
+        return res.status(404).json({ error: "Automation not found" });
+      }
+
+      const updatedAutomation = await storage.updateCrmAutomation(parsedAutomationId, { isActive });
+      if (!updatedAutomation) {
+        return res.status(500).json({ error: "Failed to update automation" });
+      }
+
+      res.json({
+        id: updatedAutomation.id,
+        name: updatedAutomation.name,
+        triggerType: updatedAutomation.triggerType,
+        isActive: updatedAutomation.isActive,
+      });
+    } catch (error) {
+      console.error("Zapier toggle automation error:", error);
+      res.status(500).json({ error: "Failed to update automation" });
     }
   });
 

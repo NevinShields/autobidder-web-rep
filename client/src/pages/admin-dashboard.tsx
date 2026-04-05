@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Redirect, Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -137,10 +137,24 @@ interface AdminIcon {
   name: string;
   filename: string;
   category: string;
+  groupId?: number | null;
+  group?: IconGroupRecord | null;
+  tags?: IconTag[];
   description?: string;
   isActive: boolean;
   url: string;
   createdAt: string;
+}
+
+interface IconGroupRecord {
+  id: number;
+  name: string;
+  displayName: string;
+  description?: string | null;
+  isActive: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AdminWebsite {
@@ -248,6 +262,7 @@ export default function AdminDashboard() {
   const [selectedIconFiles, setSelectedIconFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: {uploading: boolean, success: boolean, error: string | null}}>({});
   const [iconUploadDialogOpen, setIconUploadDialogOpen] = useState(false);
+  const [isBatchUploadingIcons, setIsBatchUploadingIcons] = useState(false);
 
   const getTrialDaysRemaining = (user: AdminUser) => {
     if (!user.trialEndDate) return null;
@@ -256,6 +271,41 @@ export default function AdminDashboard() {
   const [iconSearchQuery, setIconSearchQuery] = useState("");
   const [iconCategoryFilter, setIconCategoryFilter] = useState("all");
   const [iconStatusFilter, setIconStatusFilter] = useState("all");
+  const [iconGroupFilter, setIconGroupFilter] = useState("all");
+  const [iconGroupDialogOpen, setIconGroupDialogOpen] = useState(false);
+  const [editingIconGroup, setEditingIconGroup] = useState<IconGroupRecord | null>(null);
+  const [iconGroupForm, setIconGroupForm] = useState({
+    name: "",
+    displayName: "",
+    description: "",
+    displayOrder: 0,
+    isActive: true,
+  });
+  const [iconTagDialogOpen, setIconTagDialogOpen] = useState(false);
+  const [editingIconTag, setEditingIconTag] = useState<IconTag | null>(null);
+  const [iconTagForm, setIconTagForm] = useState({
+    name: "",
+    displayName: "",
+    description: "",
+    color: "#3B82F6",
+    displayOrder: 0,
+    isActive: true,
+  });
+  const [editingIcon, setEditingIcon] = useState<AdminIcon | null>(null);
+  const [iconEditorOpen, setIconEditorOpen] = useState(false);
+  const [iconEditorForm, setIconEditorForm] = useState({
+    name: "",
+    category: "general",
+    description: "",
+    groupId: "none",
+    tagIds: [] as number[],
+    isActive: true,
+  });
+  const [editingIconNameId, setEditingIconNameId] = useState<number | null>(null);
+  const [editingIconNameValue, setEditingIconNameValue] = useState("");
+  const [selectedIconIds, setSelectedIconIds] = useState<number[]>([]);
+  const [bulkIconGroupId, setBulkIconGroupId] = useState<string>("unchanged");
+  const [bulkIconTagId, setBulkIconTagId] = useState<string>("unchanged");
   
   // Website template management state
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
@@ -338,9 +388,16 @@ export default function AdminDashboard() {
     queryKey: ['/api/admin/websites'],
   });
 
-  // Fetch all icons
-  const { data: icons, isLoading: iconsLoading } = useQuery<AdminIcon[]>({
-    queryKey: ['/api/icons'],
+  const { data: iconGroups = [], isLoading: iconGroupsLoading } = useQuery<IconGroupRecord[]>({
+    queryKey: ['/api/icon-groups'],
+  });
+
+  const { data: iconTags = [], isLoading: iconTagsLoading } = useQuery<IconTag[]>({
+    queryKey: ['/api/icon-tags'],
+  });
+
+  const { data: iconLibrary = [], isLoading: iconLibraryLoading } = useQuery<AdminIcon[]>({
+    queryKey: ['/api/admin/icons/library'],
   });
 
   // Fetch all formula templates
@@ -419,14 +476,19 @@ export default function AdminDashboard() {
     lead.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredIcons = icons?.filter(icon => {
+  const filteredIcons = iconLibrary?.filter(icon => {
     const matchesSearch = icon.name.toLowerCase().includes(iconSearchQuery.toLowerCase()) ||
-                         icon.description?.toLowerCase().includes(iconSearchQuery.toLowerCase());
+                         icon.description?.toLowerCase().includes(iconSearchQuery.toLowerCase()) ||
+                         (icon.tags || []).some(tag =>
+                           tag.displayName.toLowerCase().includes(iconSearchQuery.toLowerCase()) ||
+                           tag.name.toLowerCase().includes(iconSearchQuery.toLowerCase())
+                         );
     const matchesCategory = iconCategoryFilter === 'all' || icon.category === iconCategoryFilter;
+    const matchesGroup = iconGroupFilter === 'all' || String(icon.groupId || 'ungrouped') === iconGroupFilter;
     const matchesStatus = iconStatusFilter === 'all' || 
                          (iconStatusFilter === 'active' && icon.isActive) ||
                          (iconStatusFilter === 'inactive' && !icon.isActive);
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesCategory && matchesStatus && matchesGroup;
   });
 
   const getStatusBadge = (status: string) => {
@@ -599,128 +661,103 @@ export default function AdminDashboard() {
   };
 
   // Icon management mutations
-  const uploadIconMutation = useMutation({
-    mutationFn: async (iconData: { name: string; category: string; description: string; file: File }) => {
-      const formData = new FormData();
-      formData.append('icon', iconData.file);
-      formData.append('name', iconData.name);
-      formData.append('category', iconData.category);
-      formData.append('description', iconData.description);
-      
-      const response = await fetch('/api/icons', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to upload icon');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
-    },
-    onError: () => {
-      // Individual file errors are handled in uploadMultipleIcons
-    },
-  });
-
-  // Upload multiple icons sequentially
   const uploadMultipleIcons = async () => {
     if (selectedIconFiles.length === 0) return;
 
-    let successCount = 0;
-    let errorCount = 0;
+    const initialProgress = selectedIconFiles.reduce((acc, file) => {
+      acc[file.name] = { uploading: true, success: false, error: null };
+      return acc;
+    }, {} as {[key: string]: {uploading: boolean, success: boolean, error: string | null}});
 
-    // Process each file
-    for (const file of selectedIconFiles) {
-      const fileName = file.name;
-      
-      // Update progress - start uploading
-      setUploadProgress(prev => ({
-        ...prev,
-        [fileName]: { uploading: true, success: false, error: null }
-      }));
+    setUploadProgress(initialProgress);
+    setIsBatchUploadingIcons(true);
 
-      try {
-        // Use the file name (without extension) as the icon name
-        const iconName = fileName.replace(/\.[^/.]+$/, "");
-        
-        await uploadIconMutation.mutateAsync({
-          name: iconName,
-          category: newIconCategory,
-          description: newIconDescription || `Auto-uploaded: ${iconName}`,
-          file: file
+    try {
+      const formData = new FormData();
+      for (const file of selectedIconFiles) {
+        formData.append('icons', file);
+      }
+      formData.append('category', newIconCategory);
+      formData.append('description', newIconDescription);
+
+      const response = await fetch('/api/icons/batch', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(result?.message || 'Failed to upload icons');
+      }
+
+      const progressMap = selectedIconFiles.reduce((acc, file) => {
+        const fileResult = result?.results?.find((item: any) => item.fileName === file.name);
+        acc[file.name] = {
+          uploading: false,
+          success: Boolean(fileResult?.success),
+          error: fileResult?.success ? null : fileResult?.message || 'Upload failed',
+        };
+        return acc;
+      }, {} as {[key: string]: {uploading: boolean, success: boolean, error: string | null}});
+
+      setUploadProgress(progressMap);
+      queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/icons/library'] });
+
+      if (result.successCount > 0 && result.failureCount === 0) {
+        toast({
+          title: "Success",
+          description: `Successfully uploaded ${result.successCount} icon${result.successCount !== 1 ? 's' : ''}`,
         });
 
-        // Update progress - success
-        setUploadProgress(prev => ({
-          ...prev,
-          [fileName]: { uploading: false, success: true, error: null }
-        }));
-        
-        successCount++;
-      } catch (error) {
-        // Update progress - error
-        setUploadProgress(prev => ({
-          ...prev,
-          [fileName]: { uploading: false, success: false, error: error instanceof Error ? error.message : 'Upload failed' }
-        }));
-        
-        errorCount++;
+        setTimeout(() => {
+          setIconUploadDialogOpen(false);
+          setNewIconCategory("general");
+          setNewIconDescription("");
+          setSelectedIconFiles([]);
+          setUploadProgress({});
+        }, 1200);
+      } else if (result.successCount > 0) {
+        toast({
+          title: "Partial Success",
+          description: `Uploaded ${result.successCount} icon${result.successCount !== 1 ? 's' : ''}, ${result.failureCount} failed`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to upload icons",
+          variant: "destructive",
+        });
       }
-    }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Upload failed';
+      setUploadProgress(
+        selectedIconFiles.reduce((acc, file) => {
+          acc[file.name] = { uploading: false, success: false, error: message };
+          return acc;
+        }, {} as {[key: string]: {uploading: boolean, success: boolean, error: string | null}}),
+      );
 
-    // Show final result
-    if (successCount > 0 && errorCount === 0) {
-      toast({
-        title: "Success",
-        description: `Successfully uploaded ${successCount} icon${successCount !== 1 ? 's' : ''}`,
-      });
-      
-      // Reset form after successful upload of all files
-      setTimeout(() => {
-        setIconUploadDialogOpen(false);
-        setNewIconCategory("general");
-        setNewIconDescription("");
-        setSelectedIconFiles([]);
-        setUploadProgress({});
-      }, 2000); // Wait 2 seconds to show success states
-    } else if (successCount > 0 && errorCount > 0) {
-      toast({
-        title: "Partial Success",
-        description: `Uploaded ${successCount} successfully, ${errorCount} failed`,
-        variant: "default",
-      });
-    } else {
       toast({
         title: "Error",
-        description: "Failed to upload icons",
+        description: message,
         variant: "destructive",
       });
+    } finally {
+      setIsBatchUploadingIcons(false);
     }
   };
 
-  const toggleIconStatusMutation = useMutation({
-    mutationFn: async ({ id, isActive }: { id: number; isActive: boolean }) => {
-      return apiRequest('PUT', `/api/icons/${id}`, { isActive });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
-      toast({
-        title: "Success",
-        description: "Icon status updated successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update icon status",
-        variant: "destructive",
-      });
-    },
-  });
+  const selectedIconFileSummary = useMemo(() => {
+    const totalBytes = selectedIconFiles.reduce((sum, file) => sum + file.size, 0);
+    const formattedSize = totalBytes >= 1024 * 1024
+      ? `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(totalBytes / 1024))} KB`;
+    return {
+      count: selectedIconFiles.length,
+      formattedSize,
+    };
+  }, [selectedIconFiles]);
 
   const deleteIconMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -728,6 +765,7 @@ export default function AdminDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/icons/library'] });
       toast({
         title: "Success",
         description: "Icon deleted successfully",
@@ -741,6 +779,274 @@ export default function AdminDashboard() {
       });
     },
   });
+
+  const saveIconTagMutation = useMutation({
+    mutationFn: async (payload: typeof iconTagForm & { id?: number | null }) => {
+      const normalizedName = (payload.name || payload.displayName)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const body: Partial<InsertIconTag> = {
+        name: normalizedName,
+        displayName: payload.displayName.trim(),
+        description: payload.description || null,
+        color: payload.color,
+        displayOrder: payload.displayOrder || 0,
+        isActive: payload.isActive,
+      };
+      if (payload.id) {
+        return apiRequest('PUT', `/api/icon-tags/${payload.id}`, body);
+      }
+      return apiRequest('POST', '/api/icon-tags', body);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/icon-tags'] });
+      setIconTagDialogOpen(false);
+      setEditingIconTag(null);
+      setIconTagForm({
+        name: "",
+        displayName: "",
+        description: "",
+        color: "#3B82F6",
+        displayOrder: 0,
+        isActive: true,
+      });
+      toast({ title: "Success", description: "Service tag saved successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to save service tag", variant: "destructive" });
+    },
+  });
+
+  const deleteIconTagMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/icon-tags/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/icon-tags'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/icons/library'] });
+      toast({ title: "Success", description: "Service tag deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete service tag", variant: "destructive" });
+    },
+  });
+
+  const saveIconGroupMutation = useMutation({
+    mutationFn: async (payload: typeof iconGroupForm & { id?: number | null }) => {
+      const body = {
+        name: payload.name,
+        displayName: payload.displayName,
+        description: payload.description || null,
+        displayOrder: payload.displayOrder || 0,
+        isActive: payload.isActive,
+      };
+      if (payload.id) {
+        return apiRequest('PUT', `/api/icon-groups/${payload.id}`, body);
+      }
+      return apiRequest('POST', '/api/icon-groups', body);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/icon-groups'] });
+      setIconGroupDialogOpen(false);
+      setEditingIconGroup(null);
+      setIconGroupForm({ name: "", displayName: "", description: "", displayOrder: 0, isActive: true });
+      toast({ title: "Success", description: "Icon group saved successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save icon group", variant: "destructive" });
+    },
+  });
+
+  const deleteIconGroupMutation = useMutation({
+    mutationFn: async (id: number) => apiRequest('DELETE', `/api/icon-groups/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/icon-groups'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/icons/library'] });
+      toast({ title: "Success", description: "Icon group deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete icon group", variant: "destructive" });
+    },
+  });
+
+  const updateIconMetadataMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: typeof iconEditorForm }) =>
+      apiRequest('PUT', `/api/admin/icons/${id}/metadata`, {
+        name: data.name,
+        category: data.category,
+        description: data.description || null,
+        isActive: data.isActive,
+        groupId: data.groupId === 'none' ? null : Number(data.groupId),
+        tagIds: data.tagIds,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/icons/library'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
+      setIconEditorOpen(false);
+      setEditingIcon(null);
+      toast({ title: "Success", description: "Icon updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update icon", variant: "destructive" });
+    },
+  });
+
+  const quickUpdateIconMetadataMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Record<string, unknown> }) =>
+      apiRequest('PUT', `/api/admin/icons/${id}/metadata`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/icons/library'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
+      toast({ title: "Success", description: "Icon updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update icon", variant: "destructive" });
+    },
+  });
+
+  const updateIconQuickAssignment = (
+    icon: AdminIcon,
+    updates: { groupId?: string; tagId?: string },
+  ) => {
+    const payload: Record<string, unknown> = {};
+
+    if (updates.groupId !== undefined) {
+      payload.groupId = updates.groupId === 'none' ? null : Number(updates.groupId);
+    }
+
+    if (updates.tagId !== undefined) {
+      payload.tagIds = updates.tagId === 'none' ? [] : [Number(updates.tagId)];
+    }
+
+    quickUpdateIconMetadataMutation.mutate({
+      id: icon.id,
+      data: payload,
+    });
+  };
+
+  const startInlineIconNameEdit = (icon: AdminIcon) => {
+    setEditingIconNameId(icon.id);
+    setEditingIconNameValue(icon.name);
+  };
+
+  const cancelInlineIconNameEdit = () => {
+    setEditingIconNameId(null);
+    setEditingIconNameValue("");
+  };
+
+  const saveInlineIconNameEdit = (icon: AdminIcon) => {
+    const nextName = editingIconNameValue.trim();
+
+    if (!nextName) {
+      toast({
+        title: "Error",
+        description: "Icon name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (nextName === icon.name) {
+      cancelInlineIconNameEdit();
+      return;
+    }
+
+    quickUpdateIconMetadataMutation.mutate(
+      {
+        id: icon.id,
+        data: { name: nextName },
+      },
+      {
+        onSuccess: () => {
+          cancelInlineIconNameEdit();
+        },
+      },
+    );
+  };
+
+  const bulkAssignIconsMutation = useMutation({
+    mutationFn: async ({ iconIds, groupId, tagId }: { iconIds: number[]; groupId: string; tagId: string }) => {
+      const iconsToUpdate = iconLibrary.filter((icon) => iconIds.includes(icon.id));
+      await Promise.all(
+        iconsToUpdate.map((icon) => {
+          const payload: Record<string, unknown> = {};
+          if (groupId !== 'unchanged') {
+            payload.groupId = groupId === 'none' ? null : Number(groupId);
+          }
+          if (tagId !== 'unchanged') {
+            payload.tagIds = tagId === 'none' ? [] : [Number(tagId)];
+          }
+          return apiRequest('PUT', `/api/admin/icons/${icon.id}/metadata`, payload);
+        }),
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/icons/library'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/icons'] });
+      setSelectedIconIds([]);
+      setBulkIconGroupId("unchanged");
+      setBulkIconTagId("unchanged");
+      toast({ title: "Success", description: "Bulk icon assignment completed" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to bulk update icons", variant: "destructive" });
+    },
+  });
+
+  const handleEditIconGroup = (group?: IconGroupRecord) => {
+    if (group) {
+      setEditingIconGroup(group);
+      setIconGroupForm({
+        name: group.name,
+        displayName: group.displayName,
+        description: group.description || "",
+        displayOrder: group.displayOrder || 0,
+        isActive: group.isActive,
+      });
+    } else {
+      setEditingIconGroup(null);
+      setIconGroupForm({ name: "", displayName: "", description: "", displayOrder: 0, isActive: true });
+    }
+    setIconGroupDialogOpen(true);
+  };
+
+  const handleEditIcon = (icon: AdminIcon) => {
+    setEditingIcon(icon);
+    setIconEditorForm({
+      name: icon.name,
+      category: icon.category,
+      description: icon.description || "",
+      groupId: icon.groupId ? String(icon.groupId) : 'none',
+      tagIds: (icon.tags || []).map((tag) => tag.id),
+      isActive: icon.isActive,
+    });
+    setIconEditorOpen(true);
+  };
+
+  const handleEditIconTag = (tag?: IconTag) => {
+    if (tag) {
+      setEditingIconTag(tag);
+      setIconTagForm({
+        name: tag.name,
+        displayName: tag.displayName,
+        description: tag.description || "",
+        color: tag.color || "#3B82F6",
+        displayOrder: tag.displayOrder || 0,
+        isActive: tag.isActive,
+      });
+    } else {
+      setEditingIconTag(null);
+      setIconTagForm({
+        name: "",
+        displayName: "",
+        description: "",
+        color: "#3B82F6",
+        displayOrder: 0,
+        isActive: true,
+      });
+    }
+    setIconTagDialogOpen(true);
+  };
 
   // Formula template mutations
   const updateFormulaTemplateMutation = useMutation({
@@ -1643,17 +1949,6 @@ export default function AdminDashboard() {
                     Formulas
                   </button>
                   <button
-                    onClick={() => setActiveSubTab('icons')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeSubTab === 'icons'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    <Image className="h-4 w-4 inline mr-2" />
-                    Icons
-                  </button>
-                  <button
                     onClick={() => setActiveSubTab('duda-templates')}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       activeSubTab === 'duda-templates'
@@ -1811,291 +2106,6 @@ export default function AdminDashboard() {
                           </Button>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Icons Management */}
-                {activeSubTab === 'icons' && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Image className="h-5 w-5" />
-                        Icon Library Management
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        {/* Header with Upload Button */}
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="text-lg font-medium">Icon Library</h3>
-                            <p className="text-sm text-gray-600">Manage icons used throughout the application</p>
-                          </div>
-                          <Dialog open={iconUploadDialogOpen} onOpenChange={setIconUploadDialogOpen}>
-                            <DialogTrigger asChild>
-                              <Button>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Upload Icons
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Upload Icons</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor="iconCategory">Category</Label>
-                                  <Select value={newIconCategory} onValueChange={setNewIconCategory}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="general">General</SelectItem>
-                                      <SelectItem value="construction">Construction</SelectItem>
-                                      <SelectItem value="cleaning">Cleaning</SelectItem>
-                                      <SelectItem value="automotive">Automotive</SelectItem>
-                                      <SelectItem value="landscaping">Landscaping</SelectItem>
-                                      <SelectItem value="home">Home Services</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label htmlFor="iconDescription">Description (Optional)</Label>
-                                  <Input
-                                    id="iconDescription"
-                                    value={newIconDescription}
-                                    onChange={(e) => setNewIconDescription(e.target.value)}
-                                    placeholder="Brief description of the icon"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="iconFiles">Icon Files</Label>
-                                  <Input
-                                    id="iconFiles"
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={(e) => {
-                                      const files = Array.from(e.target.files || []);
-                                      setSelectedIconFiles(files);
-                                    }}
-                                    data-testid="input-icon-files"
-                                  />
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Supported formats: PNG, JPG, SVG. Max size: 2MB per file. Select multiple files to upload them all at once.
-                                  </p>
-                                  
-                                  {/* Show selected files */}
-                                  {selectedIconFiles.length > 0 && (
-                                    <div className="mt-3 space-y-2">
-                                      <p className="text-sm font-medium">Selected files ({selectedIconFiles.length}):</p>
-                                      <div className="max-h-32 overflow-y-auto space-y-1">
-                                        {selectedIconFiles.map((file, index) => (
-                                          <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                                            <div className="flex items-center space-x-2">
-                                              <span className="truncate" title={file.name}>{file.name}</span>
-                                              <span className="text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
-                                            </div>
-                                            <div className="flex items-center space-x-1">
-                                              {uploadProgress[file.name]?.uploading && (
-                                                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                              )}
-                                              {uploadProgress[file.name]?.success && (
-                                                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                                                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                  </svg>
-                                                </div>
-                                              )}
-                                              {uploadProgress[file.name]?.error && (
-                                                <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center" title={uploadProgress[file.name]?.error || ''}>
-                                                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                                  </svg>
-                                                </div>
-                                              )}
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-6 w-6 p-0"
-                                                onClick={() => {
-                                                  const newFiles = selectedIconFiles.filter((_, i) => i !== index);
-                                                  setSelectedIconFiles(newFiles);
-                                                  // Remove from upload progress if it exists
-                                                  const newProgress = { ...uploadProgress };
-                                                  delete newProgress[file.name];
-                                                  setUploadProgress(newProgress);
-                                                }}
-                                                data-testid={`button-remove-file-${index}`}
-                                              >
-                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                                </svg>
-                                              </Button>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex justify-end space-x-2">
-                                  <Button variant="outline" onClick={() => setIconUploadDialogOpen(false)}>
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    onClick={uploadMultipleIcons}
-                                    data-testid="button-upload-icons"
-                                    disabled={selectedIconFiles.length === 0 || !newIconCategory || uploadIconMutation.isPending}
-                                  >
-                                    {uploadIconMutation.isPending ? 'Uploading...' : `Upload ${selectedIconFiles.length} Icon${selectedIconFiles.length !== 1 ? 's' : ''}`}
-                                  </Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </div>
-
-                        {/* Search and Filter */}
-                        <div className="flex flex-col sm:flex-row gap-4">
-                          <div className="flex-1">
-                            <div className="relative">
-                              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                placeholder="Search icons by name or description..."
-                                className="pl-10"
-                                value={iconSearchQuery}
-                                onChange={(e) => setIconSearchQuery(e.target.value)}
-                              />
-                            </div>
-                          </div>
-                          <Select value={iconCategoryFilter} onValueChange={setIconCategoryFilter}>
-                            <SelectTrigger className="w-48">
-                              <SelectValue placeholder="All Categories" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Categories</SelectItem>
-                              <SelectItem value="general">General</SelectItem>
-                              <SelectItem value="construction">Construction</SelectItem>
-                              <SelectItem value="cleaning">Cleaning</SelectItem>
-                              <SelectItem value="automotive">Automotive</SelectItem>
-                              <SelectItem value="landscaping">Landscaping</SelectItem>
-                              <SelectItem value="home">Home Services</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Select value={iconStatusFilter} onValueChange={setIconStatusFilter}>
-                            <SelectTrigger className="w-36">
-                              <SelectValue placeholder="All Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">All Status</SelectItem>
-                              <SelectItem value="active">Active</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Icons Grid */}
-                        {iconsLoading ? (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {[...Array(12)].map((_, i) => (
-                              <div key={i} className="aspect-square bg-gray-200 rounded-lg animate-pulse"></div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            {filteredIcons?.map((icon) => (
-                              <div key={icon.id} className="group relative border rounded-lg p-3 hover:shadow-md transition-shadow">
-                                <div className="aspect-square mb-2 bg-gray-50 rounded flex items-center justify-center overflow-hidden">
-                                  <img
-                                    src={icon.url || `/api/icons/file/${icon.filename}`}
-                                    alt={icon.name}
-                                    className="max-w-full max-h-full object-contain"
-                                    onError={(e) => {
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                    }}
-                                  />
-                                  <div className="hidden w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">
-                                    <Image className="h-8 w-8" />
-                                  </div>
-                                </div>
-                                <div className="text-xs text-center">
-                                  <p className="font-medium truncate" title={icon.name}>{icon.name}</p>
-                                  <p className="text-gray-500 capitalize">{icon.category}</p>
-                                </div>
-                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Badge variant={icon.isActive ? "default" : "secondary"} className="text-xs">
-                                    {icon.isActive ? "Active" : "Inactive"}
-                                  </Badge>
-                                </div>
-                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                  <div className="flex space-x-1">
-                                    <Button
-                                      size="sm"
-                                      variant="secondary"
-                                      onClick={() => toggleIconStatusMutation.mutate({ id: icon.id, isActive: !icon.isActive })}
-                                      disabled={toggleIconStatusMutation.isPending}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      {icon.isActive ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      onClick={() => {
-                                        if (confirm(`Are you sure you want to delete "${icon.name}"?`)) {
-                                          deleteIconMutation.mutate(icon.id);
-                                        }
-                                      }}
-                                      disabled={deleteIconMutation.isPending}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Empty State */}
-                        {!iconsLoading && filteredIcons?.length === 0 && (
-                          <div className="text-center py-12">
-                            <Image className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Icons Found</h3>
-                            <p className="text-gray-600 mb-4">
-                              {iconSearchQuery || iconCategoryFilter !== 'all' || iconStatusFilter !== 'all'
-                                ? "No icons match your current filters. Try adjusting your search criteria."
-                                : "No icons have been uploaded yet. Upload your first icon to get started."
-                              }
-                            </p>
-                            {(!iconSearchQuery && iconCategoryFilter === 'all' && iconStatusFilter === 'all') && (
-                              <Button onClick={() => setIconUploadDialogOpen(true)}>
-                                <Plus className="h-4 w-4 mr-2" />
-                                Upload First Icon
-                              </Button>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Summary Stats */}
-                        {!iconsLoading && icons && icons.length > 0 && (
-                          <div className="border-t pt-4">
-                            <div className="flex justify-between items-center text-sm text-gray-600">
-                              <span>
-                                Showing {filteredIcons?.length || 0} of {icons.length} icons
-                              </span>
-                              <div className="flex space-x-4">
-                                <span>{icons.filter(i => i.isActive).length} Active</span>
-                                <span>{icons.filter(i => !i.isActive).length} Inactive</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </CardContent>
                   </Card>
                 )}
@@ -2354,20 +2364,697 @@ export default function AdminDashboard() {
 
             {/* Icons Management Tab */}
             <TabsContent value="icons">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Image className="h-5 w-5" />
-                    Icon Management with Tags
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-gray-500">
-                    Icon tag management system will be implemented here.
-                    Backend API is ready - frontend interface coming soon.
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Image className="h-5 w-5" />
+                          Icon Library
+                        </CardTitle>
+                        <CardDescription>
+                          Manage icon names, service tags, and groups used for bulk service icon assignment.
+                        </CardDescription>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => handleEditIconTag()}>
+                          <Tags className="mr-2 h-4 w-4" />
+                          New Service Tag
+                        </Button>
+                        <Dialog open={iconGroupDialogOpen} onOpenChange={setIconGroupDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" onClick={() => handleEditIconGroup()}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              New Group
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>{editingIconGroup ? 'Edit Icon Group' : 'Create Icon Group'}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="icon-group-name">Group Key</Label>
+                                <Input
+                                  id="icon-group-name"
+                                  value={iconGroupForm.name}
+                                  onChange={(e) => setIconGroupForm((prev) => ({ ...prev, name: e.target.value }))}
+                                  placeholder="modern-outline"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="icon-group-display-name">Display Name</Label>
+                                <Input
+                                  id="icon-group-display-name"
+                                  value={iconGroupForm.displayName}
+                                  onChange={(e) => setIconGroupForm((prev) => ({ ...prev, displayName: e.target.value }))}
+                                  placeholder="Modern Outline"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="icon-group-description">Description</Label>
+                                <Textarea
+                                  id="icon-group-description"
+                                  value={iconGroupForm.description}
+                                  onChange={(e) => setIconGroupForm((prev) => ({ ...prev, description: e.target.value }))}
+                                  placeholder="Optional notes about this icon family"
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="icon-group-order">Display Order</Label>
+                                  <Input
+                                    id="icon-group-order"
+                                    type="number"
+                                    value={iconGroupForm.displayOrder}
+                                    onChange={(e) => setIconGroupForm((prev) => ({ ...prev, displayOrder: parseInt(e.target.value) || 0 }))}
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 pt-6">
+                                  <Switch
+                                    checked={iconGroupForm.isActive}
+                                    onCheckedChange={(checked) => setIconGroupForm((prev) => ({ ...prev, isActive: checked }))}
+                                  />
+                                  <Label>Active</Label>
+                                </div>
+                              </div>
+                              <Button
+                                className="w-full"
+                                onClick={() => saveIconGroupMutation.mutate({ ...iconGroupForm, id: editingIconGroup?.id })}
+                                disabled={saveIconGroupMutation.isPending}
+                              >
+                                {saveIconGroupMutation.isPending ? 'Saving...' : 'Save Group'}
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                        <Dialog
+                          open={iconUploadDialogOpen}
+                          onOpenChange={(open) => {
+                            setIconUploadDialogOpen(open);
+                            if (!open && !isBatchUploadingIcons) {
+                              setSelectedIconFiles([]);
+                              setUploadProgress({});
+                            }
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button>
+                              <Upload className="mr-2 h-4 w-4" />
+                              Upload Icons
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Upload Icons</DialogTitle>
+                              <DialogDescription>
+                                Select multiple icon files and upload them together in one batch.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                  <Label>Category</Label>
+                                  <Select value={newIconCategory} onValueChange={setNewIconCategory}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="general">General</SelectItem>
+                                      <SelectItem value="construction">Construction</SelectItem>
+                                      <SelectItem value="cleaning">Cleaning</SelectItem>
+                                      <SelectItem value="automotive">Automotive</SelectItem>
+                                      <SelectItem value="landscaping">Landscaping</SelectItem>
+                                      <SelectItem value="home">Home Services</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label>Description Prefix</Label>
+                                  <Input value={newIconDescription} onChange={(e) => setNewIconDescription(e.target.value)} placeholder="Optional shared description" />
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Select Files</Label>
+                                <Input
+                                  type="file"
+                                  multiple
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    setSelectedIconFiles(Array.from(e.target.files || []));
+                                    setUploadProgress({});
+                                  }}
+                                />
+                                {selectedIconFiles.length > 0 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {selectedIconFileSummary.count} file{selectedIconFileSummary.count === 1 ? "" : "s"} selected, {selectedIconFileSummary.formattedSize} total
+                                  </p>
+                                )}
+                              </div>
+                              {selectedIconFiles.length > 0 && (
+                                <div className="max-h-56 space-y-2 overflow-y-auto rounded-md border p-3">
+                                  {selectedIconFiles.map((file) => (
+                                    <div key={file.name} className="flex items-center justify-between text-sm">
+                                      <span className="truncate">{file.name}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {uploadProgress[file.name]?.uploading ? 'Uploading' : uploadProgress[file.name]?.success ? 'Done' : uploadProgress[file.name]?.error ? 'Error' : 'Ready'}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <Button className="w-full" onClick={uploadMultipleIcons} disabled={selectedIconFiles.length === 0 || isBatchUploadingIcons}>
+                                {isBatchUploadingIcons ? 'Uploading icons...' : `Upload ${selectedIconFiles.length} Icon${selectedIconFiles.length === 1 ? '' : 's'}`}
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <Card className="border-dashed">
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <CardTitle className="text-base">Icon Groups</CardTitle>
+                            <CardDescription>Compact icon families for quick organization and bulk apply.</CardDescription>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {iconGroups.length} group{iconGroups.length === 1 ? "" : "s"}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {iconGroupsLoading ? (
+                          <div className="text-sm text-muted-foreground">Loading groups...</div>
+                        ) : iconGroups.length === 0 ? (
+                          <div className="text-sm text-muted-foreground">No icon groups created yet.</div>
+                        ) : (
+                          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                            {iconGroups.map((group) => (
+                              <div key={group.id} className="rounded-lg border bg-background px-3 py-2">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium">{group.displayName}</p>
+                                    <p className="truncate text-[11px] text-muted-foreground">{group.name}</p>
+                                  </div>
+                                  <Switch
+                                    checked={group.isActive}
+                                    onCheckedChange={(checked) =>
+                                      saveIconGroupMutation.mutate({
+                                        id: group.id,
+                                        name: group.name,
+                                        displayName: group.displayName,
+                                        description: group.description || "",
+                                        displayOrder: group.displayOrder,
+                                        isActive: checked,
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div className="mt-2 flex items-center justify-end gap-1">
+                                  <Button variant="ghost" size="sm" onClick={() => handleEditIconGroup(group)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (confirm(`Delete icon group "${group.displayName}"?`)) {
+                                        deleteIconGroupMutation.mutate(group.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <div className="space-y-4">
+                        <Card className="border-dashed">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <CardTitle className="text-base">Service Tags</CardTitle>
+                                <CardDescription>Tag icons to improve automatic group matching.</CardDescription>
+                              </div>
+                              <Button variant="outline" size="sm" onClick={() => handleEditIconTag()}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Tag
+                              </Button>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            {iconTagsLoading ? (
+                              <div className="text-sm text-muted-foreground">Loading service tags...</div>
+                            ) : iconTags.length === 0 ? (
+                              <div className="text-sm text-muted-foreground">No service tags created yet.</div>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {iconTags.map((tag) => (
+                                  <div key={tag.id} className="inline-flex items-center gap-1 rounded-full border bg-background px-3 py-1 text-xs">
+                                    <span className="h-2 w-2 rounded-full border" style={{ backgroundColor: tag.color || "#3B82F6" }} />
+                                    <span>{tag.displayName}</span>
+                                    <button
+                                      type="button"
+                                      className="text-muted-foreground hover:text-foreground"
+                                      onClick={() => handleEditIconTag(tag)}
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        <div className="flex flex-col gap-3 lg:flex-row">
+                          <div className="relative flex-1">
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                            <Input
+                              placeholder="Search icons, tags, or descriptions..."
+                              className="pl-10"
+                              value={iconSearchQuery}
+                              onChange={(e) => setIconSearchQuery(e.target.value)}
+                            />
+                          </div>
+                          <Select value={iconGroupFilter} onValueChange={setIconGroupFilter}>
+                            <SelectTrigger className="w-full lg:w-48">
+                              <SelectValue placeholder="All groups" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Groups</SelectItem>
+                              <SelectItem value="ungrouped">Ungrouped</SelectItem>
+                              {iconGroups.map((group) => (
+                                <SelectItem key={group.id} value={String(group.id)}>{group.displayName}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={iconCategoryFilter} onValueChange={setIconCategoryFilter}>
+                            <SelectTrigger className="w-full lg:w-40">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Categories</SelectItem>
+                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="construction">Construction</SelectItem>
+                              <SelectItem value="cleaning">Cleaning</SelectItem>
+                              <SelectItem value="automotive">Automotive</SelectItem>
+                              <SelectItem value="landscaping">Landscaping</SelectItem>
+                              <SelectItem value="home">Home Services</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={iconStatusFilter} onValueChange={setIconStatusFilter}>
+                            <SelectTrigger className="w-full lg:w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Status</SelectItem>
+                              <SelectItem value="active">Active</SelectItem>
+                              <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <Card className="border-dashed">
+                          <CardContent className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={filteredIcons.length > 0 && selectedIconIds.length === filteredIcons.length}
+                                onCheckedChange={(checked) =>
+                                  setSelectedIconIds(checked ? filteredIcons.map((icon) => icon.id) : [])
+                                }
+                              />
+                              <div>
+                                <p className="text-sm font-medium">Bulk update selected icons</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {selectedIconIds.length} selected
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                              <Select value={bulkIconGroupId} onValueChange={setBulkIconGroupId}>
+                                <SelectTrigger className="w-full md:w-44">
+                                  <SelectValue placeholder="Assign group" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unchanged">Keep current group</SelectItem>
+                                  <SelectItem value="none">Ungrouped</SelectItem>
+                                  {iconGroups.map((group) => (
+                                    <SelectItem key={group.id} value={String(group.id)}>
+                                      {group.displayName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select value={bulkIconTagId} onValueChange={setBulkIconTagId}>
+                                <SelectTrigger className="w-full md:w-44">
+                                  <SelectValue placeholder="Assign service tag" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unchanged">Keep current tag</SelectItem>
+                                  <SelectItem value="none">No service tag</SelectItem>
+                                  {iconTags.map((tag) => (
+                                    <SelectItem key={tag.id} value={String(tag.id)}>
+                                      {tag.displayName}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                disabled={
+                                  selectedIconIds.length === 0 ||
+                                  bulkAssignIconsMutation.isPending ||
+                                  (bulkIconGroupId === 'unchanged' && bulkIconTagId === 'unchanged')
+                                }
+                                onClick={() =>
+                                  bulkAssignIconsMutation.mutate({
+                                    iconIds: selectedIconIds,
+                                    groupId: bulkIconGroupId,
+                                    tagId: bulkIconTagId,
+                                  })
+                                }
+                              >
+                                {bulkAssignIconsMutation.isPending ? 'Applying...' : 'Apply to Selected'}
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        {iconLibraryLoading || iconTagsLoading ? (
+                          <div className="text-sm text-muted-foreground">Loading icon library...</div>
+                        ) : (
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {filteredIcons?.map((icon) => (
+                              <Card key={icon.id} className="overflow-hidden">
+                                <CardContent className="p-4 space-y-4">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex min-w-0 items-start gap-3">
+                                      <Checkbox
+                                        checked={selectedIconIds.includes(icon.id)}
+                                        onCheckedChange={(checked) =>
+                                          setSelectedIconIds((prev) =>
+                                            checked ? [...prev, icon.id] : prev.filter((id) => id !== icon.id),
+                                          )
+                                        }
+                                      />
+                                      <div className="min-w-0">
+                                        {editingIconNameId === icon.id ? (
+                                          <Input
+                                            value={editingIconNameValue}
+                                            onChange={(e) => setEditingIconNameValue(e.target.value)}
+                                            onBlur={() => saveInlineIconNameEdit(icon)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                saveInlineIconNameEdit(icon);
+                                              }
+                                              if (e.key === 'Escape') {
+                                                e.preventDefault();
+                                                cancelInlineIconNameEdit();
+                                              }
+                                            }}
+                                            className="h-8 text-sm font-medium"
+                                            autoFocus
+                                          />
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            className="max-w-full truncate text-left font-medium hover:text-primary"
+                                            onClick={() => startInlineIconNameEdit(icon)}
+                                          >
+                                            {icon.name}
+                                          </button>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">{icon.category}</p>
+                                      </div>
+                                    </div>
+                                    <Badge variant={icon.isActive ? 'default' : 'secondary'}>
+                                      {icon.isActive ? 'Active' : 'Inactive'}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="flex justify-center">
+                                    <div className="h-24 w-24 rounded-xl border bg-slate-50 flex items-center justify-center overflow-hidden">
+                                      <img src={icon.url} alt={icon.name} className="max-h-full max-w-full object-contain" />
+                                    </div>
+                                  </div>
+
+                                  {icon.description && (
+                                    <p className="line-clamp-2 text-sm text-muted-foreground">{icon.description}</p>
+                                  )}
+
+                                  <div className="space-y-3">
+                                    <div className="space-y-1.5">
+                                      <Label className="text-xs font-medium text-muted-foreground">Group</Label>
+                                      <Select
+                                        value={icon.groupId ? String(icon.groupId) : 'none'}
+                                        onValueChange={(value) => updateIconQuickAssignment(icon, { groupId: value })}
+                                      >
+                                        <SelectTrigger className="h-9">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="none">Ungrouped</SelectItem>
+                                          {iconGroups.map((group) => (
+                                            <SelectItem key={group.id} value={String(group.id)}>
+                                              {group.displayName}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                      <Label className="text-xs font-medium text-muted-foreground">Service Tag</Label>
+                                      <Select
+                                        value={icon.tags?.[0] ? String(icon.tags[0].id) : 'none'}
+                                        onValueChange={(value) => updateIconQuickAssignment(icon, { tagId: value })}
+                                      >
+                                        <SelectTrigger className="h-9">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="none">No service tag</SelectItem>
+                                          {iconTags.map((tag) => (
+                                            <SelectItem key={tag.id} value={String(tag.id)}>
+                                              {tag.displayName}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex flex-wrap gap-1">
+                                    {(icon.tags || []).length > 0 ? (
+                                      icon.tags?.map((tag) => (
+                                        <Badge key={tag.id} variant="secondary" className="text-xs">
+                                          {tag.displayName}
+                                        </Badge>
+                                      ))
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">No service tags</span>
+                                    )}
+                                  </div>
+
+                                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleEditIcon(icon)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    More Options
+                                  </Button>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Dialog open={iconEditorOpen} onOpenChange={setIconEditorOpen}>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Edit Icon Metadata</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label>Icon Name</Label>
+                          <Input value={iconEditorForm.name} onChange={(e) => setIconEditorForm((prev) => ({ ...prev, name: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label>Category</Label>
+                          <Select value={iconEditorForm.category} onValueChange={(value) => setIconEditorForm((prev) => ({ ...prev, category: value }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="general">General</SelectItem>
+                              <SelectItem value="construction">Construction</SelectItem>
+                              <SelectItem value="cleaning">Cleaning</SelectItem>
+                              <SelectItem value="automotive">Automotive</SelectItem>
+                              <SelectItem value="landscaping">Landscaping</SelectItem>
+                              <SelectItem value="home">Home Services</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Description</Label>
+                        <Textarea value={iconEditorForm.description} onChange={(e) => setIconEditorForm((prev) => ({ ...prev, description: e.target.value }))} />
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label>Icon Group</Label>
+                          <Select value={iconEditorForm.groupId} onValueChange={(value) => setIconEditorForm((prev) => ({ ...prev, groupId: value }))}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Ungrouped</SelectItem>
+                              {iconGroups.map((group) => (
+                                <SelectItem key={group.id} value={String(group.id)}>{group.displayName}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2 pt-6">
+                          <Switch checked={iconEditorForm.isActive} onCheckedChange={(checked) => setIconEditorForm((prev) => ({ ...prev, isActive: checked }))} />
+                          <Label>Active</Label>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Service Tags</Label>
+                        <div className="mt-2 grid max-h-56 grid-cols-1 gap-2 overflow-y-auto rounded-md border p-3 md:grid-cols-2">
+                          {iconTags.map((tag) => (
+                            <label key={tag.id} className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={iconEditorForm.tagIds.includes(tag.id)}
+                                onCheckedChange={(checked) =>
+                                  setIconEditorForm((prev) => ({
+                                    ...prev,
+                                    tagIds: checked
+                                      ? [...prev.tagIds, tag.id]
+                                      : prev.tagIds.filter((id) => id !== tag.id),
+                                  }))
+                                }
+                              />
+                              <span>{tag.displayName}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button
+                          className="flex-1"
+                          onClick={() => editingIcon && updateIconMetadataMutation.mutate({ id: editingIcon.id, data: iconEditorForm })}
+                          disabled={!editingIcon || updateIconMetadataMutation.isPending}
+                        >
+                          {updateIconMetadataMutation.isPending ? 'Saving...' : 'Save Icon Metadata'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          className="sm:w-auto"
+                          disabled={!editingIcon || deleteIconMutation.isPending}
+                          onClick={() => {
+                            if (!editingIcon) return;
+                            if (confirm(`Delete icon "${editingIcon.name}"?`)) {
+                              deleteIconMutation.mutate(editingIcon.id, {
+                                onSuccess: () => {
+                                  setIconEditorOpen(false);
+                                  setEditingIcon(null);
+                                },
+                              });
+                            }
+                          }}
+                        >
+                          {deleteIconMutation.isPending ? 'Deleting...' : 'Delete Icon'}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={iconTagDialogOpen} onOpenChange={setIconTagDialogOpen}>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>{editingIconTag ? 'Edit Service Tag' : 'Create Service Tag'}</DialogTitle>
+                      <DialogDescription>
+                        Service tags help match icon groups to service names when users bulk-apply an icon set.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label htmlFor="service-tag-display-name">Display Name</Label>
+                          <Input
+                            id="service-tag-display-name"
+                            value={iconTagForm.displayName}
+                            onChange={(e) => setIconTagForm((prev) => ({ ...prev, displayName: e.target.value }))}
+                            placeholder="House Cleaning"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="service-tag-name">Tag Key</Label>
+                          <Input
+                            id="service-tag-name"
+                            value={iconTagForm.name}
+                            onChange={(e) => setIconTagForm((prev) => ({ ...prev, name: e.target.value }))}
+                            placeholder="house-cleaning"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="service-tag-description">Description</Label>
+                        <Textarea
+                          id="service-tag-description"
+                          value={iconTagForm.description}
+                          onChange={(e) => setIconTagForm((prev) => ({ ...prev, description: e.target.value }))}
+                          placeholder="Optional notes for matching and organization"
+                        />
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label htmlFor="service-tag-color">Color</Label>
+                          <Input
+                            id="service-tag-color"
+                            type="color"
+                            value={iconTagForm.color}
+                            onChange={(e) => setIconTagForm((prev) => ({ ...prev, color: e.target.value }))}
+                            className="h-10"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="service-tag-order">Display Order</Label>
+                          <Input
+                            id="service-tag-order"
+                            type="number"
+                            value={iconTagForm.displayOrder}
+                            onChange={(e) => setIconTagForm((prev) => ({ ...prev, displayOrder: parseInt(e.target.value, 10) || 0 }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={iconTagForm.isActive}
+                          onCheckedChange={(checked) => setIconTagForm((prev) => ({ ...prev, isActive: checked }))}
+                        />
+                        <Label>Active</Label>
+                      </div>
+                      <Button
+                        className="w-full"
+                        disabled={!iconTagForm.displayName.trim() || saveIconTagMutation.isPending}
+                        onClick={() => saveIconTagMutation.mutate({ ...iconTagForm, id: editingIconTag?.id })}
+                      >
+                        {saveIconTagMutation.isPending ? 'Saving...' : 'Save Service Tag'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </TabsContent>
 
             {/* Call Bookings Tab */}

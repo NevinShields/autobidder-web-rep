@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import DashboardLayout from "@/components/dashboard-layout";
@@ -61,8 +61,8 @@ import {
   Layout,
   Search,
   Target,
+  DollarSign,
   Briefcase,
-  PenTool,
   Video as VideoIcon,
   Settings,
   Upload,
@@ -76,10 +76,30 @@ import type { BlogPost, BlogContentSection, Formula, WorkOrder, BlogLayoutTempla
 
 const BLOG_TYPES = [
   { value: "job_showcase", label: "Job Showcase", description: "Showcase a completed project with before/after details", icon: Briefcase },
-  { value: "expert_opinion", label: "Expert Opinion", description: "Share your expertise on industry topics", icon: PenTool },
-  { value: "seasonal_tip", label: "Seasonal Tip", description: "Seasonal maintenance tips for homeowners", icon: FileText },
+  { value: "job_type_keyword_targeting", label: "Job Type / Keyword Targeting", description: "Create SEO pages for specific job types like apartment complexes or gas stations", icon: Target },
+  { value: "pricing_keyword_targeting", label: "Pricing Keywords Targeting", description: "Create pricing and cost pages for a service in a specific area", icon: DollarSign },
   { value: "faq_educational", label: "FAQ/Educational", description: "Answer common customer questions", icon: Search }
 ];
+
+const MAX_BLOG_IMAGES = 10;
+
+const BLOG_DESIGN_STYLES = [
+  {
+    value: "classic_blue",
+    label: "Classic Blue",
+    description: "Clean blue cards and FAQ styling close to the current default look.",
+  },
+  {
+    value: "warm_sunset",
+    label: "Warm Sunset",
+    description: "Warmer terracotta and amber accents for a softer, higher-touch presentation.",
+  },
+  {
+    value: "forest_clean",
+    label: "Forest Clean",
+    description: "Fresh green accents for a crisp, service-oriented look.",
+  },
+] as const;
 
 const GOALS = [
   { value: "rank_seo", label: "Rank in Local Search", description: "Focus on local SEO keywords" },
@@ -96,10 +116,313 @@ const TONES = [
 const WIZARD_STEPS = [
   { id: "type", label: "Type", icon: FileText },
   { id: "strategy", label: "Strategy", icon: Target },
-  { id: "editor", label: "Editor", icon: PenTool },
+  { id: "editor", label: "Editor", icon: Layout },
   { id: "seo", label: "SEO Review", icon: Search },
   { id: "publish", label: "Publish", icon: Globe }
 ];
+
+const PRICING_RANGE_PREFIX = "Price Range:";
+const PRICING_NOTES_PREFIX = "Pricing Notes:";
+
+function formatWorkOrderDuration(minutes?: number | null): string {
+  if (typeof minutes !== "number" || !Number.isFinite(minutes) || minutes <= 0) {
+    return "";
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  const parts: string[] = [];
+
+  if (hours > 0) {
+    parts.push(hours === 1 ? "1 hour" : `${hours} hours`);
+  }
+
+  if (remainingMinutes > 0) {
+    parts.push(remainingMinutes === 1 ? "1 minute" : `${remainingMinutes} minutes`);
+  }
+
+  return parts.join(" ");
+}
+
+function parsePricingKeywordNotes(raw?: string | null): { priceRange: string; notes: string } {
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (!value) {
+    return { priceRange: "", notes: "" };
+  }
+
+  const priceRangeMatch = value.match(/^Price Range:\s*(.+)$/im);
+  const notesMatch = value.match(/^Pricing Notes:\s*([\s\S]*)$/im);
+
+  if (!priceRangeMatch && !notesMatch) {
+    return { priceRange: "", notes: value };
+  }
+
+  return {
+    priceRange: priceRangeMatch?.[1]?.trim() || "",
+    notes: notesMatch?.[1]?.trim() || "",
+  };
+}
+
+function buildPricingKeywordNotes(priceRange: string, notes: string): string {
+  const parts = [
+    priceRange.trim() ? `${PRICING_RANGE_PREFIX} ${priceRange.trim()}` : "",
+    notes.trim() ? `${PRICING_NOTES_PREFIX}\n${notes.trim()}` : "",
+  ].filter(Boolean);
+
+  return parts.join("\n\n");
+}
+
+function withEnabledSections(sections: BlogContentSection[] = []): BlogContentSection[] {
+  return sections.map((section) => ({
+    ...section,
+    enabled: section.enabled !== false,
+  }));
+}
+
+function createSectionId(type: BlogContentSection["type"]): string {
+  return `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createDefaultSection(type: BlogContentSection["type"]): BlogContentSection {
+  const base = {
+    id: createSectionId(type),
+    type,
+    isLocked: false,
+    enabled: true,
+  } as const;
+
+  switch (type) {
+    case "text":
+      return {
+        ...base,
+        content: {
+          heading: "New Paragraph Section",
+          body: "",
+        },
+      };
+    case "faq":
+      return {
+        ...base,
+        content: {
+          questions: Array.from({ length: 4 }, () => ({ question: "", answer: "" })),
+        },
+      };
+    case "process_timeline":
+      return {
+        ...base,
+        content: {
+          steps: Array.from({ length: 3 }, () => ({ title: "", description: "", duration: "" })),
+        },
+      };
+    case "map_embed":
+      return {
+        ...base,
+        content: {
+          heading: "Service Area Map",
+          body: "",
+          locationLabel: "",
+          embedHtml: "",
+          mapUrl: "",
+        },
+      };
+    default:
+      return {
+        ...base,
+        content: {},
+      };
+  }
+}
+
+function ensureLayoutHasParagraphSection(sections: any[] = []): any[] {
+  const normalizedSections = Array.isArray(sections) ? [...sections] : [];
+  const hasTextSection = normalizedSections.some((section) => section?.type === "text");
+
+  if (hasTextSection) {
+    return normalizedSections;
+  }
+
+  return [
+    ...normalizedSections,
+    {
+      id: "paragraph-section",
+      type: "text",
+      label: "Paragraph Section",
+      required: true,
+    },
+  ];
+}
+
+function buildSuggestedHeroImagePrompt(input: {
+  serviceName?: string;
+  targetKeyword?: string;
+  targetCity?: string;
+  blogType?: string;
+}): string {
+  const serviceOrKeyword = input.serviceName?.trim() || input.targetKeyword?.trim() || "a local service";
+  const city = input.targetCity?.trim();
+
+  const blogTypeContext: Record<string, string> = {
+    job_showcase: "Show a polished real-world result at a residential or commercial property immediately after service.",
+    job_type_keyword_targeting: "Make the setting clearly match the property type or job type being targeted.",
+    pricing_keyword_targeting: "Use a realistic on-site service scene that visually supports a pricing or estimate article.",
+    faq_educational: "Use a realistic service-related scene that feels educational, credible, and locally relevant.",
+  };
+
+  return [
+    `Photorealistic wide website hero image for ${serviceOrKeyword}${city ? ` in ${city}` : ""}.`,
+    "Clean horizontal composition for above-the-fold screen display with a strong focal subject and balanced negative space.",
+    "Natural lighting, realistic textures, believable service result, and no text overlay.",
+    blogTypeContext[input.blogType || ""] || "",
+  ].filter(Boolean).join(" ");
+}
+
+function buildSuggestedCrewImagePrompt(input: {
+  serviceName?: string;
+  targetKeyword?: string;
+  targetCity?: string;
+  businessName?: string;
+  hasLogo?: boolean;
+}): string {
+  const serviceOrKeyword = input.serviceName?.trim() || input.targetKeyword?.trim() || "a local service";
+  const city = input.targetCity?.trim();
+  const businessName = input.businessName?.trim();
+
+  return [
+    `Photorealistic crew image for ${serviceOrKeyword}${city ? ` in ${city}` : ""}.`,
+    "Show a real service crew candidly working or preparing to work on site.",
+    "Natural lighting, realistic uniforms and equipment, believable environment, no staged corporate stock-photo posing.",
+    businessName ? `Make the crew feel branded for ${businessName}.` : "",
+    input.hasLogo ? "If branding appears, use the company logo subtly and realistically on uniforms, hats, or a vehicle." : "",
+  ].join(" ");
+}
+
+function buildSuggestedBeforeAfterScenePrompt(input: {
+  serviceName?: string;
+  targetKeyword?: string;
+  targetCity?: string;
+  blogType?: string;
+}): string {
+  const serviceOrKeyword = input.serviceName?.trim() || input.targetKeyword?.trim() || "a local service";
+  const city = input.targetCity?.trim();
+
+  return [
+    `Photorealistic property scene for a ${serviceOrKeyword}${city ? ` project in ${city}` : ""}.`,
+    "Use a stable, eye-level camera angle with clear view of the treated surfaces and enough surrounding context for a before/after comparison slider.",
+    input.blogType === "job_showcase" ? "Make it feel like a real completed customer job." : "Make it feel like a realistic service example scene.",
+  ].join(" ");
+}
+
+function buildSuggestedBeforeStatePrompt(input: { serviceName?: string; targetKeyword?: string }): string {
+  const serviceOrKeyword = input.serviceName?.trim() || input.targetKeyword?.trim() || "the service";
+  return `Show the scene before ${serviceOrKeyword}, with visible dirt, buildup, staining, wear, or the untreated condition on the main surfaces.`;
+}
+
+function buildSuggestedAfterStatePrompt(input: { serviceName?: string; targetKeyword?: string }): string {
+  const serviceOrKeyword = input.serviceName?.trim() || input.targetKeyword?.trim() || "the service";
+  return `Show the exact same scene after ${serviceOrKeyword}, with only the surfaces realistically improved and cleaned while the camera angle and surroundings stay the same.`;
+}
+
+
+function StrategySectionCard({
+  eyebrow,
+  title,
+  description,
+  action,
+  children,
+  className = "",
+}: {
+  eyebrow?: string;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <Card className={`overflow-hidden border-slate-200/80 bg-white/95 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 ${className}`}>
+      <CardHeader className="border-b border-slate-200/70 bg-slate-50/80 pb-5 dark:border-slate-800 dark:bg-slate-900/40">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="space-y-1.5">
+            {eyebrow && (
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400">
+                {eyebrow}
+              </p>
+            )}
+            <CardTitle className="text-lg text-slate-950 dark:text-slate-50">{title}</CardTitle>
+            {description && (
+              <CardDescription className="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {description}
+              </CardDescription>
+            )}
+          </div>
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
+      </CardHeader>
+      <CardContent className="p-5 md:p-6">{children}</CardContent>
+    </Card>
+  );
+}
+
+function StrategyField({
+  label,
+  hint,
+  children,
+  className = "",
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 ${className}`}>
+      <div className="space-y-1">
+        <Label className="text-sm font-semibold text-slate-900 dark:text-slate-100">{label}</Label>
+        {hint ? (
+          <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">{hint}</p>
+        ) : null}
+      </div>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+function normalizeGoogleMapsLocationLabel(value: string): string {
+  const trimmed = value.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+    if (!host.includes("google.") || !parsed.pathname.includes("/maps")) {
+      return trimmed;
+    }
+
+    const candidates = [
+      parsed.searchParams.get("q"),
+      parsed.searchParams.get("query"),
+      parsed.searchParams.get("destination"),
+    ].filter((candidate): candidate is string => Boolean(candidate && candidate.trim()));
+
+    let label = candidates[0] || "";
+    if (!label) {
+      const pathMatch = parsed.pathname.match(/\/(?:place|search)\/([^\/]+)/i);
+      label = pathMatch?.[1] || "";
+    }
+
+    label = decodeURIComponent(label)
+      .replace(/\+/g, " ")
+      .replace(/@.*$/, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return label || trimmed;
+  } catch {
+    return trimmed;
+  }
+}
 
 export default function BlogPostEditorPage() {
   const { id: routeId } = useParams();
@@ -128,11 +451,16 @@ export default function BlogPostEditorPage() {
   const [targetKeyword, setTargetKeyword] = useState("");
   const [goal, setGoal] = useState("rank_seo");
   const [tonePreference, setTonePreference] = useState("professional");
+  const [designStyle, setDesignStyle] = useState("classic_blue");
   const [workOrderId, setWorkOrderId] = useState<number | null>(null);
+  const [priceRange, setPriceRange] = useState("");
+  const [jobDuration, setJobDuration] = useState("");
   const [jobNotes, setJobNotes] = useState("");
   const [talkingPoints, setTalkingPoints] = useState<string[]>([""]);
   const [layoutTemplateId, setLayoutTemplateId] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [includeFaqSection, setIncludeFaqSection] = useState(true);
+  const [includeAutobidderForm, setIncludeAutobidderForm] = useState(false);
 
   // Generated content state
   const [title, setTitle] = useState("");
@@ -158,6 +486,12 @@ export default function BlogPostEditorPage() {
   const [postCtaButtonUrl, setPostCtaButtonUrl] = useState("");
   const [globalCtaEnabled, setGlobalCtaEnabled] = useState(true);
   const [globalCtaUrl, setGlobalCtaUrl] = useState("");
+  const [defaultBusinessName, setDefaultBusinessName] = useState("");
+  const [defaultBusinessPhone, setDefaultBusinessPhone] = useState("");
+  const [defaultBusinessEmail, setDefaultBusinessEmail] = useState("");
+  const [defaultBusinessAddress, setDefaultBusinessAddress] = useState("");
+  const [defaultBlogLogoUrl, setDefaultBlogLogoUrl] = useState("");
+  const [businessDefaultsOpen, setBusinessDefaultsOpen] = useState(false);
 
   // Uploaded images state
   const [uploadedImages, setUploadedImages] = useState<{
@@ -169,10 +503,23 @@ export default function BlogPostEditorPage() {
     caption: string;
     uploading: boolean;
   }[]>([]);
+  const [heroImagePrompt, setHeroImagePrompt] = useState("");
+  const [heroImagePromptTouched, setHeroImagePromptTouched] = useState(false);
+  const [crewImagePrompt, setCrewImagePrompt] = useState("");
+  const [crewImagePromptTouched, setCrewImagePromptTouched] = useState(false);
+  const [beforeAfterScenePrompt, setBeforeAfterScenePrompt] = useState("");
+  const [beforeAfterScenePromptTouched, setBeforeAfterScenePromptTouched] = useState(false);
+  const [beforeStatePrompt, setBeforeStatePrompt] = useState("");
+  const [beforeStatePromptTouched, setBeforeStatePromptTouched] = useState(false);
+  const [afterStatePrompt, setAfterStatePrompt] = useState("");
+  const [afterStatePromptTouched, setAfterStatePromptTouched] = useState(false);
 
   // UI state
   const [showPreview, setShowPreview] = useState(false);
   const [featuredImageUploading, setFeaturedImageUploading] = useState(false);
+  const [businessLogoUploading, setBusinessLogoUploading] = useState(false);
+  const [expandingFieldKey, setExpandingFieldKey] = useState<string | null>(null);
+  const [generatingImageKind, setGeneratingImageKind] = useState<string | null>(null);
   const [suggestedTalkingPoints, setSuggestedTalkingPoints] = useState<string[]>([]);
   const [suggestedAngles, setSuggestedAngles] = useState<string[]>([]);
   const [suggestedContext, setSuggestedContext] = useState("");
@@ -184,6 +531,9 @@ export default function BlogPostEditorPage() {
   const afterSetInputRef = useRef<HTMLInputElement | null>(null);
   const [pendingBeforeSetFiles, setPendingBeforeSetFiles] = useState<File[]>([]);
   const [pendingAfterSetFiles, setPendingAfterSetFiles] = useState<File[]>([]);
+  const isKeywordTargetingType = blogType === "job_type_keyword_targeting";
+  const isPricingKeywordType = blogType === "pricing_keyword_targeting";
+  const isStructuredSeoType = isKeywordTargetingType || isPricingKeywordType;
 
   // Fetch existing post if editing
   const { data: existingPost, isLoading: isLoadingPost } = useQuery<BlogPost & { sectionLocks: any[]; images?: any[] }>({
@@ -205,6 +555,32 @@ export default function BlogPostEditorPage() {
   const { data: layoutTemplates = [] } = useQuery<BlogLayoutTemplate[]>({
     queryKey: ["/api/blog-layout-templates"],
   });
+
+  const defaultLayoutTemplate = useMemo(
+    () => layoutTemplates.find(t => t.blogType === blogType) || layoutTemplates.find(t => !t.blogType),
+    [layoutTemplates, blogType]
+  );
+  const hasBeforeAfterImagePair = useMemo(() => {
+    const hasBefore = uploadedImages.some((img) => !img.uploading && !!img.url && img.imageType === "before");
+    const hasAfter = uploadedImages.some((img) => !img.uploading && !!img.url && img.imageType === "after");
+    return hasBefore && hasAfter;
+  }, [uploadedImages]);
+  const effectiveLayoutSections = useMemo(() => {
+    const sections = (selectedTemplate?.sections || defaultLayoutTemplate?.sections || []) as any[];
+    const filteredSections = sections.filter((section) => {
+      if (section.type === "faq" && isKeywordTargetingType && !includeFaqSection) {
+        return false;
+      }
+      if (section.type === "autobidder_form" && !includeAutobidderForm) {
+        return false;
+      }
+      if (section.type === "before_after" && !hasBeforeAfterImagePair) {
+        return false;
+      }
+      return true;
+    });
+    return ensureLayoutHasParagraphSection(filteredSections);
+  }, [selectedTemplate, defaultLayoutTemplate, isKeywordTargetingType, includeFaqSection, includeAutobidderForm, hasBeforeAfterImagePair]);
 
   const { data: businessSettings } = useQuery<any>({
     queryKey: ["/api/business-settings"],
@@ -274,6 +650,10 @@ export default function BlogPostEditorPage() {
   // Load existing post data
   useEffect(() => {
     if (existingPost) {
+      const parsedPricingNotes = existingPost.blogType === "pricing_keyword_targeting"
+        ? parsePricingKeywordNotes(existingPost.jobNotes || "")
+        : null;
+      const existingJobSummary = (existingPost.content as BlogContentSection[] || []).find((section) => section.type === "job_summary");
       setBlogType(existingPost.blogType);
       setPrimaryServiceId(existingPost.primaryServiceId);
       setTargetCity(existingPost.targetCity || "");
@@ -281,16 +661,21 @@ export default function BlogPostEditorPage() {
       setTargetKeyword(existingPost.targetKeyword || "");
       setGoal(existingPost.goal || "rank_seo");
       setTonePreference(existingPost.tonePreference || "professional");
+      setDesignStyle((existingPost as any).designStyle || "classic_blue");
       setWorkOrderId(existingPost.workOrderId);
-      setJobNotes(existingPost.jobNotes || "");
+      setPriceRange(parsedPricingNotes?.priceRange || "");
+      setJobDuration(typeof existingJobSummary?.content?.duration === "string" ? existingJobSummary.content.duration : "");
+      setJobNotes(parsedPricingNotes ? parsedPricingNotes.notes : (existingPost.jobNotes || ""));
       setTalkingPoints(existingPost.talkingPoints as string[] || [""]);
       setLayoutTemplateId(existingPost.layoutTemplateId);
+      setIncludeFaqSection((existingPost.content as BlogContentSection[] || []).some((section) => section.type === "faq"));
+      setIncludeAutobidderForm((existingPost.content as BlogContentSection[] || []).some((section) => section.type === "autobidder_form"));
       setTitle(existingPost.title);
       setSlug(existingPost.slug);
       setMetaTitle(existingPost.metaTitle || "");
       setMetaDescription(existingPost.metaDescription || "");
       setExcerpt(existingPost.excerpt || "");
-      setContent(existingPost.content as BlogContentSection[]);
+      setContent(withEnabledSections(existingPost.content as BlogContentSection[]));
       setSeoScore(existingPost.seoScore);
       setSeoChecklist(existingPost.seoChecklist as any[] || []);
       setCategory(existingPost.category || "");
@@ -327,6 +712,11 @@ export default function BlogPostEditorPage() {
     if (!businessSettings) return;
     setGlobalCtaEnabled(businessSettings.blogCtaEnabled ?? true);
     setGlobalCtaUrl(businessSettings.blogCtaUrl || "");
+    setDefaultBusinessName(businessSettings.businessName || "");
+    setDefaultBusinessPhone(businessSettings.businessPhone || "");
+    setDefaultBusinessEmail(businessSettings.businessEmail || "");
+    setDefaultBusinessAddress(businessSettings.businessAddress || "");
+    setDefaultBlogLogoUrl(businessSettings.blogLogoUrl || "");
   }, [businessSettings]);
 
   useEffect(() => {
@@ -334,22 +724,37 @@ export default function BlogPostEditorPage() {
 
     if (layoutTemplateId) {
       const matchedTemplate = layoutTemplates.find(t => t.id === layoutTemplateId);
-      if (matchedTemplate) {
+      if (matchedTemplate && (!blogType || !matchedTemplate.blogType || matchedTemplate.blogType === blogType)) {
         setSelectedTemplate(matchedTemplate);
         return;
       }
     }
 
-    if (!selectedTemplate && blogType) {
-      const fallbackTemplate = layoutTemplates.find(t => !t.blogType || t.blogType === blogType);
-      if (fallbackTemplate) {
-        setSelectedTemplate(fallbackTemplate);
-        if (!layoutTemplateId) {
-          setLayoutTemplateId(fallbackTemplate.id > 0 ? fallbackTemplate.id : null);
-        }
+    if (blogType && defaultLayoutTemplate) {
+      setSelectedTemplate(defaultLayoutTemplate);
+      if (layoutTemplateId !== defaultLayoutTemplate.id) {
+        setLayoutTemplateId(defaultLayoutTemplate.id > 0 ? defaultLayoutTemplate.id : null);
       }
     }
-  }, [layoutTemplates, layoutTemplateId, selectedTemplate, blogType]);
+  }, [layoutTemplates, layoutTemplateId, blogType, defaultLayoutTemplate]);
+
+  useEffect(() => {
+    if (!isStructuredSeoType) return;
+    setGoal("rank_seo");
+    setTonePreference("professional");
+    setWorkOrderId(null);
+  }, [isStructuredSeoType]);
+
+  useEffect(() => {
+    if (blogType !== "job_showcase" || !workOrderId || jobDuration.trim()) return;
+    const selectedWorkOrder = workOrders.find((wo) => wo.id === workOrderId);
+    if (!selectedWorkOrder) return;
+
+    const formattedDuration = formatWorkOrderDuration(selectedWorkOrder.duration);
+    if (formattedDuration) {
+      setJobDuration(formattedDuration);
+    }
+  }, [blogType, workOrderId, workOrders, jobDuration]);
 
   useEffect(() => {
     if (targetKeyword.trim() || !primaryServiceId) return;
@@ -358,6 +763,77 @@ export default function BlogPostEditorPage() {
       setTargetKeyword(fallbackKeyword);
     }
   }, [formulas, primaryServiceId, targetKeyword]);
+
+  useEffect(() => {
+    const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+    const suggestedPrompt = buildSuggestedHeroImagePrompt({
+      serviceName,
+      targetKeyword,
+      targetCity,
+      blogType,
+    });
+
+    if (!suggestedPrompt) return;
+    if (heroImagePromptTouched && heroImagePrompt.trim()) return;
+
+    setHeroImagePrompt(suggestedPrompt);
+  }, [formulas, primaryServiceId, targetKeyword, targetCity, blogType, heroImagePromptTouched, heroImagePrompt]);
+
+  useEffect(() => {
+    const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+    const suggestedPrompt = buildSuggestedCrewImagePrompt({
+      serviceName,
+      targetKeyword,
+      targetCity,
+      businessName: defaultBusinessName,
+      hasLogo: Boolean(defaultBlogLogoUrl.trim()),
+    });
+
+    if (!suggestedPrompt) return;
+    if (crewImagePromptTouched && crewImagePrompt.trim()) return;
+
+    setCrewImagePrompt(suggestedPrompt);
+  }, [formulas, primaryServiceId, targetKeyword, targetCity, defaultBusinessName, defaultBlogLogoUrl, crewImagePromptTouched, crewImagePrompt]);
+
+  useEffect(() => {
+    const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+    const suggestedScenePrompt = buildSuggestedBeforeAfterScenePrompt({
+      serviceName,
+      targetKeyword,
+      targetCity,
+      blogType,
+    });
+    const suggestedBeforePrompt = buildSuggestedBeforeStatePrompt({
+      serviceName,
+      targetKeyword,
+    });
+    const suggestedAfterPrompt = buildSuggestedAfterStatePrompt({
+      serviceName,
+      targetKeyword,
+    });
+
+    if ((!beforeAfterScenePromptTouched || !beforeAfterScenePrompt.trim()) && suggestedScenePrompt) {
+      setBeforeAfterScenePrompt(suggestedScenePrompt);
+    }
+    if ((!beforeStatePromptTouched || !beforeStatePrompt.trim()) && suggestedBeforePrompt) {
+      setBeforeStatePrompt(suggestedBeforePrompt);
+    }
+    if ((!afterStatePromptTouched || !afterStatePrompt.trim()) && suggestedAfterPrompt) {
+      setAfterStatePrompt(suggestedAfterPrompt);
+    }
+  }, [
+    formulas,
+    primaryServiceId,
+    targetKeyword,
+    targetCity,
+    blogType,
+    beforeAfterScenePromptTouched,
+    beforeAfterScenePrompt,
+    beforeStatePromptTouched,
+    beforeStatePrompt,
+    afterStatePromptTouched,
+    afterStatePrompt,
+  ]);
 
   const suggestContextMutation = useMutation({
     mutationFn: async () => {
@@ -380,13 +856,6 @@ export default function BlogPostEditorPage() {
       setSuggestedTalkingPoints(nextTalkingPoints);
       setSuggestedAngles((data.angleIdeas || []).filter(Boolean));
       setSuggestedContext(data.contextSummary || "");
-
-      setTalkingPoints((prev) => {
-        const hasManualPoints = prev.some((point) => point.trim().length > 0);
-        if (hasManualPoints || nextTalkingPoints.length === 0) return prev;
-        return nextTalkingPoints;
-      });
-
     },
     onError: () => {
       lastSuggestionKeyRef.current = "";
@@ -408,15 +877,38 @@ export default function BlogPostEditorPage() {
     return () => clearTimeout(timer);
   }, [targetKeyword, targetCity, blogType, tonePreference]);
 
+  const buildCombinedJobNotes = () => {
+    if (isPricingKeywordType) {
+      return buildPricingKeywordNotes(priceRange, jobNotes);
+    }
+
+    const selectedWorkOrder = workOrders.find(w => w.id === workOrderId);
+    return [selectedWorkOrder?.instructions?.trim(), jobNotes.trim()]
+      .filter((value): value is string => Boolean(value))
+      .filter((value, index, arr) => arr.indexOf(value) === index)
+      .join("\n\n");
+  };
+
+  const ensureImageCapacity = (incomingCount: number) => {
+    const remainingSlots = MAX_BLOG_IMAGES - uploadedImages.length;
+    if (incomingCount <= remainingSlots) {
+      return true;
+    }
+
+    toast({
+      title: "Image limit reached",
+      description: `You can upload up to ${MAX_BLOG_IMAGES} images for this post.`,
+      variant: "destructive",
+    });
+    return false;
+  };
+
   // Generate content mutation
   const generateMutation = useMutation({
     mutationFn: async () => {
       const serviceName = formulas.find(f => f.id === primaryServiceId)?.name || targetKeyword.trim();
       const selectedWorkOrder = workOrders.find(w => w.id === workOrderId);
-      const combinedJobNotes = [selectedWorkOrder?.instructions?.trim(), jobNotes.trim()]
-        .filter((value): value is string => Boolean(value))
-        .filter((value, index, arr) => arr.indexOf(value) === index)
-        .join("\n\n");
+      const combinedJobNotes = buildCombinedJobNotes();
 
       const input = {
         blogType,
@@ -424,22 +916,33 @@ export default function BlogPostEditorPage() {
         targetKeyword: targetKeyword.trim(),
         serviceName,
         serviceDescription: formulas.find(f => f.id === primaryServiceId)?.description,
-        targetCity,
-        targetNeighborhood: targetNeighborhood || undefined,
+        targetCity: targetCity.trim() || undefined,
+        targetNeighborhood: isStructuredSeoType ? undefined : (targetNeighborhood || undefined),
         goal,
         tonePreference,
+        designStyle,
         workOrderId,
         jobNotes: combinedJobNotes || undefined,
         layoutTemplateId: selectedTemplate?.id > 0 ? selectedTemplate.id : null,
         talkingPoints: talkingPoints.filter(p => p.trim()),
-        layoutTemplate: selectedTemplate?.sections || [],
+        layoutTemplate: effectiveLayoutSections,
         jobData: selectedWorkOrder ? {
           title: selectedWorkOrder.title,
           customerAddress: selectedWorkOrder.customerAddress || "",
           completedDate: selectedWorkOrder.completedDate ? format(new Date(selectedWorkOrder.completedDate), "MMMM d, yyyy") : "",
+          duration: jobDuration.trim() || formatWorkOrderDuration(selectedWorkOrder.duration) || undefined,
           notes: combinedJobNotes || undefined,
           images: []
-        } : undefined,
+        } : (blogType === "job_showcase" && jobDuration.trim()
+          ? {
+              title: serviceName,
+              customerAddress: targetCity.trim() || "",
+              completedDate: "",
+              duration: jobDuration.trim(),
+              notes: combinedJobNotes || undefined,
+              images: []
+            }
+          : undefined),
         images: uploadedImages
           .filter(img => img.url && !img.uploading)
           .map(img => ({ url: img.url!, imageType: img.imageType, imageStyle: img.imageStyle, caption: img.caption })),
@@ -462,7 +965,7 @@ export default function BlogPostEditorPage() {
       setMetaTitle(data.metaTitle || "");
       setMetaDescription(data.metaDescription || "");
       setExcerpt(data.excerpt || "");
-      setContent(data.content || []);
+      setContent(withEnabledSections(data.content || []));
       setSeoScore(data.seoScore ?? null);
       setSeoChecklist(data.seoChecklist || []);
       setCurrentStep(2); // Move to editor step
@@ -493,13 +996,14 @@ export default function BlogPostEditorPage() {
       const data = {
         blogType,
         primaryServiceId,
-        targetCity,
+        targetCity: targetCity.trim() || null,
         targetNeighborhood: targetNeighborhood || null,
         targetKeyword: targetKeyword.trim() || null,
         goal,
         tonePreference,
+        designStyle,
         workOrderId,
-        jobNotes,
+        jobNotes: buildCombinedJobNotes(),
         talkingPoints: talkingPoints.filter(p => p.trim()),
         layoutTemplateId,
         title,
@@ -579,15 +1083,19 @@ export default function BlogPostEditorPage() {
 
   // Regenerate section mutation
   const regenerateSectionMutation = useMutation({
-    mutationFn: async (sectionType: string) => {
+    mutationFn: async ({ sectionId, sectionType, context }: { sectionId: string; sectionType: string; context?: string }) => {
       const response = await apiRequest("POST", `/api/blog-posts/${id}/regenerate-section`, {
-        sectionType
+        sectionId,
+        sectionType,
+        context
       });
       return await response.json() as BlogContentSection;
     },
     onSuccess: (newSection: BlogContentSection, variables) => {
       setContent(prev => prev.map(s =>
-        s.type === variables ? newSection : s
+        s.id === variables.sectionId
+          ? { ...newSection, id: variables.sectionId, enabled: s.enabled !== false }
+          : s
       ));
       toast({
         title: "Section Regenerated",
@@ -603,25 +1111,62 @@ export default function BlogPostEditorPage() {
     }
   });
 
-  const saveGlobalCtaMutation = useMutation({
+  const expandTextMutation = useMutation({
+    mutationFn: async ({ endpoint, payload }: {
+      endpoint: string;
+      payload: Record<string, unknown>;
+      sectionType: string;
+      fieldLabel: string;
+      currentText: string;
+      context?: string;
+      onApply: (value: string) => void;
+    }) => {
+      const response = await apiRequest("POST", endpoint, payload);
+      return await response.json() as { text: string };
+    },
+    onSuccess: (data, variables) => {
+      variables.onApply(data.text);
+      toast({
+        title: "Expanded with AI",
+        description: "The text field was expanded with more detail.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Expansion Failed",
+        description: "Failed to expand this text field.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setExpandingFieldKey(null);
+    }
+  });
+
+  const saveBusinessDefaultsMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("PATCH", "/api/business-settings", {
+        businessName: defaultBusinessName.trim() || "",
+        businessPhone: defaultBusinessPhone.trim() || "",
+        businessEmail: defaultBusinessEmail.trim() || "",
+        businessAddress: defaultBusinessAddress.trim() || "",
         blogCtaEnabled: globalCtaEnabled,
         blogCtaUrl: globalCtaUrl.trim() || null,
+        blogLogoUrl: defaultBlogLogoUrl.trim() || null,
       });
       return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
       toast({
-        title: "Global CTA Saved",
-        description: "Default CTA settings will be used for posts using global defaults.",
+        title: "Business Defaults Saved",
+        description: "Your blog defaults will be reused for future posts and image generation.",
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to Save Global CTA",
-        description: error?.message || "Could not save global CTA settings.",
+        title: "Failed to Save Business Defaults",
+        description: error?.message || "Could not save the default business details.",
         variant: "destructive",
       });
     }
@@ -643,13 +1188,14 @@ export default function BlogPostEditorPage() {
     const data = {
       blogType,
       primaryServiceId,
-      targetCity,
+      targetCity: targetCity.trim() || null,
       targetNeighborhood: targetNeighborhood || null,
       targetKeyword: targetKeyword.trim() || null,
       goal,
       tonePreference,
+      designStyle,
       workOrderId,
-      jobNotes,
+      jobNotes: buildCombinedJobNotes(),
       talkingPoints: talkingPoints.filter(p => p.trim()),
       layoutTemplateId,
       title,
@@ -688,15 +1234,13 @@ export default function BlogPostEditorPage() {
       if (savedId) {
         setPostId(savedId);
         await persistUploadedImagesToPost(Number(savedId));
-        if (!isEditing) {
-          navigate(`/blog-posts/${savedId}/edit`);
-        }
         queryClient.invalidateQueries({ queryKey: ["/api/blog-posts"] });
         toast({
           title: "Saved",
           description: "Blog post saved. Syncing to website...",
         });
-        syncToWebsiteMutation.mutate(savedId);
+        await syncToWebsiteMutation.mutateAsync(savedId);
+        navigate("/blog-posts");
       }
     } catch (error: any) {
       toast({
@@ -775,7 +1319,9 @@ export default function BlogPostEditorPage() {
 
   const handleImageUpload = async (files: FileList | null) => {
     if (!files) return;
-    for (const file of Array.from(files)) {
+    const nextFiles = Array.from(files).slice(0, MAX_BLOG_IMAGES);
+    if (!ensureImageCapacity(nextFiles.length)) return;
+    for (const file of nextFiles) {
       await uploadSingleImage(file, {
         imageType: "hero",
         imageStyle: "default",
@@ -786,6 +1332,7 @@ export default function BlogPostEditorPage() {
 
   const handleBeforeAfterSetUpload = async () => {
     if (pendingBeforeSetFiles.length === 0 && pendingAfterSetFiles.length === 0) return;
+    if (!ensureImageCapacity(pendingBeforeSetFiles.length + pendingAfterSetFiles.length)) return;
 
     if (pendingBeforeSetFiles.length !== pendingAfterSetFiles.length) {
       toast({
@@ -822,12 +1369,29 @@ export default function BlogPostEditorPage() {
     if (afterSetInputRef.current) afterSetInputRef.current.value = "";
   };
 
-  const removeUploadedImage = (index: number) => {
-    setUploadedImages(prev => {
-      const img = prev[index];
-      if (img?.preview) URL.revokeObjectURL(img.preview);
-      return prev.filter((_, i) => i !== index);
-    });
+  const removeUploadedImage = async (index: number) => {
+    const img = uploadedImages[index];
+    if (!img) return;
+
+    try {
+      if (img.id) {
+        await apiRequest("DELETE", `/api/blog-images/${img.id}`);
+      }
+
+      setUploadedImages(prev => {
+        const nextImage = prev[index];
+        if (nextImage?.preview?.startsWith("blob:")) {
+          URL.revokeObjectURL(nextImage.preview);
+        }
+        return prev.filter((_, i) => i !== index);
+      });
+    } catch (error: any) {
+      toast({
+        title: "Delete Failed",
+        description: error.message || "Failed to remove image.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFeaturedImageUpload = async (file: File | null) => {
@@ -865,6 +1429,43 @@ export default function BlogPostEditorPage() {
       });
     } finally {
       setFeaturedImageUploading(false);
+    }
+  };
+
+  const handleBusinessLogoUpload = async (file: File | null) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    setBusinessLogoUploading(true);
+    try {
+      const response = await fetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Upload failed");
+
+      const result = await response.json();
+      const nextUrl = typeof result?.url === "string" ? result.url : "";
+      if (!nextUrl) {
+        throw new Error("Upload returned an invalid image URL");
+      }
+
+      setDefaultBlogLogoUrl(nextUrl);
+      toast({
+        title: "Logo uploaded",
+        description: "Save business defaults to reuse this logo in future blogs and crew images.",
+      });
+    } catch (error) {
+      toast({
+        title: "Logo upload failed",
+        description: "Failed to upload the company logo.",
+        variant: "destructive",
+      });
+    } finally {
+      setBusinessLogoUploading(false);
     }
   };
 
@@ -997,6 +1598,8 @@ export default function BlogPostEditorPage() {
       return;
     }
 
+    if (!ensureImageCapacity(1)) return;
+
     const nextImageStyle: "default" | "rounded" | "rounded_shadow" = "default";
     const nextCaption = image.title || "";
     let insertIndex = -1;
@@ -1054,10 +1657,73 @@ export default function BlogPostEditorPage() {
     ));
   };
 
-  const updateImageStyle = (index: number, value: "default" | "rounded" | "rounded_shadow") => {
-    setUploadedImages(prev => prev.map((img, i) =>
-      i === index ? { ...img, imageStyle: value } : img
+  const useUploadedImageAsFeatured = (index: number) => {
+    const selectedImage = uploadedImages[index];
+    const selectedUrl = selectedImage?.url || selectedImage?.preview || "";
+    if (!selectedUrl || selectedImage?.uploading) {
+      return;
+    }
+
+    setFeaturedImageUrl(selectedUrl);
+    setUploadedImages((prev) => prev.map((img, i) =>
+      i === index
+        ? { ...img, imageType: "hero" }
+        : img
     ));
+    toast({
+      title: "Featured image selected",
+      description: "This image will be used as the featured image for the blog post.",
+    });
+  };
+
+  const appendGeneratedImages = (images: Array<{
+    id: number;
+    originalUrl: string;
+    processedUrl?: string | null;
+    imageType: string;
+    imageStyle?: string | null;
+    caption?: string | null;
+  }>) => {
+    setUploadedImages((prev) => [
+      ...prev,
+      ...images.map((image) => ({
+        id: image.id,
+        preview: image.processedUrl || image.originalUrl,
+        url: image.processedUrl || image.originalUrl,
+        imageType: image.imageType,
+        imageStyle: (image.imageStyle || "default") as "default" | "rounded" | "rounded_shadow",
+        caption: image.caption || "",
+        uploading: false,
+      })),
+    ]);
+  };
+
+  const generateBlogImages = async (payload: Record<string, unknown>, kind: string) => {
+    setGeneratingImageKind(kind);
+    try {
+      const response = await apiRequest("POST", "/api/blog-images/generate", {
+        ...payload,
+        blogPostId: postId || null,
+        serviceName: formulas.find((f) => f.id === primaryServiceId)?.name || targetKeyword.trim() || undefined,
+        targetCity: targetCity.trim() || undefined,
+      });
+      const result = await response.json();
+      appendGeneratedImages(Array.isArray(result) ? result : []);
+      toast({
+        title: "Images generated",
+        description: kind === "before_after_pair"
+          ? "Generated a matched before and after image pair."
+          : "Generated a new blog image.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Image generation failed",
+        description: error?.message || "Failed to generate images.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImageKind(null);
+    }
   };
 
   const updateInternalLink = (index: number, field: "anchorText" | "url", value: string) => {
@@ -1091,14 +1757,42 @@ export default function BlogPostEditorPage() {
     setTalkingPoints(talkingPoints.filter((_, i) => i !== index));
   };
 
-  const toggleSectionLock = (sectionId: string) => {
-    const newLocked = new Set(lockedSections);
-    if (newLocked.has(sectionId)) {
-      newLocked.delete(sectionId);
-    } else {
-      newLocked.add(sectionId);
+  const toggleSectionLock = async (sectionId: string) => {
+    const isLocked = lockedSections.has(sectionId);
+
+    if (!id) {
+      const newLocked = new Set(lockedSections);
+      if (isLocked) {
+        newLocked.delete(sectionId);
+      } else {
+        newLocked.add(sectionId);
+      }
+      setLockedSections(newLocked);
+      return;
     }
-    setLockedSections(newLocked);
+
+    try {
+      await apiRequest("POST", `/api/blog-posts/${id}/${isLocked ? "unlock-section" : "lock-section"}`, {
+        sectionId,
+      });
+
+      setLockedSections((prev) => {
+        const next = new Set(prev);
+        if (isLocked) {
+          next.delete(sectionId);
+        } else {
+          next.add(sectionId);
+        }
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/blog-posts/${id}`] });
+    } catch (error: any) {
+      toast({
+        title: isLocked ? "Unlock Failed" : "Lock Failed",
+        description: error.message || "Could not update section lock.",
+        variant: "destructive",
+      });
+    }
   };
 
   const updateSectionContent = (sectionId: string, newContent: any) => {
@@ -1107,15 +1801,129 @@ export default function BlogPostEditorPage() {
     ));
   };
 
+  const toggleSectionEnabled = (sectionId: string, enabled: boolean) => {
+    setContent((prev) => prev.map((section) =>
+      section.id === sectionId ? { ...section, enabled } : section
+    ));
+  };
+
+  const addParagraphSection = () => {
+    setContent((prev) => [
+      ...prev,
+      createDefaultSection("text"),
+    ]);
+  };
+
+  const addGeneratedParagraphSection = () => {
+    const newSection = createDefaultSection("text");
+    setContent((prev) => [...prev, newSection]);
+
+    if (!id) {
+      toast({
+        title: "Paragraph Section Added",
+        description: "Save or generate the post first, then use regenerate to have AI fill this paragraph section.",
+      });
+      return;
+    }
+
+    regenerateSectionMutation.mutate({
+      sectionId: newSection.id,
+      sectionType: "text",
+      context: "Create a brand-new additional paragraph section that complements the rest of the article. Provide a useful heading and 1-3 concise paragraphs. Avoid repeating other sections.",
+    });
+  };
+
+  const requestFieldExpansion = ({
+    fieldKey,
+    sectionType,
+    fieldLabel,
+    currentText,
+    context,
+    onApply,
+    allowDraft,
+  }: {
+    fieldKey: string;
+    sectionType: string;
+    fieldLabel: string;
+    currentText: string;
+    context?: string;
+    onApply: (value: string) => void;
+    allowDraft?: boolean;
+  }) => {
+    if (!currentText.trim()) return;
+    const endpoint = id ? `/api/blog-posts/${id}/expand-text` : (allowDraft ? "/api/blog-posts/expand-text" : "");
+    if (!endpoint) return;
+
+    const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || targetKeyword.trim() || "";
+    setExpandingFieldKey(fieldKey);
+    expandTextMutation.mutate({
+      endpoint,
+      payload: id ? {
+        sectionType,
+        fieldLabel,
+        currentText,
+        context,
+      } : {
+        blogType,
+        primaryServiceId,
+        serviceName,
+        targetCity: targetCity.trim() || undefined,
+        tonePreference,
+        sectionType,
+        fieldLabel,
+        currentText,
+        context,
+      },
+      sectionType,
+      fieldLabel,
+      currentText,
+      context,
+      onApply,
+    });
+  };
+
   const canProceed = () => {
     switch (currentStep) {
       case 0: return !!blogType;
-      case 1: return !!targetKeyword.trim() && !!targetCity.trim() && !!goal && !!selectedTemplate;
+      case 1:
+        if (isKeywordTargetingType) {
+          return !!targetKeyword.trim();
+        }
+        if (isPricingKeywordType) {
+          return !!targetKeyword.trim() && !!targetCity.trim() && !!priceRange.trim();
+        }
+        return !!targetKeyword.trim() && !!targetCity.trim() && !!goal && !!selectedTemplate;
       case 2: return !!title && content.length > 0;
       case 3: return true;
       case 4: return true;
       default: return false;
     }
+  };
+
+  const getStepValidationMessages = () => {
+    if (currentStep !== 1) return [] as string[];
+
+    const messages: string[] = [];
+    if (!targetKeyword.trim()) {
+      if (isKeywordTargetingType) {
+        messages.push("Enter a job type or target keyword.");
+      } else if (isPricingKeywordType) {
+        messages.push("Enter a service type or pricing keyword.");
+      } else {
+        messages.push("Enter a target keyword.");
+      }
+    }
+
+    if (isPricingKeywordType) {
+      if (!targetCity.trim()) messages.push("Enter a target city.");
+      if (!priceRange.trim()) messages.push("Enter a price range.");
+    } else if (!isKeywordTargetingType) {
+      if (!targetCity.trim()) messages.push("Enter a target city.");
+      if (!goal) messages.push("Choose a primary goal.");
+      if (!selectedTemplate) messages.push("Choose a layout template.");
+    }
+
+    return messages;
   };
 
   const goNext = () => {
@@ -1160,7 +1968,7 @@ export default function BlogPostEditorPage() {
                       blogType === type.value ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30' : 'hover:border-amber-300 dark:hover:border-amber-700'
                     }`}
                   >
-                    <RadioGroupItem value={type.value} className="mt-1" />
+                    <RadioGroupItem value={type.value} className="mt-1 h-4 w-4 shrink-0 rounded-full" />
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <type.icon className="h-5 w-5 text-amber-600" />
@@ -1175,17 +1983,60 @@ export default function BlogPostEditorPage() {
           </div>
         );
 
-      case 1: // Strategy (targeting + content + layout)
+      case 1: { // Strategy (targeting + content + layout)
+        const strategyDescription = isKeywordTargetingType
+          ? "Enter the job type keyword, optionally add a service city, and decide whether the generated page should include an FAQ section."
+          : isPricingKeywordType
+            ? "Target a pricing keyword for a specific city, define the expected range, list the main cost drivers, and choose whether to embed your autobidder form."
+            : "Set the search intent, add real context, and shape the draft so it reads like a polished page instead of generic AI copy.";
+        const keywordLabel = isKeywordTargetingType
+          ? "Job Type / Target Keyword"
+          : isPricingKeywordType
+            ? "Service Type / Pricing Keyword"
+            : "Target Keyword";
+        const keywordPlaceholder = isKeywordTargetingType
+          ? "e.g., apartment complex cleaning, gas station pressure washing"
+          : isPricingKeywordType
+            ? "e.g., house washing cost, roof cleaning prices"
+            : "e.g., roof cleaning cost philadelphia";
+        const keywordHint = isKeywordTargetingType
+          ? "Use the job or property type you want this page to rank for."
+          : isPricingKeywordType
+            ? "Use the phrase customers search when they want cost or pricing information."
+            : "Use any keyword phrase, even if it does not map directly to a service in your account.";
+        const cityLabel = isKeywordTargetingType ? "Service City (Optional)" : "Target City";
+        const cityHint = isKeywordTargetingType
+          ? "Add a city to localize the page, or leave it broad for wider keyword coverage."
+          : isPricingKeywordType
+            ? "Pricing pages work best when tied to a specific city or service area."
+            : "Use a city when this post should support local rankings.";
+        const notesLabel = isKeywordTargetingType
+          ? "Notes"
+          : isPricingKeywordType
+            ? "Pricing Notes (Optional)"
+            : "Job Notes / Context";
+        const notesPlaceholder = isKeywordTargetingType
+          ? "Add notes about the property type, use cases, pain points, scope, and what makes this job type different."
+          : isPricingKeywordType
+            ? "Add pricing assumptions, service tiers, minimum charges, exclusions, or local market context."
+            : "Add notes, constraints, customer concerns, results, or other context.";
+        const talkingPointsLabel = isPricingKeywordType ? "Price Factors" : "Key Talking Points";
+        const talkingPointsHint = isPricingKeywordType
+          ? "List the variables that move pricing up or down so the draft can explain the range credibly."
+          : "List the ideas, proof points, and details the draft should hit so it feels grounded in your business.";
+        const blogTypeConfig = BLOG_TYPES.find((type) => type.value === blogType);
+        const goalLabel = GOALS.find((item) => item.value === goal)?.label || "Rank in Local Search";
+
         return (
           <div className="space-y-8">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>Blog Strategy</h2>
-                  <p className="text-sm text-gray-500 dark:text-slate-400">Choose any target keyword, then let AI suggest talking points and context.</p>
-                </div>
+            <StrategySectionCard
+              eyebrow="Strategy"
+              title="Build the brief before you generate"
+              description={strategyDescription}
+              action={
                 <Button
                   variant="outline"
+                  className="rounded-xl border-slate-200 bg-white/90 shadow-sm dark:border-slate-700 dark:bg-slate-950/60"
                   onClick={() => suggestContextMutation.mutate()}
                   disabled={!targetKeyword.trim() || suggestContextMutation.isPending}
                 >
@@ -1196,485 +2047,1117 @@ export default function BlogPostEditorPage() {
                   )}
                   Refresh AI Ideas
                 </Button>
+              }
+            >
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 px-3 py-1 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {blogTypeConfig?.label || "Blog Strategy"}
+                </Badge>
+                {targetKeyword.trim() && (
+                  <Badge variant="outline" className="rounded-full border-slate-200 bg-white px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    {targetKeyword.trim()}
+                  </Badge>
+                )}
+                {targetCity.trim() && (
+                  <Badge variant="outline" className="rounded-full border-slate-200 bg-white px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    {targetCity.trim()}
+                  </Badge>
+                )}
+                {!isStructuredSeoType && (
+                  <Badge variant="outline" className="rounded-full border-slate-200 bg-white px-3 py-1 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    {goalLabel}
+                  </Badge>
+                )}
               </div>
+            </StrategySectionCard>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <Label>Target Keyword</Label>
-                  <Input
-                    value={targetKeyword}
-                    onChange={e => setTargetKeyword(e.target.value)}
-                    placeholder="e.g., roof cleaning cost philadelphia"
-                  />
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Use any keyword phrase, not just a service in your account.</p>
-                </div>
-                <div>
-                  <Label>Related Service (Optional)</Label>
-                  <Select value={primaryServiceId?.toString() || "none"} onValueChange={v => setPrimaryServiceId(v === "none" ? null : parseInt(v))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No linked service</SelectItem>
-                      {formulas.map(formula => (
-                        <SelectItem key={formula.id} value={formula.id.toString()}>
-                          {formula.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Target City</Label>
-                  <Input
-                    value={targetCity}
-                    onChange={e => setTargetCity(e.target.value)}
-                    placeholder="e.g., Philadelphia"
-                  />
-                </div>
-                <div>
-                  <Label>Neighborhood (Optional)</Label>
-                  <Input
-                    value={targetNeighborhood}
-                    onChange={e => setTargetNeighborhood(e.target.value)}
-                    placeholder="e.g., Center City"
-                  />
-                </div>
-                <div>
-                  <Label>Tone Preference</Label>
-                  <Select value={tonePreference} onValueChange={setTonePreference}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TONES.map(tone => (
-                        <SelectItem key={tone.value} value={tone.value}>{tone.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label className="mb-3 block">Primary Goal</Label>
-                <RadioGroup value={goal} onValueChange={setGoal} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {GOALS.map(g => (
-                    <Label
-                      key={g.value}
-                      className={`flex items-center gap-3 p-3 border dark:border-slate-700 rounded-lg cursor-pointer ${
-                        goal === g.value ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30' : 'hover:border-amber-300 dark:hover:border-amber-700'
-                      }`}
-                    >
-                      <RadioGroupItem value={g.value} />
-                      <div>
-                        <span className="font-medium text-sm">{g.label}</span>
-                        <p className="text-xs text-gray-500 dark:text-slate-400">{g.description}</p>
-                      </div>
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              {(suggestedTalkingPoints.length > 0 || suggestedAngles.length > 0 || suggestedContext) && (
-                <Card className="bg-amber-50/70 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/40">
-                  <CardContent className="pt-5 space-y-4">
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
-                      <Sparkles className="h-4 w-4" />
-                      <span className="font-medium text-sm">AI Suggestions</span>
-                    </div>
-
-                    {suggestedTalkingPoints.length > 0 && (
-                      <div>
-                        <Label className="text-xs uppercase tracking-wide text-gray-600 dark:text-slate-300">Suggested Talking Points</Label>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {suggestedTalkingPoints.map((point, idx) => (
-                            <Button
-                              key={`${point}-${idx}`}
-                              variant="outline"
-                              size="sm"
-                              className="h-auto py-1 px-2 text-left whitespace-normal"
-                              onClick={() => {
-                                setTalkingPoints(prev => {
-                                  const next = prev.filter(p => p.trim().length > 0);
-                                  if (next.includes(point)) return next;
-                                  return [...next, point];
-                                });
-                              }}
-                            >
-                              + {point}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
+            <StrategySectionCard
+              eyebrow="Business Defaults"
+              title="Saved business details for every new blog"
+              description="Set your core business info once so new posts and crew-image prompts can reuse it automatically."
+              action={
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    className="rounded-xl"
+                    onClick={() => setBusinessDefaultsOpen((prev) => !prev)}
+                  >
+                    {businessDefaultsOpen ? "Hide" : "Show"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-xl border-slate-200 bg-white/90 shadow-sm dark:border-slate-700 dark:bg-slate-950/60"
+                    onClick={() => saveBusinessDefaultsMutation.mutate()}
+                    disabled={saveBusinessDefaultsMutation.isPending || businessLogoUploading}
+                  >
+                    {saveBusinessDefaultsMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
                     )}
-
-                    {suggestedContext && (
-                      <div>
-                        <Label className="text-xs uppercase tracking-wide text-gray-600 dark:text-slate-300">Suggested Context</Label>
-                        <p className="text-sm text-gray-700 dark:text-slate-300 mt-1">{suggestedContext}</p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => setJobNotes((prev) => prev.trim().length > 0 ? `${prev}\n\n${suggestedContext}` : suggestedContext)}
-                        >
-                          Use Suggested Context in Notes
-                        </Button>
-                      </div>
-                    )}
-
-                    {suggestedAngles.length > 0 && (
-                      <div>
-                        <Label className="text-xs uppercase tracking-wide text-gray-600 dark:text-slate-300">Suggested Angles</Label>
-                        <ul className="mt-1 space-y-1 text-sm text-gray-700 dark:text-slate-300">
-                          {suggestedAngles.map((angle, idx) => (
-                            <li key={`${angle}-${idx}`}>• {angle}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold">Content Inputs</h3>
-              <p className="text-sm text-gray-500 dark:text-slate-400">Add context that helps the model produce stronger sections with less editing.</p>
-
-              {blogType === "job_showcase" && workOrders.length > 0 && (
-                <div>
-                  <Label className="mb-2 block">Select a Completed Job (Optional)</Label>
-                  <Select value={workOrderId?.toString() || "none"} onValueChange={v => setWorkOrderId(v === "none" ? null : parseInt(v))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a work order" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No job selected - use notes below</SelectItem>
-                      {workOrders.map(wo => (
-                        <SelectItem key={wo.id} value={wo.id.toString()}>
-                          {wo.title} - {wo.customerAddress}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
-              <div>
-                <Label>Job Notes / Context</Label>
-                <Textarea
-                  value={jobNotes}
-                  onChange={e => setJobNotes(e.target.value)}
-                  placeholder="Add notes, constraints, customer concerns, results, or other context."
-                  rows={4}
-                />
-              </div>
-
-              <div>
-                <Label className="mb-2 block">Key Talking Points</Label>
-                <div className="space-y-2">
-                  {talkingPoints.map((point, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={point}
-                        onChange={e => handleTalkingPointChange(index, e.target.value)}
-                        placeholder={`Talking point ${index + 1}`}
-                      />
-                      {talkingPoints.length > 1 && (
-                        <Button variant="ghost" size="icon" onClick={() => removeTalkingPoint(index)}>
-                          <XCircle className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={addTalkingPoint}>
-                    Add Talking Point
+                    {saveBusinessDefaultsMutation.isPending ? "Saving..." : "Save Defaults"}
                   </Button>
                 </div>
-              </div>
-
-              <div>
-                <Label className="mb-2 block">Upload Images for AI Placement</Label>
-                <p className="text-sm text-gray-500 dark:text-slate-400 mb-3">
-                  Upload images and tag them so the AI can place them in the right sections of your blog post.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-3">
+              }
+            >
+              {!businessDefaultsOpen ? (
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-300">
+                  <span>Business defaults are hidden by default to keep the strategy step compact.</span>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => openPhotoLibrary("blog")}
+                    className="rounded-full"
+                    onClick={() => setBusinessDefaultsOpen(true)}
                   >
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Choose from Photo Library
+                    Open
                   </Button>
                 </div>
+              ) : (
+              <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+                <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/50">
+                  <Label className="text-sm font-semibold text-slate-900 dark:text-slate-100">Company Logo</Label>
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Used as the saved brand reference for future blogs and crew image generation.
+                  </p>
 
-                {blogType === "job_showcase" && (
-                  <div className="mb-3 rounded-lg border border-amber-200/70 bg-amber-50/40 dark:bg-amber-950/20 p-3 space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => beforeSetInputRef.current?.click()}
-                      >
-                        Select Before ({pendingBeforeSetFiles.length})
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => afterSetInputRef.current?.click()}
-                      >
-                        Select After ({pendingAfterSetFiles.length})
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleBeforeAfterSetUpload}
-                        disabled={pendingBeforeSetFiles.length === 0 && pendingAfterSetFiles.length === 0}
-                      >
-                        Upload Before/After Set
-                      </Button>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
-                      Use matching before and after selections to upload paired image sets in order.
-                    </p>
-                    <input
-                      ref={beforeSetInputRef}
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => setPendingBeforeSetFiles(Array.from(e.target.files || []))}
-                    />
-                    <input
-                      ref={afterSetInputRef}
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => setPendingAfterSetFiles(Array.from(e.target.files || []))}
-                    />
-                  </div>
-                )}
-
-                <div
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg p-6 text-center hover:border-amber-400 transition-colors cursor-pointer"
-                  onClick={() => document.getElementById('blog-image-upload')?.click()}
-                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleImageUpload(e.dataTransfer.files);
-                  }}
-                >
-                  <Upload className="h-8 w-8 mx-auto text-gray-400 dark:text-slate-400 mb-2" />
-                  <p className="text-sm text-gray-600 dark:text-slate-300">Drag & drop images here, or click to browse</p>
-                  <p className="text-xs text-gray-400 dark:text-slate-400 mt-1">JPG, PNG, or WebP (max 5MB each)</p>
-                  <input
-                    id="blog-image-upload"
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp"
-                    multiple
-                    className="hidden"
-                    onChange={e => handleImageUpload(e.target.files)}
-                  />
-                </div>
-
-                {uploadedImages.length > 0 && (
-                  <div className="space-y-3 mt-4">
-                    {uploadedImages.map((img, index) => (
-                      <div key={index} className="flex items-start gap-3 p-3 border dark:border-slate-700 rounded-lg bg-gray-50 dark:bg-slate-900/60">
-                        <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-slate-700">
-                          {img.uploading ? (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Loader2 className="h-5 w-5 animate-spin text-gray-400 dark:text-slate-400" />
-                            </div>
-                          ) : (
-                            <img src={img.preview} alt="" className="w-full h-full object-cover" />
-                          )}
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <Select
-                            value={img.imageType}
-                            onValueChange={v => updateImageMeta(index, 'imageType', v)}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hero">Hero / Featured</SelectItem>
-                              <SelectItem value="before">Before</SelectItem>
-                              <SelectItem value="after">After</SelectItem>
-                              <SelectItem value="process">Process / In-Progress</SelectItem>
-                              <SelectItem value="equipment">Equipment</SelectItem>
-                              <SelectItem value="team">Team</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Select
-                            value={img.imageStyle}
-                            onValueChange={(v) => updateImageStyle(index, v as "default" | "rounded" | "rounded_shadow")}
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="default">Style: Default</SelectItem>
-                              <SelectItem value="rounded">Style: Rounded Corners</SelectItem>
-                              <SelectItem value="rounded_shadow">Style: Rounded + Shadow</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            value={img.caption}
-                            onChange={e => updateImageMeta(index, 'caption', e.target.value)}
-                            placeholder="Caption / description for AI context"
-                            className="h-8 text-sm"
-                          />
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="flex-shrink-0 h-8 w-8"
-                          onClick={() => removeUploadedImage(index)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                  <div
+                    className="mt-4 flex min-h-[220px] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-white p-4 transition-colors hover:border-amber-400 dark:border-slate-700 dark:bg-slate-950"
+                    onClick={() => document.getElementById("blog-default-logo-upload")?.click()}
+                  >
+                    {defaultBlogLogoUrl ? (
+                      <img
+                        src={defaultBlogLogoUrl}
+                        alt="Business logo preview"
+                        className="max-h-40 max-w-full object-contain"
+                      />
+                    ) : businessLogoUploading ? (
+                      <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                    ) : (
+                      <div className="text-center">
+                        <Upload className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+                        <p className="text-sm text-slate-600 dark:text-slate-300">Click to upload your logo</p>
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">PNG, JPG, or WebP up to 5MB</p>
                       </div>
-                    ))}
+                    )}
+                    <input
+                      id="blog-default-logo-upload"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp"
+                      className="hidden"
+                      onChange={e => handleBusinessLogoUpload(e.target.files?.[0] || null)}
+                    />
                   </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <p className="min-w-0 truncate text-xs text-slate-500 dark:text-slate-400">{defaultBlogLogoUrl || "No logo saved yet"}</p>
+                    {defaultBlogLogoUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0 rounded-full"
+                        onClick={() => setDefaultBlogLogoUrl("")}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <StrategyField label="Business Name" hint="Used in blog sections and as the company name for branded crew imagery.">
+                    <Input
+                      value={defaultBusinessName}
+                      onChange={e => setDefaultBusinessName(e.target.value)}
+                      placeholder="Your business name"
+                      className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                    />
+                  </StrategyField>
+
+                  <StrategyField label="Contact Page URL" hint="Saved as the default destination for blog CTAs so you do not have to add it to every post.">
+                    <Input
+                      value={globalCtaUrl}
+                      onChange={e => setGlobalCtaUrl(e.target.value)}
+                      placeholder="https://yourdomain.com/contact"
+                      className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                    />
+                  </StrategyField>
+
+                  <StrategyField label="Business Phone" hint="Used when blog sections or CTAs need a default phone number.">
+                    <Input
+                      value={defaultBusinessPhone}
+                      onChange={e => setDefaultBusinessPhone(e.target.value)}
+                      placeholder="(555) 555-5555"
+                      className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                    />
+                  </StrategyField>
+
+                  <StrategyField label="Business Email" hint="Saved for future CTA and contact context in generated posts.">
+                    <Input
+                      value={defaultBusinessEmail}
+                      onChange={e => setDefaultBusinessEmail(e.target.value)}
+                      placeholder="hello@yourbusiness.com"
+                      className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                    />
+                  </StrategyField>
+
+                  <StrategyField label="Business Address" hint="Useful for local context and any sections that reference your service area." className="lg:col-span-2">
+                    <Input
+                      value={defaultBusinessAddress}
+                      onChange={e => setDefaultBusinessAddress(e.target.value)}
+                      placeholder="123 Main St, City, State"
+                      className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                    />
+                  </StrategyField>
+
+                  <StrategyField label="Global CTA Enabled" hint="Turn this off if you do not want new posts to inherit the saved contact page link." className="lg:col-span-2">
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/50">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Use the saved contact link by default</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Posts can still override this later in publish settings.</p>
+                      </div>
+                      <Switch
+                        checked={globalCtaEnabled}
+                        onCheckedChange={setGlobalCtaEnabled}
+                      />
+                    </div>
+                  </StrategyField>
+                </div>
+              </div>
+              )}
+            </StrategySectionCard>
+
+            <StrategySectionCard
+              eyebrow="Targeting"
+              title="Search intent and positioning"
+              description="Give the post a clear job to do so the generated draft is aligned on keyword, location, and commercial intent from the start."
+            >
+              <div className="grid gap-4 lg:grid-cols-2">
+                <StrategyField label={keywordLabel} hint={keywordHint} className="lg:col-span-2">
+                  <Input
+                    value={targetKeyword}
+                    onChange={e => setTargetKeyword(e.target.value)}
+                    placeholder={keywordPlaceholder}
+                    className="h-12 rounded-xl border-slate-200 bg-white text-base shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                  />
+                </StrategyField>
+
+                {!isKeywordTargetingType && (
+                  <StrategyField
+                    label={isPricingKeywordType ? "Service Type" : "Related Service (Optional)"}
+                    hint={isPricingKeywordType ? "Tie this pricing page to a service in your account if you want tighter alignment." : "Link a service when you want the draft to borrow more service-specific language."}
+                  >
+                    <Select value={primaryServiceId?.toString() || "none"} onValueChange={v => setPrimaryServiceId(v === "none" ? null : parseInt(v))}>
+                      <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                        <SelectValue placeholder={isPricingKeywordType ? "Select the service this pricing page is about" : "Select a service"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No linked service</SelectItem>
+                        {formulas.map(formula => (
+                          <SelectItem key={formula.id} value={formula.id.toString()}>
+                            {formula.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </StrategyField>
+                )}
+
+                <StrategyField label={cityLabel} hint={`${cityHint} You can also paste a Google Maps location URL and it will be normalized into the city/location name.`}>
+                  <Input
+                    value={targetCity}
+                    onChange={e => setTargetCity(e.target.value)}
+                    onBlur={() => {
+                      const normalized = normalizeGoogleMapsLocationLabel(targetCity);
+                      if (normalized && normalized !== targetCity) {
+                        setTargetCity(normalized);
+                      }
+                    }}
+                    placeholder="e.g., Philadelphia or paste a Google Maps location URL"
+                    className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                  />
+                </StrategyField>
+
+                {!isKeywordTargetingType && (
+                  <StrategyField
+                    label={isPricingKeywordType ? "Price Range" : "Neighborhood (Optional)"}
+                    hint={isPricingKeywordType ? "Use the range or framing you want the article to reinforce." : "Use a neighborhood only when local nuance matters to the story or SEO angle."}
+                  >
+                    {isPricingKeywordType ? (
+                      <Input
+                        value={priceRange}
+                        onChange={e => setPriceRange(e.target.value)}
+                        placeholder="e.g., $250-$650, most jobs land between $300 and $500"
+                        className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                      />
+                    ) : (
+                      <Input
+                        value={targetNeighborhood}
+                        onChange={e => setTargetNeighborhood(e.target.value)}
+                        placeholder="e.g., Center City"
+                        className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                      />
+                    )}
+                  </StrategyField>
+                )}
+
+                {!isStructuredSeoType && (
+                  <StrategyField label="Tone Preference" hint="Choose how the finished draft should sound to readers.">
+                    <Select value={tonePreference} onValueChange={setTonePreference}>
+                      <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TONES.map(tone => (
+                          <SelectItem key={tone.value} value={tone.value}>{tone.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </StrategyField>
+                )}
+
+                <StrategyField label="Design Style" hint="Choose the card and FAQ styling bundle that will be sent as the blog CSS snippet on sync.">
+                  <Select value={designStyle} onValueChange={setDesignStyle}>
+                    <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BLOG_DESIGN_STYLES.map((style) => (
+                        <SelectItem key={style.value} value={style.value}>
+                          {style.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    {BLOG_DESIGN_STYLES.find((style) => style.value === designStyle)?.description}
+                  </p>
+                </StrategyField>
+
+                {!isStructuredSeoType && (
+                  <StrategyField label="Primary Goal" hint="Set the business outcome you want the article to bias toward." className="lg:col-span-2">
+                    <RadioGroup value={goal} onValueChange={setGoal} className="grid gap-3 md:grid-cols-3">
+                      {GOALS.map(item => (
+                        <Label
+                          key={item.value}
+                          className={`flex min-h-[92px] cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-all ${
+                            goal === item.value
+                              ? 'border-amber-400 bg-amber-50 shadow-sm dark:border-amber-700 dark:bg-amber-950/30'
+                              : 'border-slate-200 bg-slate-50/70 hover:border-amber-200 hover:bg-white dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <RadioGroupItem value={item.value} className="mt-1 h-4 w-4 shrink-0 rounded-full" />
+                          <div className="space-y-1">
+                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.label}</span>
+                            <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">{item.description}</p>
+                          </div>
+                        </Label>
+                      ))}
+                    </RadioGroup>
+                  </StrategyField>
+                )}
+
+                {isKeywordTargetingType && (
+                  <StrategyField label="FAQ Section" hint="Add a question-and-answer block near the end of the page for additional long-tail coverage." className="lg:col-span-2">
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-amber-200/80 bg-amber-50/70 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Include FAQ Section</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Useful when the post should capture related questions around the same topic.</p>
+                      </div>
+                      <Switch
+                        id="keyword-faq-toggle"
+                        checked={includeFaqSection}
+                        onCheckedChange={setIncludeFaqSection}
+                      />
+                    </div>
+                  </StrategyField>
+                )}
+
+                {isPricingKeywordType && (
+                  <StrategyField label="Conversion Module" hint="Decide whether readers should see your quoting widget inside the article." className="lg:col-span-2">
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-sky-200/80 bg-sky-50/70 px-4 py-3 dark:border-sky-900/50 dark:bg-sky-950/20">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Include Autobidder Form</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Embed your instant quote calculator so visitors can request pricing without leaving the page.</p>
+                      </div>
+                      <Switch
+                        id="pricing-autobidder-toggle"
+                        checked={includeAutobidderForm}
+                        onCheckedChange={setIncludeAutobidderForm}
+                      />
+                    </div>
+                  </StrategyField>
                 )}
               </div>
+            </StrategySectionCard>
 
-              <div className="space-y-4">
-                <h4 className="text-base font-semibold">SEO Linking and Media</h4>
-                <p className="text-sm text-gray-500 dark:text-slate-400">
-                  Add internal links and supporting media so the blog can reinforce topical authority and on-site SEO.
-                </p>
+            {(suggestedTalkingPoints.length > 0 || suggestedAngles.length > 0 || suggestedContext) && (
+              <StrategySectionCard
+                eyebrow="AI Assist"
+                title="Suggested angles and context"
+                description="Use these ideas to speed up briefing. Add only the ones that sharpen the story."
+                className="border-amber-200/80 dark:border-amber-900/40"
+              >
+                <div className="space-y-5">
+                  {suggestedTalkingPoints.length > 0 && (
+                    <div>
+                      <Label className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                        {isPricingKeywordType ? "Suggested Price Factors" : "Suggested Talking Points"}
+                      </Label>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {suggestedTalkingPoints.map((point, idx) => (
+                          <Button
+                            key={`${point}-${idx}`}
+                            variant="outline"
+                            size="sm"
+                            className="h-auto rounded-full border-slate-200 bg-white px-3 py-1.5 text-left whitespace-normal shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                            onClick={() => {
+                              setTalkingPoints(prev => {
+                                const next = prev.filter(p => p.trim().length > 0);
+                                if (next.includes(point)) return next;
+                                return [...next, point];
+                              });
+                            }}
+                          >
+                            + {point}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                <div className="space-y-2">
-                  <Label className="mb-2 block">Internal Links</Label>
-                  {internalLinks.map((link, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr_auto] gap-2 items-center">
-                      <Input
-                        value={link.anchorText}
-                        onChange={e => updateInternalLink(index, "anchorText", e.target.value)}
-                        placeholder="Anchor text (e.g., House Washing Services)"
-                      />
-                      <Input
-                        value={link.url}
-                        onChange={e => updateInternalLink(index, "url", e.target.value)}
-                        placeholder="https://yourdomain.com/service-page or /service-page"
-                      />
+                  {suggestedContext && (
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+                      <Label className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Suggested Context</Label>
+                      <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">{suggestedContext}</p>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeInternalLink(index)}
-                        disabled={internalLinks.length === 1}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 rounded-full"
+                        onClick={() => setJobNotes((prev) => prev.trim().length > 0 ? `${prev}\n\n${suggestedContext}` : suggestedContext)}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        Use Suggested Context in Notes
                       </Button>
                     </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={addInternalLink}>
-                    Add Internal Link
-                  </Button>
-                </div>
+                  )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700">
-                        <VideoIcon className="h-3 w-3" />
-                      </span>
-                      Video URL (Optional)
-                    </Label>
-                    <Input
-                      value={videoUrl}
-                      onChange={e => setVideoUrl(e.target.value)}
-                      placeholder="YouTube or Vimeo URL"
-                    />
-                  </div>
-                  <div>
-                    <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700">
-                        <FaFacebookF className="h-2.5 w-2.5" />
-                      </span>
-                      Facebook Post URL (Optional)
-                    </Label>
-                    <Input
-                      value={facebookPostUrl}
-                      onChange={e => setFacebookPostUrl(e.target.value)}
-                      placeholder="https://facebook.com/..."
-                    />
-                  </div>
-                  <div>
-                    <Label className="inline-flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
-                        <FaGoogle className="h-2.5 w-2.5" />
-                      </span>
-                      Google Business Post URL (Optional)
-                    </Label>
-                    <Input
-                      value={gmbPostUrl}
-                      onChange={e => setGmbPostUrl(e.target.value)}
-                      placeholder="Google post URL"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <h3 className="text-lg font-semibold">Layout Template</h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {layoutTemplates.filter(t => !t.blogType || t.blogType === blogType).map(template => (
-                  <Card
-                    key={template.id}
-                    className={`cursor-pointer transition-all ${
-                      selectedTemplate?.id === template.id
-                        ? 'ring-2 ring-amber-500 border-amber-500'
-                        : 'hover:border-amber-300 dark:hover:border-amber-700'
-                    }`}
-                    onClick={() => {
-                      setSelectedTemplate(template);
-                      setLayoutTemplateId(template.id > 0 ? template.id : null);
-                    }}
-                  >
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        {selectedTemplate?.id === template.id && (
-                          <CheckCircle className="h-5 w-5 text-amber-600" />
-                        )}
-                        {template.name}
-                      </CardTitle>
-                      {template.description && (
-                        <CardDescription>{template.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-1">
-                        {(template.sections as any[])?.map((section, i) => (
-                          <div key={i} className="text-sm flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${section.required ? 'bg-amber-600' : 'bg-gray-300 dark:bg-slate-700'}`} />
-                            <span>{section.label}</span>
-                            {section.required && <Badge variant="outline" className="text-xs">Required</Badge>}
+                  {suggestedAngles.length > 0 && (
+                    <div>
+                      <Label className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Suggested Angles</Label>
+                      <div className="mt-3 grid gap-2 md:grid-cols-2">
+                        {suggestedAngles.map((angle, idx) => (
+                          <div key={`${angle}-${idx}`} className="rounded-xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
+                            {angle}
                           </div>
                         ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  )}
+                </div>
+              </StrategySectionCard>
+            )}
+
+            <StrategySectionCard
+              eyebrow="Inputs"
+              title="Context the writer can actually use"
+              description="Capture the specifics that make the generated sections feel considered, credible, and hard to confuse with a template."
+            >
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]">
+                <div className="space-y-4">
+                  {blogType === "job_showcase" && workOrders.length > 0 && (
+                    <StrategyField label="Completed Job (Optional)" hint="Pull in a real job when you want the article grounded in an actual project.">
+                      <Select value={workOrderId?.toString() || "none"} onValueChange={v => setWorkOrderId(v === "none" ? null : parseInt(v))}>
+                        <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                          <SelectValue placeholder="Select a work order" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No job selected, use notes below</SelectItem>
+                          {workOrders.map(wo => (
+                            <SelectItem key={wo.id} value={wo.id.toString()}>
+                              {wo.title} - {wo.customerAddress}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </StrategyField>
+                  )}
+
+                  {blogType === "job_showcase" && (
+                    <StrategyField label="Project Duration (Optional)" hint="This helps prefill the project summary for job showcase posts.">
+                      <Input
+                        value={jobDuration}
+                        onChange={e => setJobDuration(e.target.value)}
+                        placeholder="Example: 1 day, 4 hours, or 2 visits"
+                        className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                      />
+                    </StrategyField>
+                  )}
+
+                  <StrategyField label={notesLabel} hint="Use notes for facts, edge cases, customer concerns, proof, constraints, and anything the draft should not miss.">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Draft guidance</p>
+                      {jobNotes.trim() && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 rounded-full px-3 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                          disabled={expandingFieldKey === "draft:jobNotes"}
+                          onClick={() => requestFieldExpansion({
+                            fieldKey: "draft:jobNotes",
+                            sectionType: "notes",
+                            fieldLabel: isPricingKeywordType ? "Pricing Notes" : "Job Notes",
+                            currentText: jobNotes,
+                            context: targetKeyword.trim() ? `Target keyword: ${targetKeyword.trim()}` : undefined,
+                            onApply: setJobNotes,
+                            allowDraft: true,
+                          })}
+                        >
+                          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                          {expandingFieldKey === "draft:jobNotes" ? "Expanding..." : "Expand with AI"}
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea
+                      value={jobNotes}
+                      onChange={e => setJobNotes(e.target.value)}
+                      placeholder={notesPlaceholder}
+                      rows={7}
+                      className="min-h-[180px] rounded-2xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                    />
+                  </StrategyField>
+                </div>
+
+                <div className="space-y-4">
+                  <StrategyField label={talkingPointsLabel} hint={talkingPointsHint}>
+                    <div className="space-y-3">
+                      {talkingPoints.map((point, index) => (
+                        <div key={index} className="flex items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-2 dark:border-slate-800 dark:bg-slate-900/50">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold text-slate-500 shadow-sm dark:bg-slate-950 dark:text-slate-300">
+                            {index + 1}
+                          </div>
+                          <Input
+                            value={point}
+                            onChange={e => handleTalkingPointChange(index, e.target.value)}
+                            placeholder={isPricingKeywordType ? `Price factor ${index + 1}` : `Talking point ${index + 1}`}
+                            className="h-10 border-0 bg-transparent shadow-none focus-visible:ring-0 dark:bg-transparent"
+                          />
+                          {talkingPoints.length > 1 && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => removeTalkingPoint(index)}>
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={addTalkingPoint}>
+                        {isPricingKeywordType ? "Add Price Factor" : "Add Talking Point"}
+                      </Button>
+                    </div>
+                  </StrategyField>
+
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">What makes a stronger brief</p>
+                    <div className="mt-3 space-y-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                      <p>Include specifics you would want a writer or strategist to know before drafting.</p>
+                      <p>Use talking points for structure and notes for nuance, objections, proof, and edge cases.</p>
+                      <p>The more concrete the inputs are, the less cleanup you will need in the editor step.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            </StrategySectionCard>
+
+            <StrategySectionCard
+              eyebrow="Assets"
+              title="Media, links, and supporting proof"
+              description="Organize the images and on-site references the draft should use so the finished post feels integrated with the rest of your site."
+            >
+              <Accordion type="multiple" className="w-full space-y-3">
+                <AccordionItem value="asset-image-upload" className="overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/60 px-0 dark:border-slate-800 dark:bg-slate-900/40">
+                  <AccordionTrigger className="px-5 py-4 text-left hover:no-underline">
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Image Uploads</div>
+                      <p className="text-sm font-normal leading-6 text-slate-500 dark:text-slate-400">
+                        {uploadedImages.length > 0
+                          ? `${uploadedImages.length} image${uploadedImages.length === 1 ? "" : "s"} attached for placement and featured-image use.`
+                          : `Upload up to ${MAX_BLOG_IMAGES} images and tag them for AI placement.`}
+                      </p>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-5 pb-5 pt-0">
+                    <div className="space-y-4">
+                      {!hasBeforeAfterImagePair && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          The Before & After section is only included when this post has at least one uploaded image tagged `Before` and one tagged `After`.
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full"
+                          onClick={() => openPhotoLibrary("blog")}
+                        >
+                          <ImageIcon className="h-4 w-4 mr-2" />
+                          Choose from Photo Library
+                        </Button>
+                      </div>
+
+                      {(blogType === "job_showcase" || isKeywordTargetingType) && (
+                        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/70 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full"
+                              onClick={() => beforeSetInputRef.current?.click()}
+                            >
+                              Select Before ({pendingBeforeSetFiles.length})
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full"
+                              onClick={() => afterSetInputRef.current?.click()}
+                            >
+                              Select After ({pendingAfterSetFiles.length})
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="rounded-full"
+                              onClick={handleBeforeAfterSetUpload}
+                              disabled={pendingBeforeSetFiles.length === 0 && pendingAfterSetFiles.length === 0}
+                            >
+                              Upload Before/After Set
+                            </Button>
+                          </div>
+                          <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">
+                            Use matching before and after selections to upload paired image sets in order.
+                          </p>
+                          <input
+                            ref={beforeSetInputRef}
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => setPendingBeforeSetFiles(Array.from(e.target.files || []))}
+                          />
+                          <input
+                            ref={afterSetInputRef}
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => setPendingAfterSetFiles(Array.from(e.target.files || []))}
+                          />
+                        </div>
+                      )}
+
+                      <div
+                        className="rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50/70 p-8 text-center transition-colors hover:border-amber-400 dark:border-slate-700 dark:bg-slate-900/40"
+                        onClick={() => document.getElementById('blog-image-upload')?.click()}
+                        onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                        onDrop={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleImageUpload(e.dataTransfer.files);
+                        }}
+                      >
+                        <Upload className="mx-auto mb-3 h-8 w-8 text-slate-400 dark:text-slate-500" />
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Drag and drop images here, or click to browse</p>
+                        <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">JPG, PNG, or WebP. Max 5MB each, {MAX_BLOG_IMAGES} images total.</p>
+                        <input
+                          id="blog-image-upload"
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          multiple
+                          className="hidden"
+                          onChange={e => handleImageUpload(e.target.files)}
+                        />
+                      </div>
+
+                      {uploadedImages.length > 0 && (
+                        <div className="grid gap-3 lg:grid-cols-2">
+                          {uploadedImages.map((img, index) => (
+                            <div key={index} className="flex items-start gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+                              <div className="h-20 w-20 overflow-hidden rounded-2xl bg-slate-200 dark:bg-slate-800">
+                                {img.uploading ? (
+                                  <div className="flex h-full w-full items-center justify-center">
+                                    <Loader2 className="h-5 w-5 animate-spin text-slate-400 dark:text-slate-500" />
+                                  </div>
+                                ) : (
+                                  <img src={img.preview} alt="" className="h-full w-full object-cover" />
+                                )}
+                              </div>
+                              <div className="flex-1 space-y-2">
+                                <Select
+                                  value={img.imageType}
+                                  onValueChange={v => updateImageMeta(index, 'imageType', v)}
+                                >
+                                  <SelectTrigger className="h-9 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="hero">Hero / Featured</SelectItem>
+                                    <SelectItem value="before">Before</SelectItem>
+                                    <SelectItem value="after">After</SelectItem>
+                                    <SelectItem value="process">Process / In-Progress</SelectItem>
+                                    <SelectItem value="equipment">Equipment</SelectItem>
+                                    <SelectItem value="team">Team</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Input
+                                  value={img.caption}
+                                  onChange={e => updateImageMeta(index, 'caption', e.target.value)}
+                                  placeholder="Caption or usage note for AI context"
+                                  className="h-9 rounded-xl border-slate-200 bg-white text-sm shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                                />
+                                <div className="flex flex-wrap gap-2">
+                                  <Button
+                                    type="button"
+                                    variant={featuredImageUrl === (img.url || img.preview) ? "default" : "outline"}
+                                    size="sm"
+                                    className="rounded-full"
+                                    disabled={img.uploading}
+                                    onClick={() => useUploadedImageAsFeatured(index)}
+                                  >
+                                    {featuredImageUrl === (img.url || img.preview) ? "Featured Image" : "Use as Featured"}
+                                  </Button>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0 rounded-full"
+                                onClick={() => removeUploadedImage(index)}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="asset-image-generation" className="overflow-hidden rounded-2xl border border-sky-200/80 bg-sky-50/50 px-0 dark:border-sky-900/40 dark:bg-sky-950/20">
+                  <AccordionTrigger className="px-5 py-4 text-left hover:no-underline">
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">AI Image Generation</div>
+                      <p className="text-sm font-normal leading-6 text-slate-500 dark:text-slate-400">
+                        Generate realistic hero, crew, and matched before/after scenes from the strategy inputs.
+                      </p>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-5 pb-5 pt-0">
+                    <div className="space-y-4">
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+                          <div className="flex items-center justify-between gap-3">
+                            <Label>Hero Image Prompt</Label>
+                            {heroImagePromptTouched && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => {
+                                  const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+                                  setHeroImagePrompt(buildSuggestedHeroImagePrompt({
+                                    serviceName,
+                                    targetKeyword,
+                                    targetCity,
+                                    blogType,
+                                  }));
+                                  setHeroImagePromptTouched(false);
+                                }}
+                              >
+                                Reset Suggestion
+                              </Button>
+                            )}
+                          </div>
+                          <Textarea
+                            value={heroImagePrompt}
+                            onChange={(e) => {
+                              setHeroImagePrompt(e.target.value);
+                              setHeroImagePromptTouched(true);
+                            }}
+                            rows={3}
+                            placeholder="Example: Clean wide exterior photo of a freshly serviced patio at a suburban home, natural morning light, polished but realistic."
+                          />
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            This prompt is auto-suggested from your strategy inputs once you choose a service. You can edit it before generating.
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={generatingImageKind === "hero" || uploadedImages.length >= MAX_BLOG_IMAGES}
+                            onClick={() => {
+                              if (!ensureImageCapacity(1)) return;
+                              generateBlogImages(
+                                {
+                                  mode: "single",
+                                  imageType: "hero",
+                                  prompt:
+                                    heroImagePrompt.trim() ||
+                                    `Photorealistic hero image for ${targetKeyword.trim() || "a service business blog"} in ${targetCity.trim() || "a local service area"}.`,
+                                },
+                                "hero"
+                              );
+                            }}
+                          >
+                            {generatingImageKind === "hero" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                            Generate Hero
+                          </Button>
+                        </div>
+
+                        <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+                          <div className="flex items-center justify-between gap-3">
+                            <Label>Crew Image Prompt</Label>
+                            {crewImagePromptTouched && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => {
+                                  const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+                                  setCrewImagePrompt(buildSuggestedCrewImagePrompt({
+                                    serviceName,
+                                    targetKeyword,
+                                    targetCity,
+                                    businessName: defaultBusinessName,
+                                    hasLogo: Boolean(defaultBlogLogoUrl.trim()),
+                                  }));
+                                  setCrewImagePromptTouched(false);
+                                }}
+                              >
+                                Reset Suggestion
+                              </Button>
+                            )}
+                          </div>
+                          <Textarea
+                            value={crewImagePrompt}
+                            onChange={(e) => {
+                              setCrewImagePrompt(e.target.value);
+                              setCrewImagePromptTouched(true);
+                            }}
+                            rows={3}
+                            placeholder="Example: Real service crew preparing equipment outside a residential property, candid action shot, realistic uniforms and tools."
+                          />
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            This prompt is auto-suggested from your strategy inputs and saved business defaults. If a logo is saved, the crew image prompt will bias toward realistic branded uniforms or vehicle signage.
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={generatingImageKind === "crew" || uploadedImages.length >= MAX_BLOG_IMAGES}
+                            onClick={() => {
+                              if (!ensureImageCapacity(1)) return;
+                              generateBlogImages(
+                                {
+                                  mode: "single",
+                                  imageType: "crew",
+                                  prompt:
+                                    crewImagePrompt.trim() ||
+                                    `Photorealistic crew image for ${targetKeyword.trim() || "a local service business"}, candid and realistic.`,
+                                },
+                                "crew"
+                              );
+                            }}
+                          >
+                            {generatingImageKind === "crew" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                            Generate Crew
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+                        <div>
+                          <div className="flex items-center justify-between gap-3">
+                            <Label>Before / After Scene Prompt</Label>
+                            {beforeAfterScenePromptTouched && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => {
+                                  const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+                                  setBeforeAfterScenePrompt(buildSuggestedBeforeAfterScenePrompt({
+                                    serviceName,
+                                    targetKeyword,
+                                    targetCity,
+                                    blogType,
+                                  }));
+                                  setBeforeAfterScenePromptTouched(false);
+                                }}
+                              >
+                                Reset Suggestion
+                              </Button>
+                            )}
+                          </div>
+                          <Textarea
+                            value={beforeAfterScenePrompt}
+                            onChange={(e) => {
+                              setBeforeAfterScenePrompt(e.target.value);
+                              setBeforeAfterScenePromptTouched(true);
+                            }}
+                            rows={3}
+                            placeholder="Describe the exact property scene, camera angle, and surfaces. Example: Straight-on backyard patio photo at eye level with pavers, retaining wall, and nearby landscaping."
+                          />
+                        </div>
+                        <div className="grid gap-3 xl:grid-cols-2">
+                          <div>
+                            <div className="flex items-center justify-between gap-3">
+                              <Label>Before Condition</Label>
+                              {beforeStatePromptTouched && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => {
+                                    const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+                                    setBeforeStatePrompt(buildSuggestedBeforeStatePrompt({
+                                      serviceName,
+                                      targetKeyword,
+                                    }));
+                                    setBeforeStatePromptTouched(false);
+                                  }}
+                                >
+                                  Reset Suggestion
+                                </Button>
+                              )}
+                            </div>
+                            <Textarea
+                              value={beforeStatePrompt}
+                              onChange={(e) => {
+                                setBeforeStatePrompt(e.target.value);
+                                setBeforeStatePromptTouched(true);
+                              }}
+                              rows={3}
+                              placeholder="Example: Patio surface is dull with algae streaks, dirt buildup, and dark staining in the joints."
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between gap-3">
+                              <Label>After Condition</Label>
+                              {afterStatePromptTouched && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => {
+                                    const serviceName = formulas.find((f) => f.id === primaryServiceId)?.name || "";
+                                    setAfterStatePrompt(buildSuggestedAfterStatePrompt({
+                                      serviceName,
+                                      targetKeyword,
+                                    }));
+                                    setAfterStatePromptTouched(false);
+                                  }}
+                                >
+                                  Reset Suggestion
+                                </Button>
+                              )}
+                            </div>
+                            <Textarea
+                              value={afterStatePrompt}
+                              onChange={(e) => {
+                                setAfterStatePrompt(e.target.value);
+                                setAfterStatePromptTouched(true);
+                              }}
+                              rows={3}
+                              placeholder="Example: Same patio after professional cleaning, brighter pavers, removed algae, cleaner joints, same framing and lighting."
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={generatingImageKind === "before_after_pair" || uploadedImages.length > MAX_BLOG_IMAGES - 2}
+                            onClick={() => {
+                              if (!ensureImageCapacity(2)) return;
+                              generateBlogImages(
+                                {
+                                  mode: "before_after_pair",
+                                  scenePrompt:
+                                    beforeAfterScenePrompt.trim() ||
+                                    `Realistic property photo for ${targetKeyword.trim() || "a service blog"} in ${targetCity.trim() || "a local area"}.`,
+                                  beforeStatePrompt:
+                                    beforeStatePrompt.trim() ||
+                                    "Show the property before the service result, with visible dirt, staining, buildup, or untreated surfaces.",
+                                  afterStatePrompt:
+                                    afterStatePrompt.trim() ||
+                                    "Show the exact same scene after the service result, with only the treated surfaces improved.",
+                                },
+                                "before_after_pair"
+                              );
+                            }}
+                          >
+                            {generatingImageKind === "before_after_pair" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                            Generate Before / After Pair
+                          </Button>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            The after image is generated from the before image so the scene stays matched for the slider.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="asset-internal-links" className="overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/60 px-0 dark:border-slate-800 dark:bg-slate-900/40">
+                  <AccordionTrigger className="px-5 py-4 text-left hover:no-underline">
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Internal Links</div>
+                      <p className="text-sm font-normal leading-6 text-slate-500 dark:text-slate-400">
+                        {internalLinks.filter((link) => link.anchorText.trim() || link.url.trim()).length > 0
+                          ? `${internalLinks.filter((link) => link.anchorText.trim() || link.url.trim()).length} internal link${internalLinks.filter((link) => link.anchorText.trim() || link.url.trim()).length === 1 ? "" : "s"} added.`
+                          : "Add destination pages the post should reinforce so the article contributes to your site structure."}
+                      </p>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-5 pb-5 pt-0">
+                    <StrategyField label="Internal Links" hint="Add destination pages the post should reinforce so the article contributes to your site structure.">
+                      <div className="space-y-2">
+                        {internalLinks.map((link, index) => (
+                          <div key={index} className="grid items-center gap-2 rounded-2xl border border-slate-200/80 bg-slate-50/70 p-2 md:grid-cols-[1fr_1.4fr_auto] dark:border-slate-800 dark:bg-slate-900/50">
+                            <Input
+                              value={link.anchorText}
+                              onChange={e => updateInternalLink(index, "anchorText", e.target.value)}
+                              placeholder="Anchor text"
+                              className="h-10 rounded-xl border-0 bg-white shadow-none dark:bg-slate-950"
+                            />
+                            <Input
+                              value={link.url}
+                              onChange={e => updateInternalLink(index, "url", e.target.value)}
+                              placeholder="https://yourdomain.com/service-page or /service-page"
+                              className="h-10 rounded-xl border-0 bg-white shadow-none dark:bg-slate-950"
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => removeInternalLink(index)}
+                              disabled={internalLinks.length === 1}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button variant="outline" size="sm" className="rounded-full" onClick={addInternalLink}>
+                          Add Internal Link
+                        </Button>
+                      </div>
+                    </StrategyField>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="asset-supporting-embeds" className="overflow-hidden rounded-2xl border border-slate-200/80 bg-slate-50/60 px-0 dark:border-slate-800 dark:bg-slate-900/40">
+                  <AccordionTrigger className="px-5 py-4 text-left hover:no-underline">
+                    <div className="space-y-1">
+                      <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Supporting Embeds</div>
+                      <p className="text-sm font-normal leading-6 text-slate-500 dark:text-slate-400">
+                        {[videoUrl, facebookPostUrl, gmbPostUrl].filter((value) => value.trim()).length > 0
+                          ? `${[videoUrl, facebookPostUrl, gmbPostUrl].filter((value) => value.trim()).length} supporting embed${[videoUrl, facebookPostUrl, gmbPostUrl].filter((value) => value.trim()).length === 1 ? "" : "s"} ready.`
+                          : "Optional social and video links can add proof, richer media, and alternate paths back into your brand."}
+                      </p>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-5 pb-5 pt-0">
+                    <StrategyField label="Supporting Embeds" hint="Optional social and video links can add proof, richer media, and alternate paths back into your brand.">
+                      <div className="space-y-3">
+                        <Input
+                          value={videoUrl}
+                          onChange={e => setVideoUrl(e.target.value)}
+                          placeholder="YouTube or Vimeo URL"
+                          className="h-11 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                        />
+                        <Input
+                          value={facebookPostUrl}
+                          onChange={e => setFacebookPostUrl(e.target.value)}
+                          placeholder="Facebook post URL"
+                          className="h-11 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                        />
+                        <Input
+                          value={gmbPostUrl}
+                          onChange={e => setGmbPostUrl(e.target.value)}
+                          placeholder="Google Business post URL"
+                          className="h-11 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                        />
+                      </div>
+                    </StrategyField>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </StrategySectionCard>
+
+            {!isStructuredSeoType && (
+              <StrategySectionCard
+                eyebrow="Structure"
+                title="Layout template"
+                description="Choose the section flow before generation so the draft lands in the right shape on the first pass."
+              >
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {layoutTemplates.filter(t => !t.blogType || t.blogType === blogType).map(template => (
+                    <Card
+                      key={template.id}
+                      className={`cursor-pointer rounded-3xl border transition-all ${
+                        selectedTemplate?.id === template.id
+                          ? 'border-amber-400 bg-amber-50/70 ring-2 ring-amber-300/60 dark:border-amber-700 dark:bg-amber-950/20 dark:ring-amber-900/50'
+                          : 'border-slate-200/80 bg-white hover:border-amber-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/60 dark:hover:border-slate-700 dark:hover:bg-slate-900/50'
+                      }`}
+                      onClick={() => {
+                        setSelectedTemplate(template);
+                        setLayoutTemplateId(template.id > 0 ? template.id : null);
+                      }}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          {selectedTemplate?.id === template.id && (
+                            <CheckCircle className="h-5 w-5 text-amber-600" />
+                          )}
+                          {template.name}
+                        </CardTitle>
+                        {template.description && (
+                          <CardDescription>{template.description}</CardDescription>
+                        )}
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {(template.sections as any[])?.map((section, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                              <div className={`h-2 w-2 rounded-full ${section.required ? 'bg-amber-600' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                              <span>{section.label}</span>
+                              {section.required && <Badge variant="outline" className="text-[10px] uppercase tracking-wide">Required</Badge>}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </StrategySectionCard>
+            )}
           </div>
         );
+      }
 
       case 2: // Editor
+
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -1717,21 +3200,68 @@ export default function BlogPostEditorPage() {
                   />
                 </div>
 
+                <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Block Controls</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">
+                        Toggle blocks on or off before saving. Add paragraph sections whenever you need more body copy.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={addParagraphSection}>
+                        Add Paragraph Section
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={addGeneratedParagraphSection}
+                        disabled={regenerateSectionMutation.isPending}
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Paragraph Section
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
                 <Accordion type="multiple" className="w-full">
                   {content.map((section, index) => (
                     <AccordionItem key={section.id} value={section.id}>
                       <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center gap-2">
-                          {lockedSections.has(section.id) ? (
-                            <Lock className="h-4 w-4 text-orange-500" />
-                          ) : (
-                            <Unlock className="h-4 w-4 text-gray-400 dark:text-slate-400" />
-                          )}
-                          <span className="capitalize">{section.type.replace(/_/g, " ")}</span>
+                        <div className="flex w-full items-center justify-between gap-3 pr-2">
+                          <div className={`flex items-center gap-2 ${section.enabled === false ? "opacity-50" : ""}`}>
+                            {lockedSections.has(section.id) ? (
+                              <Lock className="h-4 w-4 text-orange-500" />
+                            ) : (
+                              <Unlock className="h-4 w-4 text-gray-400 dark:text-slate-400" />
+                            )}
+                            <span className="capitalize">{section.type.replace(/_/g, " ")}</span>
+                            {section.enabled === false && (
+                              <Badge variant="outline" className="text-xs">Off</Badge>
+                            )}
+                          </div>
+                          <div
+                            className="flex items-center gap-2"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="text-xs text-gray-500 dark:text-slate-400">
+                              {section.enabled === false ? "Disabled" : "Enabled"}
+                            </span>
+                            <Switch
+                              checked={section.enabled !== false}
+                              onCheckedChange={(checked) => toggleSectionEnabled(section.id, checked)}
+                            />
+                          </div>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        <div className="space-y-4 p-2">
+                        <div className={`space-y-4 p-2 ${section.enabled === false ? "opacity-60" : ""}`}>
+                          {section.enabled === false && (
+                            <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-3 text-sm text-gray-600 dark:text-slate-300">
+                              This block is turned off and will not appear in the saved blog until you turn it back on.
+                            </div>
+                          )}
                           <div className="flex justify-end gap-2">
                             <Button
                               variant="ghost"
@@ -1754,7 +3284,7 @@ export default function BlogPostEditorPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => regenerateSectionMutation.mutate(section.type)}
+                                onClick={() => regenerateSectionMutation.mutate({ sectionId: section.id, sectionType: section.type })}
                                 disabled={regenerateSectionMutation.isPending}
                               >
                                 <RefreshCw className="h-4 w-4 mr-1" />
@@ -1762,7 +3292,7 @@ export default function BlogPostEditorPage() {
                               </Button>
                             )}
                           </div>
-                          {renderSectionEditor(section, lockedSections.has(section.id))}
+                          {renderSectionEditor(section, lockedSections.has(section.id) || section.enabled === false)}
                         </div>
                       </AccordionContent>
                     </AccordionItem>
@@ -1974,10 +3504,10 @@ export default function BlogPostEditorPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => saveGlobalCtaMutation.mutate()}
-                      disabled={saveGlobalCtaMutation.isPending}
+                      onClick={() => saveBusinessDefaultsMutation.mutate()}
+                      disabled={saveBusinessDefaultsMutation.isPending}
                     >
-                      {saveGlobalCtaMutation.isPending ? "Saving..." : "Save Global CTA"}
+                      {saveBusinessDefaultsMutation.isPending ? "Saving..." : "Save Global CTA"}
                     </Button>
                   </div>
                 </div>
@@ -2142,6 +3672,39 @@ export default function BlogPostEditorPage() {
       updateSectionContent(section.id, { ...section.content, [field]: value });
     };
 
+    const renderExpandWithAiButton = (
+      fieldKey: string,
+      fieldLabel: string,
+      currentText: string,
+      onApply: (value: string) => void,
+      context?: string,
+      allowDraft?: boolean
+    ) => {
+      if (!currentText.trim() || (!id && !allowDraft)) return null;
+
+      return (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+          disabled={isLocked || expandingFieldKey === fieldKey}
+          onClick={() => requestFieldExpansion({
+            fieldKey,
+            sectionType: section.type,
+            fieldLabel,
+            currentText,
+            context,
+            onApply,
+            allowDraft,
+          })}
+        >
+          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+          {expandingFieldKey === fieldKey ? "Expanding..." : "Expand with AI"}
+        </Button>
+      );
+    };
+
     switch (section.type) {
       case "hero":
         return (
@@ -2177,12 +3740,27 @@ export default function BlogPostEditorPage() {
               />
             </div>
             <div>
-              <Label>Body</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label>Body Paragraphs</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 dark:text-slate-400">
+                    Use a blank line between paragraphs
+                  </span>
+                  {renderExpandWithAiButton(
+                    `${section.id}:body`,
+                    "Body Paragraphs",
+                    section.content?.body || "",
+                    (value) => handleChange("body", value),
+                    section.content?.heading ? `Heading: ${section.content.heading}` : undefined
+                  )}
+                </div>
+              </div>
               <Textarea
                 value={section.content?.body || ""}
                 onChange={e => handleChange("body", e.target.value)}
-                rows={6}
+                rows={8}
                 disabled={isLocked}
+                placeholder="Write the body copy here. Press Enter twice to start a new paragraph."
               />
             </div>
           </div>
@@ -2229,14 +3807,128 @@ export default function BlogPostEditorPage() {
           </div>
         );
 
+      case "process_timeline":
+        const processSteps = (Array.isArray(section.content?.steps) && section.content.steps.length > 0)
+          ? section.content.steps
+          : Array.from({ length: 3 }, () => ({ title: "", description: "", duration: "" }));
+        return (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-4">
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                Build the timeline as individual steps. Each card becomes a styled step in the published blog.
+              </p>
+            </div>
+            {processSteps.map((step: any, i: number) => (
+              <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 shadow-sm p-4 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                    Step {i + 1}
+                  </div>
+                  {processSteps.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const nextSteps = processSteps.filter((_: any, index: number) => index !== i);
+                        handleChange("steps", nextSteps);
+                      }}
+                      disabled={isLocked}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <div className="grid gap-3 md:grid-cols-[1.4fr_0.8fr]">
+                  <div>
+                    <Label>Step Title</Label>
+                    <Input
+                      value={step.title || ""}
+                      onChange={e => {
+                        const nextSteps = [...processSteps];
+                        nextSteps[i] = { ...nextSteps[i], title: e.target.value };
+                        handleChange("steps", nextSteps);
+                      }}
+                      disabled={isLocked}
+                      placeholder="Example: Surface prep and masking"
+                    />
+                  </div>
+                  <div>
+                    <Label>Duration (Optional)</Label>
+                    <Input
+                      value={step.duration || ""}
+                      onChange={e => {
+                        const nextSteps = [...processSteps];
+                        nextSteps[i] = { ...nextSteps[i], duration: e.target.value };
+                        handleChange("steps", nextSteps);
+                      }}
+                      disabled={isLocked}
+                      placeholder="2 hours"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <Label>Description</Label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 dark:text-slate-400">
+                        Use a blank line between paragraphs
+                      </span>
+                      {renderExpandWithAiButton(
+                        `${section.id}:step:${i}:description`,
+                        `Step ${i + 1} Description`,
+                        step.description || "",
+                        (value) => {
+                          const nextSteps = [...processSteps];
+                          nextSteps[i] = { ...nextSteps[i], description: value };
+                          handleChange("steps", nextSteps);
+                        },
+                        step.title ? `Step title: ${step.title}` : undefined
+                      )}
+                    </div>
+                  </div>
+                  <Textarea
+                    value={step.description || ""}
+                    onChange={e => {
+                      const nextSteps = [...processSteps];
+                      nextSteps[i] = { ...nextSteps[i], description: e.target.value };
+                      handleChange("steps", nextSteps);
+                    }}
+                    rows={4}
+                    disabled={isLocked}
+                    placeholder="Explain what happened during this step, what equipment or prep was needed, and why it mattered."
+                  />
+                </div>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleChange("steps", [...processSteps, { title: "", description: "", duration: "" }])}
+              disabled={isLocked}
+            >
+              Add Step
+            </Button>
+          </div>
+        );
+
       case "faq":
         const faqQuestions = (Array.isArray(section.content?.questions) && section.content.questions.length > 0)
           ? section.content.questions
           : Array.from({ length: 4 }, () => ({ question: "", answer: "" }));
         return (
           <div className="space-y-4">
+            <div className="rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-950/30 p-4">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                Published FAQs render as click-to-expand cards. Write short, specific questions and fuller answers.
+              </p>
+            </div>
             {faqQuestions.map((q: any, i: number) => (
-              <div key={i} className="border dark:border-slate-700 rounded p-3 space-y-2">
+              <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-300">
+                    FAQ {i + 1}
+                  </p>
+                </div>
                 <div>
                   <Label>Question {i + 1}</Label>
                   <Input
@@ -2250,7 +3942,20 @@ export default function BlogPostEditorPage() {
                   />
                 </div>
                 <div>
-                  <Label>Answer</Label>
+                  <div className="flex items-center justify-between gap-3">
+                    <Label>Answer</Label>
+                    {renderExpandWithAiButton(
+                      `${section.id}:faq:${i}:answer`,
+                      `FAQ ${i + 1} Answer`,
+                      q.answer || "",
+                      (value) => {
+                        const newQuestions = [...(section.content?.questions || [])];
+                        newQuestions[i] = { ...newQuestions[i], answer: value };
+                        handleChange("questions", newQuestions);
+                      },
+                      q.question ? `Question: ${q.question}` : undefined
+                    )}
+                  </div>
                   <Textarea
                     value={q.answer || ""}
                     onChange={e => {
@@ -2258,12 +3963,275 @@ export default function BlogPostEditorPage() {
                       newQuestions[i] = { ...newQuestions[i], answer: e.target.value };
                       handleChange("questions", newQuestions);
                     }}
-                    rows={3}
+                    rows={4}
                     disabled={isLocked}
+                    placeholder="Answer this clearly. Add a blank line if you want multiple paragraphs."
                   />
                 </div>
               </div>
             ))}
+          </div>
+        );
+
+      case "pricing_factors":
+        const pricingFactors = (Array.isArray(section.content?.factors) && section.content.factors.length > 0)
+          ? section.content.factors
+          : Array.from({ length: 3 }, () => ({ name: "", description: "", impact: "medium" }));
+        return (
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <Label>Intro</Label>
+                {renderExpandWithAiButton(
+                  `${section.id}:intro`,
+                  "Pricing Intro",
+                  section.content?.intro || "",
+                  (value) => handleChange("intro", value)
+                )}
+              </div>
+              <Textarea
+                value={section.content?.intro || ""}
+                onChange={e => handleChange("intro", e.target.value)}
+                rows={3}
+                disabled={isLocked}
+                placeholder="Explain how scope, condition, access, or size changes the price."
+              />
+            </div>
+            <div className="space-y-3">
+              {pricingFactors.map((factor: any, i: number) => (
+                <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">
+                    Factor {i + 1}
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
+                    <div>
+                      <Label>Name</Label>
+                      <Input
+                        value={factor.name || ""}
+                        onChange={e => {
+                          const nextFactors = [...(section.content?.factors || [])];
+                          nextFactors[i] = { ...nextFactors[i], name: e.target.value };
+                          handleChange("factors", nextFactors);
+                        }}
+                        disabled={isLocked}
+                        placeholder="e.g., Surface area"
+                      />
+                    </div>
+                    <div>
+                      <Label>Impact</Label>
+                      <Select
+                        value={factor.impact || "medium"}
+                        onValueChange={(value) => {
+                          const nextFactors = [...(section.content?.factors || [])];
+                          nextFactors[i] = { ...nextFactors[i], impact: value };
+                          handleChange("factors", nextFactors);
+                        }}
+                        disabled={isLocked}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between gap-3">
+                      <Label>Description</Label>
+                      {renderExpandWithAiButton(
+                        `${section.id}:factor:${i}:description`,
+                        `Pricing Factor ${i + 1} Description`,
+                        factor.description || "",
+                        (value) => {
+                          const nextFactors = [...(section.content?.factors || [])];
+                          nextFactors[i] = { ...nextFactors[i], description: value };
+                          handleChange("factors", nextFactors);
+                        },
+                        factor.name ? `Factor name: ${factor.name}` : undefined
+                      )}
+                    </div>
+                    <Textarea
+                      value={factor.description || ""}
+                      onChange={e => {
+                        const nextFactors = [...(section.content?.factors || [])];
+                        nextFactors[i] = { ...nextFactors[i], description: e.target.value };
+                        handleChange("factors", nextFactors);
+                      }}
+                      rows={3}
+                      disabled={isLocked}
+                      placeholder="Describe how this factor changes the price or scope."
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "pricing_table":
+        const pricingTableColumns = (Array.isArray(section.content?.columns) && section.content.columns.length > 0)
+          ? section.content.columns
+          : ["Service Tier", "Typical Price", "What's Included"];
+        const pricingTableRows = (Array.isArray(section.content?.rows) && section.content.rows.length > 0)
+          ? section.content.rows
+          : Array.from({ length: 3 }, () => ({ label: "", priceRange: "", details: "" }));
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Heading</Label>
+              <Input
+                value={section.content?.heading || ""}
+                onChange={e => handleChange("heading", e.target.value)}
+                disabled={isLocked}
+                placeholder="Typical Price Ranges"
+              />
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {pricingTableColumns.map((column: string, i: number) => (
+                <div key={i}>
+                  <Label>Column {i + 1}</Label>
+                  <Input
+                    value={column || ""}
+                    onChange={e => {
+                      const nextColumns = [...pricingTableColumns];
+                      nextColumns[i] = e.target.value;
+                      handleChange("columns", nextColumns);
+                    }}
+                    disabled={isLocked}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {pricingTableRows.map((row: any, i: number) => (
+                <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">
+                    Row {i + 1}
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div>
+                      <Label>Label</Label>
+                      <Input
+                        value={row.label || ""}
+                        onChange={e => {
+                          const nextRows = [...pricingTableRows];
+                          nextRows[i] = { ...nextRows[i], label: e.target.value };
+                          handleChange("rows", nextRows);
+                        }}
+                        disabled={isLocked}
+                      />
+                    </div>
+                    <div>
+                      <Label>Price Range</Label>
+                      <Input
+                        value={row.priceRange || ""}
+                        onChange={e => {
+                          const nextRows = [...pricingTableRows];
+                          nextRows[i] = { ...nextRows[i], priceRange: e.target.value };
+                          handleChange("rows", nextRows);
+                        }}
+                        disabled={isLocked}
+                      />
+                    </div>
+                    <div>
+                      <Label>Details</Label>
+                      <Input
+                        value={row.details || ""}
+                        onChange={e => {
+                          const nextRows = [...pricingTableRows];
+                          nextRows[i] = { ...nextRows[i], details: e.target.value };
+                          handleChange("rows", nextRows);
+                        }}
+                        disabled={isLocked}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "pricing_chart":
+        const pricingChartBars = (Array.isArray(section.content?.bars) && section.content.bars.length > 0)
+          ? section.content.bars
+          : Array.from({ length: 4 }, () => ({ label: "", value: 0, displayValue: "", description: "" }));
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>Heading</Label>
+              <Input
+                value={section.content?.heading || ""}
+                onChange={e => handleChange("heading", e.target.value)}
+                disabled={isLocked}
+                placeholder="Pricing Snapshot"
+              />
+            </div>
+            <div className="space-y-3">
+              {pricingChartBars.map((bar: any, i: number) => (
+                <div key={i} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-300">
+                    Bar {i + 1}
+                  </p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div>
+                      <Label>Label</Label>
+                      <Input
+                        value={bar.label || ""}
+                        onChange={e => {
+                          const nextBars = [...pricingChartBars];
+                          nextBars[i] = { ...nextBars[i], label: e.target.value };
+                          handleChange("bars", nextBars);
+                        }}
+                        disabled={isLocked}
+                      />
+                    </div>
+                    <div>
+                      <Label>Display Value</Label>
+                      <Input
+                        value={bar.displayValue || ""}
+                        onChange={e => {
+                          const nextBars = [...pricingChartBars];
+                          nextBars[i] = { ...nextBars[i], displayValue: e.target.value };
+                          handleChange("bars", nextBars);
+                        }}
+                        disabled={isLocked}
+                        placeholder="$350"
+                      />
+                    </div>
+                    <div>
+                      <Label>Numeric Value</Label>
+                      <Input
+                        type="number"
+                        value={bar.value ?? 0}
+                        onChange={e => {
+                          const nextBars = [...pricingChartBars];
+                          nextBars[i] = { ...nextBars[i], value: Number(e.target.value || 0) };
+                          handleChange("bars", nextBars);
+                        }}
+                        disabled={isLocked}
+                      />
+                    </div>
+                    <div>
+                      <Label>Description</Label>
+                      <Input
+                        value={bar.description || ""}
+                        onChange={e => {
+                          const nextBars = [...pricingChartBars];
+                          nextBars[i] = { ...nextBars[i], description: e.target.value };
+                          handleChange("bars", nextBars);
+                        }}
+                        disabled={isLocked}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         );
 
@@ -2279,7 +4247,16 @@ export default function BlogPostEditorPage() {
               />
             </div>
             <div>
-              <Label>Body</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label>Body</Label>
+                {renderExpandWithAiButton(
+                  `${section.id}:body`,
+                  "CTA Body",
+                  section.content?.body || "",
+                  (value) => handleChange("body", value),
+                  section.content?.heading ? `Heading: ${section.content.heading}` : undefined
+                )}
+              </div>
               <Textarea
                 value={section.content?.body || ""}
                 onChange={e => handleChange("body", e.target.value)}
@@ -2293,6 +4270,113 @@ export default function BlogPostEditorPage() {
                 value={section.content?.buttonText || ""}
                 onChange={e => handleChange("buttonText", e.target.value)}
                 disabled={isLocked}
+              />
+            </div>
+          </div>
+        );
+
+      case "autobidder_form":
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Heading</Label>
+              <Input
+                value={section.content?.heading || ""}
+                onChange={e => handleChange("heading", e.target.value)}
+                disabled={isLocked}
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <Label>Body</Label>
+                {renderExpandWithAiButton(
+                  `${section.id}:body`,
+                  "Form Body",
+                  section.content?.body || "",
+                  (value) => handleChange("body", value),
+                  section.content?.heading ? `Heading: ${section.content.heading}` : undefined
+                )}
+              </div>
+              <Textarea
+                value={section.content?.body || ""}
+                onChange={e => handleChange("body", e.target.value)}
+                rows={3}
+                disabled={isLocked}
+              />
+            </div>
+            <div>
+              <Label>Fallback Link Text</Label>
+              <Input
+                value={section.content?.buttonText || ""}
+                onChange={e => handleChange("buttonText", e.target.value)}
+                disabled={isLocked}
+              />
+            </div>
+          </div>
+        );
+
+      case "map_embed":
+        return (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-950/30 p-4">
+              <p className="text-sm text-emerald-800 dark:text-emerald-200">
+                This section renders an embedded Google Map inside the blog. Edit the copy, location label, or paste a fresh Google Maps embed snippet.
+              </p>
+            </div>
+            <div>
+              <Label>Heading</Label>
+              <Input
+                value={section.content?.heading || ""}
+                onChange={e => handleChange("heading", e.target.value)}
+                disabled={isLocked}
+                placeholder="Service Area Map"
+              />
+            </div>
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <Label>Body</Label>
+                {renderExpandWithAiButton(
+                  `${section.id}:body`,
+                  "Map Body",
+                  section.content?.body || "",
+                  (value) => handleChange("body", value),
+                  section.content?.locationLabel ? `Location: ${section.content.locationLabel}` : undefined
+                )}
+              </div>
+              <Textarea
+                value={section.content?.body || ""}
+                onChange={e => handleChange("body", e.target.value)}
+                rows={3}
+                disabled={isLocked}
+                placeholder="Use the map below to view the service area referenced in this post."
+              />
+            </div>
+            <div>
+              <Label>Location Label</Label>
+              <Input
+                value={section.content?.locationLabel || ""}
+                onChange={e => handleChange("locationLabel", e.target.value)}
+                disabled={isLocked}
+                placeholder="Philadelphia"
+              />
+            </div>
+            <div>
+              <Label>Google Maps URL (Optional)</Label>
+              <Input
+                value={section.content?.mapUrl || ""}
+                onChange={e => handleChange("mapUrl", e.target.value)}
+                disabled={isLocked}
+                placeholder="https://www.google.com/maps/..."
+              />
+            </div>
+            <div>
+              <Label>Embed HTML</Label>
+              <Textarea
+                value={section.content?.embedHtml || ""}
+                onChange={e => handleChange("embedHtml", e.target.value)}
+                rows={5}
+                disabled={isLocked}
+                placeholder="Paste the Google Maps iframe embed code here"
               />
             </div>
           </div>
@@ -2463,7 +4547,7 @@ export default function BlogPostEditorPage() {
 
       {/* Navigation */}
       {!generateMutation.isPending && (
-        <div className="flex justify-between mt-6">
+        <div className="mt-6 flex justify-between">
           <Button
             variant="outline"
             onClick={currentStep === 0 ? () => navigate("/blog-posts") : goBack}
@@ -2471,21 +4555,28 @@ export default function BlogPostEditorPage() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             {currentStep === 0 ? "Cancel" : "Back"}
           </Button>
-          {currentStep < WIZARD_STEPS.length - 1 && (
-            <Button onClick={goNext} disabled={!canProceed()}>
-              {currentStep === 1 && content.length === 0 ? (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Content
-                </>
-              ) : (
-                <>
-                  Next
-                  <ArrowRight className="h-4 w-4 ml-2" />
-                </>
-              )}
-            </Button>
-          )}
+          <div className="flex flex-col items-end gap-2">
+            {currentStep < WIZARD_STEPS.length - 1 && (
+              <Button onClick={goNext} disabled={!canProceed()}>
+                {currentStep === 1 && content.length === 0 ? (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate Content
+                  </>
+                ) : (
+                  <>
+                    Next
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            )}
+            {!canProceed() && getStepValidationMessages().length > 0 && (
+              <p className="max-w-sm text-right text-xs text-amber-700 dark:text-amber-300">
+                {getStepValidationMessages().join(" ")}
+              </p>
+            )}
+          </div>
         </div>
       )}
       </div>

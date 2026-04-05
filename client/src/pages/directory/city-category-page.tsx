@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, MapPin, Building2, Calculator, Zap, ShieldCheck, ArrowRight, Users } from "lucide-react";
 import { useEffect } from "react";
 import { useForceLightMode } from "@/hooks/use-force-light-mode";
+import { DirectoryPricingReference, type DirectoryPricingReferenceRow } from "@/components/directory-pricing-reference";
+import { DirectoryCityFaq } from "@/components/directory-city-faq";
 
 interface DirectoryCategory {
   id: number;
@@ -32,6 +34,12 @@ interface ListingsResponse {
   state: string;
   listings: BusinessListing[];
   isIndexable: boolean;
+  pricingReference: {
+    title: string;
+    intro: string;
+    rows: DirectoryPricingReferenceRow[];
+    sourceCount: number;
+  } | null;
 }
 
 export default function DirectoryCityCategoryPage() {
@@ -54,7 +62,7 @@ export default function DirectoryCityCategoryPage() {
       const name = data.category.name;
       const city = data.city;
       const state = data.state;
-      document.title = `${name} Prices in ${city}, ${state} | Cost Calculator & Local Providers`;
+      document.title = `${name} Prices in ${city}, ${state}`;
       const desc = `Check ${name.toLowerCase()} prices and costs in ${city}, ${state}. Use our free cost calculator to compare pricing from ${listingCount} verified local ${name.toLowerCase()} provider${listingCount !== 1 ? 's' : ''}.`;
       const meta = document.querySelector('meta[name="description"]');
       if (meta) {
@@ -65,16 +73,14 @@ export default function DirectoryCityCategoryPage() {
         tag.content = desc;
         document.head.appendChild(tag);
       }
-      if (data.isIndexable === false) {
-        const robots = document.querySelector('meta[name="robots"]');
-        if (robots) {
-          robots.setAttribute("content", "noindex, nofollow");
-        } else {
-          const tag = document.createElement("meta");
-          tag.name = "robots";
-          tag.content = "noindex, nofollow";
-          document.head.appendChild(tag);
-        }
+      const robots = document.querySelector('meta[name="robots"]');
+      if (robots) {
+        robots.setAttribute("content", "index, follow");
+      } else {
+        const tag = document.createElement("meta");
+        tag.name = "robots";
+        tag.content = "index, follow";
+        document.head.appendChild(tag);
       }
     }
   }, [data?.category, data?.city, data?.state, listingCount]);
@@ -242,6 +248,27 @@ export default function DirectoryCityCategoryPage() {
               </Link>
             ))}
           </div>
+        )}
+
+        {!isLoading && data?.pricingReference && (
+          <div className="mt-12">
+            <DirectoryPricingReference
+              title={data.pricingReference.title}
+              intro={data.pricingReference.intro}
+              rows={data.pricingReference.rows}
+              sourceCount={data.pricingReference.sourceCount}
+            />
+          </div>
+        )}
+
+        {!isLoading && data?.category && data?.city && data?.state && data?.pricingReference && (
+          <DirectoryCityFaq
+            categoryName={data.category.name}
+            city={data.city}
+            state={data.state}
+            listingCount={listingCount}
+            rows={data.pricingReference.rows}
+          />
         )}
       </div>
 

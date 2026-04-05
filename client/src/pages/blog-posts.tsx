@@ -66,8 +66,8 @@ import type { BlogPost } from "@shared/schema";
 
 const BLOG_TYPES = [
   { value: "job_showcase", label: "Job Showcase" },
-  { value: "expert_opinion", label: "Expert Opinion" },
-  { value: "seasonal_tip", label: "Seasonal Tip" },
+  { value: "job_type_keyword_targeting", label: "Job Type / Keyword Targeting" },
+  { value: "pricing_keyword_targeting", label: "Pricing Keywords Targeting" },
   { value: "faq_educational", label: "FAQ/Educational" }
 ];
 

@@ -211,7 +211,7 @@ function CategoryContent() {
                         <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-1 mb-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors line-clamp-none sm:line-clamp-1 mb-1">
                           {article.title}
                         </h3>
                         {article.summary && (

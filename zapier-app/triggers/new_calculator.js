@@ -13,40 +13,6 @@ const performList = async (z, bundle) => {
   return response.data;
 };
 
-const performSubscribe = async (z, bundle) => {
-  const response = await z.request({
-    url: `${bundle.authData.server_url}/api/zapier/webhooks/subscribe`,
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${bundle.authData.api_key}`,
-      'Content-Type': 'application/json',
-    },
-    body: {
-      target_url: bundle.targetUrl,
-      event: 'new_calculator',
-    },
-  });
-
-  return response.data;
-};
-
-const performUnsubscribe = async (z, bundle) => {
-  const response = await z.request({
-    url: `${bundle.authData.server_url}/api/zapier/webhooks/unsubscribe`,
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${bundle.authData.api_key}`,
-      'Content-Type': 'application/json',
-    },
-    body: {
-      target_url: bundle.targetUrl,
-      event: 'new_calculator',
-    },
-  });
-
-  return response.data;
-};
-
 const getSample = async (z, bundle) => {
   const response = await z.request({
     url: `${bundle.authData.server_url}/api/zapier/sample/new-calculators`,
@@ -63,14 +29,11 @@ module.exports = {
   noun: 'Calculator',
   display: {
     label: 'New Calculator',
-    description: 'Triggers when a new pricing calculator is created in your Autobidder account.',
+    description: 'Triggers when a new pricing calculator is detected in your Autobidder account.',
   },
   operation: {
-    type: 'hook',
-    performSubscribe: performSubscribe,
-    performUnsubscribe: performUnsubscribe,
+    type: 'polling',
     perform: performList,
-    performList: performList,
     sample: {
       id: 1,
       name: "Roof Cleaning Calculator",

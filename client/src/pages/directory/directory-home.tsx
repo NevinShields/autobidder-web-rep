@@ -70,7 +70,7 @@ export default function DirectoryHome() {
 
   // SEO: Set page title and meta description
   useEffect(() => {
-    document.title = "Local Service Prices & Cost Calculators | Find Providers Near You";
+    document.title = "Local Service Prices Near You";
     const meta = document.querySelector('meta[name="description"]');
     const content = "Compare prices and costs from verified local service providers. Use free pricing calculators to get instant quotes — no phone calls needed.";
     if (meta) {

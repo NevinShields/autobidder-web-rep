@@ -1,17 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Image, Search, Check, X } from "lucide-react";
+import { Image, Search, Check, X, Wand2, Loader2 } from "lucide-react";
 
 interface Icon {
   id: number;
   name: string;
   filename: string;
   category: string;
+  groupId?: number | null;
+  group?: {
+    id: number;
+    displayName: string;
+  } | null;
+  tags?: Array<{
+    id: number;
+    displayName: string;
+  }>;
   description?: string;
   isActive: boolean;
   url: string;
@@ -20,6 +29,9 @@ interface Icon {
 interface IconSelectorProps {
   selectedIconId?: number;
   onIconSelect: (iconId: number | null, iconUrl: string | null) => void;
+  showApplyGroupToAllServices?: boolean;
+  onApplyGroupToAllServices?: (groupId: number) => void;
+  isApplyingGroupToAllServices?: boolean;
   triggerText?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
@@ -30,6 +42,9 @@ interface IconSelectorProps {
 export default function IconSelector({ 
   selectedIconId, 
   onIconSelect, 
+  showApplyGroupToAllServices = false,
+  onApplyGroupToAllServices,
+  isApplyingGroupToAllServices = false,
   triggerText = "Select Icon",
   size = "md",
   className = "",
@@ -38,30 +53,54 @@ export default function IconSelector({
 }: IconSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedGroup, setSelectedGroup] = useState<string>("all");
+  const [selectedTag, setSelectedTag] = useState<string>("all");
+  const [selectedApplyGroupId, setSelectedApplyGroupId] = useState<string>("");
 
   const { data: icons, isLoading } = useQuery<Icon[]>({
     queryKey: ['/api/icons'],
     enabled: isOpen,
   });
+  const { data: iconGroups = [] } = useQuery<Array<{ id: number; displayName: string }>>({
+    queryKey: ['/api/icon-groups', 'active'],
+    queryFn: async () => {
+      const response = await fetch('/api/icon-groups?active=true');
+      if (!response.ok) throw new Error('Failed to fetch icon groups');
+      return response.json();
+    },
+    enabled: isOpen && showApplyGroupToAllServices,
+  });
+
+  useEffect(() => {
+    if (isOpen && showApplyGroupToAllServices && !selectedApplyGroupId && iconGroups.length > 0) {
+      setSelectedApplyGroupId(String(iconGroups[0].id));
+    }
+  }, [iconGroups, isOpen, selectedApplyGroupId, showApplyGroupToAllServices]);
 
   const activeIcons = icons?.filter(icon => icon.isActive) || [];
-  
-  const categories = [
-    { value: "all", label: "All Categories" },
-    { value: "construction", label: "Construction" },
-    { value: "cleaning", label: "Cleaning" },
-    { value: "automotive", label: "Automotive" },
-    { value: "landscaping", label: "Landscaping" },
-    { value: "home", label: "Home Services" },
-    { value: "general", label: "General" }
-  ];
+
+  const groups = Array.from(
+    new Map(
+      activeIcons
+        .filter((icon) => icon.group)
+        .map((icon) => [String(icon.group!.id), icon.group!]),
+    ).values(),
+  );
+
+  const tags = Array.from(
+    new Map(
+      activeIcons
+        .flatMap((icon) => icon.tags || [])
+        .map((tag) => [String(tag.id), tag]),
+    ).values(),
+  );
 
   const filteredIcons = activeIcons.filter(icon => {
     const matchesSearch = icon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          icon.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || icon.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesGroup = selectedGroup === "all" || String(icon.groupId || "ungrouped") === selectedGroup;
+    const matchesTag = selectedTag === "all" || (icon.tags || []).some((tag) => String(tag.id) === selectedTag);
+    return matchesSearch && matchesGroup && matchesTag;
   });
 
   const selectedIcon = icons?.find(icon => icon.id === selectedIconId);
@@ -73,6 +112,10 @@ export default function IconSelector({
 
   const handleRemoveIcon = () => {
     onIconSelect(null, null);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsOpen(open);
   };
 
   const buttonSizeClasses = {
@@ -107,7 +150,7 @@ export default function IconSelector({
         </div>
       )}
       
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
         <DialogTrigger asChild>
           <Button 
             variant={selectedIcon ? "outline" : triggerVariant}
@@ -126,8 +169,56 @@ export default function IconSelector({
           </DialogHeader>
           
           <div className="space-y-4">
+            {showApplyGroupToAllServices && iconGroups.length > 0 && onApplyGroupToAllServices && (
+              <div className="rounded-xl border border-amber-200/70 bg-amber-50/70 p-4 dark:border-amber-500/20 dark:bg-amber-500/10">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                      <Wand2 className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                      Apply Group Icons To All Services
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Replace all service icons in this account using the closest match from a saved icon group.
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Select value={selectedApplyGroupId} onValueChange={setSelectedApplyGroupId}>
+                      <SelectTrigger className="w-full sm:w-56 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80">
+                        <SelectValue placeholder="Select an icon group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {iconGroups.map((group) => (
+                          <SelectItem key={group.id} value={String(group.id)}>
+                            {group.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      disabled={!selectedApplyGroupId || isApplyingGroupToAllServices}
+                      onClick={() => onApplyGroupToAllServices(Number(selectedApplyGroupId))}
+                      className="sm:w-auto"
+                    >
+                      {isApplyingGroupToAllServices ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Applying
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="mr-2 h-4 w-4" />
+                          Apply Group
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Search and Filter Controls */}
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 md:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
                 <Input
@@ -137,14 +228,29 @@ export default function IconSelector({
                   className="pl-10 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80"
                 />
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-48 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80">
-                  <SelectValue placeholder="Category" />
+              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+                <SelectTrigger className="w-full md:w-52 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80">
+                  <SelectValue placeholder="Group" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(category => (
-                    <SelectItem key={category.value} value={category.value}>
-                      {category.label}
+                  <SelectItem value="all">All Groups</SelectItem>
+                  <SelectItem value="ungrouped">Ungrouped</SelectItem>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={String(group.id)}>
+                      {group.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedTag} onValueChange={setSelectedTag}>
+                <SelectTrigger className="w-full md:w-52 rounded-xl border-gray-200/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80">
+                  <SelectValue placeholder="Service Tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Service Tags</SelectItem>
+                  {tags.map((tag) => (
+                    <SelectItem key={tag.id} value={String(tag.id)}>
+                      {tag.displayName}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -154,9 +260,14 @@ export default function IconSelector({
             {/* Stats */}
             <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
               <span>{filteredIcons.length} icons available</span>
-              {selectedCategory !== "all" && (
+              {selectedGroup !== "all" && (
                 <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                  {categories.find(c => c.value === selectedCategory)?.label}
+                  {selectedGroup === "ungrouped" ? "Ungrouped" : groups.find((group) => String(group.id) === selectedGroup)?.displayName}
+                </Badge>
+              )}
+              {selectedTag !== "all" && (
+                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                  {tags.find((tag) => String(tag.id) === selectedTag)?.displayName}
                 </Badge>
               )}
             </div>
@@ -211,7 +322,8 @@ export default function IconSelector({
                       variant="link"
                       onClick={() => {
                         setSearchQuery("");
-                        setSelectedCategory("all");
+                        setSelectedGroup("all");
+                        setSelectedTag("all");
                       }}
                       className="text-sm text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
                     >

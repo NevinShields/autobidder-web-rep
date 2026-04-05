@@ -27,7 +27,7 @@ Autobidder users need to generate localized, service-specific blog content to im
 ### Business Context
 
 - **Access Control:** Available to paid plans only (`trial`, `standard`, `plus`, `plus_seo`)
-- **Content Types:** Job Showcase, Expert Opinion, Seasonal Tip, FAQ/Educational
+- **Content Types:** Job Showcase, Job Type/Keyword Targeting, Expert Opinion, Seasonal Tip, FAQ/Educational
 - **Integration:** Syncs with user's existing Duda website via API
 
 ---

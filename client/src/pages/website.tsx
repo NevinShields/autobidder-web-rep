@@ -366,7 +366,31 @@ export default function Website() {
       const response = await apiRequest("PATCH", `/api/seo/setup-checklist/${itemId}/toggle`, {});
       return response.json();
     },
-    onSuccess: () => {
+    onMutate: async (itemId: number) => {
+      await queryClient.cancelQueries({ queryKey: ['/api/seo/setup-checklist'] });
+
+      const previousChecklistItems = queryClient.getQueryData<SeoSetupChecklistItem[]>(['/api/seo/setup-checklist']);
+
+      queryClient.setQueryData<SeoSetupChecklistItem[]>(['/api/seo/setup-checklist'], (currentItems = []) =>
+        currentItems.map((item) =>
+          item.id === itemId ? { ...item, isCompleted: !item.isCompleted } : item
+        )
+      );
+
+      return { previousChecklistItems };
+    },
+    onError: (_error, _itemId, context) => {
+      if (context?.previousChecklistItems) {
+        queryClient.setQueryData(['/api/seo/setup-checklist'], context.previousChecklistItems);
+      }
+
+      toast({
+        title: "Error",
+        description: "Failed to update checklist item",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/seo/setup-checklist'] });
     },
   });

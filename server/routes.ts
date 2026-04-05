@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection, knowledgeBaseCategories, knowledgeBaseTags, knowledgeBaseArticles, knowledgeBaseArticleTags, insertKbCategorySchema, insertKbTagSchema, insertKbArticleSchema } from "@shared/schema";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection, type Variable, knowledgeBaseCategories, knowledgeBaseTags, knowledgeBaseArticles, knowledgeBaseArticleTags, insertKbCategorySchema, insertKbTagSchema, insertKbArticleSchema } from "@shared/schema";
 import { eq, desc, and, gte, sql, inArray, ilike, or, asc, ne } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
@@ -36,6 +36,7 @@ import {
   insertBidResponseSchema,
   insertBidEmailTemplateSchema,
   insertIconSchema,
+  insertIconGroupSchema,
   insertIconTagSchema,
   insertIconTagAssignmentSchema,
   insertDudaTemplateTagSchema,
@@ -97,17 +98,21 @@ import { validateLandingPageBasics, slugifyLandingPage } from "./landing-page-ut
 import {
   generateBlogContent,
   regenerateSection,
+  expandBlogText,
   generateAltText,
   suggestKeywordContext,
   checkCompliance,
   calculateSeoScore,
   blogContentToHtml,
+  getBlogDesignCssSnippet,
   DEFAULT_LAYOUT_TEMPLATES,
   type BlogGenerationInput,
   type BlogHtmlEnhancements
 } from './blog-content-generator';
 import { ensureDirectoryProfileFromBusinessInfo } from "./directory-onboarding";
 import { generateLandingPageFaqs } from "./landing-page-faq-generator";
+import { generateBeforeAfterPair, generateSingleBlogImage } from "./blog-image-generator";
+import { applyPriceConstraints, evaluateFormulaWithRepeatableGroups } from "@shared/formula-runtime";
 
 function getBaseUrl(): string {
   if (process.env.DOMAIN) {
@@ -117,6 +122,42 @@ function getBaseUrl(): string {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
   return "http://localhost:5000";
+}
+
+async function uploadIconFileToStorage(file: Express.Multer.File, fallbackName?: string) {
+  let filename = fallbackName || file.filename;
+  if (!filename) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const fileExtension = path.extname(file.originalname);
+    filename = `icon-${uniqueSuffix}${fileExtension}`;
+  }
+
+  const objectStorageService = new ObjectStorageService();
+  const fileExtension = path.extname(file.originalname);
+  const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file.buffer,
+    headers: {
+      'Content-Type': file.mimetype,
+      'Content-Length': file.size.toString(),
+    },
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
+  }
+
+  await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
+    owner: "system",
+    visibility: "public",
+  });
+
+  return {
+    objectFilename: objectPath.split('/').pop() || filename,
+  };
 }
 
 function getRequestBaseUrl(req: any): string {
@@ -520,6 +561,614 @@ async function geocodeDirectoryCityWithCache(
   return {
     latitude: geo.latitude,
     longitude: geo.longitude,
+  };
+}
+
+type DirectoryPricingRow = {
+  label: string;
+  squareFeet: number;
+  minRate: number;
+  maxRate: number;
+  minTotal: number;
+  maxTotal: number;
+  note: string;
+};
+
+type DirectoryPricingReference = {
+  title: string;
+  intro: string;
+  rows: DirectoryPricingRow[];
+  sourceCount: number;
+};
+
+type DirectoryPricingFormulaRecord = {
+  formulaId: number;
+  companyName: string;
+  formulaName: string;
+  formulaTitle: string;
+  formulaDescription: string | null;
+  variables: Variable[];
+  formula: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  conditionalMinPrices: any[] | null;
+  conditionalMaxPrices: any[] | null;
+};
+
+type DirectoryPricingLeadRecord = {
+  formulaId: number | null;
+  variables: Record<string, any> | null;
+  calculatedPrice: number | null;
+};
+
+function quantile(values: number[], percentile: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const index = (sorted.length - 1) * percentile;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  const weight = index - lower;
+  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+}
+
+function roundToNearest(value: number, step: number): number {
+  if (!Number.isFinite(value) || step <= 0) return Math.round(value);
+  return Math.round(value / step) * step;
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function getVariableText(variable: Variable): string {
+  return `${variable.id} ${variable.name} ${variable.unit || ""}`.toLowerCase();
+}
+
+function isAreaVariable(variable: Variable): boolean {
+  if (!["number", "slider", "stepper"].includes(variable.type)) {
+    return false;
+  }
+
+  const text = getVariableText(variable);
+  return /(sq\s*ft|sqft|square\s*feet|square\s*foot|surface area|house sqft|area)/.test(text);
+}
+
+function getOptionAmount(option: any): number {
+  const numeric = Number(option?.numericValue);
+  if (Number.isFinite(numeric)) {
+    return numeric;
+  }
+  const multiplier = Number(option?.multiplier);
+  return Number.isFinite(multiplier) ? multiplier : 0;
+}
+
+function getPrimaryDescriptorVariable(variables: Variable[], areaVariableId: string): Variable | null {
+  const regex = /(material|surface|siding|type|finish|roof|house material|service)/i;
+  const candidates = variables.filter((variable) => {
+    if (variable.id === areaVariableId || !Array.isArray(variable.options) || variable.options.length < 2) {
+      return false;
+    }
+    return variable.options.some((option) => Number.isFinite(getOptionAmount(option)));
+  });
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const named = candidates.find((variable) => regex.test(variable.name) || regex.test(variable.id));
+  if (named) {
+    return named;
+  }
+
+  return candidates.sort((left, right) => {
+    const leftSpread = Math.max(...left.options!.map(getOptionAmount)) - Math.min(...left.options!.map(getOptionAmount));
+    const rightSpread = Math.max(...right.options!.map(getOptionAmount)) - Math.min(...right.options!.map(getOptionAmount));
+    return rightSpread - leftSpread;
+  })[0];
+}
+
+function getDescriptorOptionsForPricingRows(
+  variable: Variable,
+  historicalValues: any[],
+  maxOptions = 4,
+): Array<{ value: any; label: string }> {
+  if (!Array.isArray(variable.options) || variable.options.length === 0) {
+    return [];
+  }
+
+  const counts = new Map<string, number>();
+  historicalValues.forEach((value) => {
+    const values = Array.isArray(value) ? value : [value];
+    values.forEach((item) => {
+      const key = String(item);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+  });
+
+  const ranked = [...variable.options]
+    .map((option, index) => ({
+      option,
+      index,
+      count: counts.get(String(option.value)) || 0,
+      amount: getOptionAmount(option),
+    }))
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      if (left.amount !== right.amount) {
+        return left.amount - right.amount;
+      }
+      return left.index - right.index;
+    });
+
+  if (ranked.length <= maxOptions) {
+    return ranked.map(({ option }) => ({
+      value: option.value,
+      label: String(option.label || option.value || variable.name || "Service option"),
+    }));
+  }
+
+  const amountSorted = [...ranked].sort((left, right) => {
+    if (left.amount !== right.amount) {
+      return left.amount - right.amount;
+    }
+    return left.index - right.index;
+  });
+
+  const candidatePool = [
+    ranked[0],
+    amountSorted[0],
+    amountSorted[Math.floor(amountSorted.length / 2)],
+    amountSorted[amountSorted.length - 1],
+    ...ranked,
+  ].filter(Boolean);
+
+  const seen = new Set<string>();
+  const selected: Array<{ value: any; label: string }> = [];
+
+  candidatePool.forEach((entry) => {
+    if (!entry || selected.length >= maxOptions) {
+      return;
+    }
+
+    const label = String(entry.option.label || entry.option.value || variable.name || "Service option").trim();
+    const key = label.toLowerCase();
+    if (!label || seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+    selected.push({
+      value: entry.option.value,
+      label,
+    });
+  });
+
+  return selected;
+}
+
+function getHistoricalValues(
+  leadRows: DirectoryPricingLeadRecord[],
+  formulaId: number,
+  variableId: string,
+): any[] {
+  return leadRows
+    .filter((lead) => lead.formulaId === formulaId && lead.variables && lead.variables[variableId] !== undefined && lead.variables[variableId] !== null)
+    .map((lead) => lead.variables![variableId]);
+}
+
+function getMostCommonOptionValue(
+  variable: Variable,
+  historicalValues: any[],
+): any | null {
+  if (!Array.isArray(variable.options) || variable.options.length === 0) {
+    return null;
+  }
+
+  const counts = new Map<string, number>();
+  historicalValues.forEach((value) => {
+    const values = Array.isArray(value) ? value : [value];
+    values.forEach((item) => {
+      const key = String(item);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+  });
+
+  if (counts.size === 0) {
+    return null;
+  }
+
+  const option = [...variable.options]
+    .map((item) => ({ item, count: counts.get(String(item.value)) || 0 }))
+    .sort((left, right) => right.count - left.count)[0];
+
+  return option?.count ? option.item.value : null;
+}
+
+function pickOptionValue(
+  variable: Variable,
+  mode: "low" | "representative" | "high",
+  historicalValues: any[],
+): any {
+  if (!Array.isArray(variable.options) || variable.options.length === 0) {
+    return null;
+  }
+
+  const commonValue = mode === "representative" ? getMostCommonOptionValue(variable, historicalValues) : null;
+  if (commonValue !== null) {
+    return commonValue;
+  }
+
+  const sorted = [...variable.options].sort((left, right) => getOptionAmount(left) - getOptionAmount(right));
+  const variableText = getVariableText(variable);
+  const prefersFullScope = /(how many sides|sides need washed|full house|sides)/.test(variableText);
+  const prefersLowerComplexity = /(story|stories|height|walk out|porch|add|include)/.test(variableText);
+
+  if (mode === "low") {
+    return sorted[0]?.value ?? null;
+  }
+  if (mode === "high") {
+    return sorted[sorted.length - 1]?.value ?? null;
+  }
+  if (prefersFullScope) {
+    return sorted[sorted.length - 1]?.value ?? null;
+  }
+  if (prefersLowerComplexity) {
+    return sorted[0]?.value ?? null;
+  }
+  return sorted[Math.floor(sorted.length / 2)]?.value ?? sorted[0]?.value ?? null;
+}
+
+function buildFormulaSampleValues(
+  variables: Variable[],
+  areaVariableId: string,
+  mode: "low" | "representative" | "high",
+  leadRows: DirectoryPricingLeadRecord[],
+  formulaId: number,
+): Record<string, any> {
+  const values: Record<string, any> = {};
+
+  variables.forEach((variable) => {
+    if (variable.id === areaVariableId) {
+      return;
+    }
+
+    const historicalValues = getHistoricalValues(leadRows, formulaId, variable.id);
+
+    if ((variable.type === "select" || variable.type === "dropdown" || variable.type === "multiple-choice") && Array.isArray(variable.options)) {
+      const chosen = pickOptionValue(variable, mode, historicalValues);
+      values[variable.id] = variable.allowMultipleSelection ? (chosen === null ? [] : [chosen]) : chosen;
+      return;
+    }
+
+    if (variable.type === "checkbox") {
+      const checkedValue = Number(variable.checkedValue ?? 1);
+      const uncheckedValue = Number(variable.uncheckedValue ?? 0);
+      values[variable.id] = mode === "high" ? checkedValue >= uncheckedValue : checkedValue < uncheckedValue;
+      return;
+    }
+
+    if (["number", "slider", "stepper"].includes(variable.type)) {
+      const numericHistory = historicalValues
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0);
+
+      if (numericHistory.length > 0) {
+        const percentile = mode === "low" ? 0.25 : mode === "high" ? 0.75 : 0.5;
+        values[variable.id] = roundToNearest(quantile(numericHistory, percentile), 1);
+        return;
+      }
+
+      const min = Number.isFinite(variable.min) ? Number(variable.min) : 1;
+      const max = Number.isFinite(variable.max) ? Number(variable.max) : Math.max(min, min * 2);
+      if (mode === "low") {
+        values[variable.id] = min;
+      } else if (mode === "high") {
+        values[variable.id] = max;
+      } else {
+        values[variable.id] = roundToNearest((min + max) / 2, 1);
+      }
+      return;
+    }
+  });
+
+  return values;
+}
+
+function cleanServiceLabel(formulaName: string, formulaTitle: string): string {
+  const raw = (formulaName || formulaTitle || "Local service")
+    .replace(/pricing calculator/gi, "")
+    .replace(/\(\s*simple\s*\)/gi, "")
+    .replace(/\(\s*complex\s*\)/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return raw || "Local service";
+}
+
+function defaultSquareFootageForService(serviceLabel: string): number {
+  const text = serviceLabel.toLowerCase();
+  if (/(house|home|siding|roof)/.test(text)) return 2200;
+  if (/(driveway|concrete)/.test(text)) return 900;
+  if (/(deck|patio|porch)/.test(text)) return 450;
+  if (/(fence)/.test(text)) return 700;
+  return 1500;
+}
+
+function getGenericPricingRows(categoryName: string, categorySlug: string): DirectoryPricingRow[] {
+  const text = `${categoryName} ${categorySlug}`.toLowerCase();
+
+  if (/(pressure|wash|house-cleaning)/.test(text)) {
+    return [
+      { label: "Vinyl siding wash", squareFeet: 2000, minRate: 0.15, maxRate: 0.25, minTotal: 300, maxTotal: 500, note: "General market guidance for routine house washing on vinyl or aluminum siding." },
+      { label: "Brick or painted exterior wash", squareFeet: 2200, minRate: 0.18, maxRate: 0.30, minTotal: 396, maxTotal: 660, note: "General benchmark for pressure washing more textured exterior surfaces." },
+      { label: "Stucco soft wash", squareFeet: 2200, minRate: 0.20, maxRate: 0.32, minTotal: 440, maxTotal: 704, note: "Higher range reflects added care and slower cleaning on delicate finishes." },
+      { label: "Driveway and flatwork wash", squareFeet: 900, minRate: 0.12, maxRate: 0.22, minTotal: 108, maxTotal: 198, note: "Typical pricing range for concrete cleaning with standard soil and stain levels." },
+    ];
+  }
+
+  if (/(roof)/.test(text)) {
+    return [
+      { label: "Asphalt shingle roof cleaning", squareFeet: 2200, minRate: 0.20, maxRate: 0.35, minTotal: 440, maxTotal: 770, note: "General soft-wash pricing guidance for common residential shingle roofs." },
+      { label: "Architectural shingle roof cleaning", squareFeet: 2600, minRate: 0.22, maxRate: 0.38, minTotal: 572, maxTotal: 988, note: "Typical range for larger roofs with moderate slope and organic buildup." },
+      { label: "Tile roof cleaning", squareFeet: 2400, minRate: 0.30, maxRate: 0.50, minTotal: 720, maxTotal: 1200, note: "Higher range reflects slower production and more careful roof access." },
+      { label: "Metal roof wash", squareFeet: 2000, minRate: 0.18, maxRate: 0.30, minTotal: 360, maxTotal: 600, note: "General market range for standard cleaning without extensive oxidation treatment." },
+    ];
+  }
+
+  if (/(gutter)/.test(text)) {
+    return [
+      { label: "Single-story gutter cleaning", squareFeet: 1800, minRate: 0.08, maxRate: 0.14, minTotal: 144, maxTotal: 252, note: "General benchmark for straightforward debris removal on smaller homes." },
+      { label: "Two-story gutter cleaning", squareFeet: 2400, minRate: 0.10, maxRate: 0.18, minTotal: 240, maxTotal: 432, note: "Higher range reflects ladder time, roofline complexity, and bagged debris hauling." },
+      { label: "Gutter brightening add-on", squareFeet: 2200, minRate: 0.04, maxRate: 0.09, minTotal: 88, maxTotal: 198, note: "Typical add-on range when exterior gutter face cleaning is included." },
+      { label: "Downspout flush service", squareFeet: 2200, minRate: 0.02, maxRate: 0.05, minTotal: 44, maxTotal: 110, note: "General add-on range for flushing typical residential downspout systems." },
+    ];
+  }
+
+  if (/(window)/.test(text)) {
+    return [
+      { label: "Exterior window cleaning", squareFeet: 2000, minRate: 0.10, maxRate: 0.18, minTotal: 200, maxTotal: 360, note: "General market range for routine exterior glass cleaning on typical homes." },
+      { label: "Interior and exterior window cleaning", squareFeet: 2000, minRate: 0.16, maxRate: 0.28, minTotal: 320, maxTotal: 560, note: "Higher range reflects interior access time and screen handling." },
+      { label: "French pane or divided-light windows", squareFeet: 2200, minRate: 0.18, maxRate: 0.32, minTotal: 396, maxTotal: 704, note: "General range for more labor-intensive pane layouts." },
+      { label: "Track and screen detail cleaning", squareFeet: 2000, minRate: 0.04, maxRate: 0.10, minTotal: 80, maxTotal: 200, note: "Typical add-on pricing range for deeper detailing work." },
+    ];
+  }
+
+  return [
+    { label: `${categoryName} basic service`, squareFeet: 1200, minRate: 0.20, maxRate: 0.35, minTotal: 240, maxTotal: 420, note: "General planning range for smaller or more straightforward residential jobs." },
+    { label: `${categoryName} standard service`, squareFeet: 1800, minRate: 0.25, maxRate: 0.45, minTotal: 450, maxTotal: 810, note: "Typical benchmark for the most common residential service scope." },
+    { label: `${categoryName} upgraded service`, squareFeet: 2200, minRate: 0.30, maxRate: 0.55, minTotal: 660, maxTotal: 1210, note: "Higher range reflects added complexity, access time, or upgraded materials." },
+    { label: `${categoryName} premium service`, squareFeet: 2800, minRate: 0.35, maxRate: 0.65, minTotal: 980, maxTotal: 1820, note: "General estimate for larger or more specialized residential projects." },
+  ];
+}
+
+function getPricingRowDiversityKey(row: DirectoryPricingRow): string {
+  const [, descriptor = row.label] = row.label.split(":");
+  return descriptor.trim().toLowerCase();
+}
+
+function buildDirectoryPricingReference(
+  categoryName: string,
+  categorySlug: string,
+  city: string,
+  state: string,
+  formulaRows: DirectoryPricingFormulaRecord[],
+  leadRows: DirectoryPricingLeadRecord[],
+): DirectoryPricingReference | null {
+  const rows: DirectoryPricingRow[] = [];
+
+  formulaRows.forEach((formulaRow) => {
+    try {
+      const variables = Array.isArray(formulaRow.variables) ? formulaRow.variables : [];
+      const areaVariable = variables.find(isAreaVariable);
+      if (!areaVariable) {
+        return;
+      }
+
+      const serviceLabel = cleanServiceLabel(formulaRow.formulaName, formulaRow.formulaTitle);
+      const descriptorVariable = getPrimaryDescriptorVariable(variables, areaVariable.id);
+      const descriptorHistory = descriptorVariable
+        ? getHistoricalValues(leadRows, formulaRow.formulaId, descriptorVariable.id)
+        : [];
+      const areaHistory = getHistoricalValues(leadRows, formulaRow.formulaId, areaVariable.id)
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      const rateHistory = leadRows
+        .filter((lead) => lead.formulaId === formulaRow.formulaId && lead.calculatedPrice && lead.variables)
+        .map((lead) => {
+          const area = Number(lead.variables?.[areaVariable.id]);
+          const total = Number(lead.calculatedPrice) / 100;
+          if (!Number.isFinite(area) || area <= 0 || !Number.isFinite(total) || total <= 0) {
+            return null;
+          }
+          return total / area;
+        })
+        .filter((value): value is number => value !== null && Number.isFinite(value) && value > 0.01 && value < 100);
+
+      const squareFeet = areaHistory.length > 0
+        ? Math.max(100, roundToNearest(quantile(areaHistory, 0.5), 50))
+        : defaultSquareFootageForService(serviceLabel);
+
+      const evaluateWithConstraints = (values: Record<string, any>) => {
+        const raw = evaluateFormulaWithRepeatableGroups(formulaRow.formula || "", variables, values as any);
+        return applyPriceConstraints(
+          Math.round(raw),
+          {
+            minPrice: formulaRow.minPrice,
+            maxPrice: formulaRow.maxPrice,
+            conditionalMinPrices: formulaRow.conditionalMinPrices || [],
+            conditionalMaxPrices: formulaRow.conditionalMaxPrices || [],
+          },
+          values,
+          { priceUnit: "dollars", constraintUnit: "cents" },
+        );
+      };
+
+      const descriptorVariants = descriptorVariable
+        ? getDescriptorOptionsForPricingRows(descriptorVariable, descriptorHistory, 4)
+        : [];
+      const rowVariants = descriptorVariants.length > 0
+        ? descriptorVariants
+        : [{ value: null, label: "" }];
+
+      rowVariants.forEach((variant) => {
+        const representativeValues = buildFormulaSampleValues(variables, areaVariable.id, "representative", leadRows, formulaRow.formulaId);
+        const lowValues = { ...representativeValues };
+        const highValues = { ...representativeValues };
+
+        if (descriptorVariable && variant.value !== null) {
+          const descriptorValue = descriptorVariable.allowMultipleSelection ? [variant.value] : variant.value;
+          representativeValues[descriptorVariable.id] = descriptorValue;
+          lowValues[descriptorVariable.id] = descriptorValue;
+          highValues[descriptorVariable.id] = descriptorValue;
+        } else if (descriptorVariable) {
+          lowValues[descriptorVariable.id] = descriptorVariable.allowMultipleSelection
+            ? [pickOptionValue(descriptorVariable, "low", descriptorHistory)]
+            : pickOptionValue(descriptorVariable, "low", descriptorHistory);
+          highValues[descriptorVariable.id] = descriptorVariable.allowMultipleSelection
+            ? [pickOptionValue(descriptorVariable, "high", descriptorHistory)]
+            : pickOptionValue(descriptorVariable, "high", descriptorHistory);
+        }
+
+        lowValues[areaVariable.id] = squareFeet;
+        representativeValues[areaVariable.id] = squareFeet;
+        highValues[areaVariable.id] = squareFeet;
+
+        const lowTotalComputed = evaluateWithConstraints(lowValues);
+        const representativeTotal = evaluateWithConstraints(representativeValues);
+        const highTotalComputed = evaluateWithConstraints(highValues);
+
+        const computedMinRate = Math.min(lowTotalComputed, representativeTotal, highTotalComputed) / squareFeet;
+        const computedMaxRate = Math.max(lowTotalComputed, representativeTotal, highTotalComputed) / squareFeet;
+
+        const variantRateHistory = descriptorVariable && variant.value !== null
+          ? leadRows
+              .filter((lead) => {
+                if (lead.formulaId !== formulaRow.formulaId || !lead.calculatedPrice || !lead.variables) {
+                  return false;
+                }
+                const descriptorLeadValue = lead.variables?.[descriptorVariable.id];
+                if (Array.isArray(descriptorLeadValue)) {
+                  return descriptorLeadValue.map(String).includes(String(variant.value));
+                }
+                return String(descriptorLeadValue) === String(variant.value);
+              })
+              .map((lead) => {
+                const area = Number(lead.variables?.[areaVariable.id]);
+                const total = Number(lead.calculatedPrice) / 100;
+                if (!Number.isFinite(area) || area <= 0 || !Number.isFinite(total) || total <= 0) {
+                  return null;
+                }
+                return total / area;
+              })
+              .filter((value): value is number => value !== null && Number.isFinite(value) && value > 0.01 && value < 100)
+          : rateHistory;
+
+        let minRate = computedMinRate;
+        let maxRate = computedMaxRate;
+
+        if (variantRateHistory.length >= 3) {
+          const historicalMin = quantile(variantRateHistory, 0.2);
+          const historicalMax = quantile(variantRateHistory, 0.8);
+          minRate = Math.min(computedMinRate, historicalMin);
+          maxRate = Math.max(computedMaxRate, historicalMax);
+        } else if (rateHistory.length >= 3) {
+          const historicalMin = quantile(rateHistory, 0.2);
+          const historicalMax = quantile(rateHistory, 0.8);
+          minRate = Math.min(computedMinRate, historicalMin);
+          maxRate = Math.max(computedMaxRate, historicalMax);
+        }
+
+        if (!descriptorVariable && rateHistory.length < 3) {
+          minRate *= 0.92;
+          maxRate *= 1.08;
+        }
+
+        minRate = Number(clampNumber(minRate, 0.01, 250).toFixed(2));
+        maxRate = Number(clampNumber(maxRate, minRate, 250).toFixed(2));
+
+        const minTotal = Math.round(minRate * squareFeet);
+        const maxTotal = Math.round(maxRate * squareFeet);
+        const label = variant.label ? `${serviceLabel}: ${variant.label}` : serviceLabel;
+
+        const noteParts = [
+          `Based on ${formulaRow.companyName}'s local ${serviceLabel.toLowerCase()} calculator`,
+          descriptorVariable && variant.label ? `with ${descriptorVariable.name.toLowerCase()} set to ${variant.label}` : null,
+          variantRateHistory.length >= 3
+            ? `and calibrated with ${variantRateHistory.length} recent calculator submissions for this surface type`
+            : rateHistory.length >= 3
+              ? `and calibrated with ${rateHistory.length} recent calculator submissions in this market`
+              : "and calibrated from current formula settings",
+        ].filter(Boolean);
+
+        rows.push({
+          label,
+          squareFeet,
+          minRate,
+          maxRate,
+          minTotal,
+          maxTotal,
+          note: `${noteParts.join(" ")}.`,
+        });
+      });
+    } catch (error) {
+      console.error("[Directory] Failed to build pricing row", {
+        formulaId: formulaRow.formulaId,
+        formulaName: formulaRow.formulaName,
+        error,
+      });
+    }
+  });
+
+  const dedupedRows = [...new Map(
+    rows
+      .filter((row) => row.maxRate >= row.minRate && row.squareFeet > 0)
+      .map((row) => [row.label.toLowerCase(), row] as const),
+  ).values()]
+    .sort((left, right) => left.minRate - right.minRate);
+
+  const diverseRows: DirectoryPricingRow[] = [];
+  const usedDiversityKeys = new Set<string>();
+
+  dedupedRows.forEach((row) => {
+    if (diverseRows.length >= 4) {
+      return;
+    }
+
+    const diversityKey = getPricingRowDiversityKey(row);
+    if (usedDiversityKeys.has(diversityKey)) {
+      return;
+    }
+
+    usedDiversityKeys.add(diversityKey);
+    diverseRows.push(row);
+  });
+
+  dedupedRows.forEach((row) => {
+    if (diverseRows.length >= 4) {
+      return;
+    }
+
+    if (diverseRows.some((existing) => existing.label.toLowerCase() === row.label.toLowerCase())) {
+      return;
+    }
+
+    diverseRows.push(row);
+  });
+
+  const uniqueRows = diverseRows;
+
+  const finalRows = uniqueRows.length > 0 ? uniqueRows : getGenericPricingRows(categoryName, categorySlug);
+
+  return {
+    title: `${categoryName} Pricing by Service Type and Square Footage in ${city}, ${state}`,
+    intro: uniqueRows.length > 0
+      ? `Use this ${city}, ${state} ${categoryName.toLowerCase()} pricing guide to compare common service types, project sizes, and local cost-per-square-foot ranges. These estimates are built from active ${categoryName.toLowerCase()} contractors in the directory, and when local quote history is available, the ranges also reflect real calculator submissions from providers serving ${city}.`
+      : `Use this ${city}, ${state} ${categoryName.toLowerCase()} pricing guide as a local planning reference for common service types, square footage ranges, and expected project costs. When city-level calculator data is limited, we publish broader market benchmarks so homeowners and property managers can still compare ${categoryName.toLowerCase()} costs in ${city}.`,
+    rows: finalRows,
+    sourceCount: formulaRows.length,
   };
 }
 
@@ -2265,6 +2914,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(formula);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch formula" });
+    }
+  });
+
+  app.post("/api/formulas/apply-icon-group", requireAuth, requirePermission("canEditFormulas"), async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveUserId = getEffectiveOwnerId(currentUser);
+      const payload = z.object({
+        groupId: z.number().int().positive(),
+      }).parse(req.body);
+
+      const [group, formulasForUser, groupIcons] = await Promise.all([
+        storage.getAllIconGroups().then((groups) => groups.find((entry) => entry.id === payload.groupId)),
+        storage.getFormulasByUserId(effectiveUserId),
+        storage.getIconsByGroup(payload.groupId),
+      ]);
+
+      if (!group || !group.isActive) {
+        return res.status(404).json({ message: "Icon group not found" });
+      }
+
+      const iconsWithTags = await Promise.all(
+        groupIcons.map(async (icon) => ({
+          ...icon,
+          tags: await storage.getTagsForIcon(icon.id),
+        })),
+      );
+
+      const updates: Array<{ formulaId: number; iconId: number; iconUrl: string; matchedBy: string; score: number }> = [];
+      const skipped: Array<{ formulaId: number; formulaName: string }> = [];
+
+      for (const formula of formulasForUser) {
+        const scored = iconsWithTags
+          .map((icon) => {
+            const score = scoreIconAgainstService(formula.name, icon);
+            return { icon, score };
+          })
+          .sort((a, b) => b.score - a.score);
+
+        const bestMatch = scored[0];
+        if (!bestMatch || bestMatch.score < 45) {
+          skipped.push({ formulaId: formula.id, formulaName: formula.name });
+          continue;
+        }
+
+        const matchedByTag = bestMatch.icon.tags.find((tag) => scoreIconAgainstService(formula.name, { name: "", tags: [tag] }) >= 45);
+        const iconUrl = buildIconAssetUrl(bestMatch.icon.filename);
+        await storage.updateFormula(formula.id, {
+          iconId: bestMatch.icon.id,
+          iconUrl,
+        });
+        updates.push({
+          formulaId: formula.id,
+          iconId: bestMatch.icon.id,
+          iconUrl,
+          matchedBy: matchedByTag?.displayName || bestMatch.icon.name,
+          score: bestMatch.score,
+        });
+      }
+
+      res.json({
+        group,
+        updatedCount: updates.length,
+        skippedCount: skipped.length,
+        updates,
+        skipped,
+      });
+    } catch (error) {
+      console.error('Error applying icon group:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid icon group payload", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to apply icon group" });
     }
   });
 
@@ -6331,7 +7053,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allowDiscountStacking: false,
           guideVideos: {},
           blogCtaEnabled: true,
-          blogCtaUrl: ''
+          blogCtaUrl: '',
+          blogLogoUrl: ''
         };
         
         settings = await storage.createBusinessSettings(defaultSettings as any);
@@ -6450,7 +7173,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           allowDiscountStacking: false,
           guideVideos: {},
           blogCtaEnabled: true,
-          blogCtaUrl: ''
+          blogCtaUrl: '',
+          blogLogoUrl: ''
         };
         
         existingSettings = await storage.createBusinessSettings(defaultSettings as any);
@@ -6467,7 +7191,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
-        'blogCtaEnabled', 'blogCtaUrl',
+        'blogCtaEnabled', 'blogCtaUrl', 'blogLogoUrl',
         // Facebook Conversion Tracking fields
         'fbPixelId', 'fbAccessToken', 'fbTestEventCode', 'fbBusinessUrl', 'enableFacebookTracking'
       ];
@@ -6519,7 +7243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
         'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
-        'blogCtaEnabled', 'blogCtaUrl',
+        'blogCtaEnabled', 'blogCtaUrl', 'blogLogoUrl',
         // Facebook Conversion Tracking fields
         'fbPixelId', 'fbAccessToken', 'fbTestEventCode', 'fbBusinessUrl', 'enableFacebookTracking'
       ];
@@ -13737,6 +14461,59 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
   });
 
   // Icon management API routes
+  const buildIconAssetUrl = (filename: string) => {
+    if (filename && (filename.match(/^icon-\d+-\d+\./) || filename.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\./i))) {
+      return `/objects/icons/${filename}`;
+    }
+    return `/uploads/icons/${filename}`;
+  };
+
+  const normalizeServiceNameForIconMatch = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\b(service|services|calculator|pricing|quote|instant|estimate)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const scoreIconAgainstService = (
+    serviceName: string,
+    icon: { name: string; tags: Array<{ name: string; displayName: string }> },
+  ) => {
+    const normalizedService = normalizeServiceNameForIconMatch(serviceName);
+    const serviceTokens = new Set(normalizedService.split(" ").filter(Boolean));
+    let score = 0;
+
+    const compareLabel = (label: string, weight: number) => {
+      const normalizedLabel = normalizeServiceNameForIconMatch(label);
+      if (!normalizedLabel) return;
+
+      if (normalizedLabel === normalizedService) {
+        score = Math.max(score, weight + 60);
+      } else if (
+        normalizedService.includes(normalizedLabel) ||
+        normalizedLabel.includes(normalizedService)
+      ) {
+        score = Math.max(score, weight + 35);
+      }
+
+      const labelTokens = normalizedLabel.split(" ").filter(Boolean);
+      const overlap = labelTokens.filter((token) => serviceTokens.has(token)).length;
+      if (overlap > 0) {
+        score = Math.max(score, weight + overlap * 12);
+      }
+    };
+
+    compareLabel(icon.name, 30);
+    icon.tags.forEach((tag) => {
+      compareLabel(tag.displayName, 70);
+      compareLabel(tag.name, 65);
+    });
+
+    return score;
+  };
+
   app.get("/api/icons", async (req, res) => {
     try {
       const { category, active, tagId } = req.query;
@@ -13753,26 +14530,15 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       } else if (active === 'true') {
         icons = await storage.getActiveIcons();
       } else {
-        icons = await storage.getAllIcons();
+        icons = await storage.getIconLibrary();
       }
       
       // Transform icons to include full URL paths
       const iconsWithUrls = icons.map(icon => {
-        // Check if this is an object storage icon by filename pattern
-        // Object storage icons have pattern: icon-[timestamp]-[random].[ext] OR UUID.[ext]
-        if (icon.filename && (icon.filename.match(/^icon-\d+-\d+\./) || icon.filename.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\./i))) {
-          // This is an object storage icon
-          return {
-            ...icon,
-            url: `/objects/icons/${icon.filename}`
-          };
-        } else {
-          // Legacy file system icon
-          return {
-            ...icon,
-            url: `/uploads/icons/${icon.filename}`
-          };
-        }
+        return {
+          ...icon,
+          url: buildIconAssetUrl(icon.filename)
+        };
       });
       
       res.json(iconsWithUrls);
@@ -13791,23 +14557,14 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         return res.status(404).json({ message: "Icon not found" });
       }
       
-      // Transform icon to include proper URL path
-      let iconWithUrl;
-      // Check if this is an object storage icon by filename pattern
-      // Object storage icons have pattern: icon-[timestamp]-[random].[ext] OR UUID.[ext]
-      if (icon.filename && (icon.filename.match(/^icon-\d+-\d+\./) || icon.filename.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\./i))) {
-        // This is an object storage icon
-        iconWithUrl = {
-          ...icon,
-          url: `/objects/icons/${icon.filename}`
-        };
-      } else {
-        // Legacy file system icon
-        iconWithUrl = {
-          ...icon,
-          url: `/uploads/icons/${icon.filename}`
-        };
-      }
+      const tags = await storage.getTagsForIcon(icon.id);
+      const groups = await storage.getAllIconGroups();
+      const iconWithUrl = {
+        ...icon,
+        url: buildIconAssetUrl(icon.filename),
+        tags,
+        group: icon.groupId ? groups.find((group) => group.id === icon.groupId) || null : null,
+      };
       
       res.json(iconWithUrl);
     } catch (error) {
@@ -13822,44 +14579,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
         return res.status(400).json({ message: "Icon file is required" });
       }
 
-      // Generate filename if not provided (for memory storage)
-      let filename = req.file.filename;
-      if (!filename) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const fileExtension = path.extname(req.file.originalname);
-        filename = `icon-${uniqueSuffix}${fileExtension}`;
-      }
-
-      // Upload to object storage
-      const objectStorageService = new ObjectStorageService();
-      const fileExtension = path.extname(req.file.originalname);
-      
-      // Get presigned URL for upload
-      const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
-      
-      // Upload file buffer directly to object storage
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: req.file.buffer,
-        headers: {
-          'Content-Type': req.file.mimetype,
-          'Content-Length': req.file.size.toString(),
-        },
-      });
-      
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
-      }
-
-      // Set ACL policy to make the icon public
-      await objectStorageService.trySetObjectEntityAclPolicy(objectPath, {
-        owner: "system",
-        visibility: "public",
-      });
-
-      // Extract the actual filename from the object path (e.g., /objects/icons/uuid.png -> uuid.png)
-      const objectFilename = objectPath.split('/').pop() || filename;
+      const { objectFilename } = await uploadIconFileToStorage(req.file);
 
       const iconData = {
         name: req.body.name || req.file.originalname,
@@ -13882,16 +14602,79 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
     }
   });
 
+  app.post("/api/icons/batch", requireSuperAdmin, uploadIcon.array('icons', 100), async (req, res) => {
+    try {
+      const files = (req.files as Express.Multer.File[]) || [];
+      if (files.length === 0) {
+        return res.status(400).json({ message: "At least one icon file is required" });
+      }
+
+      const category = typeof req.body.category === 'string' && req.body.category.trim()
+        ? req.body.category.trim()
+        : 'general';
+      const descriptionPrefix = typeof req.body.description === 'string'
+        ? req.body.description.trim()
+        : '';
+
+      const results = await Promise.all(
+        files.map(async (file) => {
+          const baseName = file.originalname.replace(/\.[^/.]+$/, "");
+
+          try {
+            const { objectFilename } = await uploadIconFileToStorage(file);
+            const icon = await storage.createIcon({
+              name: baseName,
+              filename: objectFilename,
+              category,
+              description: descriptionPrefix || `Auto-uploaded: ${baseName}`,
+              isActive: true,
+            });
+
+            return {
+              success: true,
+              fileName: file.originalname,
+              icon: {
+                ...icon,
+                url: buildIconAssetUrl(icon.filename),
+              },
+            };
+          } catch (error) {
+            return {
+              success: false,
+              fileName: file.originalname,
+              message: error instanceof Error ? error.message : "Upload failed",
+            };
+          }
+        }),
+      );
+
+      const successCount = results.filter((result) => result.success).length;
+      const failureCount = results.length - successCount;
+      const statusCode = successCount > 0 ? 201 : 500;
+
+      res.status(statusCode).json({
+        message: failureCount === 0 ? "Icons uploaded successfully" : "Some icons failed to upload",
+        results,
+        successCount,
+        failureCount,
+      });
+    } catch (error) {
+      console.error('Error batch uploading icons:', error);
+      res.status(500).json({ message: "Failed to upload icons" });
+    }
+  });
+
   app.put("/api/icons/:id", requireSuperAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { name, category, description, isActive } = req.body;
+      const { name, category, description, isActive, groupId } = req.body;
       
       const icon = await storage.updateIcon(id, {
         name,
         category,
         description,
-        isActive
+        isActive,
+        groupId: groupId ?? null,
       });
       
       if (!icon) {
@@ -13900,7 +14683,7 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       
       res.json({
         ...icon,
-        url: `/uploads/icons/${icon.filename}`
+        url: buildIconAssetUrl(icon.filename)
       });
     } catch (error) {
       console.error('Error updating icon:', error);
@@ -13935,6 +14718,136 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
     }
   });
 
+  app.get("/api/icon-groups", async (req, res) => {
+    try {
+      const { active } = req.query;
+      const groups = active === 'true'
+        ? await storage.getActiveIconGroups()
+        : await storage.getAllIconGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error('Error fetching icon groups:', error);
+      res.status(500).json({ message: "Failed to fetch icon groups" });
+    }
+  });
+
+  app.post("/api/icon-groups", requireSuperAdmin, async (req, res) => {
+    try {
+      const validation = insertIconGroupSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid group data", errors: validation.error.errors });
+      }
+
+      const group = await storage.createIconGroup({
+        ...validation.data,
+        createdBy: (req as any).currentUser.id,
+      });
+      res.status(201).json(group);
+    } catch (error) {
+      console.error('Error creating icon group:', error);
+      res.status(500).json({ message: "Failed to create icon group" });
+    }
+  });
+
+  app.put("/api/icon-groups/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const idParam = z.coerce.number().int().positive().safeParse(req.params.id);
+      if (!idParam.success) {
+        return res.status(400).json({ message: "Invalid group ID" });
+      }
+
+      const validation = insertIconGroupSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid group data", errors: validation.error.errors });
+      }
+
+      const group = await storage.updateIconGroup(idParam.data, validation.data);
+      if (!group) {
+        return res.status(404).json({ message: "Icon group not found" });
+      }
+
+      res.json(group);
+    } catch (error) {
+      console.error('Error updating icon group:', error);
+      res.status(500).json({ message: "Failed to update icon group" });
+    }
+  });
+
+  app.delete("/api/icon-groups/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const idParam = z.coerce.number().int().positive().safeParse(req.params.id);
+      if (!idParam.success) {
+        return res.status(400).json({ message: "Invalid group ID" });
+      }
+
+      const success = await storage.deleteIconGroup(idParam.data);
+      if (!success) {
+        return res.status(404).json({ message: "Icon group not found" });
+      }
+
+      res.json({ message: "Icon group deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting icon group:', error);
+      res.status(500).json({ message: "Failed to delete icon group" });
+    }
+  });
+
+  app.get("/api/admin/icons/library", requireSuperAdmin, async (_req, res) => {
+    try {
+      const icons = await storage.getIconLibrary();
+      res.json(
+        icons.map((icon) => ({
+          ...icon,
+          url: buildIconAssetUrl(icon.filename),
+        })),
+      );
+    } catch (error) {
+      console.error('Error fetching icon library:', error);
+      res.status(500).json({ message: "Failed to fetch icon library" });
+    }
+  });
+
+  app.put("/api/admin/icons/:id/metadata", requireSuperAdmin, async (req, res) => {
+    try {
+      const idParam = z.coerce.number().int().positive().safeParse(req.params.id);
+      if (!idParam.success) {
+        return res.status(400).json({ message: "Invalid icon ID" });
+      }
+
+      const payloadSchema = z.object({
+        name: z.string().min(1).optional(),
+        category: z.string().min(1).optional(),
+        description: z.string().nullable().optional(),
+        isActive: z.boolean().optional(),
+        groupId: z.number().int().positive().nullable().optional(),
+        tagIds: z.array(z.number().int().positive()).optional(),
+      });
+
+      const validation = payloadSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid icon metadata", errors: validation.error.errors });
+      }
+
+      const { tagIds, ...iconData } = validation.data;
+      const icon = await storage.updateIconMetadata(idParam.data, iconData, tagIds, (req as any).currentUser.id);
+      if (!icon) {
+        return res.status(404).json({ message: "Icon not found" });
+      }
+
+      const tags = await storage.getTagsForIcon(icon.id);
+      const groups = await storage.getAllIconGroups();
+      res.json({
+        ...icon,
+        url: buildIconAssetUrl(icon.filename),
+        tags,
+        group: icon.groupId ? groups.find((group) => group.id === icon.groupId) || null : null,
+      });
+    } catch (error) {
+      console.error('Error updating icon metadata:', error);
+      res.status(500).json({ message: "Failed to update icon metadata" });
+    }
+  });
+
   // Icon Tag Management API Routes
   app.get("/api/icon-tags", async (req, res) => {
     try {
@@ -13956,12 +14869,27 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
 
   app.post("/api/icon-tags", requireSuperAdmin, async (req, res) => {
     try {
-      const validation = insertIconTagSchema.safeParse(req.body);
+      const rawBody = req.body || {};
+      const normalizedName = String(rawBody.name || rawBody.displayName || "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      const validation = insertIconTagSchema.safeParse({
+        ...rawBody,
+        name: normalizedName,
+        displayName: typeof rawBody.displayName === "string" ? rawBody.displayName.trim() : rawBody.displayName,
+      });
       if (!validation.success) {
         return res.status(400).json({ 
           message: "Invalid tag data", 
           errors: validation.error.errors 
         });
+      }
+
+      if (!normalizedName) {
+        return res.status(400).json({ message: "Service tag key is required" });
       }
 
       const tagData = {
@@ -13971,8 +14899,11 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
 
       const tag = await storage.createIconTag(tagData);
       res.status(201).json(tag);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating icon tag:', error);
+      if (error?.code === '23505') {
+        return res.status(409).json({ message: "A service tag with that key already exists" });
+      }
       res.status(500).json({ message: "Failed to create icon tag" });
     }
   });
@@ -13985,12 +14916,31 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       }
       
       const id = idParam.data;
-      const validation = insertIconTagSchema.partial().safeParse(req.body);
+      const rawBody = req.body || {};
+      const normalizedName = rawBody.name || rawBody.displayName
+        ? String(rawBody.name || rawBody.displayName || "")
+            .toLowerCase()
+            .trim()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+        : undefined;
+
+      const validation = insertIconTagSchema.partial().safeParse({
+        ...rawBody,
+        name: normalizedName,
+        displayName: typeof rawBody.displayName === "string" ? rawBody.displayName.trim() : rawBody.displayName,
+      });
       if (!validation.success) {
         return res.status(400).json({ 
           message: "Invalid tag data", 
           errors: validation.error.errors 
         });
+      }
+
+      if (rawBody.name !== undefined || rawBody.displayName !== undefined) {
+        if (!normalizedName) {
+          return res.status(400).json({ message: "Service tag key is required" });
+        }
       }
 
       const tag = await storage.updateIconTag(id, validation.data);
@@ -14000,8 +14950,11 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       }
       
       res.json(tag);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating icon tag:', error);
+      if (error?.code === '23505') {
+        return res.status(409).json({ message: "A service tag with that key already exists" });
+      }
       res.status(500).json({ message: "Failed to update icon tag" });
     }
   });
@@ -19711,12 +20664,85 @@ This booking was created on ${new Date().toLocaleString()}.
         }
       }
 
+      let pricingReference: DirectoryPricingReference | null = null;
+      if (category && resultProfiles.length > 0) {
+        try {
+          const profileIdsForPricing = resultProfiles.map((profile) => profile.id).filter((id) => Number.isFinite(id));
+
+          if (profileIdsForPricing.length > 0) {
+            const pricingFormulaRows = await db
+              .select({
+                formulaId: formulas.id,
+                companyName: directoryProfiles.companyName,
+                formulaName: formulas.name,
+                formulaTitle: formulas.title,
+                formulaDescription: formulas.description,
+                variables: formulas.variables,
+                formula: formulas.formula,
+                minPrice: formulas.minPrice,
+                maxPrice: formulas.maxPrice,
+                conditionalMinPrices: formulas.conditionalMinPrices,
+                conditionalMaxPrices: formulas.conditionalMaxPrices,
+              })
+              .from(directoryServiceListings)
+              .innerJoin(formulas, eq(directoryServiceListings.formulaId, formulas.id))
+              .innerJoin(directoryProfiles, eq(directoryServiceListings.directoryProfileId, directoryProfiles.id))
+              .where(and(
+                inArray(directoryServiceListings.directoryProfileId, profileIdsForPricing),
+                eq(directoryServiceListings.categoryId, category.id),
+                eq(directoryServiceListings.isActive, true),
+                eq(formulas.isActive, true),
+                eq(formulas.isDisplayed, true),
+              ));
+
+            const formulaIds = pricingFormulaRows.map((row) => row.formulaId).filter((id) => Number.isFinite(id));
+            const pricingLeadRows = formulaIds.length > 0
+              ? await db
+                  .select({
+                    formulaId: leads.formulaId,
+                    variables: leads.variables,
+                    calculatedPrice: leads.calculatedPrice,
+                  })
+                  .from(leads)
+                  .where(inArray(leads.formulaId, formulaIds))
+              : [];
+
+          pricingReference = buildDirectoryPricingReference(
+            category.name,
+            category.slug,
+            resultCity,
+            resultState,
+            pricingFormulaRows as DirectoryPricingFormulaRecord[],
+            pricingLeadRows as DirectoryPricingLeadRecord[],
+          );
+          }
+        } catch (error) {
+          console.error("[Directory] Failed to build pricing reference", {
+            categorySlug,
+            citySlug,
+            error,
+          });
+        }
+      }
+
+      if (!pricingReference && category) {
+        pricingReference = buildDirectoryPricingReference(
+          category.name,
+          category.slug,
+          resultCity,
+          resultState,
+          [],
+          [],
+        );
+      }
+
       res.json({
         category: category || null,
         city: resultCity,
         state: resultState,
         listings: resultProfiles,
-        isIndexable: resultProfiles.length > 0
+        isIndexable: resultProfiles.length > 0,
+        pricingReference,
       });
     } catch (error) {
       console.error("[Directory] Error fetching listings:", error);
@@ -19897,7 +20923,7 @@ This booking was created on ${new Date().toLocaleString()}.
           .where(eq(directoryProfiles.id, existing.id))
           .returning();
 
-        await updateDirectoryIndexCache(updated.id);
+        await rebuildAllDirectoryIndexCaches();
 
         return res.json(updated);
       }
@@ -19942,8 +20968,8 @@ This booking was created on ${new Date().toLocaleString()}.
         .values({ ...validatedData, companySlug: slug, latitude, longitude, status: "approved" })
         .returning();
 
-      // Trigger cache update (may no-op if services/areas not ready yet)
-      await updateDirectoryIndexCache(profile.id);
+      // Rebuild all directory cache entries so new cities and radius coverage propagate everywhere.
+      await rebuildAllDirectoryIndexCaches();
 
       res.status(201).json(profile);
     } catch (error) {
@@ -19991,7 +21017,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(directoryProfiles.id, existing.id))
         .returning();
 
-      await updateDirectoryIndexCache(updated.id);
+      await rebuildAllDirectoryIndexCaches();
 
       res.json(updated);
     } catch (error) {
@@ -20093,9 +21119,7 @@ This booking was created on ${new Date().toLocaleString()}.
           await updateDirectoryCategoryListingCount(existingListing.categoryId);
           await updateDirectoryCategoryListingCount(categoryId);
 
-          updateDirectoryIndexCache(profile.id).catch((err) => {
-            console.error("[Directory] Async cache update failed after service category update:", err);
-          });
+          await rebuildAllDirectoryIndexCaches();
           return res.json(updated);
         }
         return res.json(existingListing);
@@ -20131,9 +21155,7 @@ This booking was created on ${new Date().toLocaleString()}.
       // Update category listing count (unique providers, not services)
       await updateDirectoryCategoryListingCount(categoryId);
 
-      updateDirectoryIndexCache(profile.id).catch((err) => {
-        console.error("[Directory] Async cache update failed after service add:", err);
-      });
+      await rebuildAllDirectoryIndexCaches();
 
       res.status(201).json(listing);
     } catch (error) {
@@ -20185,9 +21207,7 @@ This booking was created on ${new Date().toLocaleString()}.
       // Update category listing count (unique providers, not services)
       await updateDirectoryCategoryListingCount(listing.categoryId);
 
-      updateDirectoryIndexCache(profile.id).catch((err) => {
-        console.error("[Directory] Async cache update failed after service removal:", err);
-      });
+      await rebuildAllDirectoryIndexCaches();
 
       res.json({ message: "Service removed" });
     } catch (error) {
@@ -20414,8 +21434,8 @@ This booking was created on ${new Date().toLocaleString()}.
         .values(validatedData as any)
         .returning();
 
-      // Trigger cache update
-      await updateDirectoryIndexCache(profile.id);
+      // Rebuild all directory cache entries so newly covered cities propagate to every radius-based page.
+      await rebuildAllDirectoryIndexCaches();
 
       res.status(201).json(area);
     } catch (error) {
@@ -20841,6 +21861,22 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   }
 
+  async function rebuildAllDirectoryIndexCaches() {
+    try {
+      const profiles = await db
+        .select({ id: directoryProfiles.id })
+        .from(directoryProfiles);
+
+      await db.delete(directoryIndexCache);
+
+      for (const profile of profiles) {
+        await updateDirectoryIndexCache(profile.id);
+      }
+    } catch (error) {
+      console.error("[Directory] Error rebuilding all index caches:", error);
+    }
+  }
+
   // ==================== Blog Posts API ====================
 
   // Helper to check if user has blog access (paid plans only)
@@ -20860,6 +21896,8 @@ This booking was created on ${new Date().toLocaleString()}.
       ctaButtonEnabled?: boolean | null;
       ctaButtonUrl?: string | null;
       targetCity?: string | null;
+      primaryServiceId?: number | null;
+      designStyle?: string | null;
     }
   ): Promise<BlogHtmlEnhancements> {
     const [settings] = await db
@@ -20893,6 +21931,12 @@ This booking was created on ${new Date().toLocaleString()}.
         ? (settings?.blogCtaUrl || undefined)
         : String(input.ctaButtonUrl).trim();
 
+    const autobidderParams = new URLSearchParams({ userId });
+    if (typeof input.primaryServiceId === "number" && Number.isFinite(input.primaryServiceId)) {
+      autobidderParams.set("serviceId", String(input.primaryServiceId));
+    }
+    const autobidderFormUrl = `${getBaseUrl()}/styled-calculator?${autobidderParams.toString()}`;
+
     return {
       internalLinks: input.internalLinks as any,
       videoUrl: input.videoUrl || undefined,
@@ -20900,6 +21944,8 @@ This booking was created on ${new Date().toLocaleString()}.
       gmbPostUrl: input.gmbPostUrl || undefined,
       ctaButtonEnabled: effectiveCtaButtonEnabled,
       ctaButtonUrl: effectiveCtaButtonUrl,
+      autobidderFormUrl,
+      designStyle: input.designStyle || undefined,
       localBusiness,
     };
   }
@@ -21015,6 +22061,8 @@ This booking was created on ${new Date().toLocaleString()}.
         ctaButtonEnabled: validation.data.ctaButtonEnabled,
         ctaButtonUrl: validation.data.ctaButtonUrl,
         targetCity: validation.data.targetCity,
+        primaryServiceId: validation.data.primaryServiceId,
+        designStyle: validation.data.designStyle,
       });
       const contentHtml = blogContentToHtml(
         validation.data.content as BlogContentSection[],
@@ -21109,6 +22157,7 @@ This booking was created on ${new Date().toLocaleString()}.
         "ctaButtonEnabled",
         "ctaButtonUrl",
         "targetCity",
+        "primaryServiceId",
       ].some((key) => key in updates);
 
       if (hasContentUpdate) {
@@ -21125,6 +22174,8 @@ This booking was created on ${new Date().toLocaleString()}.
           ctaButtonEnabled: (updates.ctaButtonEnabled ?? existing.ctaButtonEnabled) as boolean | null | undefined,
           ctaButtonUrl: (updates.ctaButtonUrl ?? existing.ctaButtonUrl) as string | null | undefined,
           targetCity: (updates.targetCity ?? existing.targetCity) || undefined,
+          primaryServiceId: (updates.primaryServiceId ?? existing.primaryServiceId) as number | null | undefined,
+          designStyle: (updates.designStyle ?? existing.designStyle) as string | null | undefined,
         });
         updates.contentHtml = blogContentToHtml(
           (updates.content ?? existing.content) as BlogContentSection[],
@@ -21249,14 +22300,24 @@ This booking was created on ${new Date().toLocaleString()}.
       }
 
       const input: BlogGenerationInput = req.body;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const savedBusinessSettings = await storage.getBusinessSettingsByUserId(effectiveOwnerId);
 
       const normalizedKeyword = (input.targetKeyword || input.serviceName || "").trim();
       input.targetKeyword = normalizedKeyword;
       input.serviceName = (input.serviceName || normalizedKeyword).trim();
+      input.businessName = typeof savedBusinessSettings?.businessName === "string"
+        ? savedBusinessSettings.businessName.trim() || undefined
+        : undefined;
 
       // Validate required fields
-      if (!input.blogType || !input.serviceName || !input.targetCity || !input.goal || !input.tonePreference || !input.targetKeyword) {
+      const isKeywordTargetingType = input.blogType === "job_type_keyword_targeting";
+      if (!input.blogType || !input.serviceName || !input.goal || !input.tonePreference || !input.targetKeyword || (!isKeywordTargetingType && !input.targetCity)) {
         return res.status(400).json({ message: "Missing required fields for content generation" });
+      }
+
+      if (!input.targetCity) {
+        input.targetCity = "your service area";
       }
 
       // Use default template if not provided
@@ -21271,7 +22332,6 @@ This booking was created on ${new Date().toLocaleString()}.
 
       const result = await generateBlogContent(input);
 
-      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
       const contentEnhancements = await buildBlogHtmlEnhancements(effectiveOwnerId, {
         internalLinks: input.internalLinks as any,
         videoUrl: input.videoUrl,
@@ -21280,6 +22340,8 @@ This booking was created on ${new Date().toLocaleString()}.
         ctaButtonEnabled: input.ctaButtonEnabled,
         ctaButtonUrl: input.ctaButtonUrl,
         targetCity: input.targetCity,
+        primaryServiceId: input.primaryServiceId,
+        designStyle: input.designStyle,
       });
 
       // Auto-create draft blog post with generated content + HTML
@@ -21309,6 +22371,7 @@ This booking was created on ${new Date().toLocaleString()}.
         gmbPostUrl: input.gmbPostUrl ?? null,
         ctaButtonEnabled: input.ctaButtonEnabled ?? null,
         ctaButtonUrl: input.ctaButtonUrl ?? null,
+        designStyle: input.designStyle || "classic_blue",
         title: result.title,
         slug: result.suggestedSlug,
         metaTitle: result.metaTitle,
@@ -21365,9 +22428,68 @@ This booking was created on ${new Date().toLocaleString()}.
       }
 
       res.json(post);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Blog] Error generating content:", error);
-      res.status(500).json({ message: "Failed to generate blog content" });
+      res.status(500).json({ message: error?.message || "Failed to generate blog content" });
+    }
+  });
+
+  app.post("/api/blog-posts/expand-text", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const savedBusinessSettings = await storage.getBusinessSettingsByUserId(effectiveOwnerId);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const {
+        blogType,
+        primaryServiceId,
+        serviceName: rawServiceName,
+        targetCity,
+        tonePreference,
+        sectionType,
+        fieldLabel,
+        currentText,
+        context,
+      } = req.body || {};
+
+      if (!blogType || !sectionType || !fieldLabel || !currentText || typeof currentText !== "string") {
+        return res.status(400).json({ message: "blogType, sectionType, fieldLabel, and currentText are required" });
+      }
+
+      let serviceName = typeof rawServiceName === "string" && rawServiceName.trim() ? rawServiceName.trim() : "service";
+      if (primaryServiceId) {
+        const [formula] = await db
+          .select()
+          .from(formulas)
+          .where(eq(formulas.id, Number(primaryServiceId)))
+          .limit(1);
+        if (formula?.name) {
+          serviceName = formula.name;
+        }
+      }
+
+      const expandedText = await expandBlogText({
+        blogType,
+        serviceName,
+        businessName: typeof savedBusinessSettings?.businessName === "string"
+          ? savedBusinessSettings.businessName.trim() || undefined
+          : undefined,
+        targetCity: typeof targetCity === "string" && targetCity.trim() ? targetCity.trim() : "your area",
+        tonePreference: typeof tonePreference === "string" && tonePreference.trim() ? tonePreference.trim() : "professional",
+        sectionType,
+        fieldLabel,
+        currentText,
+        context,
+      });
+
+      res.json({ text: expandedText });
+    } catch (error) {
+      console.error("[Blog] Error expanding draft text:", error);
+      res.status(500).json({ message: "Failed to expand text" });
     }
   });
 
@@ -21400,10 +22522,12 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(404).json({ message: "Blog post not found" });
       }
 
-      const { sectionType, context } = req.body;
+      const savedBusinessSettings = await storage.getBusinessSettingsByUserId(effectiveOwnerId);
 
-      if (!sectionType) {
-        return res.status(400).json({ message: "sectionType is required" });
+      const { sectionId, sectionType, context } = req.body;
+
+      if (!sectionId || !sectionType) {
+        return res.status(400).json({ message: "sectionId and sectionType are required" });
       }
 
       // Get service name from formula if available
@@ -21420,10 +22544,14 @@ This booking was created on ${new Date().toLocaleString()}.
       }
 
       const result = await regenerateSection({
+        sectionId,
         sectionType,
         existingContent: post.content as any[],
         blogType: post.blogType,
         serviceName,
+        businessName: typeof savedBusinessSettings?.businessName === "string"
+          ? savedBusinessSettings.businessName.trim() || undefined
+          : undefined,
         targetCity: post.targetCity || "your area",
         tonePreference: post.tonePreference || "professional",
         context
@@ -21433,6 +22561,74 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("[Blog] Error regenerating section:", error);
       res.status(500).json({ message: "Failed to regenerate section" });
+    }
+  });
+
+  app.post("/api/blog-posts/:id/expand-text", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+      const postId = parseInt(req.params.id);
+
+      if (isNaN(postId)) {
+        return res.status(400).json({ message: "Invalid blog post ID" });
+      }
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const [post] = await db
+        .select()
+        .from(blogPosts)
+        .where(and(
+          eq(blogPosts.id, postId),
+          eq(blogPosts.userId, effectiveOwnerId)
+        ))
+        .limit(1);
+
+      if (!post) {
+        return res.status(404).json({ message: "Blog post not found" });
+      }
+
+      const savedBusinessSettings = await storage.getBusinessSettingsByUserId(effectiveOwnerId);
+
+      const { sectionType, fieldLabel, currentText, context } = req.body || {};
+
+      if (!sectionType || !fieldLabel || !currentText || typeof currentText !== "string") {
+        return res.status(400).json({ message: "sectionType, fieldLabel, and currentText are required" });
+      }
+
+      let serviceName = "service";
+      if (post.primaryServiceId) {
+        const [formula] = await db
+          .select()
+          .from(formulas)
+          .where(eq(formulas.id, post.primaryServiceId))
+          .limit(1);
+        if (formula) {
+          serviceName = formula.name;
+        }
+      }
+
+      const expandedText = await expandBlogText({
+        blogType: post.blogType,
+        serviceName,
+        businessName: typeof savedBusinessSettings?.businessName === "string"
+          ? savedBusinessSettings.businessName.trim() || undefined
+          : undefined,
+        targetCity: post.targetCity || "your area",
+        tonePreference: post.tonePreference || "professional",
+        sectionType,
+        fieldLabel,
+        currentText,
+        context,
+      });
+
+      res.json({ text: expandedText });
+    } catch (error) {
+      console.error("[Blog] Error expanding text:", error);
+      res.status(500).json({ message: "Failed to expand text" });
     }
   });
 
@@ -21637,6 +22833,112 @@ This booking was created on ${new Date().toLocaleString()}.
         res.status(500).json({ message: 'Failed to save image' });
       }
     });
+  });
+
+  app.post("/api/blog-images/generate", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const effectiveOwnerId = getEffectiveOwnerId(currentUser);
+
+      if (!canAccessBlogFeature(currentUser)) {
+        return res.status(403).json({ message: "Blog feature requires a paid plan" });
+      }
+
+      const {
+        blogPostId,
+        mode,
+        imageType,
+        prompt,
+        scenePrompt,
+        beforeStatePrompt,
+        afterStatePrompt,
+        serviceName,
+        targetCity,
+      } = req.body || {};
+
+      const savedBusinessSettings = await storage.getBusinessSettingsByUserId(effectiveOwnerId);
+      const savedBusinessName = typeof savedBusinessSettings?.businessName === "string"
+        ? savedBusinessSettings.businessName.trim()
+        : "";
+      const savedBlogLogoUrl = typeof savedBusinessSettings?.blogLogoUrl === "string"
+        ? savedBusinessSettings.blogLogoUrl.trim()
+        : "";
+
+      let linkedBlogPostId: number | null = null;
+      if (blogPostId !== undefined && blogPostId !== null && String(blogPostId).trim() !== "") {
+        const parsedPostId = parseInt(String(blogPostId), 10);
+        if (!isNaN(parsedPostId)) {
+          const [ownedPost] = await db
+            .select({ id: blogPosts.id })
+            .from(blogPosts)
+            .where(and(
+              eq(blogPosts.id, parsedPostId),
+              eq(blogPosts.userId, effectiveOwnerId)
+            ))
+            .limit(1);
+
+          if (!ownedPost) {
+            return res.status(404).json({ message: "Blog post not found" });
+          }
+          linkedBlogPostId = parsedPostId;
+        }
+      }
+
+      const generatedAssets = mode === "before_after_pair"
+        ? await generateBeforeAfterPair({
+            scenePrompt: String(scenePrompt || "").trim(),
+            beforeStatePrompt: String(beforeStatePrompt || "").trim(),
+            afterStatePrompt: String(afterStatePrompt || "").trim(),
+            serviceName: typeof serviceName === "string" ? serviceName : undefined,
+            targetCity: typeof targetCity === "string" ? targetCity : undefined,
+            businessName: savedBusinessName || undefined,
+          })
+        : [
+            await generateSingleBlogImage({
+              imageType: imageType === "crew" ? "team" : imageType,
+              prompt: String(prompt || "").trim(),
+              serviceName: typeof serviceName === "string" ? serviceName : undefined,
+              targetCity: typeof targetCity === "string" ? targetCity : undefined,
+              businessName: savedBusinessName || undefined,
+              companyLogoUrl: savedBlogLogoUrl || undefined,
+            }),
+          ];
+
+      const createdImages: any[] = [];
+      for (const asset of generatedAssets) {
+        const objectPath = await uploadImageBufferToObjectStorage({
+          file: {
+            originalname: `${asset.imageType}-${Date.now()}.png`,
+            mimetype: asset.mimeType,
+            size: asset.buffer.length,
+            buffer: asset.buffer,
+          } as Express.Multer.File,
+          ownerId: effectiveOwnerId,
+        });
+
+        const [image] = await db
+          .insert(blogImages)
+          .values({
+            userId: effectiveOwnerId,
+            blogPostId: linkedBlogPostId,
+            originalUrl: objectPath,
+            processedUrl: objectPath,
+            imageType: asset.imageType,
+            imageStyle: "default",
+            caption: asset.caption,
+            altText: asset.caption,
+            sourceType: "generated",
+          })
+          .returning();
+
+        createdImages.push(image);
+      }
+
+      res.status(201).json(createdImages);
+    } catch (error: any) {
+      console.error("[Blog] Error generating blog images:", error);
+      res.status(500).json({ message: error?.message || "Failed to generate blog images" });
+    }
   });
 
   // List blog images
@@ -21980,6 +23282,10 @@ This booking was created on ${new Date().toLocaleString()}.
         return res.status(500).json({ message: "Website API is not configured" });
       }
 
+      if (!post.dudaBlogPostId) {
+        await dudaApi.ensureBlogExists(website.siteName);
+      }
+
       const normalizeBaseUrl = (value?: string | null): string | null => {
         if (!value) return null;
         const trimmed = value.trim();
@@ -22103,6 +23409,8 @@ This booking was created on ${new Date().toLocaleString()}.
         ctaButtonEnabled: post.ctaButtonEnabled,
         ctaButtonUrl: post.ctaButtonUrl,
         targetCity: post.targetCity || undefined,
+        primaryServiceId: post.primaryServiceId,
+        designStyle: post.designStyle,
       });
       let htmlContent = blogContentToHtml(
         post.content as any[],
@@ -22217,28 +23525,25 @@ This booking was created on ${new Date().toLocaleString()}.
       };
 
       if (dudaPostId) {
-        // Update existing post. If the provider forbids content updates, fallback to re-import.
-        console.log(`[Blog] Updating existing website post ${dudaPostId} on site ${website.siteName}`);
-        const updateData: Record<string, any> = {
-          title: post.title,
-          content: htmlContent,
-          description: post.metaDescription || undefined,
-          meta_title: post.metaTitle || undefined,
-          path: post.slug || undefined,
-          tags: (post.tags as string[])?.length ? post.tags as string[] : undefined,
-        };
+        // Duda's PATCH blog post endpoint rejects `content`, so content refreshes
+        // must fall back to re-import while PATCH handles metadata-only updates.
+        console.log(`[Blog] Refreshing existing website post ${dudaPostId} on site ${website.siteName}`);
         try {
-          await dudaApi.updateBlogPost(website.siteName, dudaPostId, updateData);
+          throw new Error("CONTENT_REIMPORT_REQUIRED");
         } catch (updateError: any) {
           const updateMessage = String(updateError?.message || "");
-          const isForbiddenUpdate =
+          const requiresReimport =
+            updateMessage === "CONTENT_REIMPORT_REQUIRED" ||
             updateMessage.includes("API error updating blog post: 403") ||
-            (updateMessage.includes("updating blog post") && updateMessage.includes("403"));
-          if (!isForbiddenUpdate) {
+            updateMessage.includes("API error updating blog post: 400") ||
+            updateMessage.includes("Unrecognized field \"content\"") ||
+            (updateMessage.includes("updating blog post") && updateMessage.includes("403")) ||
+            (updateMessage.includes("updating blog post") && updateMessage.includes("400"));
+          if (!requiresReimport) {
             throw updateError;
           }
 
-          console.warn(`[Blog] Website platform rejected update for post ${dudaPostId} (403). Falling back to re-import.`);
+          console.warn(`[Blog] Website platform requires re-import for content refresh on post ${dudaPostId}. Falling back to re-import.`);
           const previousPostId = dudaPostId;
           const importedId = await importToWebsite();
           if (!importedId) {
@@ -22273,7 +23578,8 @@ This booking was created on ${new Date().toLocaleString()}.
 
       res.json({
         message: "Blog synced to website",
-        dudaPostId: dudaPostId
+        dudaPostId: dudaPostId,
+        blogDesignCssSnippet: getBlogDesignCssSnippet(post.designStyle)
       });
     } catch (error: any) {
       console.error("[Blog] Error syncing to website platform:", error);

@@ -20,10 +20,11 @@ const perform = async (z, bundle) => {
       source: bundle.inputData.source || 'Zapier',
       formulaId: bundle.inputData.formulaId,
       variables: bundle.inputData.variables ? JSON.parse(bundle.inputData.variables) : {},
+      imageUrls: bundle.inputData.imageUrls,
     },
   });
 
-  return response.data;
+  return response.data.lead;
 };
 
 module.exports = {
@@ -125,17 +126,21 @@ module.exports = {
         required: false,
         helpText: 'JSON string of calculator variables and their values.',
       },
+      {
+        key: 'imageUrls',
+        label: 'Image URLs',
+        type: 'text',
+        required: false,
+        helpText: 'Optional image URLs to attach to the lead. Use a JSON array, comma-separated list, or one URL per line.',
+      },
     ],
     sample: {
-      success: true,
-      lead: {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "555-123-4567",
-        createdAt: "2024-01-15T12:00:00Z"
-      },
-      message: "Lead created successfully"
+      id: "1",
+      name: "John Doe",
+      email: "john@example.com",
+      phone: "555-123-4567",
+      uploadedImages: ["https://cdn.example.com/lead-1-photo.jpg"],
+      createdAt: "2024-01-15T12:00:00Z"
     },
     outputFields: [
       { key: 'id', label: 'Lead ID', type: 'string' },
@@ -148,6 +153,7 @@ module.exports = {
       { key: 'zipCode', label: 'ZIP Code', type: 'string' },
       { key: 'serviceType', label: 'Service Type', type: 'string' },
       { key: 'totalPrice', label: 'Total Price', type: 'number' },
+      { key: 'uploadedImages[]', label: 'Uploaded Image URL', type: 'string' },
       { key: 'status', label: 'Status', type: 'string' },
       { key: 'createdAt', label: 'Created At', type: 'datetime' },
       { key: 'source', label: 'Lead Source', type: 'string' },

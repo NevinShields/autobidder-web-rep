@@ -28,6 +28,7 @@ import {
   bidRequests,
   bidResponses,
   bidEmailTemplates,
+  iconGroups,
   icons,
   iconTags,
   iconTagAssignments,
@@ -113,6 +114,8 @@ import {
   type InsertBidResponse,
   type BidEmailTemplate,
   type InsertBidEmailTemplate,
+  type IconGroup,
+  type InsertIconGroup,
   type Icon,
   type IconTag,
   type InsertIconTag,
@@ -304,6 +307,12 @@ async function getLegacyFormulasQuery(whereClause?: ReturnType<typeof sql>, sing
   const result = await db.execute(baseQuery);
   const mapped = (result.rows || []).map(mapLegacyFormulaRow);
   return single ? mapped[0] : mapped;
+}
+
+export interface IconLibraryItem extends Icon {
+  url?: string;
+  group?: IconGroup | null;
+  tags: IconTag[];
 }
 
 const STARTER_CUSTOM_CSS = `
@@ -986,6 +995,14 @@ export interface IStorage {
 
   // Icon operations
   getAllIcons(): Promise<Icon[]>;
+  getAllIconGroups(): Promise<IconGroup[]>;
+  getActiveIconGroups(): Promise<IconGroup[]>;
+  createIconGroup(group: InsertIconGroup): Promise<IconGroup>;
+  updateIconGroup(id: number, group: Partial<InsertIconGroup>): Promise<IconGroup | undefined>;
+  deleteIconGroup(id: number): Promise<boolean>;
+  getIconLibrary(): Promise<IconLibraryItem[]>;
+  updateIconMetadata(id: number, iconData: Partial<InsertIcon>, tagIds?: number[] | undefined, assignedBy?: string): Promise<Icon | undefined>;
+  getIconsByGroup(groupId: number): Promise<Icon[]>;
   
   // Icon Tag operations
   getAllIconTags(): Promise<IconTag[]>;
@@ -3398,6 +3415,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Icon operations
+  async getAllIconGroups(): Promise<IconGroup[]> {
+    return await db.select().from(iconGroups).orderBy(iconGroups.displayOrder, iconGroups.displayName);
+  }
+
+  async getActiveIconGroups(): Promise<IconGroup[]> {
+    return await db
+      .select()
+      .from(iconGroups)
+      .where(eq(iconGroups.isActive, true))
+      .orderBy(iconGroups.displayOrder, iconGroups.displayName);
+  }
+
+  async createIconGroup(groupData: InsertIconGroup): Promise<IconGroup> {
+    const [group] = await db.insert(iconGroups).values(groupData).returning();
+    return group;
+  }
+
+  async updateIconGroup(id: number, groupData: Partial<InsertIconGroup>): Promise<IconGroup | undefined> {
+    const [group] = await db
+      .update(iconGroups)
+      .set({ ...groupData, updatedAt: new Date() })
+      .where(eq(iconGroups.id, id))
+      .returning();
+    return group || undefined;
+  }
+
+  async deleteIconGroup(id: number): Promise<boolean> {
+    await db.update(icons).set({ groupId: null }).where(eq(icons.groupId, id));
+    const result = await db.delete(iconGroups).where(eq(iconGroups.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
   async getAllIcons(): Promise<Icon[]> {
     return await db.select().from(icons).orderBy(icons.name);
   }
@@ -3431,7 +3480,44 @@ export class DatabaseStorage implements IStorage {
     return icon || undefined;
   }
 
+  async updateIconMetadata(id: number, iconData: Partial<InsertIcon>, tagIds?: number[], assignedBy?: string): Promise<Icon | undefined> {
+    const hasIconFields = Object.keys(iconData).length > 0;
+    const icon = hasIconFields
+      ? await this.updateIcon(id, iconData)
+      : await this.getIcon(id);
+    if (!icon) {
+      return undefined;
+    }
+
+    if (tagIds !== undefined) {
+      await db.delete(iconTagAssignments).where(eq(iconTagAssignments.iconId, id));
+
+      if (tagIds.length > 0) {
+        await db.insert(iconTagAssignments).values(
+          tagIds.map((tagId) => ({
+            iconId: id,
+            tagId,
+            assignedBy: assignedBy || null,
+          })),
+        );
+      }
+    }
+
+    return icon;
+  }
+
   async deleteIcon(id: number): Promise<boolean> {
+    await db.update(formulas)
+      .set({ iconId: null, iconUrl: null })
+      .where(eq(formulas.iconId, id));
+
+    await db.update(formulaTemplates)
+      .set({ iconId: null, iconUrl: null })
+      .where(eq(formulaTemplates.iconId, id));
+
+    await db.delete(iconTagAssignments)
+      .where(eq(iconTagAssignments.iconId, id));
+
     const result = await db.delete(icons).where(eq(icons.id, id));
     return (result.rowCount ?? 0) > 0;
   }
@@ -3492,7 +3578,8 @@ export class DatabaseStorage implements IStorage {
       category: icons.category,
       description: icons.description,
       isActive: icons.isActive,
-      createdAt: icons.createdAt
+      createdAt: icons.createdAt,
+      groupId: icons.groupId,
     })
     .from(icons)
     .innerJoin(iconTagAssignments, eq(icons.id, iconTagAssignments.iconId))
@@ -3501,6 +3588,12 @@ export class DatabaseStorage implements IStorage {
       eq(icons.isActive, true)
     ))
     .orderBy(icons.name);
+  }
+
+  async getIconsByGroup(groupId: number): Promise<Icon[]> {
+    return await db.select().from(icons)
+      .where(and(eq(icons.groupId, groupId), eq(icons.isActive, true)))
+      .orderBy(icons.name);
   }
 
   async getTagsForIcon(iconId: number): Promise<IconTag[]> {
@@ -3523,6 +3616,34 @@ export class DatabaseStorage implements IStorage {
       eq(iconTags.isActive, true)
     ))
     .orderBy(iconTags.displayOrder, iconTags.name);
+  }
+
+  async getIconLibrary(): Promise<IconLibraryItem[]> {
+    const [allIcons, allGroups, allTags, assignments] = await Promise.all([
+      this.getAllIcons(),
+      this.getAllIconGroups(),
+      this.getAllIconTags(),
+      db.select().from(iconTagAssignments),
+    ]);
+
+    const groupById = new Map(allGroups.map((group) => [group.id, group]));
+    const tagById = new Map(allTags.map((tag) => [tag.id, tag]));
+    const tagIdsByIconId = new Map<number, number[]>();
+
+    assignments.forEach((assignment) => {
+      const current = tagIdsByIconId.get(assignment.iconId) || [];
+      current.push(assignment.tagId);
+      tagIdsByIconId.set(assignment.iconId, current);
+    });
+
+    return allIcons.map((icon) => ({
+      ...icon,
+      group: icon.groupId ? groupById.get(icon.groupId) || null : null,
+      tags: (tagIdsByIconId.get(icon.id) || [])
+        .map((tagId) => tagById.get(tagId))
+        .filter((tag): tag is IconTag => Boolean(tag))
+        .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)),
+    }));
   }
 
   // Duda Template Management operations

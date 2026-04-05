@@ -26,6 +26,54 @@ function isEmbedRoute(url: string): boolean {
   return EMBED_ROUTE_PREFIXES.some(prefix => url.startsWith(prefix));
 }
 
+function titleCaseSlug(value: string): string {
+  return value
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function getDirectoryTitleForUrl(rawUrl: string): string | null {
+  const pathname = decodeURIComponent(rawUrl.split("?")[0]).replace(/\/+$/, "") || "/";
+
+  if (pathname === "/directory") {
+    return "Local Service Prices Near You";
+  }
+
+  const pricesCityMatch = pathname.match(/^\/prices\/([^/]+)\/([^/]+)$/);
+  if (pricesCityMatch) {
+    const [, categorySlug, citySlug] = pricesCityMatch;
+    const cityParts = citySlug.split("-").filter(Boolean);
+    const state = cityParts.pop()?.toUpperCase() || "";
+    const city = cityParts.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+    return `${titleCaseSlug(categorySlug)} Prices in ${city}, ${state}`;
+  }
+
+  const pricesCategoryMatch = pathname.match(/^\/prices\/([^/]+)$/);
+  if (pricesCategoryMatch) {
+    const [, categorySlug] = pricesCategoryMatch;
+    return `${titleCaseSlug(categorySlug)} Prices`;
+  }
+
+  const companyMatch = pathname.match(/^\/directory\/company\/([^/]+)$/);
+  if (companyMatch) {
+    const [, companySlug] = companyMatch;
+    return `${titleCaseSlug(companySlug)} Prices`;
+  }
+
+  return null;
+}
+
+function injectTitle(template: string, rawUrl: string): string {
+  const title = getDirectoryTitleForUrl(rawUrl);
+  if (!title) return template;
+  return template.replace(
+    /<title>.*?<\/title>/i,
+    `<title>${title}</title>`,
+  );
+}
+
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
@@ -66,6 +114,7 @@ export async function setupVite(app: Express, server: Server) {
 
       // always reload the html file from disk in case it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      template = injectTitle(template, url);
       template = template.replace(
         `src="${entryScript}"`,
         `src="${entryScript}?v=${nanoid()}"`,
@@ -99,6 +148,8 @@ export function serveStatic(app: Express) {
         return res.sendFile(embedPath);
       }
     }
-    res.sendFile(path.resolve(distPath, "index.html"));
+    const indexPath = path.resolve(distPath, "index.html");
+    const template = fs.readFileSync(indexPath, "utf-8");
+    res.status(200).set({ "Content-Type": "text/html" }).send(injectTitle(template, url));
   });
 }

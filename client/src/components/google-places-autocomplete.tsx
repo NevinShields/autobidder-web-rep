@@ -77,6 +77,10 @@ function extractFullAddress(place: any): string {
   return [line1, cityStateZip].filter(Boolean).join(', ').trim();
 }
 
+function getSafeAddressFontFamily(): string {
+  return 'Inter, Arial, Helvetica, sans-serif';
+}
+
 export function GooglePlacesAutocomplete({
   value,
   onChange,
@@ -94,8 +98,6 @@ export function GooglePlacesAutocomplete({
   const { isLoaded, error } = useGoogleMaps();
   const [localValue, setLocalValue] = useState(value);
   const ignoreNextPropUpdate = useRef(false);
-  const isNormalizingRef = useRef(false);
-  const recentAutocompleteSelectionRef = useRef<{ value: string; at: number } | null>(null);
 
   // Sync local value with prop changes from parent
   useEffect(() => {
@@ -126,10 +128,6 @@ export function GooglePlacesAutocomplete({
         const fullAddress = extractFullAddress(place);
 
         if (fullAddress) {
-          recentAutocompleteSelectionRef.current = {
-            value: fullAddress,
-            at: Date.now(),
-          };
           ignoreNextPropUpdate.current = true;
           setLocalValue(fullAddress);
           onChange(fullAddress);
@@ -197,6 +195,7 @@ export function GooglePlacesAutocomplete({
         boxShadow: getShadowValue(textInputStyles.shadow || 'sm'),
         fontSize: getFontSize(textInputStyles.fontSize || 'base'),
         color: textInputStyles.textColor || '#374151',
+        fontFamily: getSafeAddressFontFamily(),
         height: `${textInputStyles.height || 40}px`,
         width: getWidthValue(textInputStyles.width || 'full')
       };
@@ -214,19 +213,9 @@ export function GooglePlacesAutocomplete({
       boxShadow: getShadowValue(styling?.inputShadow || 'none'),
       fontSize: getFontSize(styling?.inputFontSize || 'base'),
       color: styling?.inputTextColor || '#374151',
+      fontFamily: getSafeAddressFontFamily(),
       height: `${styling?.inputHeight || 40}px`,
       width: getWidthValue(styling?.inputWidth || 'full'),
-      fontFamily: styling.inputFontFamily === 'inter' ? 'Inter, sans-serif' :
-                 styling.inputFontFamily === 'arial' ? 'Arial, sans-serif' :
-                 styling.inputFontFamily === 'helvetica' ? 'Helvetica, sans-serif' :
-                 styling.inputFontFamily === 'georgia' ? 'Georgia, serif' :
-                 styling.inputFontFamily === 'times' ? 'Times New Roman, serif' :
-                 styling.inputFontFamily === 'roboto' ? 'Roboto, sans-serif' :
-                 styling.inputFontFamily === 'opensans' ? 'Open Sans, sans-serif' :
-                 styling.inputFontFamily === 'lato' ? 'Lato, sans-serif' :
-                 styling.inputFontFamily === 'montserrat' ? 'Montserrat, sans-serif' :
-                 styling.inputFontFamily === 'system' ? 'system-ui, sans-serif' :
-                 styling.inputFontFamily || (styling.fontFamily === 'times' ? 'Times New Roman, serif' : 'Inter, sans-serif'),
       fontWeight: styling.inputFontWeight === 'light' ? '300' :
                  styling.inputFontWeight === 'normal' ? '400' :
                  styling.inputFontWeight === 'medium' ? '500' :
@@ -245,49 +234,6 @@ export function GooglePlacesAutocomplete({
     onChange(newValue);
   };
 
-  const handleInputBlur = async () => {
-    if (!isLoaded || error || isNormalizingRef.current) {
-      return;
-    }
-
-    const rawInputValue = (inputRef.current?.value ?? localValue).trim();
-    const lastSelection = recentAutocompleteSelectionRef.current;
-
-    // Skip geocode normalization immediately after an explicit Places selection.
-    // This prevents selected addresses from being overwritten by a geocoder fallback.
-    if (
-      lastSelection &&
-      Date.now() - lastSelection.at < 2500 &&
-      rawInputValue === lastSelection.value
-    ) {
-      return;
-    }
-
-    const valueToNormalize = rawInputValue;
-    if (!valueToNormalize) {
-      return;
-    }
-
-    try {
-      isNormalizingRef.current = true;
-      const geocoder = new window.google.maps.Geocoder();
-      const result = await geocoder.geocode({ address: valueToNormalize });
-      const bestMatch = result?.results?.[0];
-      const normalizedAddress = bestMatch ? extractFullAddress(bestMatch) : '';
-
-      if (normalizedAddress && normalizedAddress !== valueToNormalize) {
-        ignoreNextPropUpdate.current = true;
-        setLocalValue(normalizedAddress);
-        onChange(normalizedAddress);
-      }
-    } catch (normalizeError) {
-      // Non-blocking fallback to typed value if geocoding fails.
-      console.warn('Address normalization failed:', normalizeError);
-    } finally {
-      isNormalizingRef.current = false;
-    }
-  };
-
   // If Google Maps failed to load, show regular input
   if (error) {
     return (
@@ -295,8 +241,11 @@ export function GooglePlacesAutocomplete({
         ref={inputRef}
         value={localValue}
         onChange={handleInputChange}
-        onBlur={handleInputBlur}
         placeholder={placeholder}
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        data-lpignore="true"
         className={`ab-input ab-address-input ${className || ''}`}
         style={inputStyle}
       />
@@ -310,8 +259,11 @@ export function GooglePlacesAutocomplete({
         ref={inputRef}
         value={localValue}
         onChange={handleInputChange}
-        onBlur={handleInputBlur}
         placeholder={isLoaded ? placeholder : "Loading address suggestions..."}
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+        data-lpignore="true"
         className={`ab-input ab-address-input ${className || ''}`}
         disabled={!isLoaded}
         style={inputStyle}
@@ -324,8 +276,11 @@ export function GooglePlacesAutocomplete({
       ref={inputRef}
       value={localValue}
       onChange={handleInputChange}
-      onBlur={handleInputBlur}
       placeholder={placeholder}
+      autoComplete="off"
+      autoCorrect="off"
+      spellCheck={false}
+      data-lpignore="true"
       className={`ab-input ab-address-input ${className || ''}`}
       style={inputStyle}
     />

@@ -1,8 +1,13 @@
+import path from "path";
 import type { Express } from "express";
 import { ZapierIntegrationService, requireZapierAuth } from "./zapier-integration";
 import { storage } from "./storage";
 import { requireAuth } from "./universalAuth";
 import { db } from "./db";
+import { automationService } from "./automation-execution";
+import {
+  ObjectStorageService,
+} from "./objectStorage";
 import { leadTags } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -78,6 +83,55 @@ function parseZapierImageUrls(value: unknown): string[] {
     .split(/[\n,]+/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+async function uploadImageBufferToObjectStorage({
+  file,
+  ownerId,
+}: {
+  file: Express.Multer.File;
+  ownerId: string;
+}): Promise<string> {
+  const fileExtension = path.extname(file.originalname);
+  const objectStorageService = new ObjectStorageService();
+  const { uploadUrl, objectPath } = await objectStorageService.getIconUploadURL(fileExtension);
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file.buffer,
+    headers: {
+      "Content-Type": file.mimetype,
+      "Content-Length": file.size.toString(),
+    },
+  });
+
+  if (!uploadResponse.ok) {
+    const errorText = await uploadResponse.text();
+    throw new Error(`Upload failed with status: ${uploadResponse.status} - ${errorText}`);
+  }
+
+  const normalizedPath = await objectStorageService.trySetObjectEntityAclPolicy(
+    objectPath,
+    {
+      owner: ownerId,
+      visibility: "public",
+    }
+  );
+
+  return normalizedPath;
+}
+
+function isValidZapierDate(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function isValidZapierTime(value: unknown): value is string {
+  return typeof value === "string" && /^\d{2}:\d{2}$/.test(value);
+}
+
+function getMinutesFromZapierTime(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number);
+  return (hours * 60) + minutes;
 }
 
 function fileExtensionFromMimeType(mimeType: string): string {
@@ -1051,6 +1105,156 @@ export function registerZapierRoutes(app: Express): void {
     } catch (error) {
       console.error("Zapier update lead error:", error);
       res.status(500).json({ error: "Failed to update lead" });
+    }
+  });
+
+  app.post("/api/zapier/actions/schedule-calendar-time", requireZapierAuth, async (req, res) => {
+    try {
+      const { userId } = (req as any).zapierAuth;
+      const {
+        eventType,
+        date,
+        startTime,
+        endTime,
+        title,
+        notes,
+        status,
+        customerName,
+        customerEmail,
+        customerPhone,
+        customerAddress,
+      } = req.body || {};
+
+      if (eventType !== "booking" && eventType !== "blocked") {
+        return res.status(400).json({ error: "eventType must be booking or blocked" });
+      }
+
+      if (!isValidZapierDate(date)) {
+        return res.status(400).json({ error: "date must use YYYY-MM-DD format" });
+      }
+
+      if (!isValidZapierTime(startTime) || !isValidZapierTime(endTime)) {
+        return res.status(400).json({ error: "startTime and endTime must use HH:MM format" });
+      }
+
+      if (getMinutesFromZapierTime(endTime) <= getMinutesFromZapierTime(startTime)) {
+        return res.status(400).json({ error: "endTime must be later than startTime" });
+      }
+
+      const startsAt = new Date(`${date}T${startTime}:00`);
+      const endsAt = new Date(`${date}T${endTime}:00`);
+
+      if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+        return res.status(400).json({ error: "Invalid date/time combination" });
+      }
+
+      if (eventType === "booking") {
+        const bookingStatus = status === "tentative" ? "tentative" : "confirmed";
+        const bookingTitle = title?.trim()
+          || (customerName?.trim() ? `Customer Appointment - ${customerName.trim()}` : "Customer Appointment");
+        const bookingNotes = [
+          notes?.trim(),
+          customerName?.trim() ? `Customer: ${customerName.trim()}` : "",
+          customerEmail?.trim() ? `Email: ${customerEmail.trim()}` : "",
+          customerPhone?.trim() ? `Phone: ${customerPhone.trim()}` : "",
+          customerAddress?.trim() ? `Address: ${customerAddress.trim()}` : "",
+        ].filter(Boolean).join("\n");
+
+        const slot = await storage.createAvailabilitySlot({
+          userId,
+          date,
+          startTime,
+          endTime,
+          title: bookingTitle,
+          isBooked: true,
+          bookedBy: null,
+          notes: bookingNotes || null,
+        });
+
+        const calendarEvent = await storage.createCalendarEvent({
+          userId,
+          type: "booking",
+          source: "internal",
+          startsAt,
+          endsAt,
+          status: bookingStatus,
+          title: bookingTitle,
+          description: bookingNotes || undefined,
+          payload: {
+            booking: {
+              customerName: customerName?.trim() || undefined,
+              customerEmail: customerEmail?.trim() || undefined,
+              customerPhone: customerPhone?.trim() || undefined,
+              customerAddress: customerAddress?.trim() || undefined,
+              serviceDetails: notes?.trim() || undefined,
+            },
+          },
+          isEditable: true,
+          leadId: null,
+        });
+
+        return res.json({
+          id: `booking_${calendarEvent.id}`,
+          type: "booking",
+          date,
+          startTime,
+          endTime,
+          title: bookingTitle,
+          notes: bookingNotes || "",
+          status: bookingStatus,
+          calendarEventId: calendarEvent.id,
+          availabilitySlotId: slot.id,
+          startsAt: calendarEvent.startsAt,
+          endsAt: calendarEvent.endsAt,
+          customerName: customerName?.trim() || "",
+          customerEmail: customerEmail?.trim() || "",
+          customerPhone: customerPhone?.trim() || "",
+          customerAddress: customerAddress?.trim() || "",
+        });
+      }
+
+      const blockedTitle = title?.trim() || "Blocked Time";
+      const blockedReason = notes?.trim() || "";
+      const calendarEvent = await storage.createCalendarEvent({
+        userId,
+        type: "blocked",
+        source: "internal",
+        startsAt,
+        endsAt,
+        status: "confirmed",
+        title: blockedTitle,
+        description: blockedReason || undefined,
+        payload: {
+          blocked: {
+            reason: blockedReason || undefined,
+            createdBy: "zapier",
+          },
+        },
+        isEditable: true,
+        leadId: null,
+      });
+
+      return res.json({
+        id: `blocked_${calendarEvent.id}`,
+        type: "blocked",
+        date,
+        startTime,
+        endTime,
+        title: blockedTitle,
+        notes: blockedReason,
+        status: calendarEvent.status,
+        calendarEventId: calendarEvent.id,
+        availabilitySlotId: null,
+        startsAt: calendarEvent.startsAt,
+        endsAt: calendarEvent.endsAt,
+        customerName: "",
+        customerEmail: "",
+        customerPhone: "",
+        customerAddress: "",
+      });
+    } catch (error) {
+      console.error("Zapier schedule calendar time error:", error);
+      res.status(500).json({ error: "Failed to schedule calendar time" });
     }
   });
 

@@ -91,6 +91,7 @@ const BlockedIpsPage = lazy(() => import("@/pages/blocked-ips"));
 const PhotosPage = lazy(() => import("@/pages/photos"));
 const TutorialsPage = lazy(() => import("@/pages/tutorials"));
 const WhiteLabelVideosPage = lazy(() => import("@/pages/white-label-videos"));
+const NavigationPage = lazy(() => import("@/pages/navigation"));
 const AbSeoPlan = lazy(() => import("@/pages/ab-seo-plan"));
 const LeadCapture = lazy(() => import("@/pages/Crm/LeadCapture"));
 const TryCalculator = lazy(() => import("@/pages/try-calculator"));
@@ -358,6 +359,7 @@ function Router() {
         <Route path="/seo-tracker-test" component={SeoTrackerTest} />
         <Route path="/tutorials" component={TutorialsPage} />
         <Route path="/white-label-videos" component={WhiteLabelVideosPage} />
+        <Route path="/navigation" component={NavigationPage} />
         <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route path="/try" component={TryCalculator} />
         <Route path="/icon-generator" component={IconGeneratorPage} />

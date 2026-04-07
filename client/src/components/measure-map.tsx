@@ -49,7 +49,7 @@ export default function MeasureMap({
     
     if (!apiKey) {
       console.error('Google Maps API key is not configured');
-      setMapError('Google Maps API key is not configured. Please set GOOGLE_MAPS_API_KEY in environment variables.');
+      setMapError('Google Maps API key is not configured. Please set VITE_GOOGLE_MAPS_API_KEY in environment variables.');
       setIsLoading(false);
       return;
     }

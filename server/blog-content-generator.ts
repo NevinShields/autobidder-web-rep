@@ -2072,6 +2072,7 @@ export function calculateSeoScore(
 
 // Convert blog content to HTML for Duda
 export interface BlogHtmlEnhancements {
+  designStyle?: string;
   internalLinks?: BlogInternalLink[];
   videoUrl?: string;
   facebookPostUrl?: string;
@@ -2107,6 +2108,7 @@ interface BlogPricingTableEntry {
 interface ResolvedBlogImage {
   src: string;
   alt: string;
+  style: string;
 }
 
 interface ResolvedBeforeAfterPair {
@@ -4041,6 +4043,7 @@ function resolveBlogImage(
   return {
     src: escapeHtml(img.url),
     alt: escapeHtml(img.caption || fallbackAlt || `${img.imageType} image`),
+    style: "",
   };
 }
 
@@ -4117,6 +4120,7 @@ function resolveImageValue(
     return {
       src: escapeHtml(value),
       alt: escapeHtml(fallbackAlt || "Blog image"),
+      style: "",
     };
   }
 

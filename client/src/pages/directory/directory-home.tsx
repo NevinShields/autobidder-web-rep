@@ -29,6 +29,7 @@ export default function DirectoryHome() {
   useForceLightMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
+  const [debouncedLocationQuery, setDebouncedLocationQuery] = useState("");
   const [selectedLocation, setSelectedLocation] = useState<LocationResult | null>(null);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const locationRef = useRef<HTMLDivElement>(null);
@@ -38,13 +39,27 @@ export default function DirectoryHome() {
   });
 
   const { data: locations } = useQuery<LocationResult[]>({
-    queryKey: ["/api/public/directory/locations", locationQuery],
+    queryKey: ["/api/public/directory/locations", debouncedLocationQuery],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/public/directory/locations?q=${encodeURIComponent(locationQuery)}`);
+      const res = await apiRequest("GET", `/api/public/directory/locations?q=${encodeURIComponent(debouncedLocationQuery)}`);
       return res.json();
     },
-    enabled: locationQuery.length >= 2 && !selectedLocation,
+    enabled: debouncedLocationQuery.length >= 2 && !selectedLocation,
   });
+
+  useEffect(() => {
+    if (selectedLocation) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedLocationQuery(locationQuery.trim());
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [locationQuery, selectedLocation]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -60,12 +75,14 @@ export default function DirectoryHome() {
   const handleSelectLocation = (location: LocationResult) => {
     setSelectedLocation(location);
     setLocationQuery(`${location.city}, ${location.state}`);
+    setDebouncedLocationQuery(`${location.city}, ${location.state}`);
     setShowLocationDropdown(false);
   };
 
   const clearLocation = () => {
     setSelectedLocation(null);
     setLocationQuery("");
+    setDebouncedLocationQuery("");
   };
 
   // SEO: Set page title and meta description
@@ -147,7 +164,7 @@ export default function DirectoryHome() {
                       setShowLocationDropdown(true);
                     }}
                     onFocus={() => {
-                      if (locationQuery.length >= 2 && !selectedLocation) {
+                      if (debouncedLocationQuery.length >= 2 && !selectedLocation) {
                         setShowLocationDropdown(true);
                       }
                     }}

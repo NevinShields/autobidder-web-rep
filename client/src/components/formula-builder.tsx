@@ -306,7 +306,7 @@ export default function FormulaBuilderComponent({
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
-  const [selectedAIProvider, setSelectedAIProvider] = useState("gpt5");
+  const [selectedAIProvider, setSelectedAIProvider] = useState("openai");
   const [showAIEditor, setShowAIEditor] = useState(false);
   const [aiEditInstructions, setAiEditInstructions] = useState("");
   const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
@@ -441,7 +441,7 @@ export default function FormulaBuilderComponent({
       console.error('AI generation error:', error);
       toast({
         title: "AI Generation Failed",
-        description: "Please try again with a different description.",
+        description: error instanceof Error ? error.message : "Please try again with a different description.",
         variant: "destructive",
       });
     },
@@ -499,7 +499,7 @@ export default function FormulaBuilderComponent({
       console.error('AI edit error:', error);
       toast({
         title: "AI Edit Failed",
-        description: "Please try again with different instructions.",
+        description: error instanceof Error ? error.message : "Please try again with different instructions.",
         variant: "destructive",
       });
     },
@@ -1221,7 +1221,7 @@ export default function FormulaBuilderComponent({
                               <SelectValue placeholder="Choose AI provider" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
+                              <SelectItem value="openai">OpenAI (GPT-5) - Most Powerful</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -1408,7 +1408,7 @@ export default function FormulaBuilderComponent({
                         <SelectValue placeholder="Choose AI provider" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="gpt5">OpenAI (GPT-5) - Most Powerful</SelectItem>
+                        <SelectItem value="openai">OpenAI (GPT-5) - Most Powerful</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

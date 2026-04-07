@@ -609,6 +609,7 @@ export default function StyledCalculator(props: any = {}) {
   const [prefilledFields, setPrefilledFields] = useState<Record<string, string>>({});
   const [submittedLeadId, setSubmittedLeadId] = useState<number | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const distanceCalculationTimeoutRef = useRef<number | null>(null);
 
   const hasPropertyPrefillMappings = (variables: any[] = []) => {
     return variables.some((variable: any) =>
@@ -631,6 +632,14 @@ export default function StyledCalculator(props: any = {}) {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
+
+  useEffect(() => {
+    return () => {
+      if (distanceCalculationTimeoutRef.current !== null) {
+        window.clearTimeout(distanceCalculationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Check if this is a custom form by looking at the current URL
   const currentPath = window.location.pathname;
@@ -3717,13 +3726,17 @@ export default function StyledCalculator(props: any = {}) {
                         value={leadForm.address || ""}
                         onChange={(newAddress) => {
                           setLeadForm(prev => ({ ...prev, address: newAddress }));
-                          // Calculate distance when address changes (with debounce)
-                          if (newAddress.length > 10) {
-                            // Clear any existing timeout
-                            const timeoutId = setTimeout(() => {
-                              calculateDistance(newAddress);
-                            }, 1000);
-                            // Store timeout ID for cleanup if needed
+
+                          if (distanceCalculationTimeoutRef.current !== null) {
+                            window.clearTimeout(distanceCalculationTimeoutRef.current);
+                            distanceCalculationTimeoutRef.current = null;
+                          }
+
+                          if (newAddress.trim().length > 10) {
+                            distanceCalculationTimeoutRef.current = window.setTimeout(() => {
+                              calculateDistance(newAddress.trim());
+                              distanceCalculationTimeoutRef.current = null;
+                            }, 500);
                           } else {
                             setDistanceInfo(null);
                           }

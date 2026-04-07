@@ -17,6 +17,7 @@ const getPendingAutomationRunsTrigger = require('./triggers/get_pending_automati
 const createLeadAction = require('./creates/create_lead');
 const addImagesToLeadByEmailAction = require('./creates/add_images_to_lead_by_email');
 const updateLeadAction = require('./creates/update_lead');
+const scheduleCalendarTimeAction = require('./creates/schedule_calendar_time');
 const runAutomationAction = require('./creates/run_automation');
 const confirmPendingAutomationRunAction = require('./creates/confirm_pending_automation_run');
 const toggleAutomationAction = require('./creates/toggle_automation');
@@ -52,6 +53,7 @@ module.exports = {
     [createLeadAction.key]: createLeadAction,
     [addImagesToLeadByEmailAction.key]: addImagesToLeadByEmailAction,
     [updateLeadAction.key]: updateLeadAction,
+    [scheduleCalendarTimeAction.key]: scheduleCalendarTimeAction,
     [runAutomationAction.key]: runAutomationAction,
     [confirmPendingAutomationRunAction.key]: confirmPendingAutomationRunAction,
     [toggleAutomationAction.key]: toggleAutomationAction,

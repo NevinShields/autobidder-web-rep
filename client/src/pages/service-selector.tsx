@@ -11,6 +11,8 @@ import { CheckCircle, Calculator, ShoppingCart, ArrowRight, User, Mail, Phone, R
 import EnhancedVariableInput from "@/components/enhanced-variable-input";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import ServiceCardDisplay from "@/components/service-card-display";
+import { GoogleMapsLoader } from "@/components/google-maps-loader";
+import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { stylingOptionsSchema, type Formula, type ServiceCalculation, type BusinessSettings, type PropertyAttributes } from "@shared/schema";
@@ -1119,25 +1121,26 @@ export default function ServiceSelector() {
 
                     <div className="space-y-3">
                       <Label htmlFor="property-address">Property Address</Label>
-                      <Input
-                        id="property-address"
-                        type="text"
-                        placeholder="e.g., 123 Main St, Springfield, IL 62701"
-                        value={propertyAddress}
-                        onChange={(e) => {
-                          const nextAddress = e.target.value;
-                          setPropertyAddress(nextAddress);
-                          setLeadForm(prev => {
-                            // Keep contact address synced from property lookup input,
-                            // but preserve a manually-entered different contact address.
-                            if (prev.address && prev.address.trim() && prev.address.trim() !== propertyAddress.trim()) {
-                              return prev;
-                            }
-                            return { ...prev, address: nextAddress };
-                          });
-                        }}
-                        className="w-full"
-                      />
+                      <GoogleMapsLoader>
+                        <GooglePlacesAutocomplete
+                          value={propertyAddress}
+                          onChange={(newAddress) => {
+                            setPropertyAddress(newAddress);
+                            setLeadForm(prev => {
+                              // Keep contact address synced from property lookup input,
+                              // but preserve a manually-entered different contact address.
+                              if (prev.address && prev.address.trim() && prev.address.trim() !== propertyAddress.trim()) {
+                                return prev;
+                              }
+                              return { ...prev, address: newAddress };
+                            });
+                          }}
+                          placeholder="e.g., 123 Main St, Springfield, IL 62701"
+                          className="w-full"
+                          types={['address']}
+                          componentRestrictions={{ country: 'us' }}
+                        />
+                      </GoogleMapsLoader>
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-3">

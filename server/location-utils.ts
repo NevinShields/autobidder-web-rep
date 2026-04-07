@@ -2,6 +2,10 @@
  * Location utilities for distance-based pricing calculations
  */
 
+function getServerGoogleMapsApiKey(): string {
+  return process.env.GOOGLE_MAPS_SERVER_API_KEY || "";
+}
+
 // Haversine formula to calculate distance between two lat/lng points in miles
 export function calculateDistance(
   lat1: number,
@@ -78,15 +82,16 @@ export async function geocodeAddress(
   try {
     const { Client } = await import('@googlemaps/google-maps-services-js');
     const client = new Client({});
+    const apiKey = getServerGoogleMapsApiKey();
     
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
+    if (!apiKey) {
       console.log('Google Maps API key not configured, using city-based geocoding fallback');
       return geocodeAddressFromCity(address);
     }
 
     const params: any = {
       address: address,
-      key: process.env.GOOGLE_MAPS_API_KEY,
+      key: apiKey,
     };
 
     if (extraComputations) {

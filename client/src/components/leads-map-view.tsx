@@ -55,34 +55,18 @@ export function LeadsMapView({ leads, height = '400px', onLeadClick }: LeadsMapV
 
         const bounds = new window.google.maps.LatLngBounds();
         let hasValidMarkers = false;
-        const geocoder = new window.google.maps.Geocoder();
 
-        // Process leads with geocoding
+        // Only render leads that already have stored coordinates.
+        // Client-side geocoding here can explode Maps usage when the page re-renders.
         for (const lead of leads) {
           let position: { lat: number; lng: number } | null = null;
 
-          // Try to use existing coordinates first
           if (lead.addressLatitude && lead.addressLongitude) {
             const lat = parseFloat(lead.addressLatitude);
             const lng = parseFloat(lead.addressLongitude);
 
             if (!isNaN(lat) && !isNaN(lng)) {
               position = { lat, lng };
-            }
-          }
-
-          // If no coordinates but has address, geocode it
-          if (!position && lead.address) {
-            try {
-              const result = await geocoder.geocode({ address: lead.address });
-              if (result.results[0]) {
-                position = {
-                  lat: result.results[0].geometry.location.lat(),
-                  lng: result.results[0].geometry.location.lng(),
-                };
-              }
-            } catch (geocodeError) {
-              console.error(`Failed to geocode address for lead ${lead.id}:`, geocodeError);
             }
           }
 
@@ -166,7 +150,7 @@ export function LeadsMapView({ leads, height = '400px', onLeadClick }: LeadsMapV
             }
           });
         } else {
-          setMapError('No leads with valid addresses found');
+          setMapError('No leads with saved coordinates found');
         }
 
       } catch (err) {

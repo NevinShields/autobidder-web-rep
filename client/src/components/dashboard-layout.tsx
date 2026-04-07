@@ -1,12 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { Menu, X, Home, Calculator, Settings, Palette, Code, Calendar, Users, BarChart3, ClipboardList, FileText, CheckSquare, MessageCircle, User, Mail, Shield, Globe, LogOut, ChevronDown, ChevronRight, HelpCircle, Zap, CreditCard, Bell, Search, Phone, Workflow, Image, Moon, Sun, Video, Layers, Briefcase, ChevronsLeft, BookOpen } from "lucide-react";
+import { Menu, X, User, LogOut, ChevronDown, HelpCircle, Search, Phone, Moon, Sun } from "lucide-react";
 import autobidderLogo from "@assets/Autobidder Logo (1)_1753224528350.png";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getDashboardNav } from "@/lib/dashboard-nav";
 import SupportContact from "@/components/support-contact";
 import NotificationDropdown from "@/components/notifications/notification-dropdown";
 import { SupportHelpButton } from "@/components/support-help-button";
@@ -121,60 +122,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       return newSet;
     });
   };
-
-  const navGroups = {
-    build: {
-      title: "BUILD",
-      icon: Layers,
-      items: [
-        { name: "Dashboard", href: "/", icon: Home },
-        { name: "Design", href: "/design", icon: Palette },
-        { name: "Logic", href: "/form-settings", icon: Settings },
-        { name: "Formulas", href: "/formulas", icon: Calculator },
-        { name: "Custom Forms", href: "/custom-forms", icon: FileText },
-        {
-          name: "Website",
-          href: "/website",
-          icon: Globe,
-          subItems: ((user as any)?.showLandingPageNav ?? (user as any)?.businessInfo?.showLandingPageNav)
-            ? [{ name: "Landing Page", href: "/dashboard/landing-page", icon: Globe }]
-            : [],
-        },
-      ]
-    },
-    manage: {
-      title: "MANAGE",
-      icon: Briefcase,
-      items: [
-        { name: "Calendar", href: "/calendar", icon: Calendar },
-        { name: "Customers", href: "/leads", icon: ClipboardList },
-        { name: "Call Screen", href: "/call-screen", icon: Phone },
-        { name: "Photos", href: "/photos", icon: Image },
-        { name: "Automations", href: "/crm/automations", icon: Workflow },
-        { name: "Email Settings", href: "/email-settings", icon: Mail },
-        { name: "Estimate Page Editor", href: "/estimate-page-settings", icon: FileText },
-        { name: "Stats", href: "/stats", icon: BarChart3 },
-        { name: "Embed Code", href: "/embed-code", icon: Code },
-      ]
-    }
-  };
-
-  const settingsGroup = {
-    settings: {
-      title: "SETTINGS",
-      icon: Settings,
-      items: [
-        { name: "Profile", href: "/profile", icon: User },
-        { name: "Integrations", href: "/integrations", icon: Zap },
-        { name: "Knowledge Base", href: "/knowledge-base", icon: BookOpen },
-        ...(isSuperAdmin ? [
-          { name: "Admin Dashboard", href: "/admin", icon: Shield },
-          { name: "Support Videos", href: "/admin/support-videos", icon: Video },
-          { name: "KB Admin", href: "/admin/knowledge-base", icon: BookOpen },
-        ] : []),
-      ]
-    }
-  };
+  const { navGroups, settingsGroup } = getDashboardNav(user, isSuperAdmin);
 
   const isActive = (href: string) => {
     if (href === "/") {

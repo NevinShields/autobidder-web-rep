@@ -15,6 +15,7 @@ Autobidder is an AI-powered contractor platform that helps service professionals
 ### Actions
 - **Create Lead**: Add new leads to your Autobidder account from other apps
 - **Update Lead Status**: Change lead status and add notes from your CRM or other tools
+- **Schedule Calendar Time**: Create booked appointments or block time on your calendar from Zapier
 
 ## Setup Instructions
 

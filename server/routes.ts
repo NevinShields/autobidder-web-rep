@@ -182,6 +182,10 @@ function parseNumberLike(value: unknown): number | null {
   return null;
 }
 
+function getServerGoogleMapsApiKey(): string {
+  return process.env.GOOGLE_MAPS_SERVER_API_KEY || "";
+}
+
 function sumDiscountAmountsCents(discounts: unknown): number {
   if (!Array.isArray(discounts)) {
     return 0;
@@ -284,6 +288,7 @@ function resolveTravelFeeCents(leadLike: {
 }
 
 type GeocodeCacheValue = { latitude: number; longitude: number } | null;
+const distanceCalculationGeocodeCache = new Map<string, GeocodeCacheValue>();
 
 type ResolvedRouteEventLocation = {
   latitude: number;
@@ -510,6 +515,7 @@ const cleanupRecentMultiServiceSubmissions = () => {
 const DIRECTORY_NEARBY_CITY_AUTOFILL_LIMIT = 10;
 const DIRECTORY_NEARBY_CITY_MAX_GEOCODE_ATTEMPTS = 120;
 const DIRECTORY_NEARBY_CITY_GEOCODE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const DIRECTORY_INDEX_CACHE_MAX_GEOCODE_ATTEMPTS = 25;
 
 type DirectoryCityCoordinateCacheEntry = {
   latitude: number | null;
@@ -1752,8 +1758,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Config endpoint for frontend environment variables
   app.get("/api/config", async (req, res) => {
     try {
+      const browserGoogleMapsApiKey = process.env.VITE_GOOGLE_MAPS_API_KEY || '';
       res.json({
-        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+        // Frontend consumers must use a browser-safe key. Server-restricted keys break JS Maps loading.
+        googleMapsApiKey: browserGoogleMapsApiKey,
+        googleMapsKeySource: browserGoogleMapsApiKey ? 'VITE_GOOGLE_MAPS_API_KEY' : 'missing',
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch config" });
@@ -3197,6 +3206,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   };
 
+  type FormulaAiProvider = "openai" | "claude" | "gemini";
+
+  const normalizeFormulaAiProvider = (provider: unknown): FormulaAiProvider | null => {
+    if (typeof provider !== "string") {
+      return null;
+    }
+
+    switch (provider.trim().toLowerCase()) {
+      case "gpt5":
+      case "gpt-5":
+      case "openai":
+        return "openai";
+      case "claude":
+      case "anthropic":
+        return "claude";
+      case "gemini":
+      case "google":
+        return "gemini";
+      default:
+        return null;
+    }
+  };
+
+  const isFormulaAiProviderConfigured = (provider: FormulaAiProvider): boolean => {
+    switch (provider) {
+      case "openai":
+        return Boolean(process.env.OPENAI_API_KEY?.trim());
+      case "claude":
+        return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+      case "gemini":
+        return Boolean(process.env.GEMINI_API_KEY?.trim());
+      default:
+        return false;
+    }
+  };
+
+  const getFormulaAiProviderLabel = (provider: FormulaAiProvider): string => {
+    switch (provider) {
+      case "openai":
+        return "OpenAI";
+      case "claude":
+        return "Claude";
+      case "gemini":
+        return "Gemini";
+    }
+  };
+
+  const buildFormulaAiProviderOrder = (
+    requestedProvider: FormulaAiProvider | null,
+    defaultOrder: FormulaAiProvider[],
+  ): FormulaAiProvider[] => {
+    const ordered = requestedProvider
+      ? [requestedProvider, ...defaultOrder.filter((provider) => provider !== requestedProvider)]
+      : defaultOrder;
+
+    return ordered.filter((provider, index) => ordered.indexOf(provider) === index);
+  };
+
+  const getFormulaAiErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message.trim()) {
+      return error.message.trim();
+    }
+    return "Unknown AI provider error";
+  };
+
+  const isFormulaAiQuotaError = (error: unknown): boolean => {
+    const message = getFormulaAiErrorMessage(error).toLowerCase();
+    return message.includes("insufficient_quota")
+      || message.includes("exceeded your current quota")
+      || message.includes("rate limit")
+      || message.includes("429");
+  };
+
   // AI Formula Generation - Support for OpenAI, Gemini, and Claude
   app.post("/api/formulas/generate", async (req, res) => {
     try {
@@ -3205,53 +3287,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Description is required" });
       }
 
+      const requestedProvider = normalizeFormulaAiProvider(provider);
+      const providerOrder = buildFormulaAiProviderOrder(requestedProvider, ["openai", "claude", "gemini"]);
+      const providerFns: Record<FormulaAiProvider, () => Promise<any>> = {
+        openai: () => generateFormulaOpenAI(description),
+        claude: () => generateFormulaClaude(description),
+        gemini: () => generateFormulaGemini(description),
+      };
+      const failures: string[] = [];
       let aiFormula;
-      const requestedProvider = provider?.toLowerCase();
 
-      // If specific provider requested, try that first
-      if (requestedProvider === 'claude') {
-        try {
-          console.log('Attempting formula generation with Claude...');
-          aiFormula = await generateFormulaClaude(description);
-          console.log('Claude formula generation successful');
-        } catch (claudeError) {
-          console.warn('Claude formula generation failed, falling back to OpenAI:', claudeError);
-          aiFormula = await generateFormulaOpenAI(description);
-          console.log('OpenAI fallback successful');
+      for (const providerKey of providerOrder) {
+        const providerLabel = getFormulaAiProviderLabel(providerKey);
+
+        if (!isFormulaAiProviderConfigured(providerKey)) {
+          const skippedMessage = `${providerLabel} is not configured on the server`;
+          console.warn(`[AI Formula] Skipping ${providerLabel}: ${skippedMessage}`);
+          failures.push(skippedMessage);
+          continue;
         }
-      } else if (requestedProvider === 'gemini') {
+
         try {
-          console.log('Attempting formula generation with Gemini...');
-          aiFormula = await generateFormulaGemini(description);
-          console.log('Gemini formula generation successful');
-        } catch (geminiError) {
-          console.warn('Gemini formula generation failed, falling back to Claude:', geminiError);
-          aiFormula = await generateFormulaClaude(description);
-          console.log('Claude fallback successful');
+          console.log(`Attempting formula generation with ${providerLabel}...`);
+          aiFormula = await providerFns[providerKey]();
+          console.log(`${providerLabel} formula generation successful`);
+          break;
+        } catch (providerError) {
+          const providerMessage = `${providerLabel} failed: ${getFormulaAiErrorMessage(providerError)}`;
+          console.warn(`[AI Formula] ${providerMessage}`, providerError);
+          failures.push(providerMessage);
         }
-      } else {
-        // Default order: OpenAI -> Claude -> Gemini
-        try {
-          console.log('Attempting formula generation with OpenAI...');
-          aiFormula = await generateFormulaOpenAI(description);
-          console.log('OpenAI formula generation successful');
-        } catch (openaiError) {
-          console.warn('OpenAI formula generation failed, trying Claude:', openaiError);
-          try {
-            aiFormula = await generateFormulaClaude(description);
-            console.log('Claude fallback successful');
-          } catch (claudeError) {
-            console.warn('Claude formula generation failed, falling back to Gemini:', claudeError);
-            aiFormula = await generateFormulaGemini(description);
-            console.log('Gemini final fallback successful');
-          }
-        }
+      }
+
+      if (!aiFormula) {
+        const noProviderConfigured = failures.every((message) => message.includes("not configured"));
+        const statusCode = noProviderConfigured ? 503 : failures.some((message) => message.toLowerCase().includes("quota")) ? 503 : 500;
+        const primaryMessage = failures.find((message) => !message.includes("not configured")) || failures[0] || "All AI providers failed";
+        return res.status(statusCode).json({
+          message: primaryMessage,
+          failures,
+        });
       }
 
       res.json(normalizeAiFormula(aiFormula));
     } catch (error) {
       console.error('AI formula generation error (all providers failed):', error);
-      res.status(500).json({ message: "Failed to generate formula with AI" });
+      const message = getFormulaAiErrorMessage(error);
+      const statusCode = isFormulaAiQuotaError(error) ? 503 : 500;
+      res.status(statusCode).json({ message });
     }
   });
 
@@ -3263,59 +3346,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Current formula and edit instructions are required" });
       }
 
+      const requestedProvider = normalizeFormulaAiProvider(provider);
+      const providerOrder = buildFormulaAiProviderOrder(requestedProvider, ["gemini", "openai", "claude"]);
+      const providerFns: Record<FormulaAiProvider, () => Promise<any>> = {
+        openai: () => editFormulaOpenAI(currentFormula, editInstructions),
+        claude: () => editFormulaClaude(currentFormula, editInstructions),
+        gemini: () => editFormulaGemini(currentFormula, editInstructions),
+      };
+      const failures: string[] = [];
       let editedFormula;
-      const requestedProvider = provider?.toLowerCase();
 
-      // If specific provider requested, try that first
-      if (requestedProvider === 'gpt5' || requestedProvider === 'openai') {
-        try {
-          console.log('Attempting formula editing with OpenAI...');
-          editedFormula = await editFormulaOpenAI(currentFormula, editInstructions);
-          console.log('OpenAI formula editing successful');
-        } catch (openaiError) {
-          console.warn('OpenAI formula editing failed, trying Claude:', openaiError);
-          try {
-            editedFormula = await editFormulaClaude(currentFormula, editInstructions);
-            console.log('Claude fallback successful');
-          } catch (claudeError) {
-            console.warn('Claude formula editing failed, falling back to Gemini:', claudeError);
-            editedFormula = await editFormulaGemini(currentFormula, editInstructions);
-            console.log('Gemini final fallback successful');
-          }
+      for (const providerKey of providerOrder) {
+        const providerLabel = getFormulaAiProviderLabel(providerKey);
+
+        if (!isFormulaAiProviderConfigured(providerKey)) {
+          const skippedMessage = `${providerLabel} is not configured on the server`;
+          console.warn(`[AI Formula Edit] Skipping ${providerLabel}: ${skippedMessage}`);
+          failures.push(skippedMessage);
+          continue;
         }
-      } else if (requestedProvider === 'claude') {
+
         try {
-          console.log('Attempting formula editing with Claude...');
-          editedFormula = await editFormulaClaude(currentFormula, editInstructions);
-          console.log('Claude formula editing successful');
-        } catch (claudeError) {
-          console.warn('Claude formula editing failed, falling back to OpenAI:', claudeError);
-          editedFormula = await editFormulaOpenAI(currentFormula, editInstructions);
-          console.log('OpenAI fallback successful');
+          console.log(`Attempting formula editing with ${providerLabel}...`);
+          editedFormula = await providerFns[providerKey]();
+          console.log(`${providerLabel} formula editing successful`);
+          break;
+        } catch (providerError) {
+          const providerMessage = `${providerLabel} failed: ${getFormulaAiErrorMessage(providerError)}`;
+          console.warn(`[AI Formula Edit] ${providerMessage}`, providerError);
+          failures.push(providerMessage);
         }
-      } else {
-        // Default: use Gemini for editing (most stable for this task)
-        try {
-          console.log('Attempting formula editing with Gemini...');
-          editedFormula = await editFormulaGemini(currentFormula, editInstructions);
-          console.log('Gemini formula editing successful');
-        } catch (geminiError) {
-          console.warn('Gemini formula editing failed, trying OpenAI:', geminiError);
-          try {
-            editedFormula = await editFormulaOpenAI(currentFormula, editInstructions);
-            console.log('OpenAI fallback successful');
-          } catch (openaiError) {
-            console.warn('OpenAI formula editing failed, trying Claude:', openaiError);
-            editedFormula = await editFormulaClaude(currentFormula, editInstructions);
-            console.log('Claude final fallback successful');
-          }
-        }
+      }
+
+      if (!editedFormula) {
+        const noProviderConfigured = failures.every((message) => message.includes("not configured"));
+        const statusCode = noProviderConfigured ? 503 : failures.some((message) => message.toLowerCase().includes("quota")) ? 503 : 500;
+        const primaryMessage = failures.find((message) => !message.includes("not configured")) || failures[0] || "All AI providers failed";
+        return res.status(statusCode).json({
+          message: primaryMessage,
+          failures,
+        });
       }
 
       res.json(normalizeAiFormula(editedFormula));
     } catch (error) {
       console.error('AI formula edit error (all providers failed):', error);
-      res.status(500).json({ message: "Failed to edit formula with AI" });
+      const message = getFormulaAiErrorMessage(error);
+      const statusCode = isFormulaAiQuotaError(error) ? 503 : 500;
+      res.status(statusCode).json({ message });
     }
   });
 
@@ -3328,7 +3406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Both addresses are required" });
       }
 
-      const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+      const apiKey = getServerGoogleMapsApiKey();
       
       // If no API key, use simple city-based estimation
       if (!apiKey) {
@@ -3347,10 +3425,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const { geocodeAddress } = await import('./location-utils.js');
         
-        // Geocode both addresses
+        // Geocode both addresses using a process-local cache to avoid repeated lookups
         const [businessGeocode, customerGeocode] = await Promise.all([
-          geocodeAddress(businessAddress),
-          geocodeAddress(customerAddress)
+          geocodeAddressWithCache(businessAddress, distanceCalculationGeocodeCache),
+          geocodeAddressWithCache(customerAddress, distanceCalculationGeocodeCache)
         ]);
         
         if (businessGeocode && customerGeocode) {
@@ -3363,15 +3441,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           console.log(`Accurate distance calculated: ${distance.toFixed(2)} miles`);
-          console.log(`  Business: ${businessGeocode.formattedAddress} (${businessGeocode.latitude}, ${businessGeocode.longitude})`);
-          console.log(`  Customer: ${customerGeocode.formattedAddress} (${customerGeocode.latitude}, ${customerGeocode.longitude})`);
+          console.log(`  Business: ${businessAddress} (${businessGeocode.latitude}, ${businessGeocode.longitude})`);
+          console.log(`  Customer: ${customerAddress} (${customerGeocode.latitude}, ${customerGeocode.longitude})`);
           
           return res.json({
             distance: Math.round(distance * 10) / 10,
             distanceText: `${distance.toFixed(1)} mi`,
             duration: "Based on straight-line distance",
-            businessLocation: businessGeocode.formattedAddress,
-            customerLocation: customerGeocode.formattedAddress
+            businessLocation: businessAddress,
+            customerLocation: customerAddress
           });
         } else {
           console.log("Geocoding failed for one or both addresses, falling back to city estimation");
@@ -20923,7 +21001,7 @@ This booking was created on ${new Date().toLocaleString()}.
           .where(eq(directoryProfiles.id, existing.id))
           .returning();
 
-        await rebuildAllDirectoryIndexCaches();
+        scheduleDirectoryIndexProfileRefresh(updated.id, "directory profile upsert");
 
         return res.json(updated);
       }
@@ -20969,7 +21047,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .returning();
 
       // Rebuild all directory cache entries so new cities and radius coverage propagate everywhere.
-      await rebuildAllDirectoryIndexCaches();
+      scheduleDirectoryIndexProfileRefresh(profile.id, "directory profile create");
 
       res.status(201).json(profile);
     } catch (error) {
@@ -21017,7 +21095,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .where(eq(directoryProfiles.id, existing.id))
         .returning();
 
-      await rebuildAllDirectoryIndexCaches();
+      scheduleDirectoryIndexProfileRefresh(updated.id, "directory profile update");
 
       res.json(updated);
     } catch (error) {
@@ -21119,7 +21197,7 @@ This booking was created on ${new Date().toLocaleString()}.
           await updateDirectoryCategoryListingCount(existingListing.categoryId);
           await updateDirectoryCategoryListingCount(categoryId);
 
-          await rebuildAllDirectoryIndexCaches();
+          scheduleDirectoryIndexProfileRefresh(profile.id, "directory service category update");
           return res.json(updated);
         }
         return res.json(existingListing);
@@ -21155,7 +21233,7 @@ This booking was created on ${new Date().toLocaleString()}.
       // Update category listing count (unique providers, not services)
       await updateDirectoryCategoryListingCount(categoryId);
 
-      await rebuildAllDirectoryIndexCaches();
+      scheduleDirectoryIndexProfileRefresh(profile.id, "directory service add");
 
       res.status(201).json(listing);
     } catch (error) {
@@ -21207,7 +21285,7 @@ This booking was created on ${new Date().toLocaleString()}.
       // Update category listing count (unique providers, not services)
       await updateDirectoryCategoryListingCount(listing.categoryId);
 
-      await rebuildAllDirectoryIndexCaches();
+      scheduleDirectoryIndexProfileRefresh(profile.id, "directory service delete");
 
       res.json({ message: "Service removed" });
     } catch (error) {
@@ -21435,7 +21513,7 @@ This booking was created on ${new Date().toLocaleString()}.
         .returning();
 
       // Rebuild all directory cache entries so newly covered cities propagate to every radius-based page.
-      await rebuildAllDirectoryIndexCaches();
+      scheduleDirectoryIndexProfileRefresh(profile.id, "directory service area save");
 
       res.status(201).json(area);
     } catch (error) {
@@ -21781,11 +21859,21 @@ This booking was created on ${new Date().toLocaleString()}.
             .from(directoryIndexCache)
             .groupBy(directoryIndexCache.citySlug, directoryIndexCache.city, directoryIndexCache.state);
 
+          let geocodeAttempts = 0;
           for (const entry of existingCacheEntries) {
             if (cityMap.has(entry.citySlug)) continue;
-            // Geocode this city to check distance
+
+            if (geocodeAttempts >= DIRECTORY_INDEX_CACHE_MAX_GEOCODE_ATTEMPTS) {
+              console.log(
+                `[Directory] Reached geocode budget while updating cache for profile ${profileId}; ` +
+                `skipping remaining cached-city distance checks`
+              );
+              break;
+            }
+
             try {
-              const geo = await geocodeAddress(`${entry.city}, ${entry.state}`);
+              geocodeAttempts += 1;
+              const geo = await geocodeDirectoryCityWithCache(entry.city, entry.state);
               if (geo) {
                 const distance = calculateDistance(profileLat, profileLng, geo.latitude, geo.longitude);
                 if (distance <= radius) {
@@ -21859,6 +21947,65 @@ This booking was created on ${new Date().toLocaleString()}.
     } catch (error) {
       console.error("[Directory] Error updating index cache:", error);
     }
+  }
+
+  let isDirectoryIndexRefreshRunning = false;
+  let fullDirectoryIndexRefreshQueued = false;
+  const queuedDirectoryProfileRefreshes = new Set<number>();
+
+  function scheduleDirectoryIndexProfileRefresh(profileId: number, reason: string) {
+    queuedDirectoryProfileRefreshes.add(profileId);
+    scheduleDirectoryIndexRefresh(`profile ${profileId}: ${reason}`);
+  }
+
+  function scheduleDirectoryIndexRebuild(reason: string) {
+    fullDirectoryIndexRefreshQueued = true;
+    scheduleDirectoryIndexRefresh(`full rebuild: ${reason}`);
+  }
+
+  function scheduleDirectoryIndexRefresh(reason: string) {
+    if (isDirectoryIndexRefreshRunning) {
+      console.log(`[Directory] Queued index refresh while another refresh is running (${reason})`);
+      return;
+    }
+
+    setTimeout(async () => {
+      if (isDirectoryIndexRefreshRunning) {
+        return;
+      }
+
+      isDirectoryIndexRefreshRunning = true;
+
+      try {
+        if (fullDirectoryIndexRefreshQueued) {
+          fullDirectoryIndexRefreshQueued = false;
+          queuedDirectoryProfileRefreshes.clear();
+          console.log(`[Directory] Starting background full index rebuild (${reason})`);
+          await rebuildAllDirectoryIndexCaches();
+          return;
+        }
+
+        const profileIds = Array.from(queuedDirectoryProfileRefreshes);
+        queuedDirectoryProfileRefreshes.clear();
+
+        if (profileIds.length === 0) {
+          return;
+        }
+
+        console.log(`[Directory] Starting background profile index refresh (${reason}) for profiles: ${profileIds.join(", ")}`);
+        for (const queuedProfileId of profileIds) {
+          await updateDirectoryIndexCache(queuedProfileId);
+        }
+      } catch (error) {
+        console.error("[Directory] Background index refresh failed:", error);
+      } finally {
+        isDirectoryIndexRefreshRunning = false;
+
+        if (fullDirectoryIndexRefreshQueued || queuedDirectoryProfileRefreshes.size > 0) {
+          scheduleDirectoryIndexRefresh("queued follow-up");
+        }
+      }
+    }, 0);
   }
 
   async function rebuildAllDirectoryIndexCaches() {

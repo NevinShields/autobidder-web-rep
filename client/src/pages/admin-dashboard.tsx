@@ -259,6 +259,8 @@ export default function AdminDashboard() {
   const [newIconName, setNewIconName] = useState("");
   const [newIconCategory, setNewIconCategory] = useState("general");
   const [newIconDescription, setNewIconDescription] = useState("");
+  const [newIconGroupId, setNewIconGroupId] = useState("none");
+  const [newIconTagId, setNewIconTagId] = useState("none");
   const [selectedIconFiles, setSelectedIconFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: {uploading: boolean, success: boolean, error: string | null}}>({});
   const [iconUploadDialogOpen, setIconUploadDialogOpen] = useState(false);
@@ -679,6 +681,12 @@ export default function AdminDashboard() {
       }
       formData.append('category', newIconCategory);
       formData.append('description', newIconDescription);
+      if (newIconGroupId !== 'none') {
+        formData.append('groupId', newIconGroupId);
+      }
+      if (newIconTagId !== 'none') {
+        formData.append('tagId', newIconTagId);
+      }
 
       const response = await fetch('/api/icons/batch', {
         method: 'POST',
@@ -714,6 +722,8 @@ export default function AdminDashboard() {
           setIconUploadDialogOpen(false);
           setNewIconCategory("general");
           setNewIconDescription("");
+          setNewIconGroupId("none");
+          setNewIconTagId("none");
           setSelectedIconFiles([]);
           setUploadProgress({});
         }, 1200);
@@ -2454,6 +2464,10 @@ export default function AdminDashboard() {
                           onOpenChange={(open) => {
                             setIconUploadDialogOpen(open);
                             if (!open && !isBatchUploadingIcons) {
+                              setNewIconCategory("general");
+                              setNewIconDescription("");
+                              setNewIconGroupId("none");
+                              setNewIconTagId("none");
                               setSelectedIconFiles([]);
                               setUploadProgress({});
                             }
@@ -2491,6 +2505,50 @@ export default function AdminDashboard() {
                                 <div>
                                   <Label>Description Prefix</Label>
                                   <Input value={newIconDescription} onChange={(e) => setNewIconDescription(e.target.value)} placeholder="Optional shared description" />
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                  <Label>Shared Style</Label>
+                                  <Select value={newIconGroupId} onValueChange={setNewIconGroupId}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="No shared style" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">No shared style</SelectItem>
+                                      {iconGroups
+                                        .filter((group) => group.isActive)
+                                        .map((group) => (
+                                          <SelectItem key={group.id} value={String(group.id)}>
+                                            {group.displayName}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Applies one icon style/group to every uploaded file.
+                                  </p>
+                                </div>
+                                <div>
+                                  <Label>Shared Tag</Label>
+                                  <Select value={newIconTagId} onValueChange={setNewIconTagId}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="No shared tag" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">No shared tag</SelectItem>
+                                      {iconTags
+                                        .filter((tag) => tag.isActive)
+                                        .map((tag) => (
+                                          <SelectItem key={tag.id} value={String(tag.id)}>
+                                            {tag.displayName}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    Applies one service tag to the whole upload batch.
+                                  </p>
                                 </div>
                               </div>
                               <div className="space-y-2">

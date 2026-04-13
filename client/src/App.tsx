@@ -21,6 +21,7 @@ const FormulasPage = lazy(() => import("@/pages/formulas"));
 const FormulaBuilder = lazy(() => import("@/pages/formula-builder"));
 const EmbedCalculator = lazy(() => import("@/pages/embed-calculator"));
 const EmbedCode = lazy(() => import("@/pages/embed-code"));
+const ChatEstimatorPage = lazy(() => import("@/pages/chat-estimator"));
 const ServiceSelector = lazy(() => import("@/pages/service-selector"));
 const FormSettings = lazy(() => import("@/pages/form-settings"));
 const DesignDashboard = lazy(() => import("@/pages/design-dashboard-new"));
@@ -68,6 +69,7 @@ const PrivacyPage = lazy(() => import("@/pages/privacy"));
 const IntegrationsPage = lazy(() => import("@/pages/integrations"));
 const CallScreen = lazy(() => import("@/pages/call-screen"));
 const UpgradePage = lazy(() => import("@/pages/upgrade"));
+const AdCreativeRequestPage = lazy(() => import("@/pages/ad-creative-request"));
 const SubscriptionTest = lazy(() => import("@/pages/subscription-test"));
 const PaymentConfirmation = lazy(() => import("@/pages/payment-confirmation"));
 const StyledCalculator = lazy(() => import("@/pages/styled-calculator"));
@@ -198,6 +200,7 @@ function Router() {
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/features" component={Features} />
+        <Route path="/ad-creative-request" component={AdCreativeRequestPage} />
         <Route path="/docs" component={DocsPage} />
         <Route path="/docs/:slug" component={DocsPage} />
         <Route path="/setup-step-by-step" component={SetupStepByStepPage} />
@@ -266,6 +269,7 @@ function Router() {
         <Route path="/formula-builder/:id" component={FormulaBuilder} />
         <Route path="/formula-builder" component={FormulaBuilder} />
         <Route path="/embed-code" component={EmbedCode} />
+        <Route path="/chat-estimator" component={ChatEstimatorPage} />
 
         <Route path="/form-settings" component={FormSettings} />
         <Route path="/design" component={DesignDashboard} />
@@ -273,6 +277,7 @@ function Router() {
         <Route path="/style-calculator" component={LazyStyledCalculator} />
         <Route path="/leads" component={LeadsPage} />
         <Route path="/photos" component={PhotosPage} />
+        <Route path="/ad-creative-request" component={AdCreativeRequestPage} />
         <Route path="/proposals" component={ProposalsPage} />
         <Route path="/calendar" component={CalendarPage} />
         <Route path="/stats" component={StatsPage} />

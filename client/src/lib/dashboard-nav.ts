@@ -73,6 +73,7 @@ export function getDashboardNav(user: unknown, isSuperAdmin: boolean): {
         { name: "Customers", href: "/leads", icon: ClipboardList },
         { name: "Call Screen", href: "/call-screen", icon: Phone },
         { name: "Photos", href: "/photos", icon: Image },
+        { name: "Ad Creative Request", href: "/ad-creative-request", icon: Image },
         { name: "Automations", href: "/crm/automations", icon: Workflow },
         { name: "Email Settings", href: "/email-settings", icon: Mail },
         { name: "Estimate Page Editor", href: "/estimate-page-settings", icon: FileText },

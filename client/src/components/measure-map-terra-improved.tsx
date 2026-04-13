@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Map, Ruler, Trash2, RotateCcw, Search, Plus, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box, ChevronDown, ChevronUp, Maximize, Minimize, Home } from 'lucide-react';
+import { Map, Ruler, Trash2, RotateCcw, Search, AlertCircle, RefreshCw, Square, Minus, Edit3, Hand, Box, ChevronDown, ChevronUp, Maximize, Minimize } from 'lucide-react';
 import { TerraDraw } from 'terra-draw';
 import { TerraDrawGoogleMapsAdapter } from 'terra-draw-google-maps-adapter';
 import {
@@ -19,6 +19,9 @@ interface MeasureMapProps {
   defaultAddress?: string;
   measurementType?: 'area' | 'distance';
   unit?: 'sqft' | 'sqm' | 'ft' | 'm';
+  hasCustomCSS?: boolean;
+  styling?: any;
+  componentStyles?: any;
   styles?: {
     fillColor?: string;
     strokeColor?: string;
@@ -32,6 +35,9 @@ export default function MeasureMapTerraImproved({
   defaultAddress = '',
   measurementType = 'area',
   unit = 'sqft',
+  hasCustomCSS = false,
+  styling = {},
+  componentStyles,
   styles = {}
 }: MeasureMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -52,6 +58,13 @@ export default function MeasureMapTerraImproved({
   const [isExpanded, setIsExpanded] = useState(false);
   const expandedContainerRef = useRef<HTMLDivElement>(null);
   const locationPinRef = useRef<any>(null);
+  const isTouchDevice = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+  }, []);
   
   // Generate stable unique ID for the map container
   const mapId = useMemo(() => `terra-draw-map-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
@@ -66,6 +79,95 @@ export default function MeasureMapTerraImproved({
     fillOpacity: 0.3,
     ...styles
   };
+
+  const getShadowValue = (shadow: string) => {
+    switch (shadow) {
+      case 'none': return 'none';
+      case 'sm': return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+      case 'md': return '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
+      case 'lg': return '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+      case 'xl': return '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)';
+      case '2xl': return '0 25px 50px -12px rgba(0, 0, 0, 0.25)';
+      default: return '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
+    }
+  };
+
+  const getFontSizeValue = (fontSize: string): string => {
+    switch (fontSize) {
+      case 'xs': return '0.75rem';
+      case 'sm': return '0.875rem';
+      case 'lg': return '1.125rem';
+      case 'xl': return '1.25rem';
+      case 'base':
+      default: return '1rem';
+    }
+  };
+
+  const getButtonPadding = (padding: string | undefined) => {
+    switch (padding) {
+      case 'sm': return '0.5rem 0.875rem';
+      case 'lg': return '0.875rem 1.5rem';
+      case 'xl': return '1rem 1.75rem';
+      case 'md':
+      default: return '0.75rem 1.25rem';
+    }
+  };
+
+  const getInputStyles = useCallback(() => {
+    const textInputStyles = componentStyles?.textInput;
+
+    if (textInputStyles) {
+      return {
+        backgroundColor: textInputStyles.backgroundColor || '#FFFFFF',
+        borderRadius: `${textInputStyles.borderRadius || 8}px`,
+        borderWidth: `${textInputStyles.borderWidth || 1}px`,
+        borderColor: textInputStyles.borderColor || '#E5E7EB',
+        borderStyle: 'solid' as const,
+        padding: `${textInputStyles.padding || 12}px`,
+        boxShadow: getShadowValue(textInputStyles.shadow || 'sm'),
+        fontSize: getFontSizeValue(textInputStyles.fontSize || 'base'),
+        color: textInputStyles.textColor || '#374151',
+        height: `${textInputStyles.height || 40}px`,
+      };
+    }
+
+    return {
+      backgroundColor: styling?.inputBackgroundColor || '#FFFFFF',
+      borderRadius: `${styling?.inputBorderRadius || 4}px`,
+      borderWidth: `${styling?.inputBorderWidth || 1}px`,
+      borderColor: styling?.inputBorderColor || '#D1D5DB',
+      borderStyle: 'solid' as const,
+      padding: styling?.inputPadding === 'sm' ? '0.375rem' :
+        styling?.inputPadding === 'lg' ? '0.75rem' : '0.5rem',
+      boxShadow: getShadowValue(styling?.inputShadow || 'none'),
+      fontSize: getFontSizeValue(styling?.inputFontSize || 'base'),
+      color: styling?.inputTextColor || '#374151',
+      height: `${styling?.inputHeight || 40}px`,
+    };
+  }, [componentStyles, styling]);
+
+  const getButtonStyles = useCallback(() => {
+    const buttonStyles = componentStyles?.button;
+
+    return {
+      borderRadius: `${buttonStyles?.borderRadius || styling?.buttonBorderRadius || 12}px`,
+      padding: buttonStyles?.padding ? `${buttonStyles.padding}px` : getButtonPadding(styling?.buttonPadding),
+      fontSize: buttonStyles?.fontSize ? getFontSizeValue(buttonStyles.fontSize) : '1rem',
+      fontWeight: buttonStyles?.fontWeight || styling?.buttonFontWeight || '600',
+      borderWidth: `${Math.max(buttonStyles?.borderWidth || styling?.buttonBorderWidth || 0, 0)}px`,
+      borderStyle: 'solid' as const,
+      boxShadow: getShadowValue(buttonStyles?.shadow || styling?.buttonShadow || 'md'),
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer' as const,
+      height: buttonStyles?.height ? `${buttonStyles.height}px` : 'auto',
+      backgroundColor: buttonStyles?.backgroundColor || styling?.buttonBackgroundColor || styling?.primaryColor || '#2563EB',
+      color: buttonStyles?.textColor || styling?.buttonTextColor || '#FFFFFF',
+      borderColor: buttonStyles?.borderColor || styling?.buttonBorderColor || buttonStyles?.backgroundColor || styling?.buttonBackgroundColor || styling?.primaryColor || '#2563EB',
+    };
+  }, [componentStyles, styling]);
+
+  const addressInputStyle = hasCustomCSS ? {} : getInputStyles();
+  const searchButtonStyle = hasCustomCSS ? { transition: 'all 0.2s ease-in-out', cursor: 'pointer' as const } : getButtonStyles();
 
   const setLocationPin = useCallback((position: { lat: number; lng: number } | null, targetMap?: any) => {
     const activeMap = targetMap || map;
@@ -168,6 +270,18 @@ export default function MeasureMapTerraImproved({
     };
   }, []);
 
+  useEffect(() => {
+    setCurrentUnit(unit);
+  }, [unit]);
+
+  const getAreaValueForUnit = useCallback((squareMeters: number) => {
+    return currentUnit === 'sqm' ? squareMeters : squareMeters * 10.764;
+  }, [currentUnit]);
+
+  const getDistanceValueForUnit = useCallback((meters: number) => {
+    return currentUnit === 'm' ? meters : meters * 3.28084;
+  }, [currentUnit]);
+
   const initializeMap = useCallback(async () => {
     if (!mapRef.current || !window.google?.maps) {
       setMapError('Google Maps not available');
@@ -188,9 +302,6 @@ export default function MeasureMapTerraImproved({
 
       console.log('Creating Google Maps instance with Terra Draw...');
       
-      // Detect if mobile device
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-      
       // Create map with optimized options
       const mapInstance = new window.google.maps.Map(mapRef.current, {
         center: { lat: 40.7128, lng: -74.0060 }, // New York City default
@@ -198,7 +309,7 @@ export default function MeasureMapTerraImproved({
         mapTypeId: window.google.maps.MapTypeId.SATELLITE,
         // Use 'cooperative' on mobile for better drawing experience (requires two fingers to pan)
         // Use 'greedy' on desktop (allows single-finger/mouse pan)
-        gestureHandling: isMobile ? 'cooperative' : 'greedy',
+        gestureHandling: isTouchDevice ? 'cooperative' : 'greedy',
         zoomControl: true,
         mapTypeControl: true,
         scaleControl: true,
@@ -238,6 +349,15 @@ export default function MeasureMapTerraImproved({
           }),
           modes: [
             new TerraDrawSelectMode({
+              pointerDistance: isTouchDevice ? 18 : 30,
+              styles: isTouchDevice ? {
+                selectedPointWidth: 8,
+                selectedPointOutlineWidth: 2,
+                selectionPointWidth: 8,
+                selectionPointOutlineWidth: 2,
+                midPointWidth: 12,
+                midPointOutlineWidth: 3,
+              } : undefined,
               flags: {
                 // Enable editing for polygons
                 polygon: {
@@ -331,7 +451,7 @@ export default function MeasureMapTerraImproved({
                       // Use Google Maps spherical geometry for accurate calculations
                       const path = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng }));
                       const area = window.google.maps.geometry.spherical.computeArea(path);
-                      value = currentUnit === 'sqft' ? area * 10.764 : area; // Convert to sq ft if needed
+                      value = getAreaValueForUnit(area);
                     }
                     type = 'area';
                   } else if (feature.geometry.type === 'LineString' && feature.geometry.coordinates) {
@@ -340,7 +460,7 @@ export default function MeasureMapTerraImproved({
                       // Use Google Maps spherical geometry for accurate calculations
                       const path = feature.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
                       const distance = window.google.maps.geometry.spherical.computeLength(path);
-                      value = currentUnit === 'ft' ? distance * 3.28084 : distance; // Convert to ft if needed
+                      value = getDistanceValueForUnit(distance);
                     }
                     type = 'distance';
                   }
@@ -440,7 +560,7 @@ export default function MeasureMapTerraImproved({
       const errorMessage = error instanceof Error ? error.message : String(error);
       setMapError(`Failed to initialize map: ${errorMessage}`);
     }
-  }, [defaultAddress, defaultStyles, currentUnit, onMeasurementComplete, setLocationPin, syncLocationPinToFeatures]);
+  }, [defaultAddress, defaultStyles, currentUnit, onMeasurementComplete, setLocationPin, syncLocationPinToFeatures, isTouchDevice, getAreaValueForUnit, getDistanceValueForUnit]);
 
   // Calculate area from polygon coordinates using shoelace formula
   const calculatePolygonArea = useCallback((coordinates: number[][]): number => {
@@ -464,9 +584,8 @@ export default function MeasureMapTerraImproved({
     const lngToMeters = 111320 * Math.cos(avgLat * Math.PI / 180);
     const areaInSquareMeters = area * latToMeters * lngToMeters;
     
-    // Convert to square feet if needed
-    return currentUnit === 'sqft' ? areaInSquareMeters * 10.7639 : areaInSquareMeters;
-  }, [currentUnit]);
+    return getAreaValueForUnit(areaInSquareMeters);
+  }, [getAreaValueForUnit]);
 
   // Calculate distance from linestring coordinates
   const calculateLinestringDistance = useCallback((coordinates: number[][]): number => {
@@ -493,9 +612,8 @@ export default function MeasureMapTerraImproved({
       totalDistance += R * c;
     }
     
-    // Convert to feet if needed
-    return currentUnit === 'm' ? totalDistance : totalDistance * 3.28084;
-  }, [currentUnit]);
+    return getDistanceValueForUnit(totalDistance);
+  }, [getDistanceValueForUnit]);
 
   // Update measurements based on drawn features with improved error handling
   const updateMeasurements = useCallback(() => {
@@ -520,7 +638,7 @@ export default function MeasureMapTerraImproved({
                 // Use Google Maps spherical geometry for accurate calculations
                 const path = feature.geometry.coordinates[0].map(([lng, lat]: [number, number]) => ({ lat, lng }));
                 const area = window.google.maps.geometry.spherical.computeArea(path);
-                value = currentUnit === 'sqm' ? area : area * 10.764; // Convert to sq ft if needed
+                value = getAreaValueForUnit(area);
               } else {
                 value = calculatePolygonArea(feature.geometry.coordinates[0]);
               }
@@ -531,7 +649,7 @@ export default function MeasureMapTerraImproved({
                 // Use Google Maps spherical geometry for accurate calculations
                 const path = feature.geometry.coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
                 const distance = window.google.maps.geometry.spherical.computeLength(path);
-                value = currentUnit === 'm' ? distance : distance * 3.28084; // Convert to ft if needed
+                value = getDistanceValueForUnit(distance);
               } else {
                 value = calculateLinestringDistance(feature.geometry.coordinates);
               }
@@ -582,7 +700,7 @@ export default function MeasureMapTerraImproved({
     } catch (error) {
       console.error('Error updating measurements:', error);
     }
-  }, [draw, calculatePolygonArea, calculateLinestringDistance, measurementType, currentUnit, onMeasurementComplete, syncLocationPinToFeatures]);
+  }, [draw, calculatePolygonArea, calculateLinestringDistance, measurementType, currentUnit, onMeasurementComplete, syncLocationPinToFeatures, getAreaValueForUnit, getDistanceValueForUnit]);
 
   // Tool switching functions
   const setTool = useCallback((tool: 'select' | 'polygon' | 'linestring' | 'freehand') => {
@@ -709,53 +827,6 @@ export default function MeasureMapTerraImproved({
     }
   }, [map, setLocationPin]);
 
-  const detectBuilding = useCallback(async () => {
-    if (!address.trim() || !draw) return;
-
-    try {
-      const response = await fetch(`/api/geocode?address=${encodeURIComponent(address)}&extra_computations=BUILDING_AND_ENTRANCES`);
-      const data = await response.json();
-      
-      if (data.success && data.buildings && data.buildings.length > 0) {
-        const building = data.buildings[0];
-        if (building.outline && building.outline.polygon) {
-          const polygon = building.outline.polygon;
-
-          // TerraDraw expects features in GeoJSON format
-          const newFeature = {
-            type: 'Feature',
-            geometry: {
-              type: 'Polygon',
-              coordinates: polygon.coordinates,
-            },
-            properties: {}
-          };
-
-          // The add method returns the ids of the features that were added
-          const [newFeatureId] = (draw as any).add([newFeature]);
-          
-          // Center the map on the new feature
-          if (map && polygon.coordinates && polygon.coordinates[0]) {
-            const bounds = new window.google.maps.LatLngBounds();
-            polygon.coordinates[0].forEach((coord: [number, number]) => {
-              bounds.extend(new window.google.maps.LatLng(coord[1], coord[0]));
-            });
-            map.fitBounds(bounds);
-          }
-
-          // Manually trigger an update to calculate measurement
-          updateMeasurements();
-        }
-      } else {
-        console.error('Building detection failed:', data.error || 'No building data returned');
-        setMapError(`Could not detect building at location: ${address}`);
-      }
-    } catch (error) {
-      console.error('Error detecting building:', error);
-      setMapError('Error occurred while detecting the building outline');
-    }
-  }, [address, draw, map, updateMeasurements]);
-
   const retryInitialization = useCallback(() => {
     setMapError(null);
     setIsMapInitialized(false);
@@ -800,14 +871,7 @@ export default function MeasureMapTerraImproved({
   // Show loading state
   if (isGoogleMapsLoading) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Map className="w-5 h-5" />
-            Terra Draw Measure Map
-            <Badge variant="secondary" className="bg-green-100 text-green-800">Loading</Badge>
-          </CardTitle>
-        </CardHeader>
+      <Card className="w-full bg-transparent border-0 shadow-none">
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <div className="flex flex-col items-center space-y-4">
@@ -823,14 +887,7 @@ export default function MeasureMapTerraImproved({
   // Show error state
   if (mapError || googleMapsError) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Map className="w-5 h-5" />
-            Terra Draw Measure Map
-            <Badge variant="destructive">Error</Badge>
-          </CardTitle>
-        </CardHeader>
+      <Card className="w-full bg-transparent border-0 shadow-none">
         <CardContent>
           <div className="text-center py-8">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
@@ -851,8 +908,8 @@ export default function MeasureMapTerraImproved({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
+    <Card className="w-full bg-transparent border-0 shadow-none rounded-none">
+      <CardHeader className="hidden lg:block">
         <CardTitle className="flex items-center gap-2">
           <Map className="w-5 h-5" />
           Property Measurement Tool
@@ -863,11 +920,16 @@ export default function MeasureMapTerraImproved({
         <p className="text-sm text-gray-600">
           Draw on the satellite map to measure your property for accurate pricing
         </p>
+        {isTouchDevice && (
+          <p className="text-xs text-blue-700">
+            Mobile tip: zoom in before editing and use Edit to reshape your selection.
+          </p>
+        )}
       </CardHeader>
 
       <CardContent className="p-0 space-y-4">
         {/* Address Search */}
-        <div className="flex flex-col sm:flex-row gap-2 px-6 pt-6">
+        <div className="flex flex-col sm:flex-row gap-2 px-0 pt-0 lg:px-6 lg:pt-6">
           <Input
             ref={addressInputRef}
             type="text"
@@ -875,31 +937,24 @@ export default function MeasureMapTerraImproved({
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && searchAddress(address)}
-            className="flex-1"
+            className="ab-input ab-address-input ab-text-input text-input flex-1"
+            style={addressInputStyle}
           />
           <Button 
             onClick={() => searchAddress(address)} 
-            variant="outline" 
+            variant={hasCustomCSS ? 'default' : 'outline'} 
             size="sm"
-            className="sm:w-auto w-full"
+            className="ab-button ab-button-primary button sm:w-auto w-full"
+            style={searchButtonStyle}
           >
             <Search className="w-4 h-4 sm:mr-0 mr-2" />
             <span className="sm:hidden">Search Address</span>
-          </Button>
-          <Button 
-            onClick={detectBuilding} 
-            variant="outline" 
-            size="sm"
-            className="sm:w-auto w-full"
-          >
-            <Home className="w-4 h-4 sm:mr-0 mr-2" />
-            <span className="sm:hidden">Detect Building</span>
           </Button>
         </div>
 
         {/* Mobile Controls - Above Map */}
         {isMapInitialized && (
-          <div className="block lg:hidden px-6">
+          <div className="hidden px-6">
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-2 mb-4">
               <div className="flex items-center justify-center gap-1 flex-wrap">
                 {/* Drawing Tools */}
@@ -967,7 +1022,7 @@ export default function MeasureMapTerraImproved({
                 <select
                   value={currentUnit}
                   onChange={(e) => setCurrentUnit(e.target.value as any)}
-                  className="h-9 text-sm border-0 bg-transparent hover:bg-white rounded-md px-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="h-10 min-w-[84px] text-sm leading-none border-0 bg-transparent hover:bg-white rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {currentTool === 'linestring' ? (
                     <>
@@ -976,8 +1031,8 @@ export default function MeasureMapTerraImproved({
                     </>
                   ) : (
                     <>
-                      <option value="sqft">Sq Ft</option>
-                      <option value="sqm">Sq M</option>
+                      <option value="sqft">FT²</option>
+                      <option value="sqm">M²</option>
                     </>
                   )}
                 </select>
@@ -1112,15 +1167,15 @@ export default function MeasureMapTerraImproved({
                     {is3DMode ? '3D' : '2D'}
                   </Button>
 
-                  <select
-                    value={currentUnit}
-                    onChange={(e) => setCurrentUnit(e.target.value as any)}
-                    className="h-9 text-sm border-0 bg-transparent hover:bg-gray-100 rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    title="Change measurement units"
-                  >
-                    {currentTool === 'linestring' ? (
-                      <>
-                        <option value="ft">Feet</option>
+                    <select
+                      value={currentUnit}
+                      onChange={(e) => setCurrentUnit(e.target.value as any)}
+                      className="h-10 min-w-[84px] text-sm leading-none border-0 bg-transparent hover:bg-gray-100 rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      title="Change measurement units"
+                    >
+                      {currentTool === 'linestring' ? (
+                        <>
+                          <option value="ft">Feet</option>
                         <option value="m">Meters</option>
                       </>
                     ) : (
@@ -1253,7 +1308,7 @@ export default function MeasureMapTerraImproved({
                     <select
                       value={currentUnit}
                       onChange={(e) => setCurrentUnit(e.target.value as any)}
-                      className="h-9 text-sm border-0 bg-transparent hover:bg-gray-100 rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="h-10 min-w-[84px] text-sm leading-none border-0 bg-transparent hover:bg-gray-100 rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       {currentTool === 'linestring' ? (
                         <>
@@ -1287,7 +1342,7 @@ export default function MeasureMapTerraImproved({
             </>
           )}
 
-          {/* Total Measurement Overlay */}
+        {/* Total Measurement Overlay */}
           {totalMeasurement > 0 && (
             <div className={`absolute ${isExpanded ? 'bottom-4 left-1/2 transform -translate-x-1/2' : 'bottom-4 right-4'} bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border`}>
               <div className="text-sm font-medium text-gray-600">
@@ -1296,6 +1351,120 @@ export default function MeasureMapTerraImproved({
             </div>
           )}
         </div>
+
+        {/* Mobile Controls - Below Map */}
+        {isMapInitialized && !isExpanded && (
+          <div className="block lg:hidden px-0">
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-2">
+              <div className="flex items-center justify-center gap-1 flex-wrap">
+                <Button
+                  onClick={() => setTool('polygon')}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${currentTool === 'polygon' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Draw polygon area"
+                >
+                  <Square className="w-4 h-4 mr-1" />
+                  Area
+                </Button>
+
+                <Button
+                  onClick={() => setTool('linestring')}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${currentTool === 'linestring' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Draw line for distance"
+                >
+                  <Minus className="w-4 h-4 mr-1" />
+                  Line
+                </Button>
+
+                <Button
+                  onClick={() => setTool('freehand')}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${currentTool === 'freehand' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Freehand drawing"
+                >
+                  <Edit3 className="w-4 h-4 mr-1" />
+                  Free
+                </Button>
+
+                <div className="w-px h-6 bg-gray-300" />
+
+                <Button
+                  onClick={() => setTool('select')}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${currentTool === 'select' ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title="Select and edit shapes"
+                >
+                  <Hand className="w-4 h-4 mr-1" />
+                  Edit
+                </Button>
+
+                <div className="w-px h-6 bg-gray-300" />
+
+                <Button
+                  onClick={toggle3DMode}
+                  variant="ghost"
+                  size="sm"
+                  className={`h-9 px-2 ${is3DMode ? 'bg-blue-100 text-blue-700 hover:bg-blue-100' : 'hover:bg-white'}`}
+                  title={is3DMode ? "Switch to 2D view" : "Switch to 3D view"}
+                >
+                  <Box className="w-4 h-4 mr-1" />
+                  {is3DMode ? '3D' : '2D'}
+                </Button>
+
+                <select
+                  value={currentUnit}
+                  onChange={(e) => setCurrentUnit(e.target.value as any)}
+                  className="h-10 min-w-[84px] text-sm leading-none border-0 bg-transparent hover:bg-white rounded-md px-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {currentTool === 'linestring' ? (
+                    <>
+                      <option value="ft">Ft</option>
+                      <option value="m">M</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="sqft">FT²</option>
+                      <option value="sqm">M²</option>
+                    </>
+                  )}
+                </select>
+
+                <div className="w-px h-6 bg-gray-300" />
+
+                <Button
+                  onClick={clearDrawing}
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  title="Clear all drawings"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Clear
+                </Button>
+
+                <div className="hidden sm:block">
+                  <div className="w-px h-6 bg-gray-300 mx-1" />
+                </div>
+                <div className="hidden sm:block">
+                  <Button
+                    onClick={enterExpanded}
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-2 hover:bg-white"
+                    title="Expand map to fullscreen"
+                  >
+                    <Maximize className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Individual Measurements List - Hidden in expanded mode */}
         {measurements.length > 0 && !isExpanded && (

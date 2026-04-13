@@ -61,6 +61,8 @@ interface WeeklySchedule {
   [key: number]: DayAvailability;
 }
 
+type BookingAdvanceUnit = 'hours' | 'days';
+
 interface AvailabilitySlot {
   id: number;
   date: string;
@@ -237,6 +239,8 @@ export default function CalendarPage() {
 
   // Max days out setting - how far in advance customers can book
   const [maxDaysOut, setMaxDaysOut] = useState<number>(90);
+  const [minBookingAdvanceValue, setMinBookingAdvanceValue] = useState<number>(0);
+  const [minBookingAdvanceUnit, setMinBookingAdvanceUnit] = useState<BookingAdvanceUnit>('hours');
 
   // Fetch existing availability settings
   const { data: existingSettings } = useQuery({
@@ -399,6 +403,12 @@ export default function CalendarPage() {
   useEffect(() => {
     if (businessSettings?.maxDaysOut !== undefined) {
       setMaxDaysOut(businessSettings.maxDaysOut || 90);
+    }
+    if (businessSettings?.minBookingAdvanceValue !== undefined) {
+      setMinBookingAdvanceValue(Math.max(0, businessSettings.minBookingAdvanceValue || 0));
+    }
+    if (businessSettings?.minBookingAdvanceUnit === 'hours' || businessSettings?.minBookingAdvanceUnit === 'days') {
+      setMinBookingAdvanceUnit(businessSettings.minBookingAdvanceUnit);
     }
   }, [businessSettings]);
 
@@ -625,13 +635,23 @@ export default function CalendarPage() {
     },
   });
 
-  // Save availability mutation - saves both schedule and maxDaysOut
+  const minBookingAdvanceSummary = minBookingAdvanceValue > 0
+    ? `${minBookingAdvanceValue} ${
+      minBookingAdvanceValue === 1 ? minBookingAdvanceUnit.slice(0, -1) : minBookingAdvanceUnit
+    }`
+    : null;
+
+  // Save availability mutation - saves both schedule and booking window settings
   const saveAvailabilityMutation = useMutation({
     mutationFn: async () => {
       // Save weekly schedule
       await apiRequest('POST', '/api/recurring-availability/save-schedule', { schedule: weeklySchedule });
-      // Save maxDaysOut to business settings
-      await apiRequest('PATCH', '/api/business-settings', { maxDaysOut });
+      // Save booking window settings to business settings
+      await apiRequest('PATCH', '/api/business-settings', {
+        maxDaysOut,
+        minBookingAdvanceValue,
+        minBookingAdvanceUnit,
+      });
     },
     onSuccess: () => {
       toast({
@@ -1624,10 +1644,39 @@ export default function CalendarPage() {
                               <span className="text-sm text-gray-600 dark:text-gray-400">days</span>
                             </div>
                           </div>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-4">
+                            <Label className="text-sm text-gray-600 dark:text-gray-400">
+                              Minimum booking notice:
+                            </Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                value={minBookingAdvanceValue}
+                                onChange={(e) => setMinBookingAdvanceValue(Math.max(0, parseInt(e.target.value) || 0))}
+                                min="0"
+                                max="365"
+                                className="w-20 h-10 text-center"
+                                data-testid="input-min-booking-advance-value"
+                              />
+                              <Select
+                                value={minBookingAdvanceUnit}
+                                onValueChange={(value) => setMinBookingAdvanceUnit(value as BookingAdvanceUnit)}
+                              >
+                                <SelectTrigger className="w-[110px]" data-testid="select-min-booking-advance-unit">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="hours">Hours</SelectItem>
+                                  <SelectItem value="days">Days</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
                           <p className="text-xs text-gray-500 mt-2">
-                            {maxDaysOut ?
-                              `Customers can book up to ${maxDaysOut} days ahead` :
-                              'Set how far ahead customers can book'}
+                            {[
+                              maxDaysOut ? `Customers can book up to ${maxDaysOut} days ahead` : 'Set how far ahead customers can book',
+                              minBookingAdvanceSummary ? `They must book at least ${minBookingAdvanceSummary} ahead` : 'Allow same-day booking by leaving minimum notice at 0',
+                            ].join('. ')}
                           </p>
                         </div>
 
@@ -3002,10 +3051,38 @@ export default function CalendarPage() {
                     <span className="text-sm text-gray-600 dark:text-gray-400">days</span>
                   </div>
                 </div>
+                <div className="flex items-center gap-4 mt-4">
+                  <Label className="text-sm text-gray-600 dark:text-gray-400">
+                    Minimum booking notice:
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      value={minBookingAdvanceValue}
+                      onChange={(e) => setMinBookingAdvanceValue(Math.max(0, parseInt(e.target.value) || 0))}
+                      min="0"
+                      max="365"
+                      className="w-20 h-10 text-center"
+                    />
+                    <Select
+                      value={minBookingAdvanceUnit}
+                      onValueChange={(value) => setMinBookingAdvanceUnit(value as BookingAdvanceUnit)}
+                    >
+                      <SelectTrigger className="w-[110px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="hours">Hours</SelectItem>
+                        <SelectItem value="days">Days</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  {maxDaysOut ?
-                    `Customers can book up to ${maxDaysOut} days ahead` :
-                    'Set how far ahead customers can book'}
+                  {[
+                    maxDaysOut ? `Customers can book up to ${maxDaysOut} days ahead` : 'Set how far ahead customers can book',
+                    minBookingAdvanceSummary ? `They must book at least ${minBookingAdvanceSummary} ahead` : 'Allow same-day booking by leaving minimum notice at 0',
+                  ].join('. ')}
                 </p>
               </div>
 

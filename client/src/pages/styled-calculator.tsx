@@ -13,7 +13,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import EnhancedServiceSelector from "@/components/enhanced-service-selector";
 import { ChevronDown, ChevronUp, Map, Search, User, Mail, Phone, MapPin, X, Home, Loader2 } from "lucide-react";
-import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead, PropertyAttributes } from "@shared/schema";
+import type { Formula, DesignSettings, ServiceCalculation, BusinessSettings, Lead, PropertyAttributes, UpsellItem } from "@shared/schema";
 import { evaluateConditionalLogic } from "@shared/conditional-logic";
 import {
   applyPriceConstraints,
@@ -27,9 +27,11 @@ import {
   isRepeatableGroupVariable,
 } from "@shared/formula-runtime";
 import { injectCSSVariables } from "@shared/css-variables";
+import { buildCalculatedUpsellSelection, isUpsellVisible, type CalculatedUpsellSelection } from "@shared/upsells";
 
-// Lazy load heavy components for better performance
-const EnhancedVariableInput = lazy(() => import("@/components/enhanced-variable-input"));
+// Lazy load heavy components for better performance while allowing preloading ahead of step changes.
+const loadEnhancedVariableInput = () => import("@/components/enhanced-variable-input");
+const EnhancedVariableInput = lazy(loadEnhancedVariableInput);
 const CollapsiblePhotoMeasurement = lazy(() =>
   import("@/components/collapsible-photo-measurement").then((module) => ({
     default: module.CollapsiblePhotoMeasurement,
@@ -65,10 +67,13 @@ interface StyledCalculatorProps {
 }
 
 // Collapsible Measure Map Component - Memoized for performance
-const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete }: {
+const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementType, unit, onMeasurementComplete, hasCustomCSS, styling, componentStyles }: {
   measurementType: string;
   unit: string;
   onMeasurementComplete: (measurement: { value: number; unit: string }) => void;
+  hasCustomCSS?: boolean;
+  styling?: any;
+  componentStyles?: any;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -97,7 +102,7 @@ const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementT
       </button>
       
       {isExpanded && (
-        <div className="p-4">
+        <div className="p-0">
           <Suspense
             fallback={
               <div className="flex items-center justify-center h-64">
@@ -112,6 +117,9 @@ const CollapsibleMeasureMap = memo(function CollapsibleMeasureMap({ measurementT
               <MeasureMapTerraImproved
                 measurementType={measurementType as "area" | "distance"}
                 unit={unit as "sqft" | "sqm" | "ft" | "m"}
+                hasCustomCSS={hasCustomCSS}
+                styling={styling}
+                componentStyles={componentStyles}
                 onMeasurementComplete={onMeasurementComplete}
               />
             </GoogleMapsLoader>
@@ -530,14 +538,6 @@ export default function StyledCalculator(props: any = {}) {
     : [];
   const isPublicAccess = !!userId;
 
-  // Debug: Log auth state
-  console.log('[styled-calculator] Auth state:', {
-    authUser: authUser ? `id=${authUser.id}, email=${authUser.email}` : 'null',
-    userId,
-    isPublicAccess,
-    queryEnabled: !!authUser && !isPublicAccess
-  });
-  
   // Determine effective business owner ID - use URL param for public access, or authenticated user ID
   const effectiveBusinessOwnerId = isPublicAccess ? userId : authUser?.id;
   
@@ -675,10 +675,8 @@ export default function StyledCalculator(props: any = {}) {
   const { data: authenticatedData, isLoading: isLoadingAuthData, error: authDataError } = useQuery({
     queryKey: ['/api/public/calculator-data', 'authenticated', authUser?.id],
     queryFn: async () => {
-      console.log('[styled-calculator] Fetching authenticated calculator data for user:', authUser?.id);
       const res = await fetch('/api/public/calculator-data', { credentials: 'include' });
       const data = await res.json();
-      console.log('[styled-calculator] Response:', res.status, data);
       if (!res.ok) {
         throw new Error(data.message || 'Failed to fetch calculator data');
       }
@@ -710,6 +708,48 @@ export default function StyledCalculator(props: any = {}) {
     }
     return allFormulas;
   }, [allFormulas, customFormServiceFilterIds, isSingleServiceMode, singleServiceId]);
+
+  const cartSubtotal = useMemo(
+    () => cartServiceIds.reduce((sum, serviceId) => sum + Math.max(0, serviceCalculations[serviceId] || 0), 0),
+    [cartServiceIds, serviceCalculations]
+  );
+
+  const calculatedCartUpsells = useMemo(() => {
+    return cartServiceIds.reduce((acc, serviceId) => {
+      const service = formulas.find((f: Formula) => f.id === serviceId);
+      if (!service?.upsellItems?.length) {
+        return acc;
+      }
+
+      const topLevelValues = getFlatFormulaValues(serviceVariables[serviceId] || {});
+      const serviceSubtotal = Math.max(0, serviceCalculations[serviceId] || 0);
+      const serviceUpsells = service.upsellItems
+        .filter((upsell: UpsellItem) => isUpsellVisible(upsell, topLevelValues))
+        .map((upsell: UpsellItem) =>
+          buildCalculatedUpsellSelection({
+            upsell,
+            serviceId: service.id,
+            serviceName: service.name || service.title || `Service ${service.id}`,
+            serviceSubtotal,
+            cartSubtotal,
+          })
+        );
+
+      acc.push(...serviceUpsells);
+      return acc;
+    }, [] as CalculatedUpsellSelection[]);
+  }, [cartServiceIds, cartSubtotal, formulas, serviceCalculations, serviceVariables]);
+
+  const selectedCalculatedUpsells = useMemo(
+    () => calculatedCartUpsells.filter((upsell) => selectedUpsells.includes(upsell.id)),
+    [calculatedCartUpsells, selectedUpsells]
+  );
+
+  useEffect(() => {
+    const validSelectionKeys = new Set(calculatedCartUpsells.map((upsell) => upsell.id));
+    setSelectedUpsells((previous) => previous.filter((selectionKey) => validSelectionKeys.has(selectionKey)));
+  }, [calculatedCartUpsells]);
+
   const businessSettings = useAuthenticatedData
     ? (authenticatedData?.businessSettings || null)
     : (calculatorData?.businessSettings || null);
@@ -789,9 +829,9 @@ export default function StyledCalculator(props: any = {}) {
 
     const trackSession = async () => {
       try {
-        // Track sessions for all active formulas
-        for (const formula of formulas) {
-          await fetch('/api/calculator-sessions', {
+        // Track sessions for all active formulas in parallel
+        await Promise.all(formulas.map((formula: Formula) =>
+          fetch('/api/calculator-sessions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -800,12 +840,11 @@ export default function StyledCalculator(props: any = {}) {
               referrer: document.referrer || null,
               totalSteps: formula.variables?.length || 1
             })
-          });
-        }
+          })
+        ));
         setSessionTracked(true);
       } catch (error) {
         // Silent fail - don't disrupt user experience
-        console.log('Session tracking failed:', error);
       }
     };
 
@@ -861,20 +900,18 @@ export default function StyledCalculator(props: any = {}) {
 
     const trackStepProgress = async () => {
       try {
-        for (const formula of formulas) {
-          await fetch(`/api/calculator-sessions/${formula.id}-${sessionId}`, {
+        await Promise.all(formulas.map((formula: Formula) =>
+          fetch(`/api/calculator-sessions/${formula.id}-${sessionId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               lastStepReached: stepNumber,
-              // Mark completed if they reach pricing or scheduling
               completed: stepNumber >= 4 ? true : undefined
             })
-          });
-        }
+          })
+        ));
       } catch (error) {
         // Silent fail
-        console.log('Step tracking failed:', error);
       }
     };
 
@@ -904,12 +941,7 @@ export default function StyledCalculator(props: any = {}) {
         amount: number;
       }>;
       bundleDiscountAmount?: number;
-      selectedUpsells?: Array<{
-        id: string;
-        name: string;
-        percentage: number;
-        amount: number;
-      }>;
+      selectedUpsells?: CalculatedUpsellSelection[];
       taxAmount?: number;
       subtotal?: number;
       photoMeasurements?: any[];
@@ -1043,7 +1075,7 @@ export default function StyledCalculator(props: any = {}) {
       distanceInfo?: { distance: number; fee: number; message: string };
       appliedDiscounts?: Array<{ id: string; name: string; percentage: number; amount: number }>;
       bundleDiscountAmount?: number;
-      selectedUpsells?: Array<{ id: string; name: string; percentage: number; amount: number }>;
+      selectedUpsells?: CalculatedUpsellSelection[];
       taxAmount?: number;
     }) => {
       const estimateNumber = `EST-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -1096,7 +1128,7 @@ export default function StyledCalculator(props: any = {}) {
     mutationFn: async (data: {
       leadId: number;
       appliedDiscounts: Array<{ id: string; name: string; percentage: number; amount: number }>;
-      selectedUpsells: Array<{ id: string; name: string; percentage: number; amount: number }>;
+      selectedUpsells: CalculatedUpsellSelection[];
       bundleDiscountAmount: number;
       taxAmount: number;
       subtotal: number;
@@ -1216,6 +1248,14 @@ export default function StyledCalculator(props: any = {}) {
     });
   }, [selectedServices, formulas]);
 
+  useEffect(() => {
+    if (selectedServices.length === 0) {
+      return;
+    }
+
+    void loadEnhancedVariableInput();
+  }, [selectedServices.length]);
+
   // Auto-expand/collapse logic for multi-service flow
   useEffect(() => {
     // Only run if auto-expand/collapse is enabled
@@ -1291,7 +1331,7 @@ export default function StyledCalculator(props: any = {}) {
     const timeoutId = setTimeout(() => {
       console.log('Debounce timeout fired, preparing update...');
       // Calculate current pricing with selections
-      const subtotal = cartServiceIds.reduce((sum, serviceId) => sum + Math.max(0, serviceCalculations[serviceId] || 0), 0);
+      const subtotal = cartSubtotal;
       const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && cartServiceIds.length > 1)
         ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
         : 0;
@@ -1306,26 +1346,8 @@ export default function StyledCalculator(props: any = {}) {
           amount: Math.round(subtotal * (discount.percentage / 100) * 100)
         })) || [];
 
-      // Get upsell amounts
-      const allUpsells = cartServiceIds.reduce((acc: any[], serviceId) => {
-        const service = formulas?.find((f: any) => f.id === serviceId);
-        if (service?.upsellItems) {
-          acc.push(...service.upsellItems);
-        }
-        return acc;
-      }, []);
-
-      const selectedUpsellData = allUpsells
-        ?.filter((u: any) => selectedUpsells.includes(u.id))
-        ?.map((upsell: any) => ({
-          id: upsell.id,
-          name: upsell.name,
-          percentage: upsell.percentageOfMain,
-          amount: Math.round(subtotal * (upsell.percentageOfMain / 100) * 100)
-        })) || [];
-
       const customerDiscountAmount = appliedDiscountData.reduce((sum: number, d: any) => sum + d.amount, 0) / 100;
-      const upsellTotal = selectedUpsellData.reduce((sum, u) => sum + u.amount, 0) / 100;
+      const upsellTotal = selectedCalculatedUpsells.reduce((sum, upsell) => sum + upsell.amount, 0);
       const discountedSubtotal = subtotal - bundleDiscount - customerDiscountAmount + upsellTotal;
 
       const taxAmount = businessSettings?.styling?.enableSalesTax
@@ -1337,7 +1359,10 @@ export default function StyledCalculator(props: any = {}) {
       const updatePayload = {
         leadId: submittedLeadId,
         appliedDiscounts: appliedDiscountData,
-        selectedUpsells: selectedUpsellData,
+        selectedUpsells: selectedCalculatedUpsells.map((upsell) => ({
+          ...upsell,
+          amount: Math.round(upsell.amount * 100),
+        })),
         bundleDiscountAmount: Math.round(bundleDiscount * 100),
         taxAmount: Math.round(taxAmount * 100),
         subtotal: Math.round(subtotal * 100),
@@ -1348,7 +1373,7 @@ export default function StyledCalculator(props: any = {}) {
     }, 500); // Debounce 500ms
 
     return () => clearTimeout(timeoutId);
-  }, [currentStep, submittedLeadId, selectedDiscounts, selectedUpsells, cartServiceIds, serviceCalculations, businessSettings, formulas]);
+  }, [businessSettings, cartServiceIds.length, cartSubtotal, currentStep, selectedCalculatedUpsells, selectedDiscounts, submittedLeadId]);
 
   // Inject CSS variables from design settings - must be before early returns to maintain hook order
   useEffect(() => {
@@ -2621,23 +2646,10 @@ export default function StyledCalculator(props: any = {}) {
         amount: Math.round(subtotal * (discount.percentage / 100) * 100) // Convert to cents
       })) || [];
 
-    // Prepare upsell information for submission - collect from all cart services
-    const allUpsellsForSubmission = cartServiceIds.reduce((acc: any[], serviceId) => {
-      const service = formulas?.find((f: any) => f.id === serviceId);
-      if (service?.upsellItems) {
-        acc.push(...service.upsellItems);
-      }
-      return acc;
-    }, []);
-    
-    const selectedUpsellData = allUpsellsForSubmission
-      ?.filter((u: any) => selectedUpsells.includes(u.id))
-      ?.map((upsell: any) => ({
-        id: upsell.id,
-        name: upsell.name,
-        percentage: upsell.percentageOfMain,
-        amount: Math.round(subtotal * (upsell.percentageOfMain / 100) * 100) // Convert to cents
-      })) || [];
+    const selectedUpsellData = selectedCalculatedUpsells.map((upsell) => ({
+      ...upsell,
+      amount: Math.round(upsell.amount * 100),
+    }));
 
     const submissionData = {
       services,
@@ -3186,6 +3198,9 @@ export default function StyledCalculator(props: any = {}) {
                       <CollapsibleMeasureMap
                         measurementType={service.measureMapType || "area"}
                         unit={service.measureMapUnit || "sqft"}
+                        hasCustomCSS={hasCustomCSS}
+                        styling={styling}
+                        componentStyles={componentStyles}
                         onMeasurementComplete={(measurement) => {
                           // Find the first area/size variable and auto-populate it
                           const areaVariable = service.variables.find((v: any) => 
@@ -3910,7 +3925,7 @@ export default function StyledCalculator(props: any = {}) {
       case "pricing":
         // Calculate pricing with discounts, distance fees, and tax (exclude negative prices)
         // Use cart services for pricing when cart is enabled
-        const subtotal = cartServiceIds.reduce((sum, serviceId) => sum + Math.max(0, serviceCalculations[serviceId] || 0), 0);
+        const subtotal = cartSubtotal;
         const bundleDiscount = (businessSettings?.styling?.showBundleDiscount && cartServiceIds.length > 1)
           ? Math.round(subtotal * ((businessSettings.styling.bundleDiscountPercent || 0) / 100))
           : 0;
@@ -3927,20 +3942,7 @@ export default function StyledCalculator(props: any = {}) {
           }
         }
         
-        // Calculate upsell amount from all selected services
-        const allUpsellsForPricing = selectedServices.reduce((acc: any[], serviceId) => {
-          const service = formulas?.find((f: any) => f.id === serviceId);
-          if (service?.upsellItems) {
-            acc.push(...service.upsellItems);
-          }
-          return acc;
-        }, []);
-        
-        const upsellAmount = selectedUpsells.length > 0
-          ? allUpsellsForPricing
-              .filter((u: any) => selectedUpsells.includes(u.id))
-              .reduce((sum: number, upsell: any) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
-          : 0;
+        const upsellAmount = selectedCalculatedUpsells.reduce((sum, upsell) => sum + upsell.amount, 0);
         
         const subtotalWithDistanceAndUpsells = discountedSubtotal + distanceFee + upsellAmount;
         const taxAmount = businessSettings?.styling?.enableSalesTax 
@@ -4232,34 +4234,18 @@ export default function StyledCalculator(props: any = {}) {
                 {/* Selected Upsells */}
                 {(() => {
                   // Collect all upsells from cart services for line items
-                  const allUpsellsForLineItems = cartServiceIds.reduce((acc, serviceId) => {
-                    const service = formulas?.find((f: any) => f.id === serviceId);
-                    if (service?.upsellItems) {
-                      const serviceUpsells = service.upsellItems.map((upsell: any) => ({
-                        ...upsell,
-                        serviceId: service.id,
-                        serviceName: service.name
-                      }));
-                      acc.push(...serviceUpsells);
-                    }
-                    return acc;
-                  }, [] as any[]);
-
-                  return selectedUpsells.length > 0 && allUpsellsForLineItems.length > 0 && (
+                  return selectedCalculatedUpsells.length > 0 && (
                     <div className="space-y-2">
-                      {allUpsellsForLineItems.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
-                        const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
-                        return (
-                          <div key={upsell.id} className="flex justify-between items-center">
-                            <span className="text-lg text-orange-600">
-                              {upsell.name}:
-                            </span>
-                            <span className="text-lg font-medium text-orange-600">
-                              +${upsellPrice.toLocaleString()}
-                            </span>
-                          </div>
-                        );
-                      })}
+                      {selectedCalculatedUpsells.map((upsell) => (
+                        <div key={upsell.id} className="flex justify-between items-center">
+                          <span className="text-lg text-orange-600">
+                            {upsell.name} ({upsell.serviceName}):
+                          </span>
+                          <span className="text-lg font-medium text-orange-600">
+                            +${upsell.amount.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   );
                 })()}
@@ -4382,22 +4368,7 @@ export default function StyledCalculator(props: any = {}) {
 
               {/* Upsell Items */}
               {(() => {
-                // Collect all upsells from cart services
-                  const allUpsells = cartServiceIds.reduce((acc, serviceId) => {
-                    const service = formulas?.find((f: any) => f.id === serviceId);
-                    if (service?.upsellItems) {
-                      // Add service context to each upsell for better identification
-                      const serviceUpsells = service.upsellItems.map((upsell: any) => ({
-                      ...upsell,
-                      serviceId: service.id,
-                      serviceName: service.name
-                    }));
-                    acc.push(...serviceUpsells);
-                  }
-                  return acc;
-                }, [] as any[]);
-                
-                return allUpsells.length > 0 && (
+                return calculatedCartUpsells.length > 0 && (
                   <div className="ab-upsell-section mt-6 p-6 bg-orange-50 rounded-lg border border-orange-200">
                     <h3
                       className="ab-upsell-heading text-lg font-semibold mb-4"
@@ -4409,8 +4380,7 @@ export default function StyledCalculator(props: any = {}) {
                       Enhance your services with these popular add-ons
                     </p>
                     <div className="ab-upsell-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {allUpsells.map((upsell) => {
-                      const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
+                      {calculatedCartUpsells.map((upsell) => {
                       const isSelected = selectedUpsells.includes(upsell.id);
                       
                       return (
@@ -4464,6 +4434,9 @@ export default function StyledCalculator(props: any = {}) {
                                     )}
                                   </div>
                                   <p className="ab-upsell-description text-sm text-gray-600 mt-1 break-words leading-relaxed">{upsell.description}</p>
+                                  <p className="ab-upsell-tooltip mt-2 text-xs text-gray-500 break-words leading-relaxed">
+                                    {upsell.pricingLabel} on {upsell.serviceName}
+                                  </p>
                                   {upsell.category && (
                                     <span className="ab-upsell-category inline-block mt-2 text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded break-words">
                                       {upsell.category}
@@ -4472,7 +4445,7 @@ export default function StyledCalculator(props: any = {}) {
                                 </div>
                                 <div className="ab-upsell-price-wrap text-right flex-shrink-0 sm:ml-3">
                                   <div className="ab-upsell-price text-lg font-bold text-orange-600 whitespace-nowrap">
-                                    +${upsellPrice.toLocaleString()}
+                                    +${upsell.amount.toLocaleString()}
                                   </div>
                                   {isSelected && (
                                     <div className="ab-upsell-added text-sm text-orange-600 font-medium mt-1 whitespace-nowrap">
@@ -4481,7 +4454,7 @@ export default function StyledCalculator(props: any = {}) {
                                   )}
                                 </div>
                               </div>
-                              
+
                               {upsell.tooltip && (
                                 <div className="ab-upsell-tooltip mt-2 text-xs text-gray-500 italic break-words leading-relaxed">
                                   💡 {upsell.tooltip}
@@ -4495,23 +4468,20 @@ export default function StyledCalculator(props: any = {}) {
                   </div>
                   
                     {/* Show selected upsells total */}
-                    {selectedUpsells.length > 0 && (
+                    {selectedCalculatedUpsells.length > 0 && (
                       <div className="ab-upsell-selected-summary mt-4 p-3 bg-orange-100 rounded-lg border border-orange-300">
                         <div className="ab-upsell-selected-title text-sm font-medium text-orange-800 mb-2">Add-ons Selected:</div>
-                        {allUpsells.filter(u => selectedUpsells.includes(u.id)).map((upsell) => {
-                          const upsellPrice = Math.round(subtotal * (upsell.percentageOfMain / 100));
-                          return (
-                            <div key={upsell.id} className="ab-upsell-selected-row flex justify-between items-center text-sm">
-                              <span className="ab-upsell-selected-name text-orange-700">{upsell.name} ({upsell.serviceName}):</span>
-                              <span className="ab-upsell-selected-price font-medium text-orange-600">
-                                +${upsellPrice.toLocaleString()}
-                              </span>
-                            </div>
-                          );
-                        })}
+                        {selectedCalculatedUpsells.map((upsell) => (
+                          <div key={upsell.id} className="ab-upsell-selected-row flex justify-between items-center text-sm">
+                            <span className="ab-upsell-selected-name text-orange-700">{upsell.name} ({upsell.serviceName}):</span>
+                            <span className="ab-upsell-selected-price font-medium text-orange-600">
+                              +${upsell.amount.toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
                         <div className="ab-upsell-selected-total text-sm font-semibold text-orange-800 mt-2 pt-2 border-t border-orange-200">
-                          Total Add-ons: +${allUpsells.filter(u => selectedUpsells.includes(u.id))
-                            .reduce((sum, upsell) => sum + Math.round(subtotal * (upsell.percentageOfMain / 100)), 0)
+                          Total Add-ons: +${selectedCalculatedUpsells
+                            .reduce((sum, upsell) => sum + upsell.amount, 0)
                             .toLocaleString()}
                         </div>
                       </div>

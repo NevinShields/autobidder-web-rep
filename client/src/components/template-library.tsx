@@ -20,6 +20,10 @@ interface TemplateLibraryProps {
   onClose: () => void;
 }
 
+type FormulaTemplateSummary = Pick<FormulaTemplate, "id" | "name" | "title" | "description" | "category" | "iconUrl" | "timesUsed"> & {
+  variableCount: number;
+};
+
 export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProps) {
   const [location, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,14 +32,17 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: templates = [], isLoading } = useQuery<FormulaTemplate[]>({
-    queryKey: ["/api/formula-templates"],
+  const templateListQueryKey = ["/api/formula-templates?summary=1"];
+  const categoryQueryKey = ["/api/template-categories"];
+
+  const { data: templates = [], isLoading } = useQuery<FormulaTemplateSummary[]>({
+    queryKey: templateListQueryKey,
     enabled: isOpen,
   });
 
   // Fetch template categories
   const { data: templateCategories = [] } = useQuery<Array<{ id: number; name: string; isActive: boolean }>>({
-    queryKey: ['/api/template-categories'],
+    queryKey: categoryQueryKey,
     enabled: isOpen,
   });
 
@@ -114,48 +121,48 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] sm:h-[85vh] overflow-hidden rounded-[28px] border border-amber-200/40 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-0 flex flex-col shadow-[0_30px_100px_rgba(15,23,42,0.16)]">
-        <DialogHeader className="relative shrink-0 overflow-hidden border-b border-amber-200/40 px-4 py-5 sm:px-6 sm:py-6">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.22),transparent_35%),radial-gradient(circle_at_left,rgba(249,115,22,0.10),transparent_30%)]" />
+      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] sm:h-[85vh] overflow-hidden rounded-[28px] border border-amber-200/40 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-0 flex flex-col shadow-[0_30px_100px_rgba(15,23,42,0.16)] dark:border-amber-500/20 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/25 dark:shadow-[0_30px_100px_rgba(2,6,23,0.7)]">
+        <DialogHeader className="relative shrink-0 overflow-hidden border-b border-amber-200/40 px-4 py-5 sm:px-6 sm:py-6 dark:border-amber-500/20">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.22),transparent_35%),radial-gradient(circle_at_left,rgba(249,115,22,0.10),transparent_30%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_35%),radial-gradient(circle_at_left,rgba(245,158,11,0.10),transparent_28%)]" />
           <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <DialogTitle
-                className="flex items-center gap-3 text-slate-900"
+                className="flex items-center gap-3 text-slate-900 dark:text-slate-100"
                 style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-amber-600 shadow-sm ring-1 ring-white/70 backdrop-blur">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/80 text-amber-600 shadow-sm ring-1 ring-white/70 backdrop-blur dark:bg-slate-900/80 dark:text-amber-300 dark:ring-slate-800/80">
                   <BookOpen className="h-5 w-5" />
                 </span>
                 <span className="text-2xl sm:text-3xl leading-none">Formula Template Library</span>
               </DialogTitle>
-              <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-[15px]">
+              <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-[15px] dark:text-slate-300">
                 Start from proven pricing setups and tailor the logic to your business instead of building every formula from scratch.
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 self-start rounded-full border border-amber-200/70 bg-white/80 px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm backdrop-blur">
+            <div className="inline-flex items-center gap-2 self-start rounded-full border border-amber-200/70 bg-white/80 px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm backdrop-blur dark:border-amber-500/20 dark:bg-slate-900/80 dark:text-amber-200">
               <Sparkles className="h-3.5 w-3.5" />
               {isLoading ? "Loading templates..." : `${filteredTemplates.length} template${filteredTemplates.length !== 1 ? "s" : ""}`}
             </div>
           </div>
         </DialogHeader>
 
-        <div className="shrink-0 border-b border-amber-200/40 bg-white/70 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur">
+        <div className="shrink-0 border-b border-amber-200/40 bg-white/70 px-4 py-3 sm:px-6 sm:py-4 backdrop-blur dark:border-amber-500/20 dark:bg-slate-950/50">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber-500/80" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amber-500/80 dark:text-amber-300/80" />
               <Input
                 placeholder="Search templates, industries, or use cases..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="h-11 rounded-2xl border-amber-200/70 bg-white/90 pl-10 text-sm shadow-sm focus-visible:ring-amber-300"
+                className="h-11 rounded-2xl border-amber-200/70 bg-white/90 pl-10 text-sm shadow-sm focus-visible:ring-amber-300 dark:border-amber-500/20 dark:bg-slate-900/80 dark:text-slate-100 dark:placeholder:text-slate-400"
               />
             </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="h-11 w-full rounded-2xl border-amber-200/70 bg-white/90 text-sm shadow-sm sm:w-56">
-                <Filter className="mr-2 h-4 w-4 text-amber-500/80" />
+              <SelectTrigger className="h-11 w-full rounded-2xl border-amber-200/70 bg-white/90 text-sm shadow-sm sm:w-56 dark:border-amber-500/20 dark:bg-slate-900/80 dark:text-slate-100">
+                <Filter className="mr-2 h-4 w-4 text-amber-500/80 dark:text-amber-300/80" />
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-amber-200/70">
+              <SelectContent className="rounded-2xl border-amber-200/70 dark:border-amber-500/20 dark:bg-slate-900 dark:text-slate-100">
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.name}>
                     {category.name === "all" ? "All Categories" : category.name}
@@ -165,23 +172,23 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
             </Select>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge className="rounded-full border-0 bg-amber-100/80 px-3 py-1 text-[11px] text-amber-800">
+            <Badge className="rounded-full border-0 bg-amber-100/80 px-3 py-1 text-[11px] text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
               <Sparkles className="mr-1 h-3 w-3" />
               Ready to customize
             </Badge>
-            <Badge className="rounded-full border-0 bg-slate-100 px-3 py-1 text-[11px] text-slate-600">
+            <Badge className="rounded-full border-0 bg-slate-100 px-3 py-1 text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               Built for service businesses
             </Badge>
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.55),rgba(248,250,252,0.9))]">
+        <div className="flex-1 overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.55),rgba(248,250,252,0.9))] dark:bg-[linear-gradient(180deg,rgba(2,6,23,0.2),rgba(2,6,23,0.75))]">
           <ScrollArea className="h-full">
             <div className="px-4 py-4 sm:px-6 sm:py-6">
               {isLoading ? (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
                   {[...Array(6)].map((_, i) => (
-                    <Card key={i} className="overflow-hidden rounded-3xl border border-amber-100/70 bg-white/90 shadow-sm">
+                    <Card key={i} className="overflow-hidden rounded-3xl border border-amber-100/70 bg-white/90 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/85">
                       <CardHeader className="space-y-3 pb-4">
                         <Skeleton className="h-5 w-3/4 rounded-full" />
                         <Skeleton className="h-4 w-24 rounded-full" />
@@ -195,17 +202,17 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
                 </div>
               ) : filteredTemplates.length === 0 ? (
                 <div className="py-12 sm:py-16">
-                  <div className="mx-auto max-w-md rounded-[28px] border border-dashed border-amber-200 bg-white/80 px-6 py-10 text-center shadow-sm">
-                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <div className="mx-auto max-w-md rounded-[28px] border border-dashed border-amber-200 bg-white/80 px-6 py-10 text-center shadow-sm dark:border-amber-500/20 dark:bg-slate-900/80">
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
                       <BookOpen className="h-7 w-7" />
                     </div>
                     <h3
-                      className="text-2xl text-slate-900"
+                      className="text-2xl text-slate-900 dark:text-slate-100"
                       style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
                     >
                       No templates found
                     </h3>
-                    <p className="mt-2 text-sm sm:text-base text-slate-500">
+                    <p className="mt-2 text-sm sm:text-base text-slate-500 dark:text-slate-400">
                       {searchTerm || selectedCategory !== "all"
                         ? "Try adjusting your search or category filter."
                         : "No templates are available right now."}
@@ -214,16 +221,16 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
-                  {filteredTemplates.map((template: FormulaTemplate) => (
+                  {filteredTemplates.map((template: FormulaTemplateSummary) => (
                     <Card
                       key={template.id}
-                      className="group overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/92 shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_24px_60px_rgba(251,146,60,0.14)]"
+                      className="group overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/92 shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_24px_60px_rgba(251,146,60,0.14)] dark:border-slate-700/70 dark:bg-slate-900/88 dark:shadow-[0_20px_50px_rgba(2,6,23,0.4)] dark:hover:border-amber-500/30 dark:hover:shadow-[0_24px_60px_rgba(245,158,11,0.12)]"
                     >
                       <CardHeader className="relative pb-4">
-                        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-br from-amber-100/70 via-orange-50 to-transparent" />
+                        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-br from-amber-100/70 via-orange-50 to-transparent dark:from-amber-500/10 dark:via-orange-500/5 dark:to-transparent" />
                         <div className="relative flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/80 bg-white shadow-sm">
+                            <div className="mb-3 flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/80 bg-white shadow-sm dark:border-slate-700/70 dark:bg-slate-800">
                               {template.iconUrl && !imageErrors.has(template.id) ? (
                                 <img
                                   src={template.iconUrl}
@@ -241,30 +248,30 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
                               )}
                             </div>
                             <CardTitle
-                              className="line-clamp-2 text-lg text-slate-900 transition-colors group-hover:text-amber-700"
+                              className="line-clamp-2 text-lg text-slate-900 transition-colors group-hover:text-amber-700 dark:text-slate-100 dark:group-hover:text-amber-200"
                               style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
                             >
                               {template.name}
                             </CardTitle>
-                            <Badge className="mt-2 rounded-full border-0 bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
+                            <Badge className="mt-2 rounded-full border-0 bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                               {template.category}
                             </Badge>
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0">
-                        <p className="mb-4 line-clamp-3 text-sm leading-6 text-slate-600">
+                        <p className="mb-4 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                           {template.description || "No description available"}
                         </p>
 
                         <div className="mb-5 flex flex-wrap items-center gap-2">
-                          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-700">
+                          <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-[11px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
                             <Users className="h-3.5 w-3.5" />
                             {template.timesUsed === 0 ? "New" : formatTimesUsed(template.timesUsed)}
                           </div>
-                          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-600">
+                          <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             <Clock className="h-3.5 w-3.5" />
-                            {template.variables.length} vars
+                            {template.variableCount} vars
                           </div>
                         </div>
 
@@ -300,13 +307,25 @@ export default function TemplateLibrary({ isOpen, onClose }: TemplateLibraryProp
 // Template library trigger button component
 export function TemplateLibraryButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const prefetchLibrary = () => {
+    queryClient.prefetchQuery({
+      queryKey: ["/api/formula-templates?summary=1"],
+    });
+    queryClient.prefetchQuery({
+      queryKey: ["/api/template-categories"],
+    });
+  };
 
   return (
     <>
       <Button
         variant="outline"
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 rounded-full border-amber-200/70 bg-white/80 px-4 text-slate-700 shadow-sm hover:border-amber-300 hover:bg-amber-50/80 hover:text-amber-700"
+        onMouseEnter={prefetchLibrary}
+        onFocus={prefetchLibrary}
+        className="flex items-center gap-2 rounded-full border-amber-200/70 bg-white/80 px-4 text-slate-700 shadow-sm hover:border-amber-300 hover:bg-amber-50/80 hover:text-amber-700 dark:border-amber-500/20 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:border-amber-500/40 dark:hover:bg-amber-500/10 dark:hover:text-amber-200"
       >
         <BookOpen className="h-4 w-4" />
         Browse Templates

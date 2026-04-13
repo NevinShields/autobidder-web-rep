@@ -98,21 +98,21 @@ export default function RepeatableGroupCard({
   };
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-white shadow-sm">
-      <div className="flex items-start justify-between gap-4 border-b border-amber-100 px-4 py-4">
+    <div className="rounded-xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/60 dark:bg-slate-900 dark:shadow-none">
+      <div className="flex items-start justify-between gap-4 border-b border-amber-100 px-4 py-4 dark:border-amber-900/50">
         <div className="space-y-2 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge className="border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-50">
+            <Badge className="border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200 dark:hover:bg-amber-950/40">
               <Copy className="mr-1 h-3 w-3" />
               Repeatable Group
             </Badge>
-            <code className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+            <code className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-slate-800 dark:text-slate-200">
               {variable.id}
             </code>
           </div>
           <div>
-            <p className="font-medium text-gray-900">{variable.name}</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-gray-900 dark:text-slate-100">{variable.name}</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">
               Group total token: <code>{variable.id}</code>
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function RepeatableGroupCard({
           <Button type="button" variant="outline" size="sm" onClick={() => setIsExpanded((value) => !value)}>
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => onDelete(variable.id)} className="text-red-600 hover:bg-red-50 hover:text-red-700">
+          <Button type="button" variant="ghost" size="sm" onClick={() => onDelete(variable.id)} className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30 dark:hover:text-red-300">
             Delete
           </Button>
         </div>
@@ -147,7 +147,7 @@ export default function RepeatableGroupCard({
                 placeholder="trees_total"
                 className="font-mono"
               />
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">
                 This token already equals the sum of all repeated items. Use <code>{variable.id}</code> directly in the main formula instead of multiplying it by the count again.
               </p>
             </div>
@@ -247,11 +247,11 @@ export default function RepeatableGroupCard({
             />
           </div>
 
-          <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="font-medium text-gray-900">Child Questions</p>
-                <p className="text-sm text-gray-500">
+                <p className="font-medium text-gray-900 dark:text-slate-100">Child Questions</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">
                   These questions repeat for each item in the group.
                 </p>
               </div>
@@ -273,7 +273,7 @@ export default function RepeatableGroupCard({
                   />
                 ))
               ) : (
-                <div className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500">
+                <div className="rounded-lg border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 dark:border-slate-600 dark:text-slate-400">
                   Add the per-item questions here, such as height, diameter, haul-away, or stump grinding.
                 </div>
               )}
@@ -288,7 +288,7 @@ export default function RepeatableGroupCard({
               variables={config.childVariables}
               placeholder="e.g., height * 12 + diameter * 8 + stump_grind"
             />
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-gray-500 dark:text-slate-400">
               Each repeated item uses this formula. All item totals are then summed into <code>{variable.id}</code> for the main formula.
             </p>
           </div>

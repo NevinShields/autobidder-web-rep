@@ -216,6 +216,8 @@ export const businessSettings = pgTable("business_settings", {
   enableLeadCapture: boolean("enable_lead_capture").notNull().default(true),
   enableBooking: boolean("enable_booking").notNull().default(false),
   maxDaysOut: integer("max_days_out").default(90), // Maximum days in advance customers can book (null = no limit)
+  minBookingAdvanceValue: integer("min_booking_advance_value").notNull().default(0), // Minimum lead time required before a customer can book
+  minBookingAdvanceUnit: text("min_booking_advance_unit").notNull().default("hours"), // "hours" or "days"
   enableServiceCart: boolean("enable_service_cart").notNull().default(false), // Allow users to select which services to proceed with when multiple are selected
   enableAutoExpandCollapse: boolean("enable_auto_expand_collapse").notNull().default(true), // Auto-expand/collapse services in multi-service forms
   // Route optimization for bookings
@@ -284,6 +286,18 @@ export const businessSettings = pgTable("business_settings", {
     defaultVideoUrl?: string;
     defaultShowVideo?: boolean;
     defaultIncludeAttachments?: boolean;
+  }>(),
+  chatEstimatorSettings: jsonb("chat_estimator_settings").notNull().default({}).$type<{
+    enabled?: boolean;
+    calculatorId?: number | null;
+    calculatorIds?: number[];
+    useAllActiveCalculators?: boolean;
+    greetingMessage?: string;
+    widgetTitle?: string;
+    launcherText?: string;
+    primaryColor?: string;
+    avatarLogoUrl?: string;
+    finalCtaBehavior?: "book_now" | "send_estimate" | "contact_us";
   }>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -473,6 +487,11 @@ export const leads = pgTable("leads", {
     percentageOfMain: number;
     amount: number; // Upsell amount in cents
     category?: string;
+    serviceId?: number;
+    serviceName?: string;
+    pricingLabel?: string;
+    calculationType?: 'percentage_service' | 'percentage_total' | 'fixed_amount';
+    calculationValue?: number;
   }>>().default([]), // Customer upsells selected for this lead
   ipAddress: text("ip_address"), // IP address of the form submitter
   source: text("source").default("calculator"), // "calculator", "duda", "custom_form", "manual" - tracks where the lead originated
@@ -514,6 +533,50 @@ export const calculatorSessions = pgTable("calculator_sessions", {
   durationSeconds: integer("duration_seconds"), // Time spent on calculator
   priceCalculations: integer("price_calculations").default(0), // Number of times price was calculated
   converted: boolean("converted").default(false), // Whether this session resulted in a lead
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chatEstimatorSessions = pgTable("chat_estimator_sessions", {
+  id: text("id").primaryKey(),
+  accountId: varchar("account_id").notNull().references(() => users.id),
+  calculatorId: integer("calculator_id").notNull().references(() => formulas.id),
+  selectedCalculatorIds: jsonb("selected_calculator_ids").notNull().default([]).$type<number[]>(),
+  currentCalculatorIndex: integer("current_calculator_index").notNull().default(0),
+  visitorId: text("visitor_id").notNull(),
+  status: text("status").notNull().default("active"),
+  answersJson: jsonb("answers_json").notNull().default({}).$type<Record<string, any>>(),
+  contactJson: jsonb("contact_json").notNull().default({}).$type<Record<string, any>>(),
+  serviceResultsJson: jsonb("service_results_json").notNull().default({}).$type<Record<string, {
+    amountCents: number;
+    amountDollars: number;
+    displayMode: "fixed";
+    displayText: string;
+  }>>(),
+  resultJson: jsonb("result_json").$type<{
+    amountCents: number;
+    amountDollars: number;
+    displayMode: "fixed";
+    displayText: string;
+  }>(),
+  currentQuestionKey: text("current_question_key"),
+  leadId: integer("lead_id"),
+  estimateId: integer("estimate_id"),
+  startedAt: timestamp("started_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  completedAt: timestamp("completed_at"),
+  pageUrl: text("page_url"),
+  referrer: text("referrer"),
+  deviceType: text("device_type"),
+});
+
+export const chatEstimatorEvents = pgTable("chat_estimator_events", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull().references(() => chatEstimatorSessions.id),
+  accountId: varchar("account_id").notNull().references(() => users.id),
+  calculatorId: integer("calculator_id").notNull().references(() => formulas.id),
+  eventName: text("event_name").notNull(),
+  questionKey: text("question_key"),
+  metadata: jsonb("metadata").notNull().default({}).$type<Record<string, any>>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -570,6 +633,11 @@ export const multiServiceLeads = pgTable("multi_service_leads", {
     percentageOfMain: number;
     amount: number; // Upsell amount in cents
     category?: string;
+    serviceId?: number;
+    serviceName?: string;
+    pricingLabel?: string;
+    calculationType?: 'percentage_service' | 'percentage_total' | 'fixed_amount';
+    calculationValue?: number;
   }>>().default([]), // Customer upsells selected for this lead
   taxAmount: integer("tax_amount"), // Tax amount in cents
   subtotal: integer("subtotal"), // Subtotal before discounts and tax in cents
@@ -1286,6 +1354,11 @@ export const customFormLeads = pgTable("custom_form_leads", {
     percentageOfMain: number;
     amount: number; // Upsell amount in cents
     category?: string;
+    serviceId?: number;
+    serviceName?: string;
+    pricingLabel?: string;
+    calculationType?: 'percentage_service' | 'percentage_total' | 'fixed_amount';
+    calculationValue?: number;
   }>>().default([]),
   taxAmount: integer("tax_amount").default(0), // Tax amount in cents
   subtotal: integer("subtotal"), // Subtotal before discounts and tax
@@ -1417,6 +1490,9 @@ export interface UpsellItem {
   description: string;
   category: string;
   percentageOfMain: number;
+  calculationType?: 'percentage_service' | 'percentage_total' | 'fixed_amount';
+  fixedAmount?: number;
+  conditionalLogic?: ConditionalLogic;
   isPopular?: boolean;
   iconUrl?: string; // URL to uploaded icon
   imageUrl?: string; // URL to uploaded image
@@ -1566,8 +1642,9 @@ interface BaseVariable {
   tooltip?: string;
   tooltipVideoUrl?: string;
   tooltipImageUrl?: string;
+  questionCardDefaultImage?: string;
   options?: VariableOption[];
-  defaultValue?: string | number | boolean;
+  defaultValue?: string | number | boolean | Array<string | number>;
   allowMultipleSelection?: boolean;
   connectionKey?: string;
   prefillSourceKey?: string | null;
@@ -1644,8 +1721,9 @@ const baseVariableSchema = z.object({
   tooltip: z.string().optional(),
   tooltipVideoUrl: z.string().optional(),
   tooltipImageUrl: z.string().optional(),
+  questionCardDefaultImage: z.string().optional(),
   options: z.array(variableOptionSchema).optional(),
-  defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+  defaultValue: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()]))]).optional(),
   allowMultipleSelection: z.boolean().optional(),
   connectionKey: z.string().optional(),
   prefillSourceKey: z.string().nullable().optional(),
@@ -1917,6 +1995,16 @@ export const insertCalculatorSessionSchema = createInsertSchema(calculatorSessio
   createdAt: true,
 });
 
+export const insertChatEstimatorSessionSchema = createInsertSchema(chatEstimatorSessions).omit({
+  startedAt: true,
+  updatedAt: true,
+});
+
+export const insertChatEstimatorEventSchema = createInsertSchema(chatEstimatorEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertPageViewSchema = createInsertSchema(pageViews).omit({
   id: true,
   createdAt: true,
@@ -2057,6 +2145,10 @@ export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 export type CalculatorSession = typeof calculatorSessions.$inferSelect;
 export type InsertCalculatorSession = z.infer<typeof insertCalculatorSessionSchema>;
+export type ChatEstimatorSession = typeof chatEstimatorSessions.$inferSelect;
+export type InsertChatEstimatorSession = z.infer<typeof insertChatEstimatorSessionSchema>;
+export type ChatEstimatorEvent = typeof chatEstimatorEvents.$inferSelect;
+export type InsertChatEstimatorEvent = z.infer<typeof insertChatEstimatorEventSchema>;
 export type PageView = typeof pageViews.$inferSelect;
 export type InsertPageView = z.infer<typeof insertPageViewSchema>;
 export type MultiServiceLead = typeof multiServiceLeads.$inferSelect;

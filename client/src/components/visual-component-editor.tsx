@@ -1871,6 +1871,29 @@ export default function VisualComponentEditor({
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Full Image Display */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-xs font-medium">Full Image Display</Label>
+                        <p className="text-xs text-gray-500">Show entire image without cropping</p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={!!styling.multiChoiceImageFullDisplay}
+                        onClick={() => onStylingChange('multiChoiceImageFullDisplay', !styling.multiChoiceImageFullDisplay)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                          styling.multiChoiceImageFullDisplay ? 'bg-blue-600' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform ${
+                            styling.multiChoiceImageFullDisplay ? 'translate-x-5' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                 </div>
 

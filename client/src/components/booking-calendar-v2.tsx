@@ -74,6 +74,11 @@ export default function BookingCalendarV2({
   const today = new Date();
   const startDate = today.toISOString().split('T')[0];
   const maxDaysOut = businessSettings?.maxDaysOut || 90;
+  const minBookingAdvanceValue = Math.max(0, businessSettings?.minBookingAdvanceValue ?? 0);
+  const minBookingAdvanceUnit = businessSettings?.minBookingAdvanceUnit === 'days' ? 'days' : 'hours';
+  const minBookingAdvanceSummary = minBookingAdvanceValue > 0
+    ? `${minBookingAdvanceValue} ${minBookingAdvanceValue === 1 ? minBookingAdvanceUnit.slice(0, -1) : minBookingAdvanceUnit}`
+    : null;
   const endDate = new Date(today.getTime() + (maxDaysOut - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   // Fetch all available slots - simplified with unified calendar architecture
@@ -217,6 +222,11 @@ export default function BookingCalendarV2({
         <p className="text-sm text-gray-600">
           Select a date and time for your service appointment
         </p>
+        {minBookingAdvanceSummary && (
+          <p className="text-sm text-amber-700">
+            Appointments must be booked at least {minBookingAdvanceSummary} in advance.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Loading State */}
@@ -251,7 +261,7 @@ export default function BookingCalendarV2({
               <Calendar className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-600">
-              No available dates in the next {maxDaysOut} days. Please contact us directly.
+              No available dates in the next {maxDaysOut} days{minBookingAdvanceSummary ? ` that meet the ${minBookingAdvanceSummary} notice requirement` : ''}. Please contact us directly.
             </p>
           </div>
         )}

@@ -77,6 +77,7 @@ const formatCustomCSS = (value: string) => {
 };
 
 type AICssActionMode = 'generate' | 'external-prompt';
+type AICssGenerateMode = 'merge' | 'replace';
 
 const AUTOBIDDER_SELECTOR_GUIDE: Array<{ selector: string; description: string }> = [
   { selector: '#autobidder-form.ab-form-container', description: 'Root wrapper for the full Autobidder form. Custom CSS is scoped to this element automatically.' },
@@ -90,6 +91,9 @@ const AUTOBIDDER_SELECTOR_GUIDE: Array<{ selector: string; description: string }
   { selector: '.ab-checkbox', description: 'Checkbox inputs.' },
   { selector: '.ab-slider, .ab-slider-value, .ab-slider-unit, .ab-slider-min, .ab-slider-max', description: 'Range slider control and its labels/values.' },
   { selector: '.ab-multiple-choice, .ab-multiple-choice-label', description: 'Multiple-choice option cards and their labels.' },
+  { selector: '.ab-multiple-choice-content', description: 'Inner content wrapper inside a multiple-choice option card.' },
+  { selector: '.ab-multiple-choice-icon, .ab-multiple-choice-icon-image, .ab-multiple-choice-icon-fallback', description: 'Multiple-choice icon wrapper, including uploaded-image and fallback-icon states.' },
+  { selector: '.ab-multiple-choice-image', description: 'Images inside multiple-choice option cards. Use object-fit, width, height, border-radius, etc. to control image display.' },
   { selector: '.ab-service-card, .ab-service-card.selected, .ab-service-title', description: 'Service selection cards, selected state, and service title text.' },
   { selector: '.ab-service-accordion, .ab-service-accordion-text', description: 'Accordion-style service selector containers and text.' },
   { selector: '.ab-button, .ab-button-primary', description: 'Primary action buttons such as continue, submit, and other calls to action.' },
@@ -112,6 +116,18 @@ const AUTOBIDDER_SELECTOR_GUIDE: Array<{ selector: string; description: string }
 ];
 
 const AUTOBIDDER_SELECTOR_INDEX = AUTOBIDDER_SELECTOR_GUIDE.map((item) => item.selector).join(', ');
+
+const AI_CSS_PROMPT_SUGGESTIONS = [
+  'Make the form feel more premium with softer cards, cleaner spacing, and stronger button contrast.',
+  'Add a modern dark mode with accessible contrast, subtle borders, and clear hover states.',
+  'Give the service cards a polished hover effect and make the selected state more obvious.',
+];
+
+const AI_CSS_EDIT_SUGGESTIONS = [
+  'Make the primary buttons larger with more padding and a clearer hover state.',
+  'Tighten the question card spacing and make labels easier to read.',
+  'Improve the pricing card hierarchy with a stronger price badge and cleaner shadows.',
+];
 
 const buildExternalAICssPrompt = ({
   request,
@@ -2859,6 +2875,8 @@ type EditCSSOptions = {
   clearInput?: boolean;
   successTitle?: string;
   successDescription?: string;
+  targetSelector?: string;
+  targetLabel?: string;
 };
 
 const mergeComponentStyles = (styles: any) => {
@@ -2899,6 +2917,9 @@ export default function DesignDashboard() {
   const [isGeneratingCSS, setIsGeneratingCSS] = useState(false);
   const [aiCSSError, setAiCSSError] = useState('');
   const [aiCssMode, setAiCssMode] = useState<AICssActionMode>('generate');
+  const [aiCssDescription, setAiCssDescription] = useState('');
+  const [aiCssGenerateMode, setAiCssGenerateMode] = useState<AICssGenerateMode>('merge');
+  const [aiCssEditPrompt, setAiCssEditPrompt] = useState('');
   const [externalAIPrompt, setExternalAIPrompt] = useState('');
   const [isPreviewLabOpen, setIsPreviewLabOpen] = useState(false);
   const [isTargetedEditModalOpen, setIsTargetedEditModalOpen] = useState(false);
@@ -3192,21 +3213,31 @@ ${generateCSSVariables(styling)}
 
   // Handle AI CSS generation
   const handleGenerateCSS = useCallback(async (description: string) => {
+    const trimmedDescription = description.trim();
+    if (!trimmedDescription) return;
+
     setIsGeneratingCSS(true);
     setAiCSSError('');
     
     try {
       const response = await apiRequest("POST", "/api/design-settings/generate-css", {
-        description
+        description: trimmedDescription,
+        currentCSS: customCSS,
+        styling,
+        componentStyles,
+        mode: aiCssGenerateMode,
       });
       const data = await response.json();
       
       if (data.css) {
         setCustomCSS(formatCustomCSS(data.css));
         setHasUnsavedChanges(true);
+        setAiCssDescription('');
         toast({
           title: "CSS Generated!",
-          description: "AI has generated custom CSS based on your description.",
+          description: aiCssGenerateMode === 'merge'
+            ? "AI merged the requested CSS changes into your existing stylesheet."
+            : "AI generated a replacement stylesheet based on your description.",
         });
       }
     } catch (error) {
@@ -3215,7 +3246,7 @@ ${generateCSSVariables(styling)}
     } finally {
       setIsGeneratingCSS(false);
     }
-  }, [toast]);
+  }, [aiCssGenerateMode, componentStyles, customCSS, styling, toast]);
 
   // Handle AI CSS editing
   const handleEditCSS = useCallback(async (editDescription: string, options: EditCSSOptions = {}): Promise<boolean> => {
@@ -3224,7 +3255,11 @@ ${generateCSSVariables(styling)}
       clearInput = true,
       successTitle = "CSS Edited!",
       successDescription = "AI has updated your CSS based on your request.",
+      targetSelector,
+      targetLabel,
     } = options;
+    const trimmedEditDescription = editDescription.trim();
+    if (!trimmedEditDescription) return false;
 
     setIsGeneratingCSS(true);
     setAiCSSError('');
@@ -3232,7 +3267,11 @@ ${generateCSSVariables(styling)}
     try {
       const response = await apiRequest("POST", "/api/design-settings/edit-css", {
         currentCSS: sourceCSS ?? customCSS,
-        editDescription
+        editDescription: trimmedEditDescription,
+        styling,
+        componentStyles,
+        targetSelector,
+        targetLabel,
       });
       const data = await response.json();
       
@@ -3244,8 +3283,7 @@ ${generateCSSVariables(styling)}
           description: successDescription,
         });
         if (clearInput) {
-          const input = document.querySelector('[data-testid="input-ai-css-edit"]') as HTMLInputElement;
-          if (input) input.value = '';
+          setAiCssEditPrompt('');
         }
         return true;
       }
@@ -3262,7 +3300,7 @@ ${generateCSSVariables(styling)}
     } finally {
       setIsGeneratingCSS(false);
     }
-  }, [customCSS, toast]);
+  }, [componentStyles, customCSS, styling, toast]);
 
   const handlePreviewPointerMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     const hoverTarget = (event.target as HTMLElement).closest<HTMLElement>('[data-css-target]');
@@ -3327,22 +3365,15 @@ ${generateCSSVariables(styling)}
       selectedPreviewTarget.selector,
       selectedPreviewTarget.label
     );
-    const scopedEditPrompt = [
-      `Target selector: ${selectedPreviewTarget.selector}`,
-      `Element description: ${selectedPreviewTarget.label}`,
-      `Request: ${targetedEditPrompt.trim()}`,
-      `Only add or change CSS rules for ${selectedPreviewTarget.selector} and direct state variants of it (for example :hover or :focus).`,
-      'Keep all unrelated existing CSS untouched.',
-      'Return complete CSS.',
-    ].join('\n');
-
-    const didApply = await handleEditCSS(scopedEditPrompt, {
+    const didApply = await handleEditCSS(targetedEditPrompt.trim(), {
       sourceCSS: seededCSS,
       clearInput: false,
       successTitle: "Element Updated",
       successDescription: added
         ? `${selectedPreviewTarget.selector} was added and updated with your request.`
         : `${selectedPreviewTarget.selector} was updated with your request.`,
+      targetSelector: selectedPreviewTarget.selector,
+      targetLabel: selectedPreviewTarget.label,
     });
 
     if (didApply) {
@@ -4208,8 +4239,16 @@ ${generateCSSVariables(styling)}
                                             className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm selected p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multiple-choice', 'Multiple choice card')}
                                           >
-                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
-                                              <span className="preview-choice-icon">FR</span>
+                                            <div
+                                              className="ab-multiple-choice-content flex flex-col items-center justify-center gap-2 w-full h-full"
+                                              {...previewTargetAttributes('.ab-multiple-choice-content', 'Multiple choice content wrapper')}
+                                            >
+                                              <span
+                                                className="ab-multiple-choice-icon ab-multiple-choice-icon-fallback preview-choice-icon"
+                                                {...previewTargetAttributes('.ab-multiple-choice-icon', 'Multiple choice icon')}
+                                              >
+                                                FR
+                                              </span>
                                               <span
                                                 className="ab-multiple-choice-label font-medium text-sm"
                                                 {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
@@ -4224,8 +4263,16 @@ ${generateCSSVariables(styling)}
                                             className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multichoice-card', 'Multiple choice card (alt selector)')}
                                           >
-                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
-                                              <span className="preview-choice-icon">GA</span>
+                                            <div
+                                              className="ab-multiple-choice-content flex flex-col items-center justify-center gap-2 w-full h-full"
+                                              {...previewTargetAttributes('.ab-multiple-choice-content', 'Multiple choice content wrapper')}
+                                            >
+                                              <span
+                                                className="ab-multiple-choice-icon ab-multiple-choice-icon-fallback preview-choice-icon"
+                                                {...previewTargetAttributes('.ab-multiple-choice-icon', 'Multiple choice icon')}
+                                              >
+                                                GA
+                                              </span>
                                               <span
                                                 className="ab-multiple-choice-label font-medium text-sm"
                                                 {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
@@ -4240,8 +4287,16 @@ ${generateCSSVariables(styling)}
                                             className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multiple-choice', 'Multiple choice card')}
                                           >
-                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
-                                              <span className="preview-choice-icon">PH</span>
+                                            <div
+                                              className="ab-multiple-choice-content flex flex-col items-center justify-center gap-2 w-full h-full"
+                                              {...previewTargetAttributes('.ab-multiple-choice-content', 'Multiple choice content wrapper')}
+                                            >
+                                              <span
+                                                className="ab-multiple-choice-icon ab-multiple-choice-icon-fallback preview-choice-icon"
+                                                {...previewTargetAttributes('.ab-multiple-choice-icon', 'Multiple choice icon')}
+                                              >
+                                                PH
+                                              </span>
                                               <span
                                                 className="ab-multiple-choice-label font-medium text-sm"
                                                 {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
@@ -4256,8 +4311,16 @@ ${generateCSSVariables(styling)}
                                             className="ab-multiple-choice ab-multichoice-card multiple-choice border-2 cursor-pointer transition-all rounded-lg hover:shadow-sm p-3 text-center flex flex-col h-full justify-center"
                                             {...previewTargetAttributes('.ab-multichoice-card', 'Multiple choice card (alt selector)')}
                                           >
-                                            <div className="flex flex-col items-center justify-center gap-2 w-full h-full">
-                                              <span className="preview-choice-icon">EC</span>
+                                            <div
+                                              className="ab-multiple-choice-content flex flex-col items-center justify-center gap-2 w-full h-full"
+                                              {...previewTargetAttributes('.ab-multiple-choice-content', 'Multiple choice content wrapper')}
+                                            >
+                                              <span
+                                                className="ab-multiple-choice-icon ab-multiple-choice-icon-fallback preview-choice-icon"
+                                                {...previewTargetAttributes('.ab-multiple-choice-icon', 'Multiple choice icon')}
+                                              >
+                                                EC
+                                              </span>
                                               <span
                                                 className="ab-multiple-choice-label font-medium text-sm"
                                                 {...previewTargetAttributes('.ab-multiple-choice-label', 'Multiple choice card text')}
@@ -4993,6 +5056,11 @@ ${generateCSSVariables(styling)}
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice</span> - Choice cards</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-multichoice-card</span> - Choice cards (alt)</div>
                                 <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice-label</span> - Choice card text</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice-content</span> - Inner content wrapper</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice-icon</span> - Icon wrapper</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice-icon-image</span> - Image icon wrapper</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice-icon-fallback</span> - Fallback icon block</div>
+                                <div><span className="text-blue-600 dark:text-blue-400">.ab-multiple-choice-image</span> - Multiple choice icon image</div>
                               </div>
                             </div>
                             {/* Pricing Cards */}
@@ -5174,11 +5242,17 @@ ${generateCSSVariables(styling)}
                         </div>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
                           {aiCssMode === 'generate'
-                            ? 'Describe the design style you want and Autobidder AI will generate custom CSS for you.'
+                            ? 'Describe the CSS change you want. Merge mode safely patches your current stylesheet, while Replace mode rewrites it.'
                             : 'Build a copyable prompt for ChatGPT, Claude, Gemini, or another AI tool. The prompt includes Autobidder form structure, selector context, and your current styling/CSS.'}
                         </p>
-                        <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)_auto]">
-                          <Select value={aiCssMode} onValueChange={(value) => setAiCssMode(value as AICssActionMode)}>
+                        <div className="grid gap-2 md:grid-cols-[220px_minmax(0,1fr)]">
+                          <Select
+                            value={aiCssMode}
+                            onValueChange={(value) => {
+                              setAiCssMode(value as AICssActionMode);
+                              setAiCSSError('');
+                            }}
+                          >
                             <SelectTrigger className="text-sm" data-testid="select-ai-css-mode">
                               <SelectValue />
                             </SelectTrigger>
@@ -5187,57 +5261,91 @@ ${generateCSSVariables(styling)}
                               <SelectItem value="external-prompt">AI prompt</SelectItem>
                             </SelectContent>
                           </Select>
-                          <Input
+                          {aiCssMode === 'generate' && (
+                            <Select
+                              value={aiCssGenerateMode}
+                              onValueChange={(value) => setAiCssGenerateMode(value as AICssGenerateMode)}
+                            >
+                              <SelectTrigger className="text-sm" data-testid="select-ai-css-generate-mode">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="merge">Merge into current CSS</SelectItem>
+                                <SelectItem value="replace">Replace custom CSS</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Textarea
                             placeholder={aiCssMode === 'generate'
-                              ? 'e.g., Neumorphism, Glassmorphism, Dark mode with neon accents...'
-                              : 'e.g., Make the form feel like a premium SaaS checkout with softer cards and stronger button contrast...'}
-                            className="text-sm flex-1"
+                              ? 'Describe the visual outcome and the elements involved. Example: Make question cards cleaner, increase button contrast, and give selected service cards a stronger border.'
+                              : 'Describe the CSS change you want help writing. Example: Make the form feel like a premium SaaS checkout with softer cards and stronger button contrast.'}
+                            className="min-h-[120px] text-sm"
                             data-testid="input-ai-css-description"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                const input = e.currentTarget as HTMLInputElement;
-                                if (input.value.trim()) {
-                                  if (aiCssMode === 'external-prompt') {
-                                    void handleCreateExternalAIPrompt(input.value);
-                                  } else {
-                                    void handleGenerateCSS(input.value);
-                                  }
+                            value={aiCssDescription}
+                            onChange={(event) => setAiCssDescription(event.target.value)}
+                            onKeyDown={(event) => {
+                              if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                                event.preventDefault();
+                                if (!aiCssDescription.trim()) return;
+                                if (aiCssMode === 'external-prompt') {
+                                  void handleCreateExternalAIPrompt(aiCssDescription);
+                                } else {
+                                  void handleGenerateCSS(aiCssDescription);
                                 }
                               }
                             }}
                           />
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              const input = document.querySelector('[data-testid="input-ai-css-description"]') as HTMLInputElement;
-                              if (input?.value.trim()) {
+                          <div className="flex flex-wrap gap-2">
+                            {(aiCssMode === 'generate' ? AI_CSS_PROMPT_SUGGESTIONS : AI_CSS_EDIT_SUGGESTIONS).map((suggestion) => (
+                              <Button
+                                key={suggestion}
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="h-auto whitespace-normal text-left text-xs"
+                                onClick={() => setAiCssDescription(suggestion)}
+                              >
+                                {suggestion}
+                              </Button>
+                            ))}
+                          </div>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              Tip: press Ctrl/Cmd + Enter to run the prompt.
+                            </p>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (!aiCssDescription.trim()) return;
                                 if (aiCssMode === 'external-prompt') {
-                                  void handleCreateExternalAIPrompt(input.value);
+                                  void handleCreateExternalAIPrompt(aiCssDescription);
                                 } else {
-                                  void handleGenerateCSS(input.value);
+                                  void handleGenerateCSS(aiCssDescription);
                                 }
-                              }
-                            }}
-                            disabled={isGeneratingCSS}
-                            data-testid="button-generate-css"
-                          >
-                            {isGeneratingCSS ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Generating...
-                              </>
-                            ) : aiCssMode === 'external-prompt' ? (
-                              <>
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Create Prompt
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-4 w-4 mr-2" />
-                                Generate
-                              </>
-                            )}
-                          </Button>
+                              }}
+                              disabled={isGeneratingCSS || !aiCssDescription.trim()}
+                              data-testid="button-generate-css"
+                            >
+                              {isGeneratingCSS ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  Generating...
+                                </>
+                              ) : aiCssMode === 'external-prompt' ? (
+                                <>
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  Create Prompt
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  {aiCssGenerateMode === 'merge' ? 'Merge CSS' : 'Generate Replacement CSS'}
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                         {aiCSSError && (
                           <p className="text-xs text-red-600">{aiCSSError}</p>
@@ -5328,44 +5436,64 @@ ${generateCSSVariables(styling)}
                             <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
                               Describe changes you want to make to your existing CSS. For element-specific changes, click an element in the Preview Lab.
                             </p>
-                            <div className="flex gap-2">
-                              <Input
+                            <div className="space-y-2">
+                              <Textarea
                                 placeholder="e.g., Make buttons bigger, Change cards to red, Add glow effect..."
-                                className="text-sm flex-1"
+                                className="min-h-[110px] text-sm"
                                 data-testid="input-ai-css-edit"
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    const input = e.currentTarget as HTMLInputElement;
-                                    if (input.value.trim()) {
-                                      handleEditCSS(input.value);
+                                value={aiCssEditPrompt}
+                                onChange={(event) => setAiCssEditPrompt(event.target.value)}
+                                onKeyDown={(event) => {
+                                  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                                    event.preventDefault();
+                                    if (aiCssEditPrompt.trim()) {
+                                      void handleEditCSS(aiCssEditPrompt);
                                     }
                                   }
                                 }}
                               />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const input = document.querySelector('[data-testid="input-ai-css-edit"]') as HTMLInputElement;
-                                  if (input?.value.trim()) {
-                                    handleEditCSS(input.value);
-                                  }
-                                }}
-                                disabled={isGeneratingCSS}
-                                data-testid="button-edit-css"
-                              >
-                                {isGeneratingCSS ? (
-                                  <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Editing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Sparkles className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </>
-                                )}
-                              </Button>
+                              <div className="flex flex-wrap gap-2">
+                                {AI_CSS_EDIT_SUGGESTIONS.map((suggestion) => (
+                                  <Button
+                                    key={suggestion}
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-auto whitespace-normal text-left text-xs"
+                                    onClick={() => setAiCssEditPrompt(suggestion)}
+                                  >
+                                    {suggestion}
+                                  </Button>
+                                ))}
+                              </div>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  Tip: press Ctrl/Cmd + Enter to apply your edit.
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (aiCssEditPrompt.trim()) {
+                                      void handleEditCSS(aiCssEditPrompt);
+                                    }
+                                  }}
+                                  disabled={isGeneratingCSS || !aiCssEditPrompt.trim()}
+                                  data-testid="button-edit-css"
+                                >
+                                  {isGeneratingCSS ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      Editing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="h-4 w-4 mr-2" />
+                                      Apply CSS Edit
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         )}

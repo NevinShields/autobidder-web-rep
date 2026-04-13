@@ -21,6 +21,8 @@ import {
   insertLeadSchema, 
   insertMultiServiceLeadSchema, 
   insertBusinessSettingsSchema,
+  insertChatEstimatorSessionSchema,
+  insertChatEstimatorEventSchema,
   insertAvailabilitySlotSchema,
   insertRecurringAvailabilitySchema,
   insertBlockedDateSchema,
@@ -49,6 +51,15 @@ import {
   insertCallAvailabilitySlotSchema,
   variableSchema
 } from "@shared/schema";
+import {
+  getChatEstimatorWarnings,
+  getChatEstimatorNextQuestion,
+  getChatEstimatorProgress,
+  getChatEstimatorQuestionDescriptor,
+  getChatEstimatorVisibleQuestions,
+  isChatEstimatorFormulaSupported,
+  normalizeChatEstimatorAnswer,
+} from "@shared/chat-estimator";
 import { generateFormula as generateFormulaGemini, editFormula as editFormulaGemini } from "./gemini";
 import { generateIcon, generateIconVariations, refineIcon, generateBulkIcons } from "./icon-generator";
 import { generateFormula as generateFormulaOpenAI, editFormula as editFormulaOpenAI, refineObjectDescription as refineObjectDescriptionOpenAI, generateCustomCSS, editCustomCSS } from "./openai-formula";
@@ -113,6 +124,7 @@ import { ensureDirectoryProfileFromBusinessInfo } from "./directory-onboarding";
 import { generateLandingPageFaqs } from "./landing-page-faq-generator";
 import { generateBeforeAfterPair, generateSingleBlogImage } from "./blog-image-generator";
 import { applyPriceConstraints, evaluateFormulaWithRepeatableGroups } from "@shared/formula-runtime";
+import { getChatWidgetScript } from "./chat-widget-script";
 
 function getBaseUrl(): string {
   if (process.env.DOMAIN) {
@@ -297,6 +309,8 @@ type ResolvedRouteEventLocation = {
   source: "booking" | "google_sync";
 };
 
+type BookingAdvanceUnit = "hours" | "days";
+
 function parseCoordinateValue(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -310,6 +324,66 @@ function parseCoordinateValue(value: unknown): number | null {
   }
 
   return null;
+}
+
+function normalizeMinBookingAdvanceValue(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.floor(value));
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, Math.floor(parsed));
+    }
+  }
+
+  return 0;
+}
+
+function normalizeMinBookingAdvanceUnit(value: unknown): BookingAdvanceUnit {
+  return value === "days" ? "days" : "hours";
+}
+
+function getMinBookingAdvanceSummary(settings?: {
+  minBookingAdvanceValue?: number | null;
+  minBookingAdvanceUnit?: string | null;
+} | null): string | null {
+  const value = normalizeMinBookingAdvanceValue(settings?.minBookingAdvanceValue);
+  if (value <= 0) {
+    return null;
+  }
+
+  const unit = normalizeMinBookingAdvanceUnit(settings?.minBookingAdvanceUnit);
+  const label = value === 1 ? unit.slice(0, -1) : unit;
+  return `${value} ${label}`;
+}
+
+function isBeforeMinimumBookingAdvance(
+  slotDate: string,
+  slotStartTime: string,
+  settings?: {
+    minBookingAdvanceValue?: number | null;
+    minBookingAdvanceUnit?: string | null;
+  } | null,
+): boolean {
+  const value = normalizeMinBookingAdvanceValue(settings?.minBookingAdvanceValue);
+  if (value <= 0) {
+    return false;
+  }
+
+  const unit = normalizeMinBookingAdvanceUnit(settings?.minBookingAdvanceUnit);
+  const now = DateTime.now().setZone("America/New_York");
+  const cutoff = unit === "days"
+    ? now.plus({ days: value })
+    : now.plus({ hours: value });
+  const slotStart = DateTime.fromISO(`${slotDate}T${slotStartTime}`, { zone: "America/New_York" });
+
+  if (!slotStart.isValid) {
+    return false;
+  }
+
+  return slotStart < cutoff;
 }
 
 function getAddressCandidates(rawAddress: unknown): string[] {
@@ -1095,6 +1169,12 @@ function buildDirectoryPricingReference(
         minRate = Number(clampNumber(minRate, 0.01, 250).toFixed(2));
         maxRate = Number(clampNumber(maxRate, minRate, 250).toFixed(2));
 
+        if (minRate === maxRate) {
+          const centerRate = Number(clampNumber(representativeTotal / squareFeet, 0.01, 250).toFixed(2));
+          minRate = Number(clampNumber(centerRate * 0.9, 0.01, 250).toFixed(2));
+          maxRate = Number(clampNumber(centerRate * 1.1, minRate, 250).toFixed(2));
+        }
+
         const minTotal = Math.round(minRate * squareFeet);
         const maxTotal = Math.round(maxRate * squareFeet);
         const label = variant.label ? `${serviceLabel}: ${variant.label}` : serviceLabel;
@@ -1634,6 +1714,424 @@ async function uploadImageBufferToObjectStorage({
   );
 
   return normalizedPath;
+}
+
+const CHAT_ESTIMATOR_ELIGIBLE_PLANS = new Set(["plus", "plus_seo"]);
+
+type ChatEstimatorSettings = {
+  enabled: boolean;
+  calculatorId: number | null;
+  calculatorIds: number[];
+  useAllActiveCalculators: boolean;
+  greetingMessage: string;
+  widgetTitle: string;
+  launcherText: string;
+  primaryColor: string;
+  avatarLogoUrl: string;
+  finalCtaBehavior: "book_now" | "send_estimate" | "contact_us";
+};
+
+type ChatEstimatorResult = {
+  amountCents: number;
+  amountDollars: number;
+  displayMode: "fixed";
+  displayText: string;
+};
+
+type ChatEstimatorContactField = {
+  key: string;
+  label: string;
+  inputKind: "short_text" | "single_select" | "yes_no";
+  required: boolean;
+  options?: Array<{ label: string; value: string }>;
+};
+
+type ChatEstimatorServiceSummary = {
+  id: number;
+  name: string;
+  title?: string | null;
+  supported: boolean;
+  warnings: string[];
+};
+
+function canAccessChatEstimator(plan?: string | null): boolean {
+  return CHAT_ESTIMATOR_ELIGIBLE_PLANS.has(plan || "");
+}
+
+function getChatEstimatorSettings(rawSettings: any): ChatEstimatorSettings {
+  return {
+    enabled: rawSettings?.enabled === true,
+    calculatorId: Number.isFinite(Number(rawSettings?.calculatorId)) ? Number(rawSettings.calculatorId) : null,
+    calculatorIds: Array.isArray(rawSettings?.calculatorIds)
+      ? rawSettings.calculatorIds
+        .map((value: unknown) => Number(value))
+        .filter((value: number) => Number.isInteger(value) && value > 0)
+      : [],
+    useAllActiveCalculators: rawSettings?.useAllActiveCalculators === true,
+    greetingMessage: String(rawSettings?.greetingMessage || "Hi there. I can walk you through a quick estimate."),
+    widgetTitle: String(rawSettings?.widgetTitle || "Chat Estimator"),
+    launcherText: String(rawSettings?.launcherText || "Chat with us"),
+    primaryColor: String(rawSettings?.primaryColor || "#2563eb"),
+    avatarLogoUrl: String(rawSettings?.avatarLogoUrl || ""),
+    finalCtaBehavior: rawSettings?.finalCtaBehavior || "contact_us",
+  };
+}
+
+function detectDeviceType(userAgent: string): "mobile" | "tablet" | "desktop" {
+  if (/iPad|Tablet/i.test(userAgent)) {
+    return "tablet";
+  }
+  if (/Mobile|Android|iPhone/i.test(userAgent)) {
+    return "mobile";
+  }
+  return "desktop";
+}
+
+function getActiveChatEstimatorFormulas(allFormulas: any[]): any[] {
+  return allFormulas.filter((formula) => formula.isActive !== false && formula.isDisplayed !== false);
+}
+
+function parseChatEstimatorCalculatorIds(rawValue: unknown): number[] {
+  if (Array.isArray(rawValue)) {
+    return rawValue
+      .map((value) => Number(value))
+      .filter((value): value is number => Number.isInteger(value) && value > 0);
+  }
+
+  if (typeof rawValue !== "string") {
+    return [];
+  }
+
+  return rawValue
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .filter((value): value is number => Number.isInteger(value) && value > 0);
+}
+
+function getConfiguredChatEstimatorFormulaIds(
+  allFormulas: any[],
+  chatSettings: ChatEstimatorSettings,
+  overrideCalculatorIds: number[] = [],
+): number[] {
+  const activeFormulas = getActiveChatEstimatorFormulas(allFormulas);
+  const activeFormulaIds = new Set(activeFormulas.map((formula) => Number(formula.id)));
+
+  const candidateIds = overrideCalculatorIds.length > 0
+    ? overrideCalculatorIds
+    : chatSettings.useAllActiveCalculators
+      ? activeFormulas.map((formula) => Number(formula.id))
+      : chatSettings.calculatorIds.length > 0
+        ? chatSettings.calculatorIds
+        : chatSettings.calculatorId
+          ? [chatSettings.calculatorId]
+          : [];
+
+  return Array.from(new Set(candidateIds))
+    .filter((id) => activeFormulaIds.has(id));
+}
+
+function getChatEstimatorServices(formulasForChat: any[]): ChatEstimatorServiceSummary[] {
+  return formulasForChat.map((formula) => ({
+    id: Number(formula.id),
+    name: formula.name,
+    title: formula.title,
+    supported: isChatEstimatorFormulaSupported(formula),
+    warnings: getChatEstimatorWarnings(formula),
+  }));
+}
+
+function getChatEstimatorSessionSelectedCalculatorIds(session: any): number[] {
+  const configuredIds = Array.isArray(session?.selectedCalculatorIds)
+    ? session.selectedCalculatorIds
+      .map((value: unknown) => Number(value))
+      .filter((value: number) => Number.isInteger(value) && value > 0)
+    : [];
+
+  if (configuredIds.length > 0) {
+    return configuredIds;
+  }
+
+  return Number.isInteger(Number(session?.calculatorId)) ? [Number(session.calculatorId)] : [];
+}
+
+function getChatEstimatorAnswersByCalculator(session: any): Record<string, Record<string, any>> {
+  const rawAnswers = (session?.answersJson || {}) as Record<string, any>;
+  const selectedIds = getChatEstimatorSessionSelectedCalculatorIds(session);
+
+  const hasNestedAnswers = selectedIds.some((calculatorId) => {
+    const candidate = rawAnswers[String(calculatorId)];
+    return candidate && typeof candidate === "object" && !Array.isArray(candidate);
+  });
+
+  if (hasNestedAnswers) {
+    return rawAnswers as Record<string, Record<string, any>>;
+  }
+
+  if (selectedIds.length === 1) {
+    return {
+      [String(selectedIds[0])]: rawAnswers,
+    };
+  }
+
+  return {};
+}
+
+function serializeChatEstimatorAnswersByCalculator(
+  answersByCalculator: Record<string, Record<string, any>>,
+  selectedCalculatorIds: number[],
+): Record<string, any> {
+  if (selectedCalculatorIds.length === 1) {
+    return answersByCalculator[String(selectedCalculatorIds[0])] || {};
+  }
+
+  return answersByCalculator;
+}
+
+function getChatEstimatorServiceResults(session: any): Record<string, ChatEstimatorResult> {
+  return ((session?.serviceResultsJson || {}) as Record<string, ChatEstimatorResult>);
+}
+
+function getChatEstimatorCurrentCalculatorIndex(session: any, selectedCalculatorIds: number[]): number {
+  const parsed = Number(session?.currentCalculatorIndex ?? 0);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    return 0;
+  }
+  if (selectedCalculatorIds.length === 0) {
+    return 0;
+  }
+  return Math.min(parsed, selectedCalculatorIds.length - 1);
+}
+
+function buildChatEstimatorAggregateResult(serviceResults: Record<string, ChatEstimatorResult>): ChatEstimatorResult | null {
+  const results = Object.values(serviceResults);
+  if (results.length === 0) {
+    return null;
+  }
+
+  const amountCents = results.reduce((sum, result) => sum + (result.amountCents || 0), 0);
+  const amountDollars = Math.round(amountCents / 100);
+  return {
+    amountCents,
+    amountDollars,
+    displayMode: "fixed",
+    displayText: `$${amountDollars.toLocaleString()}`,
+  };
+}
+
+function getChatEstimatorContactFields(settings: any): ChatEstimatorContactField[] {
+  const styling = settings?.styling || {};
+  const fields: ChatEstimatorContactField[] = [];
+
+  if (styling.enableName !== false) {
+    fields.push({
+      key: "name",
+      label: styling.nameLabel || "Full Name",
+      inputKind: "short_text",
+      required: styling.requireName !== false,
+    });
+  }
+
+  // Chat Estimator completes through the existing /api/leads flow, which still
+  // requires a real email address. Always collect it instead of fabricating one.
+  fields.push({
+    key: "email",
+    label: styling.emailLabel || "Email Address",
+    inputKind: "short_text",
+    required: true,
+  });
+
+  if (styling.enablePhone !== false) {
+    fields.push({
+      key: "phone",
+      label: styling.phoneLabel || "Phone Number",
+      inputKind: "short_text",
+      required: styling.requirePhone === true,
+    });
+  }
+
+  if (styling.enableAddress === true) {
+    fields.push({
+      key: "address",
+      label: styling.addressLabel || "Address",
+      inputKind: "short_text",
+      required: styling.requireAddress === true,
+    });
+  }
+
+  if (styling.enableNotes === true) {
+    fields.push({
+      key: "notes",
+      label: styling.notesLabel || "Additional Notes",
+      inputKind: "short_text",
+      required: false,
+    });
+  }
+
+  if (styling.enableHowDidYouHear === true) {
+    fields.push({
+      key: "howDidYouHear",
+      label: styling.howDidYouHearLabel || "How did you hear about us?",
+      inputKind: "single_select",
+      required: styling.requireHowDidYouHear === true,
+      options: (styling.howDidYouHearOptions || []).map((option: string) => ({
+        label: option,
+        value: option,
+      })),
+    });
+  }
+
+  if (styling.enablePermissionToContact === true) {
+    fields.push({
+      key: "permissionToContact",
+      label: styling.permissionToContactLabel || "Permission to contact me",
+      inputKind: "yes_no",
+      required: styling.requirePermissionToContact === true,
+    });
+  }
+
+  return fields;
+}
+
+function getNextChatEstimatorContactField(settings: any, contactAnswers: Record<string, any>): ChatEstimatorContactField | null {
+  const fields = getChatEstimatorContactFields(settings);
+  return fields.find((field) => {
+    const value = contactAnswers[field.key];
+    if (field.inputKind === "yes_no") {
+      return value === undefined || value === null;
+    }
+    if (Array.isArray(value)) {
+      return value.length === 0;
+    }
+    return value === undefined || value === null || value === "";
+  }) || null;
+}
+
+function validateChatEstimatorContactAnswer(field: ChatEstimatorContactField, rawAnswer: unknown): {
+  value: any;
+  error?: string;
+} {
+  if (field.inputKind === "yes_no") {
+    const normalized = rawAnswer === true || rawAnswer === "true" || rawAnswer === "yes" || rawAnswer === 1;
+    if (field.required && normalized !== true) {
+      return { value: false, error: "Please confirm before continuing." };
+    }
+    return { value: normalized };
+  }
+
+  const value = typeof rawAnswer === "string" ? rawAnswer.trim() : rawAnswer;
+  if (field.required && !value) {
+    return { value: "", error: `Please enter ${field.label.toLowerCase()}.` };
+  }
+
+  if (field.key === "email" && value) {
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value));
+    if (!isEmail) {
+      return { value, error: "Please enter a valid email address." };
+    }
+  }
+
+  return { value };
+}
+
+async function logChatEstimatorEvent(payload: {
+  sessionId: string;
+  accountId: string;
+  calculatorId: number;
+  eventName: string;
+  questionKey?: string | null;
+  metadata?: Record<string, any>;
+}) {
+  await storage.createChatEstimatorEvent(insertChatEstimatorEventSchema.parse({
+    ...payload,
+    questionKey: payload.questionKey ?? null,
+    metadata: payload.metadata || {},
+  }));
+}
+
+function buildChatEstimatorSnapshot({
+  formulasForChat,
+  businessSettings: settings,
+  session,
+}: {
+  formulasForChat: any[];
+  businessSettings: any;
+  session: any;
+}) {
+  const selectedCalculatorIds = getChatEstimatorSessionSelectedCalculatorIds(session);
+  const formulasById = new Map(formulasForChat.map((formula) => [Number(formula.id), formula]));
+  const currentCalculatorIndex = getChatEstimatorCurrentCalculatorIndex(session, selectedCalculatorIds);
+  const currentCalculatorId = selectedCalculatorIds[currentCalculatorIndex] || Number(session.calculatorId);
+  const currentFormula = formulasById.get(currentCalculatorId) || null;
+  const answersByCalculator = getChatEstimatorAnswersByCalculator(session);
+  const answers = currentCalculatorId ? (answersByCalculator[String(currentCalculatorId)] || {}) : {};
+  const contactAnswers = (session.contactJson || {}) as Record<string, any>;
+  const serviceResults = getChatEstimatorServiceResults(session);
+  const hasAllServiceResults = selectedCalculatorIds.length > 0 && selectedCalculatorIds.every((calculatorId) => Boolean(serviceResults[String(calculatorId)]));
+  const nextQuestion = currentFormula && !hasAllServiceResults
+    ? getChatEstimatorNextQuestion(currentFormula.variables || [], answers)
+    : null;
+  const currentQuestion = nextQuestion ? getChatEstimatorQuestionDescriptor(nextQuestion) : null;
+  let totalQuestions = 0;
+  let currentQuestionNumber = 0;
+
+  selectedCalculatorIds.forEach((calculatorId, index) => {
+    const formula = formulasById.get(calculatorId);
+    if (!formula) {
+      return;
+    }
+
+    const calculatorAnswers = answersByCalculator[String(calculatorId)] || {};
+    const visibleQuestions = getChatEstimatorVisibleQuestions(formula.variables || [], calculatorAnswers);
+    totalQuestions += visibleQuestions.length;
+
+    if (index < currentCalculatorIndex) {
+      currentQuestionNumber += visibleQuestions.length;
+      return;
+    }
+
+    if (index === currentCalculatorIndex && nextQuestion) {
+      const localProgress = getChatEstimatorProgress(formula.variables || [], calculatorAnswers, nextQuestion.id);
+      currentQuestionNumber += localProgress.current;
+    }
+  });
+
+  const progress = totalQuestions > 0
+    ? {
+      current: currentQuestion ? currentQuestionNumber : totalQuestions,
+      total: totalQuestions,
+    }
+    : { current: 0, total: 0 };
+  const nextContactField = getNextChatEstimatorContactField(settings, contactAnswers);
+  const aggregateResult = session.resultJson || buildChatEstimatorAggregateResult(serviceResults);
+
+  return {
+    sessionId: session.id,
+    status: session.status,
+    answers,
+    answersByCalculator,
+    contactAnswers,
+    result: hasAllServiceResults ? (aggregateResult || null) : null,
+    serviceResults,
+    currentQuestion,
+    currentQuestionKey: currentQuestion?.key || session.currentQuestionKey || null,
+    progress,
+    nextContactField,
+    currentService: currentFormula ? {
+      id: currentFormula.id,
+      name: currentFormula.name,
+      index: currentCalculatorIndex + 1,
+      total: selectedCalculatorIds.length,
+    } : null,
+    selectedServices: selectedCalculatorIds.map((calculatorId, index) => {
+      const formula = formulasById.get(calculatorId);
+      return {
+        id: calculatorId,
+        name: formula?.name || `Service ${index + 1}`,
+        result: serviceResults[String(calculatorId)] || null,
+      };
+    }),
+    completed: Boolean(session.completedAt),
+  };
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2441,6 +2939,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 })();`);
   });
 
+  app.get("/chat-widget.js", (_req, res) => {
+    res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(getChatWidgetScript());
+  });
+
   // Combined API endpoint for embed forms to reduce requests
   app.get("/api/public/embed-data", async (req, res) => {
     try {
@@ -2474,6 +2978,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enableLeadCapture: settings.enableLeadCapture,
         enableBooking: settings.enableBooking,
         enableServiceCart: settings.enableServiceCart,
+        maxDaysOut: settings.maxDaysOut,
+        minBookingAdvanceValue: settings.minBookingAdvanceValue,
+        minBookingAdvanceUnit: settings.minBookingAdvanceUnit,
         discounts: settings.discounts,
         allowDiscountStacking: settings.allowDiscountStacking,
         enableDistancePricing: settings.enableDistancePricing,
@@ -2535,6 +3042,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           enableLeadCapture: settings.enableLeadCapture,
           enableBooking: settings.enableBooking,
           enableServiceCart: settings.enableServiceCart,
+          maxDaysOut: settings.maxDaysOut,
+          minBookingAdvanceValue: settings.minBookingAdvanceValue,
+          minBookingAdvanceUnit: settings.minBookingAdvanceUnit,
           discounts: settings.discounts,
           allowDiscountStacking: settings.allowDiscountStacking,
           enableDistancePricing: settings.enableDistancePricing,
@@ -2606,11 +3116,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/public/calculator-data", async (req, res) => {
     const { userId: queryUserId, customFormId } = req.query;
 
-    // Debug logging
-    console.log('[calculator-data] queryUserId:', queryUserId);
-    console.log('[calculator-data] session exists:', !!req.session);
-    console.log('[calculator-data] session.user:', req.session?.user ? `id=${req.session.user.id}` : 'none');
-
     // Set cache headers based on request type
     // Public requests (with userId param) can be cached, authenticated requests should not
     if (queryUserId) {
@@ -2628,68 +3133,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (req.session?.user) {
         userId = req.session.user.id;
       } else {
-        console.log('[calculator-data] No userId and no session - returning 400');
         return res.status(400).json({ message: "userId parameter is required or user must be authenticated" });
       }
 
-      console.log('[calculator-data] Fetching data for userId:', userId);
+      // Fetch all data in parallel for faster response times
+      const customFormIdNumber = customFormId ? Number(customFormId) : NaN;
+      const [allFormulasResult, businessSettingsResult, designSettingsResult, customFormResult, userResult] = await Promise.allSettled([
+        storage.getFormulasByUserId(userId),
+        storage.getBusinessSettingsByUserId(userId),
+        storage.getDesignSettingsByUserId(userId),
+        Number.isFinite(customFormIdNumber) ? storage.getCustomFormById(customFormIdNumber) : Promise.resolve(null),
+        storage.getUser(userId),
+      ]);
 
-      // Fetch all data - handle each call separately to identify failures
-      let allFormulas: any[] = [];
-      let businessSettings: any = null;
-      let designSettings: any = null;
-      let customForm: any = null;
-      let user: any = null;
-
-      try {
-        allFormulas = await storage.getFormulasByUserId(userId);
-      } catch (e) {
-        console.error('[calculator-data] getFormulasByUserId failed:', e);
-        allFormulas = [];
-      }
-
-      try {
-        businessSettings = await storage.getBusinessSettingsByUserId(userId);
-      } catch (e) {
-        console.error('[calculator-data] getBusinessSettingsByUserId failed:', e);
-      }
-
-      try {
-        designSettings = await storage.getDesignSettingsByUserId(userId);
-      } catch (e) {
-        console.error('[calculator-data] getDesignSettingsByUserId failed:', e);
-      }
-
-      if (customFormId) {
-        try {
-          const customFormIdNumber = Number(customFormId);
-          if (Number.isFinite(customFormIdNumber)) {
-            customForm = await storage.getCustomFormById(customFormIdNumber);
-          }
-        } catch (e) {
-          console.error('[calculator-data] getCustomFormById failed:', e);
-        }
-      }
-
-      try {
-        user = await storage.getUser(userId);
-      } catch (e) {
-        console.error('[calculator-data] getUser failed:', e);
-      }
-
-      console.log('[calculator-data] Data fetched - formulas:', allFormulas.length, 'user:', user?.email);
-      console.log('[calculator-data] allFormulas count:', allFormulas.length);
-      if (allFormulas.length > 0) {
-        console.log('[calculator-data] first formula isActive:', allFormulas[0].isActive, 'isDisplayed:', allFormulas[0].isDisplayed);
-      }
+      const allFormulas = allFormulasResult.status === 'fulfilled' ? allFormulasResult.value : [];
+      const businessSettings = businessSettingsResult.status === 'fulfilled' ? businessSettingsResult.value : null;
+      const designSettings = designSettingsResult.status === 'fulfilled' ? designSettingsResult.value : null;
+      const customForm = customFormResult.status === 'fulfilled' ? customFormResult.value : null;
+      const user = userResult.status === 'fulfilled' ? userResult.value : null;
 
       // Filter formulas to only show those that are displayed AND active
       // Use !== false to handle null/undefined values (treat as active by default)
       let activeFormulas = allFormulas.filter(formula =>
         formula.isDisplayed !== false && formula.isActive !== false
       );
-
-      console.log('[calculator-data] activeFormulas count after filter:', activeFormulas.length);
 
       // If this is a custom form, filter to only selected services
       const rawServiceIds =
@@ -2726,6 +3193,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enableLeadCapture: businessSettings.enableLeadCapture,
         enableBooking: businessSettings.enableBooking,
         enableServiceCart: businessSettings.enableServiceCart,
+        maxDaysOut: businessSettings.maxDaysOut,
+        minBookingAdvanceValue: businessSettings.minBookingAdvanceValue,
+        minBookingAdvanceUnit: businessSettings.minBookingAdvanceUnit,
         discounts: businessSettings.discounts,
         allowDiscountStacking: businessSettings.allowDiscountStacking,
         enableDistancePricing: businessSettings.enableDistancePricing,
@@ -2777,6 +3247,836 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Failed to fetch calculator data",
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+
+  app.get("/api/chat-estimator/config", async (req, res) => {
+    try {
+      const accountId = typeof req.query.accountId === "string" ? req.query.accountId : "";
+      const overrideCalculatorIds = parseChatEstimatorCalculatorIds(req.query.calculatorIds)
+        .concat(Number.isFinite(Number(req.query.calculatorId)) ? [Number(req.query.calculatorId)] : []);
+
+      if (!accountId) {
+        return res.status(400).json({ message: "accountId is required." });
+      }
+
+      const [account, allFormulas, settings] = await Promise.all([
+        storage.getUser(accountId),
+        storage.getFormulasByUserId(accountId),
+        storage.getBusinessSettingsByUserId(accountId),
+      ]);
+
+      if (!account) {
+        return res.status(404).json({ message: "Chat Estimator account not found." });
+      }
+
+      if (!canAccessChatEstimator(account.plan)) {
+        return res.status(403).json({ message: "Chat Estimator is available on the Plus plan only." });
+      }
+
+      const chatSettings = getChatEstimatorSettings(settings?.chatEstimatorSettings);
+      if (!chatSettings.enabled) {
+        return res.status(404).json({ message: "Chat Estimator is not enabled." });
+      }
+
+      const configuredFormulaIds = getConfiguredChatEstimatorFormulaIds(allFormulas, chatSettings, overrideCalculatorIds);
+      const formulasForChat = getActiveChatEstimatorFormulas(allFormulas)
+        .filter((formula) => configuredFormulaIds.includes(Number(formula.id)));
+      const services = getChatEstimatorServices(formulasForChat);
+      const supportedServices = services.filter((service) => service.supported);
+      const warnings = services.flatMap((service) => service.warnings);
+      const configuredServiceIds = supportedServices.map((service) => service.id);
+
+      if (configuredFormulaIds.length === 0 || formulasForChat.length === 0) {
+        return res.status(404).json({ message: "No active calculators are configured for Chat Estimator." });
+      }
+
+      res.json({
+        enabled: true,
+        supported: supportedServices.length > 0,
+        warnings,
+        widgetTitle: chatSettings.widgetTitle,
+        greetingMessage: chatSettings.greetingMessage,
+        launcherText: chatSettings.launcherText,
+        primaryColor: chatSettings.primaryColor,
+        avatarLogoUrl: chatSettings.avatarLogoUrl,
+        finalCtaBehavior: chatSettings.finalCtaBehavior,
+        businessName: settings?.businessName || account.organizationName || "Autobidder",
+        businessEmail: settings?.businessEmail || null,
+        businessPhone: settings?.businessPhone || null,
+        services,
+        configuredServiceIds,
+        contactFields: getChatEstimatorContactFields(settings),
+        bookUrl: configuredServiceIds.length === 0
+          ? null
+          : configuredServiceIds.length > 1
+          ? `${getRequestBaseUrl(req)}/styled-calculator?userId=${accountId}&serviceIds=${configuredServiceIds.join(",")}`
+          : `${getRequestBaseUrl(req)}/styled-calculator?userId=${accountId}&serviceId=${configuredServiceIds[0]}`,
+      });
+    } catch (error) {
+      console.error("Error fetching chat estimator config:", error);
+      res.status(500).json({ message: "Failed to fetch chat estimator config." });
+    }
+  });
+
+  app.post("/api/chat-estimator/session/start", async (req, res) => {
+    try {
+      const payload = z.object({
+        accountId: z.string().min(1),
+        calculatorId: z.number().int().positive().optional(),
+        selectedCalculatorIds: z.array(z.number().int().positive()).optional(),
+        visitorId: z.string().min(1),
+        sessionId: z.string().optional(),
+        pageUrl: z.string().optional(),
+        referrer: z.string().optional(),
+      }).parse(req.body);
+
+      const [account, allFormulas, settings] = await Promise.all([
+        storage.getUser(payload.accountId),
+        storage.getFormulasByUserId(payload.accountId),
+        storage.getBusinessSettingsByUserId(payload.accountId),
+      ]);
+
+      if (!account) {
+        return res.status(404).json({ message: "Account not found." });
+      }
+
+      if (!canAccessChatEstimator(account.plan)) {
+        return res.status(403).json({ message: "Chat Estimator is available on the Plus plan only." });
+      }
+
+      const chatSettings = getChatEstimatorSettings(settings?.chatEstimatorSettings);
+      if (!chatSettings.enabled) {
+        return res.status(404).json({ message: "Chat Estimator is not enabled." });
+      }
+
+      const overrideCalculatorIds = Array.from(new Set([
+        ...(payload.selectedCalculatorIds || []),
+        ...(payload.calculatorId ? [payload.calculatorId] : []),
+      ]));
+      const configuredFormulaIds = getConfiguredChatEstimatorFormulaIds(allFormulas, chatSettings, overrideCalculatorIds);
+      const formulasForChat = getActiveChatEstimatorFormulas(allFormulas)
+        .filter((formula) => configuredFormulaIds.includes(Number(formula.id)));
+      const services = getChatEstimatorServices(formulasForChat);
+      const supportedServiceIds = services.filter((service) => service.supported).map((service) => service.id);
+      const selectedCalculatorIds = overrideCalculatorIds.length > 0
+        ? overrideCalculatorIds.filter((id) => supportedServiceIds.includes(id))
+        : supportedServiceIds.length === 1
+          ? supportedServiceIds
+          : [];
+
+      if (selectedCalculatorIds.length === 0) {
+        return res.status(400).json({
+          message: supportedServiceIds.length > 1
+            ? "Please choose at least one service to start Chat Estimator."
+            : "No supported calculators are available for Chat Estimator.",
+        });
+      }
+
+      const unsupportedServices = services.filter((service) => !service.supported && selectedCalculatorIds.includes(service.id));
+      if (unsupportedServices.length > 0) {
+        return res.status(422).json({
+          message: "One or more selected calculators include unsupported inputs for Chat Estimator.",
+          supported: false,
+          warnings: unsupportedServices.flatMap((service) => service.warnings),
+        });
+      }
+
+      if (payload.sessionId) {
+        const existingSession = await storage.getChatEstimatorSession(payload.sessionId);
+        const existingSelectedCalculatorIds = getChatEstimatorSessionSelectedCalculatorIds(existingSession);
+        if (
+          existingSession &&
+          existingSession.accountId === payload.accountId &&
+          existingSelectedCalculatorIds.length === selectedCalculatorIds.length &&
+          existingSelectedCalculatorIds.every((id, index) => id === selectedCalculatorIds[index]) &&
+          existingSession.visitorId === payload.visitorId
+        ) {
+          return res.json({
+            greetingMessage: chatSettings.greetingMessage,
+            ...buildChatEstimatorSnapshot({
+              formulasForChat,
+              businessSettings: settings,
+              session: existingSession,
+            }),
+          });
+        }
+      }
+
+      const firstFormula = formulasForChat.find((formula) => Number(formula.id) === selectedCalculatorIds[0]);
+      if (!firstFormula) {
+        return res.status(404).json({ message: "Selected service not found." });
+      }
+
+      const answersByCalculator = selectedCalculatorIds.reduce<Record<string, Record<string, any>>>((accumulator, calculatorId) => {
+        accumulator[String(calculatorId)] = {};
+        return accumulator;
+      }, {});
+      const firstQuestion = getChatEstimatorNextQuestion(firstFormula.variables || [], answersByCalculator[String(firstFormula.id)] || {});
+      const userAgent = String(req.headers["user-agent"] || "");
+
+      const session = await storage.createChatEstimatorSession(insertChatEstimatorSessionSchema.parse({
+        id: crypto.randomUUID(),
+        accountId: payload.accountId,
+        calculatorId: firstFormula.id,
+        selectedCalculatorIds,
+        currentCalculatorIndex: 0,
+        visitorId: payload.visitorId,
+        status: "active",
+        answersJson: serializeChatEstimatorAnswersByCalculator(answersByCalculator, selectedCalculatorIds),
+        contactJson: {},
+        serviceResultsJson: {},
+        currentQuestionKey: firstQuestion?.id || null,
+        pageUrl: payload.pageUrl || null,
+        referrer: payload.referrer || null,
+        deviceType: detectDeviceType(userAgent),
+      }));
+
+      await logChatEstimatorEvent({
+        sessionId: session.id,
+        accountId: payload.accountId,
+        calculatorId: firstFormula.id,
+        eventName: "widget_open",
+        metadata: {
+          pageUrl: payload.pageUrl || null,
+          referrer: payload.referrer || null,
+        },
+      });
+
+      await logChatEstimatorEvent({
+        sessionId: session.id,
+        accountId: payload.accountId,
+        calculatorId: firstFormula.id,
+        eventName: "chat_start",
+        questionKey: firstQuestion?.id || null,
+        metadata: {},
+      });
+
+      res.json({
+        greetingMessage: chatSettings.greetingMessage,
+        ...buildChatEstimatorSnapshot({
+          formulasForChat,
+          businessSettings: settings,
+          session,
+        }),
+      });
+    } catch (error) {
+      console.error("Error starting chat estimator session:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid chat session payload.", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to start chat estimator session." });
+    }
+  });
+
+  app.get("/api/chat-estimator/session/:sessionId", async (req, res) => {
+    try {
+      const session = await storage.getChatEstimatorSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found." });
+      }
+
+      const [allFormulas, settings] = await Promise.all([
+        storage.getFormulasByUserId(session.accountId),
+        storage.getBusinessSettingsByUserId(session.accountId),
+      ]);
+      const selectedCalculatorIds = getChatEstimatorSessionSelectedCalculatorIds(session);
+      const formulasForChat = getActiveChatEstimatorFormulas(allFormulas)
+        .filter((formula) => selectedCalculatorIds.includes(Number(formula.id)));
+
+      res.json(buildChatEstimatorSnapshot({
+        formulasForChat,
+        businessSettings: settings,
+        session,
+      }));
+    } catch (error) {
+      console.error("Error fetching chat estimator session:", error);
+      res.status(500).json({ message: "Failed to fetch chat estimator session." });
+    }
+  });
+
+  app.post("/api/chat-estimator/session/:sessionId/answer", async (req, res) => {
+    try {
+      const payload = z.object({
+        questionKey: z.string().optional(),
+        answer: z.any().optional(),
+        action: z.enum(["answer", "back"]).default("answer"),
+      }).parse(req.body);
+
+      const session = await storage.getChatEstimatorSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found." });
+      }
+
+      const [allFormulas, settings] = await Promise.all([
+        storage.getFormulasByUserId(session.accountId),
+        storage.getBusinessSettingsByUserId(session.accountId),
+      ]);
+      const selectedCalculatorIds = getChatEstimatorSessionSelectedCalculatorIds(session);
+      const formulasForChat = getActiveChatEstimatorFormulas(allFormulas)
+        .filter((formula) => selectedCalculatorIds.includes(Number(formula.id)));
+      const formulasById = new Map(formulasForChat.map((formula) => [Number(formula.id), formula]));
+      const currentCalculatorIndex = getChatEstimatorCurrentCalculatorIndex(session, selectedCalculatorIds);
+      const currentCalculatorId = selectedCalculatorIds[currentCalculatorIndex];
+      const formula = formulasById.get(currentCalculatorId);
+
+      if (!formula || !currentCalculatorId) {
+        return res.status(404).json({ message: "Calculator not found." });
+      }
+
+      const answersByCalculator = getChatEstimatorAnswersByCalculator(session);
+      const answers = { ...(answersByCalculator[String(currentCalculatorId)] || {}) } as Record<string, any>;
+      const contactAnswers = { ...(session.contactJson || {}) } as Record<string, any>;
+      const serviceResults = { ...getChatEstimatorServiceResults(session) };
+
+      if (payload.action === "back") {
+        if (session.resultJson) {
+          const answeredContactFields = getChatEstimatorContactFields(settings).filter((field) => {
+            const value = contactAnswers[field.key];
+            return value !== undefined && value !== null && value !== "";
+          });
+
+          if (answeredContactFields.length > 0) {
+            const previousContactField = answeredContactFields[answeredContactFields.length - 1];
+            delete contactAnswers[previousContactField.key];
+            const updatedSession = await storage.updateChatEstimatorSession(session.id, {
+              contactJson: contactAnswers,
+              currentQuestionKey: `contact.${previousContactField.key}`,
+              status: "quoted",
+            });
+
+            return res.json(buildChatEstimatorSnapshot({
+              formulasForChat,
+              businessSettings: settings,
+              session: updatedSession || session,
+            }));
+          }
+        }
+
+        for (let index = currentCalculatorIndex; index >= 0; index -= 1) {
+          const calculatorId = selectedCalculatorIds[index];
+          const calculatorFormula = formulasById.get(calculatorId);
+          if (!calculatorFormula) {
+            continue;
+          }
+
+          const calculatorAnswers = { ...(answersByCalculator[String(calculatorId)] || {}) } as Record<string, any>;
+          const visibleQuestions = getChatEstimatorVisibleQuestions(calculatorFormula.variables || [], calculatorAnswers);
+          const answeredQuestions = visibleQuestions.filter((variable) => calculatorAnswers[variable.id] !== undefined && calculatorAnswers[variable.id] !== null && calculatorAnswers[variable.id] !== "");
+          const previousQuestion = answeredQuestions[answeredQuestions.length - 1];
+
+          if (!previousQuestion) {
+            continue;
+          }
+
+          delete calculatorAnswers[previousQuestion.id];
+          answersByCalculator[String(calculatorId)] = calculatorAnswers;
+          delete serviceResults[String(calculatorId)];
+
+          const updatedSession = await storage.updateChatEstimatorSession(session.id, {
+            calculatorId,
+            currentCalculatorIndex: index,
+            answersJson: serializeChatEstimatorAnswersByCalculator(answersByCalculator, selectedCalculatorIds),
+            serviceResultsJson: serviceResults,
+            resultJson: null,
+            currentQuestionKey: previousQuestion.id,
+            status: "active",
+          });
+
+          return res.json(buildChatEstimatorSnapshot({
+            formulasForChat,
+            businessSettings: settings,
+            session: updatedSession || session,
+          }));
+        }
+
+        return res.json(buildChatEstimatorSnapshot({
+          formulasForChat,
+          businessSettings: settings,
+          session,
+        }));
+      }
+
+      if (!payload.questionKey) {
+        return res.status(400).json({ message: "questionKey is required." });
+      }
+
+      if (payload.questionKey.startsWith("contact.")) {
+        const fieldKey = payload.questionKey.replace(/^contact\./, "");
+        const field = getChatEstimatorContactFields(settings).find((entry) => entry.key === fieldKey);
+        if (!field) {
+          return res.status(404).json({ message: "Contact field not found." });
+        }
+
+        const normalized = validateChatEstimatorContactAnswer(field, payload.answer);
+        if (normalized.error) {
+          return res.status(400).json({ message: normalized.error });
+        }
+
+        contactAnswers[field.key] = normalized.value;
+        const nextContactField = getNextChatEstimatorContactField(settings, contactAnswers);
+        const updatedSession = await storage.updateChatEstimatorSession(session.id, {
+          contactJson: contactAnswers,
+          currentQuestionKey: nextContactField ? `contact.${nextContactField.key}` : null,
+          status: "quoted",
+        });
+
+        return res.json({
+          ...buildChatEstimatorSnapshot({
+            formulasForChat,
+            businessSettings: settings,
+            session: updatedSession || session,
+          }),
+          readyToComplete: !nextContactField && Boolean((updatedSession || session).resultJson),
+        });
+      }
+
+      const variable = (formula.variables || []).find((entry: Variable) => entry.id === payload.questionKey);
+      if (!variable) {
+        return res.status(404).json({ message: "Question not found." });
+      }
+
+      const normalized = normalizeChatEstimatorAnswer(variable, payload.answer);
+      if (normalized.error) {
+        return res.status(400).json({ message: normalized.error });
+      }
+
+      answers[variable.id] = normalized.value;
+      answersByCalculator[String(currentCalculatorId)] = answers;
+      const nextQuestion = getChatEstimatorNextQuestion(formula.variables || [], answers);
+      const updatedSession = await storage.updateChatEstimatorSession(session.id, {
+        answersJson: serializeChatEstimatorAnswersByCalculator(answersByCalculator, selectedCalculatorIds),
+        currentQuestionKey: nextQuestion?.id || null,
+        status: "active",
+      });
+
+      await logChatEstimatorEvent({
+        sessionId: session.id,
+        accountId: session.accountId,
+        calculatorId: session.calculatorId,
+        eventName: "question_answered",
+        questionKey: variable.id,
+        metadata: {},
+      });
+
+      res.json({
+        ...buildChatEstimatorSnapshot({
+          formulasForChat,
+          businessSettings: settings,
+          session: updatedSession || session,
+        }),
+        readyToCalculate: !nextQuestion,
+      });
+    } catch (error) {
+      console.error("Error saving chat estimator answer:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid answer payload.", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to save answer." });
+    }
+  });
+
+  app.post("/api/chat-estimator/session/:sessionId/calculate", async (req, res) => {
+    try {
+      const session = await storage.getChatEstimatorSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found." });
+      }
+
+      const [allFormulas, settings] = await Promise.all([
+        storage.getFormulasByUserId(session.accountId),
+        storage.getBusinessSettingsByUserId(session.accountId),
+      ]);
+      const selectedCalculatorIds = getChatEstimatorSessionSelectedCalculatorIds(session);
+      const formulasForChat = getActiveChatEstimatorFormulas(allFormulas)
+        .filter((formula) => selectedCalculatorIds.includes(Number(formula.id)));
+      const formulasById = new Map(formulasForChat.map((formula) => [Number(formula.id), formula]));
+      const currentCalculatorIndex = getChatEstimatorCurrentCalculatorIndex(session, selectedCalculatorIds);
+      const currentCalculatorId = selectedCalculatorIds[currentCalculatorIndex];
+      const formula = formulasById.get(currentCalculatorId);
+
+      if (!formula || !currentCalculatorId) {
+        return res.status(404).json({ message: "Calculator not found." });
+      }
+
+      const answersByCalculator = getChatEstimatorAnswersByCalculator(session);
+      const answers = (answersByCalculator[String(currentCalculatorId)] || {}) as Record<string, any>;
+      const nextQuestion = getChatEstimatorNextQuestion(formula.variables || [], answers);
+      if (nextQuestion) {
+        return res.status(400).json({ message: "Calculator answers are incomplete." });
+      }
+
+      const rawPrice = Math.round(
+        evaluateFormulaWithRepeatableGroups(formula.formula || "", formula.variables || [], answers as any),
+      );
+      const constrainedPrice = applyPriceConstraints(
+        rawPrice,
+        formula,
+        answers,
+        { priceUnit: "dollars", constraintUnit: "cents" },
+      );
+      const amountDollars = Math.round(constrainedPrice);
+      const resultJson = {
+        amountCents: amountDollars * 100,
+        amountDollars,
+        displayMode: "fixed" as const,
+        displayText: `$${amountDollars.toLocaleString()}`,
+      };
+      const serviceResults = {
+        ...getChatEstimatorServiceResults(session),
+        [String(currentCalculatorId)]: resultJson,
+      };
+      const aggregateResult = buildChatEstimatorAggregateResult(serviceResults);
+      const calculatedService = {
+        id: currentCalculatorId,
+        name: formula.name,
+        result: resultJson,
+      };
+
+      if (currentCalculatorIndex < selectedCalculatorIds.length - 1) {
+        const nextCalculatorIndex = currentCalculatorIndex + 1;
+        const nextCalculatorId = selectedCalculatorIds[nextCalculatorIndex];
+        const nextFormula = formulasById.get(nextCalculatorId);
+        if (!nextFormula) {
+          return res.status(404).json({ message: "Next calculator not found." });
+        }
+
+        const nextAnswers = (answersByCalculator[String(nextCalculatorId)] || {}) as Record<string, any>;
+        const nextServiceQuestion = getChatEstimatorNextQuestion(nextFormula.variables || [], nextAnswers);
+        const updatedSession = await storage.updateChatEstimatorSession(session.id, {
+          calculatorId: nextCalculatorId,
+          currentCalculatorIndex: nextCalculatorIndex,
+          serviceResultsJson: serviceResults,
+          resultJson: null,
+          status: "active",
+          currentQuestionKey: nextServiceQuestion?.id || null,
+        });
+
+        await logChatEstimatorEvent({
+          sessionId: session.id,
+          accountId: session.accountId,
+          calculatorId: currentCalculatorId,
+          eventName: "completion",
+          metadata: {
+            amountCents: resultJson.amountCents,
+            serviceId: currentCalculatorId,
+          },
+        });
+
+        return res.json({
+          ...buildChatEstimatorSnapshot({
+            formulasForChat,
+            businessSettings: settings,
+            session: updatedSession || session,
+          }),
+          calculatedService,
+          readyToCalculate: !nextServiceQuestion,
+        });
+      }
+
+      const nextContactField = getNextChatEstimatorContactField(settings, (session.contactJson || {}) as Record<string, any>);
+      const updatedSession = await storage.updateChatEstimatorSession(session.id, {
+        serviceResultsJson: serviceResults,
+        resultJson: aggregateResult,
+        status: "quoted",
+        currentQuestionKey: nextContactField ? `contact.${nextContactField.key}` : null,
+      });
+
+      await logChatEstimatorEvent({
+        sessionId: session.id,
+        accountId: session.accountId,
+        calculatorId: session.calculatorId,
+        eventName: "completion",
+        metadata: {
+          amountCents: resultJson.amountCents,
+          serviceId: currentCalculatorId,
+        },
+      });
+
+      res.json({
+        ...buildChatEstimatorSnapshot({
+          formulasForChat,
+          businessSettings: settings,
+          session: updatedSession || session,
+        }),
+        calculatedService,
+        readyToComplete: !nextContactField,
+      });
+    } catch (error) {
+      console.error("Error calculating chat estimator result:", error);
+      res.status(500).json({ message: "Failed to calculate estimate." });
+    }
+  });
+
+  app.post("/api/chat-estimator/session/:sessionId/complete", async (req, res) => {
+    try {
+      const session = await storage.getChatEstimatorSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found." });
+      }
+
+      const [allFormulas, settings] = await Promise.all([
+        storage.getFormulasByUserId(session.accountId),
+        storage.getBusinessSettingsByUserId(session.accountId),
+      ]);
+      const selectedCalculatorIds = getChatEstimatorSessionSelectedCalculatorIds(session);
+      const formulasForChat = getActiveChatEstimatorFormulas(allFormulas)
+        .filter((formula) => selectedCalculatorIds.includes(Number(formula.id)));
+      const formulasById = new Map(formulasForChat.map((formula) => [Number(formula.id), formula]));
+      const answersByCalculator = getChatEstimatorAnswersByCalculator(session);
+      const serviceResults = getChatEstimatorServiceResults(session);
+      const aggregateResult = (session.resultJson as ChatEstimatorResult | null) || buildChatEstimatorAggregateResult(serviceResults);
+
+      if (!aggregateResult || selectedCalculatorIds.some((calculatorId) => !serviceResults[String(calculatorId)])) {
+        return res.status(400).json({ message: "Estimate has not been calculated yet." });
+      }
+
+      const contactAnswers = (session.contactJson || {}) as Record<string, any>;
+      const pendingContactField = getNextChatEstimatorContactField(settings, contactAnswers);
+      if (pendingContactField?.required) {
+        return res.status(400).json({
+          message: `Please complete ${pendingContactField.label.toLowerCase()} first.`,
+          nextContactField: pendingContactField,
+        });
+      }
+
+      if (!contactAnswers.email || typeof contactAnswers.email !== "string" || !contactAnswers.email.trim()) {
+        return res.status(400).json({
+          message: "Please enter your email address to save this estimate.",
+          nextContactField: getChatEstimatorContactFields(settings).find((field) => field.key === "email") || null,
+        });
+      }
+
+      const requestHeaders = {
+        "Content-Type": "application/json",
+        "x-forwarded-for": String(req.headers["x-forwarded-for"] || req.ip || ""),
+        "user-agent": String(req.headers["user-agent"] || ""),
+      };
+      let leadPayload: any = null;
+      let leadId: number | null = null;
+      let estimatesForLead: any[] = [];
+
+      if (selectedCalculatorIds.length === 1) {
+        const calculatorId = selectedCalculatorIds[0];
+        const formula = formulasById.get(calculatorId);
+        if (!formula) {
+          return res.status(404).json({ message: "Calculator not found." });
+        }
+
+        const internalLeadResponse = await fetch(`${getRequestBaseUrl(req)}/api/leads`, {
+          method: "POST",
+          headers: requestHeaders,
+          body: JSON.stringify({
+            userId: session.accountId,
+            formulaId: calculatorId,
+            name: contactAnswers.name || "Website Visitor",
+            email: contactAnswers.email,
+            phone: contactAnswers.phone || null,
+            address: contactAnswers.address || null,
+            notes: contactAnswers.notes || null,
+            calculatedPrice: aggregateResult.amountCents,
+            variables: {
+              ...(answersByCalculator[String(calculatorId)] || {}),
+              __chatEstimatorMeta: {
+                sessionId: session.id,
+                visitorId: session.visitorId,
+                pageUrl: session.pageUrl || null,
+                referrer: session.referrer || null,
+                howDidYouHear: contactAnswers.howDidYouHear || null,
+              },
+            },
+            source: "chat_estimator",
+          }),
+        });
+
+        leadPayload = await internalLeadResponse.json();
+        if (!internalLeadResponse.ok) {
+          return res.status(internalLeadResponse.status).json(leadPayload);
+        }
+
+        leadId = Number(leadPayload?.id);
+        estimatesForLead = Number.isFinite(leadId) ? await storage.getEstimatesByLeadId(leadId) : [];
+      } else {
+        const services = selectedCalculatorIds.map((calculatorId) => {
+          const formula = formulasById.get(calculatorId);
+          const result = serviceResults[String(calculatorId)];
+          return {
+            formulaId: calculatorId,
+            formulaName: formula?.name || `Service ${calculatorId}`,
+            variables: {
+              ...(answersByCalculator[String(calculatorId)] || {}),
+              __chatEstimatorMeta: {
+                sessionId: session.id,
+                visitorId: session.visitorId,
+                pageUrl: session.pageUrl || null,
+                referrer: session.referrer || null,
+                howDidYouHear: contactAnswers.howDidYouHear || null,
+              },
+            },
+            calculatedPrice: result.amountCents,
+          };
+        });
+
+        const multiLeadResponse = await fetch(`${getRequestBaseUrl(req)}/api/multi-service-leads`, {
+          method: "POST",
+          headers: requestHeaders,
+          body: JSON.stringify({
+            businessOwnerId: session.accountId,
+            name: contactAnswers.name || "Website Visitor",
+            email: contactAnswers.email,
+            phone: contactAnswers.phone || null,
+            address: contactAnswers.address || null,
+            notes: contactAnswers.notes || null,
+            howDidYouHear: contactAnswers.howDidYouHear || null,
+            services,
+            totalPrice: aggregateResult.amountCents,
+            subtotal: aggregateResult.amountCents,
+            taxAmount: 0,
+            bundleDiscountAmount: 0,
+            appliedDiscounts: [],
+            selectedUpsells: [],
+            source: "chat_estimator",
+          }),
+        });
+
+        leadPayload = await multiLeadResponse.json();
+        if (!multiLeadResponse.ok) {
+          return res.status(multiLeadResponse.status).json(leadPayload);
+        }
+
+        leadId = Number(leadPayload?.id);
+        estimatesForLead = Number.isFinite(leadId) ? await storage.getEstimatesByMultiServiceLeadId(leadId) : [];
+      }
+
+      const latestEstimate = estimatesForLead
+        .slice()
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+      const updatedSession = await storage.updateChatEstimatorSession(session.id, {
+        status: "completed",
+        leadId: Number.isFinite(leadId as number) ? leadId : null,
+        estimateId: latestEstimate?.id || null,
+        completedAt: new Date(),
+        currentQuestionKey: null,
+      });
+
+      await logChatEstimatorEvent({
+        sessionId: session.id,
+        accountId: session.accountId,
+        calculatorId: session.calculatorId,
+        eventName: "lead_conversion",
+        metadata: {
+          leadId,
+          estimateId: latestEstimate?.id || null,
+          serviceCount: selectedCalculatorIds.length,
+        },
+      });
+
+      res.json({
+        ...buildChatEstimatorSnapshot({
+          formulasForChat,
+          businessSettings: settings,
+          session: updatedSession || session,
+        }),
+        leadId,
+        estimateId: latestEstimate?.id || null,
+        estimateNumber: latestEstimate?.estimateNumber || null,
+        estimateLink: latestEstimate ? `${getRequestBaseUrl(req)}/estimate/${latestEstimate.estimateNumber}` : null,
+        finalCtaBehavior: getChatEstimatorSettings(settings?.chatEstimatorSettings).finalCtaBehavior,
+        businessEmail: settings?.businessEmail || null,
+        businessPhone: settings?.businessPhone || null,
+        bookUrl: selectedCalculatorIds.length > 1
+          ? `${getRequestBaseUrl(req)}/styled-calculator?userId=${session.accountId}&serviceIds=${selectedCalculatorIds.join(",")}`
+          : `${getRequestBaseUrl(req)}/styled-calculator?userId=${session.accountId}&serviceId=${selectedCalculatorIds[0]}`,
+      });
+    } catch (error) {
+      console.error("Error completing chat estimator session:", error);
+      res.status(500).json({ message: "Failed to complete chat estimator session." });
+    }
+  });
+
+  app.post("/api/chat-estimator/session/:sessionId/send-estimate", async (req, res) => {
+    try {
+      const session = await storage.getChatEstimatorSession(req.params.sessionId);
+      if (!session || !session.estimateId) {
+        return res.status(404).json({ message: "Estimate not found for this session." });
+      }
+
+      const [estimate, settings] = await Promise.all([
+        storage.getEstimate(session.estimateId),
+        storage.getBusinessSettingsByUserId(session.accountId),
+      ]);
+
+      if (!estimate || !estimate.customerEmail) {
+        return res.status(400).json({ message: "Customer email is required to send the estimate." });
+      }
+
+      const estimateLink = `${getRequestBaseUrl(req)}/estimate/${estimate.estimateNumber}`;
+      const businessName = settings?.businessName || "Autobidder";
+      const sent = await sendEmailWithFallback({
+        to: estimate.customerEmail,
+        fromName: businessName,
+        replyTo: settings?.businessEmail || undefined,
+        subject: `${businessName} - Your Estimate`,
+        text: `Your estimate is ready: ${estimateLink}`,
+        html: `<p>Your estimate is ready.</p><p><a href="${estimateLink}">View your estimate</a></p>`,
+      });
+
+      if (!sent) {
+        return res.status(500).json({ message: "Estimate email could not be sent." });
+      }
+
+      await logChatEstimatorEvent({
+        sessionId: session.id,
+        accountId: session.accountId,
+        calculatorId: session.calculatorId,
+        eventName: "send_estimate_click",
+        metadata: {
+          estimateId: estimate.id,
+        },
+      });
+
+      res.json({ success: true, estimateLink });
+    } catch (error) {
+      console.error("Error sending chat estimator estimate:", error);
+      res.status(500).json({ message: "Failed to send estimate." });
+    }
+  });
+
+  app.post("/api/chat-estimator/session/:sessionId/track", async (req, res) => {
+    try {
+      const payload = z.object({
+        eventName: z.string().min(1),
+        questionKey: z.string().optional(),
+        metadata: z.record(z.any()).optional(),
+      }).parse(req.body);
+
+      const session = await storage.getChatEstimatorSession(req.params.sessionId);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found." });
+      }
+
+      await logChatEstimatorEvent({
+        sessionId: session.id,
+        accountId: session.accountId,
+        calculatorId: session.calculatorId,
+        eventName: payload.eventName,
+        questionKey: payload.questionKey || null,
+        metadata: payload.metadata || {},
+      });
+
+      if (payload.eventName === "question_dropoff" && !session.completedAt) {
+        await storage.updateChatEstimatorSession(session.id, {
+          status: "abandoned",
+        });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking chat estimator event:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid analytics payload.", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to track chat estimator event." });
     }
   });
 
@@ -2901,6 +4201,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currentUser = (req as any).currentUser;
       const effectiveUserId = getEffectiveOwnerId(currentUser);
       const formulas = await storage.getFormulasByUserId(effectiveUserId);
+      const summaryRequested = String(req.query.summary || "").trim() === "1";
+
+      if (summaryRequested) {
+        // Dashboard/admin landing views do not need full variable schemas.
+        // Returning summaries avoids shipping multi-megabyte inline option images
+        // for production accounts with data URI assets embedded in variables.
+        return res.json(
+          formulas.map((formula) => ({
+            id: formula.id,
+            userId: formula.userId,
+            name: formula.name,
+            title: formula.title,
+            isActive: formula.isActive,
+            isDisplayed: formula.isDisplayed,
+            embedId: formula.embedId,
+            sortOrder: formula.sortOrder,
+            iconUrl: formula.iconUrl,
+            iconId: formula.iconId,
+            imageUrl: formula.imageUrl,
+            variableCount: Array.isArray(formula.variables) ? formula.variables.length : 0,
+          })),
+        );
+      }
+
       res.json(formulas);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch formulas" });
@@ -3670,6 +4994,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         showAutobidderBranding,
       };
 
+      // Cache embed data for 60 seconds; clients can revalidate with ETag
+      const etag = `"${formula.id}"`;
+      res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+      res.set('ETag', etag);
+
+      if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+      }
+
       res.json(response);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch calculator" });
@@ -3679,13 +5012,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Formula Template routes (public templates accessible to all users)
   app.get("/api/formula-templates", async (req, res) => {
     try {
-      const { category } = req.query;
+      const { category, summary } = req.query;
+      const summaryMode = summary === "1" || summary === "true";
       let templates;
       
       if (category && typeof category === 'string') {
-        templates = await storage.getFormulaTemplatesByCategory(category);
+        templates = summaryMode
+          ? await storage.getFormulaTemplateSummariesByCategory(category)
+          : await storage.getFormulaTemplatesByCategory(category);
       } else {
-        templates = await storage.getActiveFormulaTemplates();
+        templates = summaryMode
+          ? await storage.getActiveFormulaTemplateSummaries()
+          : await storage.getActiveFormulaTemplates();
       }
       
       res.json(templates);
@@ -4364,13 +5702,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI CSS Generation
   app.post("/api/design-settings/generate-css", requireAuth, requirePermission("canAccessDesign"), async (req, res) => {
     try {
-      const { description } = req.body;
+      const { description, currentCSS, styling, componentStyles, mode } = req.body;
       
       if (!description || typeof description !== 'string') {
         return res.status(400).json({ message: "Description is required" });
       }
 
-      const generatedCSS = await generateCustomCSS(description);
+      const generatedCSS = await generateCustomCSS(description, {
+        currentCSS: typeof currentCSS === 'string' ? currentCSS : '',
+        styling,
+        componentStyles,
+        mode: mode === 'merge' ? 'merge' : 'replace',
+      });
       res.json({ css: generatedCSS });
     } catch (error) {
       console.error('Error generating CSS:', error);
@@ -4384,7 +5727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI CSS Editing
   app.post("/api/design-settings/edit-css", requireAuth, requirePermission("canAccessDesign"), async (req, res) => {
     try {
-      const { currentCSS, editDescription } = req.body;
+      const { currentCSS, editDescription, styling, componentStyles, targetSelector, targetLabel } = req.body;
       
       if (!currentCSS || typeof currentCSS !== 'string') {
         return res.status(400).json({ message: "Current CSS is required" });
@@ -4394,7 +5737,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Edit description is required" });
       }
 
-      const editedCSS = await editCustomCSS(currentCSS, editDescription);
+      const editedCSS = await editCustomCSS(currentCSS, editDescription, {
+        currentCSS,
+        styling,
+        componentStyles,
+        targetSelector: typeof targetSelector === 'string' ? targetSelector : null,
+        targetLabel: typeof targetLabel === 'string' ? targetLabel : null,
+      });
       res.json({ css: editedCSS });
     } catch (error) {
       console.error('Error editing CSS:', error);
@@ -4959,6 +6308,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 percentageOfMain: Number(upsell?.percentageOfMain ?? 0),
                 amount: Number(upsell?.amount ?? upsell?.price ?? 0),
                 category: upsell?.category ? String(upsell.category) : undefined,
+                serviceId: upsell?.serviceId ? Number(upsell.serviceId) : undefined,
+                serviceName: upsell?.serviceName ? String(upsell.serviceName) : undefined,
+                pricingLabel: upsell?.pricingLabel ? String(upsell.pricingLabel) : undefined,
+                calculationType: upsell?.calculationType ? String(upsell.calculationType) : undefined,
+                calculationValue: upsell?.calculationValue !== undefined ? Number(upsell.calculationValue) : undefined,
               }))
             });
             
@@ -6624,6 +7978,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 percentageOfMain: Number(upsell?.percentageOfMain ?? 0),
                 amount: Number(upsell?.amount ?? upsell?.price ?? 0),
                 category: upsell?.category ? String(upsell.category) : undefined,
+                serviceId: upsell?.serviceId ? Number(upsell.serviceId) : undefined,
+                serviceName: upsell?.serviceName ? String(upsell.serviceName) : undefined,
+                pricingLabel: upsell?.pricingLabel ? String(upsell.pricingLabel) : undefined,
+                calculationType: upsell?.calculationType ? String(upsell.calculationType) : undefined,
+                calculationValue: upsell?.calculationValue !== undefined ? Number(upsell.calculationValue) : undefined,
               }))
             })),
             totalPrice: lead.totalPrice, // Keep in cents for proper conversion in email template
@@ -6644,6 +8003,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               percentageOfMain: Number(upsell?.percentageOfMain ?? 0),
               amount: Number(upsell?.amount ?? upsell?.price ?? 0),
               category: upsell?.category ? String(upsell.category) : undefined,
+              serviceId: upsell?.serviceId ? Number(upsell.serviceId) : undefined,
+              serviceName: upsell?.serviceName ? String(upsell.serviceName) : undefined,
+              pricingLabel: upsell?.pricingLabel ? String(upsell.pricingLabel) : undefined,
+              calculationType: upsell?.calculationType ? String(upsell.calculationType) : undefined,
+              calculationValue: upsell?.calculationValue !== undefined ? Number(upsell.calculationValue) : undefined,
             })),
             createdAt: lead.createdAt
           });
@@ -7123,6 +8487,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customButtonUrl: ''
           },
           enableBooking: true,
+          maxDaysOut: 90,
+          minBookingAdvanceValue: 0,
+          minBookingAdvanceUnit: 'hours',
           serviceRadius: 25,
           enableDistancePricing: false,
           distancePricingType: 'dollar',
@@ -7243,6 +8610,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customButtonUrl: ''
           },
           enableBooking: true,
+          maxDaysOut: 90,
+          minBookingAdvanceValue: 0,
+          minBookingAdvanceUnit: 'hours',
           serviceRadius: 25,
           enableDistancePricing: false,
           distancePricingType: 'dollar',
@@ -7265,9 +8635,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allowedFields = [
         'businessName', 'businessEmail', 'businessPhone', 'businessAddress', 'businessDescription',
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
-        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'enableServiceCart', 'maxDaysOut', 'stripeConfig',
+        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'enableServiceCart', 'maxDaysOut',
+        'minBookingAdvanceValue', 'minBookingAdvanceUnit', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
-        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
+        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings', 'chatEstimatorSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
         'blogCtaEnabled', 'blogCtaUrl', 'blogLogoUrl',
         // Facebook Conversion Tracking fields
@@ -7317,9 +8688,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allowedFields = [
         'businessName', 'businessEmail', 'businessPhone', 'businessAddress', 'businessDescription',
         'contactFirstToggle', 'bundleDiscount', 'salesTax', 'salesTaxLabel', 'styling',
-        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'enableServiceCart', 'maxDaysOut', 'stripeConfig',
+        'serviceSelectionTitle', 'serviceSelectionSubtitle', 'enableBooking', 'enableServiceCart', 'maxDaysOut',
+        'minBookingAdvanceValue', 'minBookingAdvanceUnit', 'stripeConfig',
         'enableDistancePricing', 'distancePricingType', 'distancePricingRate', 'enableLeadCapture',
-        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings',
+        'discounts', 'allowDiscountStacking', 'serviceRadius', 'guideVideos', 'estimatePageSettings', 'chatEstimatorSettings',
         'enableRouteOptimization', 'routeOptimizationThreshold',
         'blogCtaEnabled', 'blogCtaUrl', 'blogLogoUrl',
         // Facebook Conversion Tracking fields
@@ -8036,6 +9408,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter by maxDaysOut setting
       const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
       try {
+        const minBookingAdvanceSummary = getMinBookingAdvanceSummary(businessSettings);
+        if (minBookingAdvanceSummary) {
+          const beforeMinAdvanceFilter = filteredSlots.length;
+          filteredSlots = filteredSlots.filter((slot: any) => (
+            !isBeforeMinimumBookingAdvance(slot.date, slot.startTime, businessSettings)
+          ));
+          console.log('📅 Filtered by minimum booking advance (', minBookingAdvanceSummary, '):', beforeMinAdvanceFilter, '→', filteredSlots.length);
+        }
+      } catch (error) {
+        console.error("Error filtering by minimum booking advance:", error);
+      }
+
+      try {
         if (businessSettings?.maxDaysOut) {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
@@ -8162,7 +9547,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   !!event.leadId ||
                   !!(payload?.booking?.customerLat && payload?.booking?.customerLng) ||
                   !!payload?.booking?.customerAddress;
-                if (event.status === 'confirmed' && hasPotentialLocationData) {
+                // Tentative bookings still occupy route capacity for that day and must
+                // be treated as anchors until they are cancelled.
+                if (event.status !== 'cancelled' && hasPotentialLocationData) {
                   if (!routeAnchorsByDate.has(eventDate)) {
                     routeAnchorsByDate.set(eventDate, []);
                   }
@@ -8300,6 +9687,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Date, start time, and end time are required" });
       }
 
+      const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
+      const minBookingAdvanceSummary = getMinBookingAdvanceSummary(businessSettings);
+      if (minBookingAdvanceSummary && isBeforeMinimumBookingAdvance(date, startTime, businessSettings)) {
+        return res.status(400).json({
+          message: `Appointments must be booked at least ${minBookingAdvanceSummary} in advance. Please choose a later time.`,
+        });
+      }
+
       // VALIDATION: Check if slot is actually available before booking
       // Step 1: Check if date is blocked
       const dayStartBoundary = new Date(`${date}T00:00:00.000Z`);
@@ -8379,7 +9774,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Step 4: Route optimization validation
       try {
-        const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
         console.log('🔍 Route optimization debug:', {
           enableRouteOptimization: businessSettings?.enableRouteOptimization,
           routeOptimizationThreshold: businessSettings?.routeOptimizationThreshold,
@@ -8427,7 +9821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log('🔍 Customer location resolved:', { customerAddress, customerLat, customerLng });
 
-          if (!customerAddress || !customerLat || !customerLng) {
+          if (!customerAddress || customerLat === null || customerLng === null) {
             console.log('⚠️ No customer address available for route optimization, skipping check');
           } else {
             const routeSourceEvents = [...calendarEvents];
@@ -8482,7 +9876,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (eventDate !== date) return false;
 
               if (event.type === 'booking') {
-                return event.status === 'confirmed';
+                // Route optimization should respect both tentative and confirmed jobs.
+                return event.status !== 'cancelled';
               }
 
               if (event.type === 'google_sync') {
@@ -8638,7 +10033,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Get business owner information
         const businessOwner = await storage.getUserById(businessOwnerId);
-        const businessSettings = await storage.getBusinessSettingsByUserId(businessOwnerId);
         
         if (businessOwner && businessOwner.email) {
           // Use customer information passed directly, fallback to lead info if needed
@@ -9268,6 +10662,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         businessEmail: settings.businessEmail,
         businessAddress: settings.businessAddress,
         enableBooking: settings.enableBooking,
+        maxDaysOut: settings.maxDaysOut,
+        minBookingAdvanceValue: settings.minBookingAdvanceValue,
+        minBookingAdvanceUnit: settings.minBookingAdvanceUnit,
         estimatePageSettings: {
           defaultLayoutId: settings.estimatePageSettings?.defaultLayoutId,
           defaultTheme: settings.estimatePageSettings?.defaultTheme,
@@ -9994,7 +11391,7 @@ The Autobidder Team`;
   });
 
   // Helper function to sort templates: named priorities first, then custom, then the remaining templates in their original order
-  const prioritizedTemplateNames = ['rojo', 'harbor theme', 'boom', 'penguin', 'splash', 'doctorklean'];
+  const prioritizedTemplateNames = ['doctor klean', 'doctorklean', 'rojo', 'harbor theme', 'boom', 'penguin', 'splash'];
 
   const normalizeTemplateName = (value: string | null | undefined): string => {
     return (value || '')
@@ -14693,6 +16090,11 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
       const descriptionPrefix = typeof req.body.description === 'string'
         ? req.body.description.trim()
         : '';
+      const parsedGroupId = Number(req.body.groupId);
+      const groupId = Number.isInteger(parsedGroupId) && parsedGroupId > 0 ? parsedGroupId : null;
+      const parsedTagId = Number(req.body.tagId);
+      const tagIds = Number.isInteger(parsedTagId) && parsedTagId > 0 ? [parsedTagId] : undefined;
+      const allGroups = groupId ? await storage.getAllIconGroups() : [];
 
       const results = await Promise.all(
         files.map(async (file) => {
@@ -14705,15 +16107,22 @@ ${payload.logoUrl ? `Logo URL: ${payload.logoUrl}` : ""}
               filename: objectFilename,
               category,
               description: descriptionPrefix || `Auto-uploaded: ${baseName}`,
+              groupId,
               isActive: true,
             });
+            const updatedIcon = tagIds
+              ? await storage.updateIconMetadata(icon.id, {}, tagIds, (req as any).currentUser.id)
+              : icon;
+            const tags = await storage.getTagsForIcon(icon.id);
 
             return {
               success: true,
               fileName: file.originalname,
               icon: {
-                ...icon,
-                url: buildIconAssetUrl(icon.filename),
+                ...(updatedIcon || icon),
+                url: buildIconAssetUrl((updatedIcon || icon).filename),
+                tags,
+                group: groupId ? allGroups.find((group) => group.id === groupId) || null : null,
               },
             };
           } catch (error) {

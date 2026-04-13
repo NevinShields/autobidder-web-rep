@@ -384,23 +384,43 @@ export default function EnhancedVariableInput({
 
   const labelStyle = hasCustomCSS ? {} : getLabelStyle();
   const getOptionIconImage = (option?: { image?: string }) => option?.image;
-  const getOptionQuestionCardImage = (option?: { questionCardImage?: string; image?: string }) =>
-    option?.questionCardImage || option?.image;
+  const getOptionQuestionCardImage = (option?: { questionCardImage?: string }) =>
+    option?.questionCardImage;
+  const defaultQuestionCardImage = variable.questionCardDefaultImage;
   const selectedOption = variable.options?.find(
     (option) => option.value?.toString() === value?.toString()
   );
   const selectedMultipleChoiceQuestionCardOptions = variable.type === 'multiple-choice'
     ? (variable.options?.filter((option, optionIndex) => {
         const uniqueId = `${option.value}_${optionIndex}`;
-        return selectedOptions.includes(uniqueId) && option.questionCardImage;
+        return selectedOptions.includes(uniqueId) && getOptionQuestionCardImage(option);
       }) || [])
     : [];
+
+  const renderQuestionCardLeadImage = (imageSrc?: string, title?: string, maxHeightClass = 'max-h-72') => {
+    if (!imageSrc) return null;
+
+    return (
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <img
+          src={imageSrc}
+          alt={title || variable.name}
+          loading="lazy"
+          className={`w-full h-auto ${maxHeightClass} object-contain bg-gray-50`}
+        />
+        <div className="px-3 py-2 text-sm font-medium text-gray-900">
+          {title || variable.name}
+        </div>
+      </div>
+    );
+  };
 
   switch (variable.type) {
     case 'number':
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
+            {renderQuestionCardLeadImage(defaultQuestionCardImage, variable.name)}
             <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <div className="relative">
               <Input
@@ -482,6 +502,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
+            {renderQuestionCardLeadImage(defaultQuestionCardImage, variable.name)}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
               <div
@@ -543,6 +564,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
+            {renderQuestionCardLeadImage(defaultQuestionCardImage, variable.name)}
             <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
             <Input
               id={variable.id}
@@ -560,14 +582,17 @@ export default function EnhancedVariableInput({
     case 'checkbox':
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
-          <div className="flex items-center space-x-3 py-1">
-            <Checkbox
-              id={variable.id}
-              checked={value || false}
-              onCheckedChange={(checked) => onChange(checked === true)}
-              className="ab-checkbox flex-shrink-0"
-            />
-            <VariableLabelWithTooltip variable={variable} style={{...labelStyle, flex: 1}} prefillSource={prefillSource} />
+          <div className="space-y-2">
+            {renderQuestionCardLeadImage(defaultQuestionCardImage, variable.name)}
+            <div className="flex items-center space-x-3 py-1">
+              <Checkbox
+                id={variable.id}
+                checked={value || false}
+                onCheckedChange={(checked) => onChange(checked === true)}
+                className="ab-checkbox flex-shrink-0"
+              />
+              <VariableLabelWithTooltip variable={variable} style={{...labelStyle, flex: 1}} prefillSource={prefillSource} />
+            </div>
           </div>
         </div>
       );
@@ -608,6 +633,7 @@ export default function EnhancedVariableInput({
       return (
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-3">
+            {renderQuestionCardLeadImage(defaultQuestionCardImage, variable.name)}
             <div className="flex items-center justify-between">
               <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
               <div className="flex items-center gap-2">
@@ -643,6 +669,10 @@ export default function EnhancedVariableInput({
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
+            {renderQuestionCardLeadImage(
+              getOptionQuestionCardImage(selectedOption) || defaultQuestionCardImage,
+              selectedOption?.label || variable.name
+            )}
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full" data-testid={`select-${variable.id}`} data-variable-id={variable.id}>
                 {selectedOption ? (
@@ -767,23 +797,27 @@ export default function EnhancedVariableInput({
               style={hasCustomCSS ? {} : { ...labelStyle, fontSize: '0.875rem', fontWeight: 500 }}
               prefillSource={prefillSource}
             />
-          {selectedMultipleChoiceQuestionCardOptions.length > 0 && (
+          {(selectedMultipleChoiceQuestionCardOptions.length > 0 || defaultQuestionCardImage) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-1">
-              {selectedMultipleChoiceQuestionCardOptions.map((option) => (
-                <div
-                  key={`selected-preview-${option.value}`}
-                  className="overflow-hidden rounded-xl border border-gray-200 bg-white"
-                >
-                  <img
-                    src={option.questionCardImage}
-                    alt={option.label}
-                    className="w-full h-auto max-h-64 object-contain bg-gray-50"
-                  />
-                  <div className="px-3 py-2 text-sm font-medium text-gray-900">
-                    {option.label}
+              {selectedMultipleChoiceQuestionCardOptions.length > 0 ? (
+                selectedMultipleChoiceQuestionCardOptions.map((option) => (
+                  <div
+                    key={`selected-preview-${option.value}`}
+                    className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+                  >
+                    <img
+                      src={getOptionQuestionCardImage(option)}
+                      alt={option.label}
+                      className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                    />
+                    <div className="px-3 py-2 text-sm font-medium text-gray-900">
+                      {option.label}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                renderQuestionCardLeadImage(defaultQuestionCardImage, variable.name, 'max-h-64')
+              )}
             </div>
           )}
           {variable.allowMultipleSelection && (
@@ -835,25 +869,34 @@ export default function EnhancedVariableInput({
                     !isSelected
                   )}
                 >
-                  <div className={`flex items-center justify-center text-center flex-col w-full h-full ${
+                  <div className={`ab-multiple-choice-content flex items-center justify-center text-center flex-col w-full h-full ${
                     isGridLayout ? 'space-y-1 sm:space-y-2' : 'space-y-2'
                   }`}>
                     {(() => {
                       const imageSize = getImageSize(normalizedMultiChoiceImageSize);
-                      
+                      const isFullDisplay = styling?.multiChoiceImageFullDisplay;
+
                       return getOptionIconImage(option) ? (
-                        <img 
-                          src={getOptionIconImage(option)} 
-                          alt={option.label}
-                          className={imageSize.className}
-                          style={{
-                            ...multiChoiceImageStyle,
-                            ...imageSize.style
-                          }}
-                        />
+                        <div className="ab-multiple-choice-icon ab-multiple-choice-icon-image">
+                          <img
+                            src={getOptionIconImage(option)}
+                            alt={option.label}
+                            loading="lazy"
+                            className={`ab-multiple-choice-image ${isFullDisplay ? 'w-full h-auto object-contain' : imageSize.className}`}
+                            style={isFullDisplay ? {
+                              ...multiChoiceImageStyle,
+                              borderRadius: `${styling?.multiChoiceImageBorderRadius || 8}px`,
+                              boxShadow: multiChoiceImageStyle.boxShadow,
+                              maxWidth: '100%',
+                            } : {
+                              ...multiChoiceImageStyle,
+                              ...imageSize.style
+                            }}
+                          />
+                        </div>
                       ) : (
                         <div 
-                          className={`${imageSize.className} flex items-center justify-center rounded-lg`}
+                          className={`ab-multiple-choice-icon ab-multiple-choice-icon-fallback ${imageSize.className} flex items-center justify-center rounded-lg`}
                           style={{
                             ...imageSize.style,
                             fontSize: typeof normalizedMultiChoiceImageSize === 'number' ? '1.2rem' :
@@ -900,6 +943,10 @@ export default function EnhancedVariableInput({
         <div className="ab-question-card question-card" style={questionCardStyle}>
           <div className="space-y-2">
             <VariableLabelWithTooltip variable={variable} style={labelStyle} prefillSource={prefillSource} />
+            {renderQuestionCardLeadImage(
+              getOptionQuestionCardImage(selectedOption) || defaultQuestionCardImage,
+              selectedOption?.label || variable.name
+            )}
             <Select value={value || ''} onValueChange={onChange}>
               <SelectTrigger style={inputStyle} className="ab-select ab-dropdown dropdown w-full">
                 {selectedOption ? (

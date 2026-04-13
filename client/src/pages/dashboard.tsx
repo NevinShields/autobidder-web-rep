@@ -25,12 +25,18 @@ import {
   Check
 } from "lucide-react";
 import { Link } from "wouter";
-import type { Formula, Lead, MultiServiceLead, User } from "@shared/schema";
+import type { Lead, MultiServiceLead, User } from "@shared/schema";
 import DashboardLayout from "@/components/dashboard-layout";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 const TopServicesChart = lazy(() => import("@/components/dashboard/top-services-chart"));
+
+type DashboardFormulaSummary = {
+  id: number;
+  name: string;
+  variableCount: number;
+};
 
 const getPublicCalculatorHref = (userId?: string, shareSlug?: string | null) =>
   shareSlug ? `/c/${shareSlug}` : userId ? `/styled-calculator?userId=${userId}` : "/styled-calculator";
@@ -59,8 +65,17 @@ export default function Dashboard() {
     queryKey: ['/api/auth/user'],
   });
 
-  const { data: formulaList = [], isLoading: formulasLoading } = useQuery<Formula[]>({
-    queryKey: ['/api/formulas'],
+  const { data: formulaList = [], isLoading: formulasLoading } = useQuery<DashboardFormulaSummary[]>({
+    queryKey: ['/api/formulas', 'summary'],
+    queryFn: async () => {
+      const res = await fetch('/api/formulas?summary=1', {
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        throw new Error('Failed to fetch formulas');
+      }
+      return res.json();
+    },
   });
 
   const { data: leadList = [], isLoading: leadsLoading } = useQuery<Lead[]>({

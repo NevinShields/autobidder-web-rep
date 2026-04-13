@@ -88,9 +88,11 @@ interface MultiServiceLead {
     id: string;
     name: string;
     description?: string;
-    percentageOfMain: number;
+    percentageOfMain?: number;
     amount: number;
     category?: string;
+    serviceName?: string;
+    pricingLabel?: string;
   }>;
   // Travel/Distance fee fields
   totalDistanceFee?: number; // Travel fee in cents

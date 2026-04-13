@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Formula, PriceConstraintRule, Variable, VariableCondition } from "@shared/schema";
+import { Formula, PriceConstraintRule, Variable, VariableCondition, UpsellItem } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload, ChevronDown, ChevronUp, Settings2 } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload, ChevronDown, ChevronUp, Settings2, Pencil, ImageIcon, Zap } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -111,10 +111,10 @@ function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
             allVariables={allVariables}
           />
         )}
-      </div>
-    </div>
-  );
-}
+	      </div>
+	    </div>
+	  );
+	}
 
 function RefinePromptButton({ formula, onUpdate }: { formula: Formula; onUpdate: (formula: Partial<Formula>) => void }) {
   const [isRefining, setIsRefining] = useState(false);
@@ -215,6 +215,15 @@ function formatConstraintValue(valueInCents: number | null | undefined): string 
   return (valueInCents / 100).toString();
 }
 
+function createEmptyUpsellCondition(): VariableCondition {
+  return {
+    id: crypto.randomUUID(),
+    dependsOnVariable: "",
+    condition: "equals",
+    expectedValue: "",
+  };
+}
+
 interface FormulaBuilderProps {
   formula: Formula;
   onUpdate: (formula: Partial<Formula>) => void;
@@ -239,6 +248,58 @@ export default function FormulaBuilderComponent({
       .replace(/^_+|_+$/g, '')
       .slice(0, 40);
     return normalized || `option_${fallbackIndex}`;
+  };
+
+  const upsellDependencyVariables = (formula.variables || []).filter(
+    (variable) => variable.type !== "repeatable-group",
+  );
+
+  const updateUpsellItem = (upsellId: string, updater: (upsell: UpsellItem) => UpsellItem) => {
+    const updated = (formula.upsellItems || []).map((upsell) => (
+      upsell.id === upsellId ? updater(upsell as UpsellItem) : upsell
+    ));
+    onUpdate({ upsellItems: updated });
+  };
+
+  const toggleUpsellConditionalLogic = (upsellId: string, enabled: boolean) => {
+    updateUpsellItem(upsellId, (upsell) => ({
+      ...upsell,
+      conditionalLogic: enabled
+        ? {
+            enabled: true,
+            operator: upsell.conditionalLogic?.operator || "AND",
+            conditions: upsell.conditionalLogic?.conditions?.length
+              ? upsell.conditionalLogic.conditions
+              : [createEmptyUpsellCondition()],
+          }
+        : {
+            enabled: false,
+            operator: upsell.conditionalLogic?.operator || "AND",
+            conditions: upsell.conditionalLogic?.conditions || [createEmptyUpsellCondition()],
+          },
+    }));
+  };
+
+  const updateUpsellCondition = (
+    upsellId: string,
+    conditionUpdates: Partial<VariableCondition>,
+  ) => {
+    updateUpsellItem(upsellId, (upsell) => {
+      const existingCondition = upsell.conditionalLogic?.conditions?.[0] || createEmptyUpsellCondition();
+      return {
+        ...upsell,
+        conditionalLogic: {
+          enabled: true,
+          operator: upsell.conditionalLogic?.operator || "AND",
+          conditions: [
+            {
+              ...existingCondition,
+              ...conditionUpdates,
+            },
+          ],
+        },
+      };
+    });
   };
 
   const containsToken = (expression: string, token: string): boolean => {
@@ -719,7 +780,7 @@ export default function FormulaBuilderComponent({
         };
 
     return (
-      <div className={cn("space-y-4 rounded-2xl border p-4 shadow-sm", tone.shell)}>
+      <div className={cn("min-w-0 space-y-4 rounded-2xl border p-4 shadow-sm", tone.shell)}>
         <div className="flex flex-col gap-3">
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
@@ -738,8 +799,8 @@ export default function FormulaBuilderComponent({
           </div>
         </div>
 
-        <div className="grid gap-3 2xl:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
-          <div className="rounded-xl border border-white/70 bg-white/85 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50">
+        <div className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+          <div className="min-w-0 rounded-xl border border-white/70 bg-white/85 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/50">
             <div className="mb-2 flex flex-col gap-1">
               <Label htmlFor={`${type}-price`} className="text-xs uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 Default fallback
@@ -767,8 +828,8 @@ export default function FormulaBuilderComponent({
             </p>
           </div>
 
-          <div className={cn("rounded-xl border p-4 shadow-sm", tone.ruleBorder, tone.soft)}>
-            <div className="flex flex-col gap-3">
+          <div className={cn("min-w-0 rounded-xl border p-4 shadow-sm", tone.ruleBorder, tone.soft)}>
+            <div className="flex min-w-0 flex-col gap-3">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Conditional overrides
@@ -811,7 +872,7 @@ export default function FormulaBuilderComponent({
                   <div
                     key={rule.id}
                     className={cn(
-                      "rounded-2xl border bg-white p-4 shadow-sm transition-colors dark:bg-slate-950/60",
+                      "min-w-0 rounded-2xl border bg-white p-4 shadow-sm transition-colors dark:bg-slate-950/60",
                       tone.ruleBorder,
                     )}
                   >
@@ -845,8 +906,8 @@ export default function FormulaBuilderComponent({
                       </Button>
                     </div>
 
-                    <div className="mt-4 grid gap-4 2xl:grid-cols-[160px_minmax(0,1fr)]">
-                      <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                    <div className="mt-4 grid min-w-0 gap-4 2xl:grid-cols-[160px_minmax(0,1fr)]">
+                      <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/50">
                         <Label className="text-[11px] uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                           Override value
                         </Label>
@@ -921,12 +982,13 @@ export default function FormulaBuilderComponent({
                                 )}
                               </div>
 
-                              <div className="grid gap-2 2xl:grid-cols-3">
+                              <div className="grid min-w-0 gap-2 2xl:grid-cols-3">
+                                <div className="min-w-0">
                                 <Select
                                   value={condition.dependsOnVariable || ""}
                                   onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { dependsOnVariable: nextValue })}
                                 >
-                                  <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
+                                  <SelectTrigger className="h-10 w-full min-w-0 bg-white text-sm dark:bg-slate-950">
                                     <SelectValue placeholder="Question or variable" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -937,13 +999,15 @@ export default function FormulaBuilderComponent({
                                     ))}
                                   </SelectContent>
                                 </Select>
+                                </div>
 
+                                <div className="min-w-0">
                                 <Select
                                   value={condition.condition || ""}
                                   onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { condition: nextValue as VariableCondition["condition"] })}
                                   disabled={!condition.dependsOnVariable}
                                 >
-                                  <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
+                                  <SelectTrigger className="h-10 w-full min-w-0 bg-white text-sm dark:bg-slate-950">
                                     <SelectValue placeholder="Comparison" />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -954,14 +1018,16 @@ export default function FormulaBuilderComponent({
                                     ))}
                                   </SelectContent>
                                 </Select>
+                                </div>
 
+                                <div className="min-w-0">
                                 {condition.condition && !["is_empty", "is_not_empty"].includes(condition.condition) ? (
                                   dependency && ["select", "dropdown", "multiple-choice"].includes(dependency.type) && dependency.options ? (
                                     <Select
                                       value={String(condition.expectedValue ?? "")}
                                       onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { expectedValue: nextValue })}
                                     >
-                                      <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
+                                      <SelectTrigger className="h-10 w-full min-w-0 bg-white text-sm dark:bg-slate-950">
                                         <SelectValue placeholder="Expected value" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -977,7 +1043,7 @@ export default function FormulaBuilderComponent({
                                       value={String(condition.expectedValue ?? "")}
                                       onValueChange={(nextValue) => updateConstraintCondition(type, rule.id, condition.id, { expectedValue: nextValue === "true" })}
                                     >
-                                      <SelectTrigger className="h-10 w-full bg-white text-sm dark:bg-slate-950">
+                                      <SelectTrigger className="h-10 w-full min-w-0 bg-white text-sm dark:bg-slate-950">
                                         <SelectValue placeholder="Expected value" />
                                       </SelectTrigger>
                                       <SelectContent>
@@ -988,7 +1054,7 @@ export default function FormulaBuilderComponent({
                                   ) : (
                                     <Input
                                       type={isNumericDependency ? "number" : "text"}
-                                      className="h-10 w-full bg-white text-sm dark:bg-slate-950"
+                                      className="h-10 w-full min-w-0 bg-white text-sm dark:bg-slate-950"
                                       value={String(condition.expectedValue ?? "")}
                                       onChange={(e) =>
                                         updateConstraintCondition(type, rule.id, condition.id, {
@@ -1005,6 +1071,7 @@ export default function FormulaBuilderComponent({
                                     No value needed for this comparison
                                   </div>
                                 )}
+                                </div>
                               </div>
                             </div>
                           );
@@ -1458,8 +1525,17 @@ export default function FormulaBuilderComponent({
             </div>
           )}
 
-          {/* Basic Details Section - Compact */}
+          {/* Basic Details Section */}
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <Pencil className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Service Identity</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">How this service appears to your customers</p>
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               {/* Icon */}
               <div className="flex items-center gap-3 min-w-0">
@@ -1533,26 +1609,32 @@ export default function FormulaBuilderComponent({
 
               {/* Service Name */}
               <div className="sm:col-span-1 lg:col-span-1 min-w-0">
-                <Label htmlFor="formula-name" className="text-xs text-gray-500 mb-1 block">Service Name *</Label>
+                <Label htmlFor="formula-name" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                  Service Name <span className="text-blue-500">*</span>
+                </Label>
                 <Input
                   id="formula-name"
                   value={formula.name}
                   onChange={(e) => onUpdate({ name: e.target.value })}
-                  placeholder="Kitchen Remodel"
+                  placeholder="e.g. Kitchen Remodel"
                   className="h-9 w-full"
                 />
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Used in navigation &amp; reports</p>
               </div>
 
               {/* Calculator Title */}
               <div className="sm:col-span-2 lg:col-span-2 min-w-0">
-                <Label htmlFor="formula-title" className="text-xs text-gray-500 mb-1 block">Calculator Title</Label>
+                <Label htmlFor="formula-title" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                  Calculator Title
+                </Label>
                 <Input
                   id="formula-title"
                   value={formula.title}
                   onChange={(e) => onUpdate({ title: e.target.value })}
-                  placeholder="Get Your Kitchen Remodel Quote"
+                  placeholder="e.g. Get Your Kitchen Remodel Quote"
                   className="h-9 w-full"
                 />
+                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Headline shown at the top of your embed</p>
               </div>
             </div>
 
@@ -1562,262 +1644,312 @@ export default function FormulaBuilderComponent({
           <div className="border-b border-gray-200 dark:border-gray-700">
             <button
               onClick={() => setShowMediaSection(!showMediaSection)}
-              className="w-full px-4 sm:px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="w-full px-4 sm:px-6 py-3.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
             >
-              <div className="flex items-center gap-2">
-                <Settings2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Media & Settings</span>
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-lg bg-violet-50 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+                  <Settings2 className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div className="text-left">
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 block leading-tight">Media &amp; Settings</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Description, images, video, and smart features</span>
+                </div>
                 {(formula.description || (formula.bulletPoints && formula.bulletPoints.length > 0) || formula.guideVideoUrl || formula.showImage || formula.enableMeasureMap || formula.enablePhotoMeasurement) && (
-                  <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Active</span>
+                  <span className="text-xs bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 px-2 py-0.5 rounded-full font-medium">Active</span>
                 )}
               </div>
-              {showMediaSection ? <ChevronUp className="w-4 h-4 text-gray-500 dark:text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-500 dark:text-gray-400" />}
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors">
+                <span className="hidden sm:inline">{showMediaSection ? 'Collapse' : 'Expand'}</span>
+                {showMediaSection ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
             </button>
 
             {showMediaSection && (
-              <div className="px-4 sm:px-6 pb-4 space-y-4">
-                {/* Description & Bullet Points */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="formula-description" className="text-xs text-gray-500 mb-1 block">Description</Label>
-                    <Textarea
-                      id="formula-description"
-                      value={formula.description || ""}
-                      onChange={(e) => onUpdate({ description: e.target.value })}
-                      placeholder="Brief description of this service..."
-                      rows={3}
-                      className="text-sm resize-none"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="formula-bullet-input" className="text-xs text-gray-500 mb-1 block">Highlights</Label>
-                    <Input
-                      id="formula-bullet-input"
-                      value={bulletInput}
-                      onChange={(e) => setBulletInput(e.target.value)}
-                      placeholder="Type a highlight and press Enter"
-                      className="h-9"
-                      data-testid="input-bullet-point"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const value = bulletInput.trim();
-                          if (!value) return;
-                          const next = [...(formula.bulletPoints || []), value];
-                          onUpdate({ bulletPoints: next });
-                          setBulletInput("");
-                        }
-                      }}
-                    />
-                    {(formula.bulletPoints || []).length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2" data-testid="bullet-point-list">
-                        {(formula.bulletPoints || []).map((point, index) => (
-                          <div
-                            key={`${point}-${index}`}
-                            className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm"
-                          >
-                            <span>{point}</span>
-                            <button
-                              type="button"
-                              className="text-gray-400 hover:text-gray-600"
-                              onClick={() => {
-                                const next = (formula.bulletPoints || []).filter((_, i) => i !== index);
-                                onUpdate({ bulletPoints: next });
-                              }}
-                              aria-label="Remove bullet point"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-xs text-gray-400 mt-2">Press Enter to add a highlight.</p>
-                  </div>
-                </div>
+              <div className="px-4 sm:px-6 pb-6 space-y-5">
 
-                {/* Video & Image Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="guide-video" className="text-xs text-gray-500 mb-1 block">Guide Video URL</Label>
-                    <Input
-                      id="guide-video"
-                      value={formula.guideVideoUrl || ''}
-                      onChange={(e) => onUpdate({ guideVideoUrl: e.target.value || null })}
-                      placeholder="https://youtube.com/watch?v=..."
-                      className="h-9"
-                    />
+                {/* Content Sub-section */}
+                <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 p-4 space-y-4">
+                  <div className="flex items-center gap-2 pb-1">
+                    <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Content</span>
                   </div>
-                  <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Service Image</Label>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="show-image"
-                        checked={formula.showImage}
-                        onCheckedChange={(checked) => onUpdate({ showImage: checked })}
+                  {/* Description & Bullet Points */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="formula-description" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">Description</Label>
+                      <Textarea
+                        id="formula-description"
+                        value={formula.description || ""}
+                        onChange={(e) => onUpdate({ description: e.target.value })}
+                        placeholder="Briefly describe this service to help customers understand what's included..."
+                        rows={3}
+                        className="text-sm resize-none bg-white dark:bg-gray-900"
                       />
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{formula.showImage ? 'Enabled' : 'Disabled'}</span>
-                      {formula.showImage && formula.imageUrl && (
-                        <img src={formula.imageUrl} alt="Preview" className="w-8 h-8 object-cover rounded border dark:border-gray-600 ml-2" />
+                      <p className="text-[11px] text-gray-400 mt-1">Shown below the calculator title</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="formula-bullet-input" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">Highlights</Label>
+                      <Input
+                        id="formula-bullet-input"
+                        value={bulletInput}
+                        onChange={(e) => setBulletInput(e.target.value)}
+                        placeholder="Type a highlight and press Enter..."
+                        className="h-9 bg-white dark:bg-gray-900"
+                        data-testid="input-bullet-point"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const value = bulletInput.trim();
+                            if (!value) return;
+                            const next = [...(formula.bulletPoints || []), value];
+                            onUpdate({ bulletPoints: next });
+                            setBulletInput("");
+                          }
+                        }}
+                      />
+                      <p className="text-[11px] text-gray-400 mt-1">Press Enter to add. Shown as a feature list to customers.</p>
+                      {(formula.bulletPoints || []).length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5" data-testid="bullet-point-list">
+                          {(formula.bulletPoints || []).map((point, index) => (
+                            <div
+                              key={`${point}-${index}`}
+                              className="flex items-center gap-1.5 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 text-xs text-blue-700 dark:text-blue-300"
+                            >
+                              <span>{point}</span>
+                              <button
+                                type="button"
+                                className="text-blue-400 hover:text-blue-600 dark:hover:text-blue-200 transition-colors"
+                                onClick={() => {
+                                  const next = (formula.bulletPoints || []).filter((_, i) => i !== index);
+                                  onUpdate({ bulletPoints: next });
+                                }}
+                                aria-label="Remove bullet point"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {formula.showImage && (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                    <div className="flex-1 min-w-0">
-                      <Label className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1 block">Upload Image</Label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const formData = new FormData();
-                            formData.append('image', file);
-                            try {
-                              const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
-                              const data = await response.json();
-                              if (response.ok) onUpdate({ imageUrl: data.url });
-                            } catch (error) {
-                              console.error('Error uploading image:', error);
-                            }
-                          }
-                        }}
-                        className="text-xs w-full dark:text-gray-200 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
+                {/* Media Sub-section */}
+                <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 p-4 space-y-4">
+                  <div className="flex items-center gap-2 pb-1">
+                    <ImageIcon className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Media</span>
+                  </div>
+                  {/* Video & Image Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="guide-video" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">Guide Video URL</Label>
+                      <Input
+                        id="guide-video"
+                        value={formula.guideVideoUrl || ''}
+                        onChange={(e) => onUpdate({ guideVideoUrl: e.target.value || null })}
+                        placeholder="https://youtube.com/watch?v=..."
+                        className="h-9 bg-white dark:bg-gray-900"
                       />
+                      <p className="text-[11px] text-gray-400 mt-1">Embedded tutorial video for customers</p>
                     </div>
-                    {formula.imageUrl && (
-                      <div className="h-10 w-10 rounded border border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800 flex-shrink-0">
-                        <img src={formula.imageUrl} alt="Preview" className="h-full w-full object-cover" />
+                    <div>
+                      <Label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">Service Image</Label>
+                      <div className="flex items-center gap-3 h-9">
+                        <Switch
+                          id="show-image"
+                          checked={formula.showImage}
+                          onCheckedChange={(checked) => onUpdate({ showImage: checked })}
+                        />
+                        <span className="text-xs text-gray-600 dark:text-gray-400">{formula.showImage ? 'Visible to customers' : 'Hidden'}</span>
+                        {formula.showImage && formula.imageUrl && (
+                          <img src={formula.imageUrl} alt="Preview" className="w-8 h-8 object-cover rounded-lg border border-gray-200 dark:border-gray-600" />
+                        )}
                       </div>
-                    )}
+                      <p className="text-[11px] text-gray-400 mt-1">Display a photo alongside your calculator</p>
+                    </div>
                   </div>
-                )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t dark:border-gray-700">
-                  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Map className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm dark:text-gray-200">Measure Map</span>
+                  {formula.showImage && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                      <div className="flex-1 min-w-0">
+                        <Label className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5 block font-semibold">Upload Service Image</Label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const formData = new FormData();
+                              formData.append('image', file);
+                              try {
+                                const response = await fetch('/api/upload-image', { method: 'POST', body: formData });
+                                const data = await response.json();
+                                if (response.ok) onUpdate({ imageUrl: data.url });
+                              } catch (error) {
+                                console.error('Error uploading image:', error);
+                              }
+                            }
+                          }}
+                          className="text-xs w-full dark:text-gray-200 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-700 dark:file:text-gray-200 cursor-pointer"
+                        />
+                      </div>
+                      {formula.imageUrl && (
+                        <div className="h-14 w-14 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800 flex-shrink-0 shadow-sm">
+                          <img src={formula.imageUrl} alt="Preview" className="h-full w-full object-cover" />
+                        </div>
+                      )}
                     </div>
-                    <Switch
-                      checked={formula.enableMeasureMap || false}
-                      onCheckedChange={(checked) => onUpdate({ enableMeasureMap: checked })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <Camera className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm dark:text-gray-200">AI Photo Measure</span>
-                    </div>
-                    <Switch
-                      checked={formula.enablePhotoMeasurement || false}
-                      onCheckedChange={(checked) => onUpdate({ enablePhotoMeasurement: checked })}
-                    />
-                  </div>
+                  )}
                 </div>
 
-                {formula.enableMeasureMap && (
-                  <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center gap-3">
-                      <Label className="text-xs text-blue-700 dark:text-blue-300">Unit:</Label>
-                      <Select
-                        value={formula.measureMapUnit || "sqft"}
-                        onValueChange={(value) => onUpdate({ measureMapUnit: value })}
-                      >
-                        <SelectTrigger className="h-8 w-40 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sqft">Square Feet</SelectItem>
-                          <SelectItem value="sqm">Square Meters</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                {/* Smart Features Sub-section */}
+                <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 p-4 space-y-3">
+                  <div className="flex items-center gap-2 pb-1">
+                    <Zap className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Smart Features</span>
                   </div>
-                )}
-
-                {formula.enablePhotoMeasurement && (
-                  <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 border border-purple-200 dark:border-purple-800 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <Label className="text-xs text-purple-700 dark:text-purple-300">Object Description</Label>
-                          <RefinePromptButton formula={formula} onUpdate={onUpdate} />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex items-start gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 hover:border-blue-200 dark:hover:border-blue-800 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Map className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Measure Map</span>
+                          <Switch
+                            checked={formula.enableMeasureMap || false}
+                            onCheckedChange={(checked) => onUpdate({ enableMeasureMap: checked })}
+                          />
                         </div>
-                        <Textarea
-                          value={formula.photoMeasurementSetup?.objectDescription || ''}
-                          onChange={(e) => {
-                            const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
-                            onUpdate({ photoMeasurementSetup: { ...setup, objectDescription: e.target.value } });
-                          }}
-                          placeholder="E.g., 'Residential house roof'"
-                          rows={2}
-                          className="text-xs resize-none"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-purple-700 dark:text-purple-300 mb-1 block">Customer Instructions</Label>
-                        <Textarea
-                          value={formula.photoMeasurementSetup?.customerInstructions || ''}
-                          onChange={(e) => {
-                            const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
-                            onUpdate({ photoMeasurementSetup: { ...setup, customerInstructions: e.target.value } });
-                          }}
-                          placeholder="E.g., 'Take photos from different angles'"
-                          rows={2}
-                          className="text-xs resize-none"
-                        />
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Let customers draw areas on a map</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Label className="text-xs text-purple-700 dark:text-purple-300">Measure:</Label>
-                      <Select
-                        value={formula.photoMeasurementSetup?.measurementType || "area"}
-                        onValueChange={(value: 'area' | 'length' | 'width' | 'height' | 'perimeter') => {
-                          const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
-                          onUpdate({ photoMeasurementSetup: { ...setup, measurementType: value } });
-                        }}
-                      >
-                        <SelectTrigger className="h-8 w-32 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="area">Area (sq ft)</SelectItem>
-                          <SelectItem value="length">Length (ft)</SelectItem>
-                          <SelectItem value="width">Width (ft)</SelectItem>
-                          <SelectItem value="height">Height (ft)</SelectItem>
-                          <SelectItem value="perimeter">Perimeter (ft)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="flex items-start gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3 hover:border-purple-200 dark:hover:border-purple-800 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Camera className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200">AI Photo Measure</span>
+                          <Switch
+                            checked={formula.enablePhotoMeasurement || false}
+                            onCheckedChange={(checked) => onUpdate({ enablePhotoMeasurement: checked })}
+                          />
+                        </div>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">Measure from customer photos with AI</p>
+                      </div>
                     </div>
                   </div>
-                )}
 
-                {/* Upsell Items - Compact Toggle */}
-                <div className="pt-2 border-t dark:border-gray-700">
-                  <div className="flex items-center justify-between">
+                  {formula.enableMeasureMap && (
+                    <div className="bg-blue-50/80 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800/50">
+                      <div className="flex items-center gap-3">
+                        <Label className="text-xs font-medium text-blue-700 dark:text-blue-300">Measurement Unit:</Label>
+                        <Select
+                          value={formula.measureMapUnit || "sqft"}
+                          onValueChange={(value) => onUpdate({ measureMapUnit: value })}
+                        >
+                          <SelectTrigger className="h-8 w-40 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sqft">Square Feet</SelectItem>
+                            <SelectItem value="sqm">Square Meters</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {formula.enablePhotoMeasurement && (
+                    <div className="bg-purple-50/80 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-100 dark:border-purple-800/50 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <Label className="text-xs font-medium text-purple-700 dark:text-purple-300">Object Description</Label>
+                            <RefinePromptButton formula={formula} onUpdate={onUpdate} />
+                          </div>
+                          <Textarea
+                            value={formula.photoMeasurementSetup?.objectDescription || ''}
+                            onChange={(e) => {
+                              const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
+                              onUpdate({ photoMeasurementSetup: { ...setup, objectDescription: e.target.value } });
+                            }}
+                            placeholder="E.g., 'Residential house roof'"
+                            rows={2}
+                            className="text-xs resize-none"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-1 block">Customer Instructions</Label>
+                          <Textarea
+                            value={formula.photoMeasurementSetup?.customerInstructions || ''}
+                            onChange={(e) => {
+                              const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
+                              onUpdate({ photoMeasurementSetup: { ...setup, customerInstructions: e.target.value } });
+                            }}
+                            placeholder="E.g., 'Take photos from different angles'"
+                            rows={2}
+                            className="text-xs resize-none"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Label className="text-xs font-medium text-purple-700 dark:text-purple-300">Measure:</Label>
+                        <Select
+                          value={formula.photoMeasurementSetup?.measurementType || "area"}
+                          onValueChange={(value: 'area' | 'length' | 'width' | 'height' | 'perimeter') => {
+                            const setup = formula.photoMeasurementSetup || { objectDescription: '', measurementType: 'area' as const, referenceImages: [] };
+                            onUpdate({ photoMeasurementSetup: { ...setup, measurementType: value } });
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-32 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="area">Area (sq ft)</SelectItem>
+                            <SelectItem value="length">Length (ft)</SelectItem>
+                            <SelectItem value="width">Width (ft)</SelectItem>
+                            <SelectItem value="height">Height (ft)</SelectItem>
+                            <SelectItem value="perimeter">Perimeter (ft)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upsell Items */}
+                <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 p-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm dark:text-gray-200">Upsell Items</span>
+                      <div className="w-7 h-7 rounded-lg bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 block leading-tight">Upsell Items</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">Optional add-ons offered to customers</span>
+                      </div>
                       {(formula.upsellItems || []).length > 0 && (
-                        <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full">{formula.upsellItems?.length}</span>
+                        <span className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded-full font-medium">{formula.upsellItems?.length}</span>
                       )}
                     </div>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-8 text-xs"
                       onClick={() => {
                         const newUpsell = {
                           id: `upsell_${Date.now()}`,
                           name: "New Upsell",
                           description: "Add description",
                           category: "addon",
+                          calculationType: "percentage_service" as const,
                           percentageOfMain: 15,
+                          fixedAmount: 0,
                           isPopular: false,
                           iconUrl: "",
                           imageUrl: "",
@@ -1833,10 +1965,21 @@ export default function FormulaBuilderComponent({
 
                   {(formula.upsellItems || []).length > 0 && (
                     <div className="mt-2 space-y-2">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Upsells created here are attached to this service. In multi-service quotes they are priced against this service unless you choose a different pricing mode.
+                      </p>
                       {(formula.upsellItems || []).map((upsell, index) => (
                         <div key={upsell.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 space-y-2">
+                          {(() => {
+                            const upsellCondition = upsell.conditionalLogic?.conditions?.[0];
+                            const dependency = upsellDependencyVariables.find((variable) => variable.id === upsellCondition?.dependsOnVariable);
+                            const dependencyConditions = dependency ? getAvailableConditions(dependency.type) : [];
+                            const isNumericDependency = ["number", "slider", "stepper"].includes(dependency?.type || "");
+
+                            return (
+                              <>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-2">
                               <Input
                                 value={upsell.name}
                                 onChange={(e) => {
@@ -1846,14 +1989,41 @@ export default function FormulaBuilderComponent({
                                 placeholder="Name"
                                 className="h-8 text-xs"
                               />
-                              <Input
-                                type="number"
-                                value={upsell.percentageOfMain}
-                                onChange={(e) => {
-                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, percentageOfMain: Number(e.target.value) } : u);
+                              <Select
+                                value={upsell.calculationType || "percentage_service"}
+                                onValueChange={(value) => {
+                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? {
+                                    ...u,
+                                    calculationType: value as "percentage_service" | "percentage_total" | "fixed_amount",
+                                  } : u);
                                   onUpdate({ upsellItems: updated });
                                 }}
-                                placeholder="%"
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="percentage_service">% of service</SelectItem>
+                                  <SelectItem value="percentage_total">% of total quote</SelectItem>
+                                  <SelectItem value="fixed_amount">Fixed amount</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Input
+                                type="number"
+                                value={(upsell.calculationType || "percentage_service") === "fixed_amount"
+                                  ? (upsell.fixedAmount ?? 0)
+                                  : upsell.percentageOfMain}
+                                onChange={(e) => {
+                                  const numericValue = Number(e.target.value) || 0;
+                                  const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? {
+                                    ...u,
+                                    ...( (u.calculationType || "percentage_service") === "fixed_amount"
+                                      ? { fixedAmount: numericValue }
+                                      : { percentageOfMain: numericValue }),
+                                  } : u);
+                                  onUpdate({ upsellItems: updated });
+                                }}
+                                placeholder={(upsell.calculationType || "percentage_service") === "fixed_amount" ? "$" : "%"}
                                 className="h-8 text-xs"
                               />
                               <Select
@@ -1900,9 +2070,133 @@ export default function FormulaBuilderComponent({
                               const updated = (formula.upsellItems || []).map(u => u.id === upsell.id ? { ...u, description: e.target.value } : u);
                               onUpdate({ upsellItems: updated });
                             }}
-                            placeholder="Description"
+                            placeholder={(upsell.calculationType || "percentage_service") === "fixed_amount"
+                              ? `Description ($${upsell.fixedAmount ?? 0} fixed)`
+                              : `Description (${upsell.percentageOfMain}% ${(upsell.calculationType || "percentage_service") === "percentage_total" ? "of total quote" : "of this service"})`}
                             className="h-8 text-xs"
                           />
+                          <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50/60 dark:bg-amber-950/20 p-3 space-y-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                                  Conditional display
+                                </p>
+                                <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                                  Show this add-on only when a question is answered a certain way.
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {upsell.conditionalLogic?.enabled && (
+                                  <span className="text-[10px] font-medium rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 px-2 py-0.5">
+                                    Active
+                                  </span>
+                                )}
+                                <Switch
+                                  checked={upsell.conditionalLogic?.enabled || false}
+                                  onCheckedChange={(checked) => toggleUpsellConditionalLogic(upsell.id, checked)}
+                                />
+                              </div>
+                            </div>
+
+                            {upsell.conditionalLogic?.enabled && (
+                              upsellDependencyVariables.length > 0 ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                  <Select
+                                    value={upsellCondition?.dependsOnVariable || ""}
+                                    onValueChange={(value) => updateUpsellCondition(upsell.id, {
+                                      dependsOnVariable: value,
+                                      condition: "equals",
+                                      expectedValue: "",
+                                    })}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue placeholder="Question" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {upsellDependencyVariables.map((variable) => (
+                                        <SelectItem key={variable.id} value={variable.id} className="text-xs">
+                                          {variable.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+
+                                  <Select
+                                    value={upsellCondition?.condition || ""}
+                                    onValueChange={(value) => updateUpsellCondition(upsell.id, {
+                                      condition: value as VariableCondition["condition"],
+                                    })}
+                                    disabled={!upsellCondition?.dependsOnVariable}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue placeholder="Condition" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {dependencyConditions.map((condition) => (
+                                        <SelectItem key={condition} value={condition} className="text-xs">
+                                          {getConditionLabel(condition)}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+
+                                  {upsellCondition?.condition && !["is_empty", "is_not_empty"].includes(upsellCondition.condition) ? (
+                                    dependency && ["select", "dropdown", "multiple-choice"].includes(dependency.type) && dependency.options ? (
+                                      <Select
+                                        value={String(upsellCondition.expectedValue ?? "")}
+                                        onValueChange={(value) => updateUpsellCondition(upsell.id, { expectedValue: value })}
+                                      >
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue placeholder="Value" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {dependency.options.map((option, optionIndex) => (
+                                            <SelectItem key={`${upsell.id}-condition-option-${optionIndex}`} value={String(option.value)} className="text-xs">
+                                              {option.label}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    ) : dependency?.type === "checkbox" ? (
+                                      <Select
+                                        value={String(upsellCondition.expectedValue ?? "")}
+                                        onValueChange={(value) => updateUpsellCondition(upsell.id, { expectedValue: value === "true" })}
+                                      >
+                                        <SelectTrigger className="h-8 text-xs">
+                                          <SelectValue placeholder="Value" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="true" className="text-xs">Checked</SelectItem>
+                                          <SelectItem value="false" className="text-xs">Unchecked</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    ) : (
+                                      <Input
+                                        type={isNumericDependency ? "number" : "text"}
+                                        value={String(upsellCondition.expectedValue ?? "")}
+                                        onChange={(e) => updateUpsellCondition(upsell.id, {
+                                          expectedValue: isNumericDependency ? (Number(e.target.value) || 0) : e.target.value,
+                                        })}
+                                        placeholder="Value"
+                                        className="h-8 text-xs"
+                                      />
+                                    )
+                                  ) : (
+                                    <div className="h-8 rounded-md border border-dashed border-amber-300 dark:border-amber-700 flex items-center px-3 text-[11px] text-amber-700 dark:text-amber-300">
+                                      No comparison value needed
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-amber-800 dark:text-amber-200 rounded-md border border-amber-300 dark:border-amber-700 bg-white/70 dark:bg-amber-950/30 px-3 py-2">
+                                  Add at least one question to this service before using upsell conditions.
+                                </div>
+                              )
+                            )}
+                          </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       ))}
                     </div>
@@ -2095,28 +2389,28 @@ export default function FormulaBuilderComponent({
         setShowSaveAsTemplateModal(open);
         if (!open) resetTemplateModal();
       }}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
-            <DialogTitle>Save as Template</DialogTitle>
+            <DialogTitle className="text-slate-900 dark:text-slate-100">Save as Template</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="template-name">Template Name</Label>
+              <Label htmlFor="template-name" className="text-slate-700 dark:text-slate-300">Template Name</Label>
               <Input
                 id="template-name"
                 value={templateName}
                 onChange={(e) => setTemplateName(e.target.value)}
                 placeholder="e.g., Kitchen Remodel Calculator"
-                className="mt-1"
+                className="mt-1 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <Label htmlFor="template-category">Category</Label>
+              <Label htmlFor="template-category" className="text-slate-700 dark:text-slate-300">Category</Label>
               <Select value={templateCategory} onValueChange={setTemplateCategory}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="mt-1 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
                   {templateCategories?.filter(c => c.isActive).map((category) => (
                     <SelectItem key={category.id} value={category.name}>
                       {category.name}
@@ -2126,7 +2420,7 @@ export default function FormulaBuilderComponent({
               </Select>
             </div>
             <div>
-              <Label>Template Icon</Label>
+              <Label className="text-slate-700 dark:text-slate-300">Template Icon</Label>
               <div className="mt-1">
                 <IconSelector
                   selectedIconId={templateIconId ?? undefined}
@@ -2139,9 +2433,9 @@ export default function FormulaBuilderComponent({
                   triggerVariant="outline"
                 />
                 {templateIconUrl && (
-                  <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                  <div className="mt-2 flex items-center gap-2 rounded-md bg-gray-50 p-2 dark:bg-slate-800">
                     <img src={templateIconUrl} alt="Selected icon" className="w-6 h-6 object-contain" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Template icon selected</span>
+                    <span className="text-sm text-gray-600 dark:text-slate-400">Template icon selected</span>
                     <Button
                       type="button"
                       variant="ghost"
@@ -2150,7 +2444,7 @@ export default function FormulaBuilderComponent({
                         setTemplateIconId(null);
                         setTemplateIconUrl(null);
                       }}
-                      className="ml-auto h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      className="ml-auto h-6 w-6 p-0 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-200"
                     >
                       <X className="h-4 w-4" />
                     </Button>

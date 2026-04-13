@@ -37,6 +37,21 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
+  const { data: businessSettings } = useQuery({
+    queryKey: ['/api/public/business-settings', businessOwnerId],
+    queryFn: async () => {
+      if (!businessOwnerId) return null;
+      const res = await fetch(`/api/public/business-settings/${businessOwnerId}`, {
+        cache: 'no-cache'
+      });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!businessOwnerId,
+    staleTime: 0,
+    gcTime: 0
+  });
+
   // Calculate date range for next 14 days
   const getDateRange = () => {
     const today = new Date();
@@ -47,6 +62,11 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
   };
 
   const { startDate, endDate } = getDateRange();
+  const minBookingAdvanceValue = Math.max(0, businessSettings?.minBookingAdvanceValue ?? 0);
+  const minBookingAdvanceUnit = businessSettings?.minBookingAdvanceUnit === 'days' ? 'days' : 'hours';
+  const minBookingAdvanceSummary = minBookingAdvanceValue > 0
+    ? `${minBookingAdvanceValue} ${minBookingAdvanceValue === 1 ? minBookingAdvanceUnit.slice(0, -1) : minBookingAdvanceUnit}`
+    : null;
 
   // Fetch all available slots for next 14 days (already filtered by API for blocked dates and Google Calendar)
   const { data: allSlots = [], isLoading: isLoadingAvailability } = useQuery({
@@ -166,7 +186,8 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
           notes: 'Booked via customer form',
           customerName: customerInfo?.name,
           customerEmail: customerInfo?.email,
-          customerPhone: customerInfo?.phone
+          customerPhone: customerInfo?.phone,
+          customerAddress: customerInfo?.address
         })
       });
       
@@ -227,6 +248,11 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
         <p className="text-sm text-gray-600">
           Select a date and time for your service appointment
         </p>
+        {minBookingAdvanceSummary && (
+          <p className="text-sm text-amber-700">
+            Appointments must be booked at least {minBookingAdvanceSummary} in advance.
+          </p>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Loading State */}
@@ -270,7 +296,7 @@ export default function BookingCalendar({ onBookingConfirmed, leadId, businessOw
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Available Dates</h3>
               <p className="text-gray-600">
-                No available appointment dates in the next 14 days. Please contact the business directly to schedule.
+                No available appointment dates in the next 14 days{minBookingAdvanceSummary ? ` that meet the ${minBookingAdvanceSummary} notice requirement` : ''}. Please contact the business directly to schedule.
               </p>
             </div>
           </div>

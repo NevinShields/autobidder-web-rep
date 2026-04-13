@@ -14,8 +14,10 @@ import {
   SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2, Link2, Home
 } from "lucide-react";
 import AIIconGeneratorModal from "./ai-icon-generator-modal";
+import IconSelector from "./icon-selector";
 import { useToast } from "@/hooks/use-toast";
 import { processIconWithBackgroundRemoval } from "@/lib/background-removal";
+import { compressImage } from "@/lib/image-compress";
 import { getAvailableDependencies, getConditionLabel, getAvailableConditions } from "@shared/conditional-logic";
 import {
   DndContext,
@@ -37,6 +39,24 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+type OptionImageField = 'image' | 'questionCardImage';
+
+type FileSystemEntryLike = {
+  isFile: boolean;
+  isDirectory: boolean;
+  file?: (callback: (file: File) => void, errorCallback?: (error: DOMException) => void) => void;
+  createReader?: () => {
+    readEntries: (
+      successCallback: (entries: FileSystemEntryLike[]) => void,
+      errorCallback?: (error: DOMException) => void
+    ) => void;
+  };
+};
+
+type DataTransferItemWithEntry = DataTransferItem & {
+  webkitGetAsEntry?: () => FileSystemEntryLike | null;
+};
+
 interface VariableCardProps {
   variable: Variable;
   onDelete: (id: string) => void;
@@ -50,9 +70,12 @@ interface SortableOptionItemProps {
   showIconImage?: boolean;
   showQuestionCardImage?: boolean;
   showDefaultUnselected?: boolean;
+  dragActiveField?: OptionImageField | null;
   onUpdate: (index: number, updates: { label?: string; numericValue?: number; value?: string | number; image?: string; questionCardImage?: string; defaultUnselectedValue?: number }) => void;
   onDelete: (index: number) => void;
   onAIGenerate?: (index: number) => void;
+  onOptionFileDrop?: (index: number, field: OptionImageField, files: File[]) => void;
+  onOptionDragStateChange?: (state: { index: number; field: OptionImageField } | null) => void;
 }
 
 const typeConfig: Record<string, { icon: any; label: string; color: string }> = {
@@ -66,7 +89,19 @@ const typeConfig: Record<string, { icon: any; label: string; color: string }> = 
   select: { icon: List, label: "Select", color: "bg-orange-100 text-orange-700 border-orange-200" },
 };
 
-function SortableOptionItem({ option, index, showIconImage = false, showQuestionCardImage = false, showDefaultUnselected = false, onUpdate, onDelete, onAIGenerate }: SortableOptionItemProps) {
+function SortableOptionItem({
+  option,
+  index,
+  showIconImage = false,
+  showQuestionCardImage = false,
+  showDefaultUnselected = false,
+  dragActiveField = null,
+  onUpdate,
+  onDelete,
+  onAIGenerate,
+  onOptionFileDrop,
+  onOptionDragStateChange,
+}: SortableOptionItemProps) {
   const {
     attributes,
     listeners,
@@ -82,149 +117,190 @@ function SortableOptionItem({ option, index, showIconImage = false, showQuestion
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleImageUpload = (field: 'image' | 'questionCardImage', event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (field: OptionImageField, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
-        return;
-      }
-      if (file.size > 2 * 1024 * 1024) {
-        alert('Please select an image smaller than 2MB');
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        onUpdate(index, { [field]: e.target?.result as string });
-      };
-      reader.readAsDataURL(file);
+      onOptionFileDrop?.(index, field, [file]);
     }
+  };
+
+  const renderDropTarget = (field: OptionImageField, title: string) => {
+    const value = field === 'image' ? option.image : option.questionCardImage;
+    const isDragActive = dragActiveField === field;
+
+    if (value) {
+      return (
+        <div className="relative group">
+          <img
+            src={value}
+            alt={option.label}
+            className="w-10 h-10 object-cover rounded-lg border dark:border-gray-600"
+          />
+          <button
+            type="button"
+            onClick={() => onUpdate(index, { [field]: '' })}
+            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <label
+        className={`w-10 h-10 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+          isDragActive
+            ? 'border-amber-500 bg-amber-50 dark:border-amber-400 dark:bg-amber-900/30'
+            : 'border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+        }`}
+        title={title}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onOptionDragStateChange?.({ index, field });
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onOptionDragStateChange?.({ index, field });
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onOptionDragStateChange?.(null);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const files = Array.from(event.dataTransfer.files || []).filter((file) => file.type.startsWith('image/'));
+          if (files.length > 0) {
+            onOptionFileDrop?.(index, field, files);
+          }
+          onOptionDragStateChange?.(null);
+        }}
+      >
+        <Upload className={`w-4 h-4 ${isDragActive ? 'text-amber-600 dark:text-amber-300' : 'text-gray-400'}`} />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(event) => handleImageUpload(field, event)}
+          className="hidden"
+        />
+      </label>
+    );
+  };
+
+  const renderMediaPicker = (field: OptionImageField, label: string, title: string) => {
+    const value = field === 'image' ? option.image : option.questionCardImage;
+
+    return (
+      <div className="space-y-1">
+        <div className="text-[10px] text-gray-500 text-center">{label}</div>
+        {renderDropTarget(field, title)}
+        <IconSelector
+          onIconSelect={(_, iconUrl) => onUpdate(index, { [field]: iconUrl || '' })}
+          triggerText={value ? "Change" : "Library"}
+          size="sm"
+          triggerVariant="outline"
+          className="w-10"
+          triggerClassName="h-6 w-10 rounded-md px-0 text-[10px]"
+        />
+      </div>
+    );
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center gap-3"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex flex-col gap-3 xl:flex-row xl:items-center"
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing flex-shrink-0 text-gray-400 hover:text-gray-600"
+        className="cursor-grab active:cursor-grabbing flex-shrink-0 text-gray-400 hover:text-gray-600 self-start xl:self-auto"
       >
         <GripVertical className="w-4 h-4" />
       </div>
 
+      <div className="flex-1 min-w-0 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <Input
+            placeholder="Option label"
+            value={option.label}
+            onChange={(e) => {
+              const label = e.target.value;
+              const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+              const optionId = baseValue || `option_${index}`;
+              onUpdate(index, { label, value: optionId });
+            }}
+            className="h-9 text-sm w-full"
+          />
+        </div>
+        <div className="min-w-0">
+          <Input
+            type="number"
+            placeholder="Price value"
+            value={option.numericValue ?? ''}
+            onChange={(e) => {
+              const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+              onUpdate(index, { numericValue: value });
+            }}
+            className="h-9 text-sm w-full"
+          />
+        </div>
+        {showDefaultUnselected ? (
+          <div className="min-w-0">
+            <Select
+              value={String(option.defaultUnselectedValue ?? 0)}
+              onValueChange={(val) => onUpdate(index, { defaultUnselectedValue: Number(val) })}
+            >
+              <SelectTrigger className="h-9 text-sm w-full">
+                <SelectValue placeholder="Default when not selected" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Default: 0 (addition)</SelectItem>
+                <SelectItem value="1">Default: 1 (multiply)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div className="hidden xl:block" />
+        )}
+      </div>
+
       {(showIconImage || showQuestionCardImage) && (
-        <div className="flex-shrink-0 flex gap-2">
+        <div className="flex flex-row xl:flex-col gap-2 flex-shrink-0">
           {showIconImage && (
-            <div className="space-y-1">
-              <div className="text-[10px] text-gray-500 text-center">Icon</div>
-              {option.image ? (
-                <div className="relative group">
-                  <img
-                    src={option.image}
-                    alt={option.label}
-                    className="w-10 h-10 object-cover rounded-lg border dark:border-gray-600"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onUpdate(index, { image: '' })}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <label className="w-10 h-10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Upload icon image">
-                  <Upload className="w-4 h-4 text-gray-400" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleImageUpload('image', event)}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onOptionDragStateChange?.(null)}
+              className="h-9 px-3 text-xs whitespace-nowrap"
+            >
+              Icon Upload
+            </Button>
           )}
           {showQuestionCardImage && (
-            <div className="space-y-1">
-              <div className="text-[10px] text-gray-500 text-center">Card</div>
-              {option.questionCardImage ? (
-                <div className="relative group">
-                  <img
-                    src={option.questionCardImage}
-                    alt={option.label}
-                    className="w-10 h-10 object-cover rounded-lg border dark:border-gray-600"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => onUpdate(index, { questionCardImage: '' })}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <label className="w-10 h-10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Upload question card image">
-                  <Upload className="w-4 h-4 text-gray-400" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleImageUpload('questionCardImage', event)}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 px-3 text-xs whitespace-nowrap"
+            >
+              Card Upload
+            </Button>
           )}
         </div>
       )}
-
-      <div className={`flex-1 grid grid-cols-1 gap-2 min-w-0 ${showDefaultUnselected ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
-        <Input
-          placeholder="Option label"
-          value={option.label}
-          onChange={(e) => {
-            const label = e.target.value;
-            const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-            const optionId = baseValue || `option_${index}`;
-            onUpdate(index, { label, value: optionId });
-          }}
-          className="h-9 text-sm"
-        />
-        <Input
-          type="number"
-          placeholder="Price value"
-          value={option.numericValue ?? ''}
-          onChange={(e) => {
-            const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-            onUpdate(index, { numericValue: value });
-          }}
-          className="h-9 text-sm"
-        />
-        {showDefaultUnselected && (
-          <Select
-            value={String(option.defaultUnselectedValue ?? 0)}
-            onValueChange={(val) => onUpdate(index, { defaultUnselectedValue: Number(val) })}
-          >
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue placeholder="Default when not selected" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Default: 0 (addition)</SelectItem>
-              <SelectItem value="1">Default: 1 (multiply)</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-      </div>
 
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onDelete(index)}
-        className="flex-shrink-0 h-9 w-9 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50"
+        className="flex-shrink-0 h-9 w-9 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 self-start xl:self-auto"
       >
         <Trash2 className="w-4 h-4" />
       </Button>
@@ -303,6 +379,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [showBulkStyleDialog, setShowBulkStyleDialog] = useState(false);
   const [bulkStyleDescription, setBulkStyleDescription] = useState('');
   const [bulkReferenceImage, setBulkReferenceImage] = useState<string | null>(null);
+  const [bulkDropTargetField, setBulkDropTargetField] = useState<OptionImageField>('image');
+  const [optionDragState, setOptionDragState] = useState<{ index: number; field: OptionImageField } | null>(null);
   const bulkFileInputRef = useRef<HTMLInputElement>(null);
   const tooltipImageInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingTooltipImage, setIsUploadingTooltipImage] = useState(false);
@@ -496,6 +574,31 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
     onUpdate(variable.id, { options: updatedOptions });
   };
 
+  const handleVariableImageUpload = (field: 'questionCardDefaultImage', event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !onUpdate) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({ title: "Upload failed", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Upload failed", description: "Please select an image smaller than 2MB.", variant: "destructive" });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      onUpdate(variable.id, { [field]: loadEvent.target?.result as string });
+      toast({ title: "Default image added" });
+    };
+    reader.onerror = () => {
+      toast({ title: "Upload failed", description: "Unable to read the image.", variant: "destructive" });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleAddOption = () => {
     if (!onUpdate) return;
     const num = (variable.options?.length || 0) + 1;
@@ -507,6 +610,172 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const handleDeleteOption = (index: number) => {
     if (!onUpdate || !variable.options) return;
     onUpdate(variable.id, { options: variable.options.filter((_, i) => i !== index) });
+  };
+
+  const readFileAsDataUrl = (file: File, field: OptionImageField = 'image'): Promise<string> => {
+    // Icon images: cap at 256×256 @ 75% quality (~10–30 KB typical)
+    // Card images: cap at 800×600 @ 80% quality (~40–100 KB typical)
+    const [maxW, maxH, quality] = field === 'image'
+      ? [256, 256, 0.75]
+      : [800, 600, 0.80];
+    return compressImage(file, maxW, maxH, quality);
+  };
+
+  const validateOptionImageFile = (file: File): string | null => {
+    if (!file.type.startsWith('image/')) {
+      return `${file.name}: not an image file`;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      return `${file.name}: must be smaller than 2MB`;
+    }
+    return null;
+  };
+
+  const applyFilesToOptions = async (field: OptionImageField, files: File[]) => {
+    if (!onUpdate || !variable.options || files.length === 0) return;
+
+    const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      toast({ title: "No images found", description: "Drop image files or a folder containing images.", variant: "destructive" });
+      return;
+    }
+
+    const validationError = imageFiles.map(validateOptionImageFile).find(Boolean);
+    if (validationError) {
+      toast({ title: "Upload failed", description: validationError, variant: "destructive" });
+      return;
+    }
+
+    const normalize = (value: string) =>
+      value
+        .toLowerCase()
+        .replace(/\.[^.]+$/, '')
+        .replace(/[^a-z0-9]+/g, '')
+        .trim();
+
+    const nextOptions = [...variable.options];
+    const matchedOptionIndexes = new Set<number>();
+    const remainingFiles: File[] = [];
+
+    for (const file of imageFiles) {
+      const fileKey = normalize(file.name);
+      const matchIndex = nextOptions.findIndex((option, optionIndex) => {
+        if (matchedOptionIndexes.has(optionIndex)) return false;
+        const optionKeys = [option.label, String(option.value ?? ''), option.id ?? ''].map(normalize).filter(Boolean);
+        return optionKeys.some((key) => key === fileKey);
+      });
+
+      if (matchIndex >= 0) {
+        nextOptions[matchIndex] = {
+          ...nextOptions[matchIndex],
+          [field]: await readFileAsDataUrl(file, field),
+        };
+        matchedOptionIndexes.add(matchIndex);
+      } else {
+        remainingFiles.push(file);
+      }
+    }
+
+    for (const file of remainingFiles) {
+      const nextIndex = nextOptions.findIndex((option, optionIndex) => {
+        if (matchedOptionIndexes.has(optionIndex)) return false;
+        const existingValue = field === 'image' ? option.image : option.questionCardImage;
+        return !existingValue;
+      });
+      if (nextIndex < 0) break;
+      nextOptions[nextIndex] = {
+        ...nextOptions[nextIndex],
+        [field]: await readFileAsDataUrl(file, field),
+      };
+      matchedOptionIndexes.add(nextIndex);
+    }
+
+    onUpdate(variable.id, { options: nextOptions });
+
+    toast({
+      title: "Images added",
+      description: `${Math.min(imageFiles.length, nextOptions.length)} ${field === 'image' ? 'icon' : 'card'} image${imageFiles.length === 1 ? '' : 's'} applied to options.`,
+    });
+  };
+
+  const handleOptionFileDrop = async (index: number, field: OptionImageField, files: File[]) => {
+    if (!onUpdate || !variable.options || files.length === 0) return;
+
+    const file = files.find((candidate) => candidate.type.startsWith('image/'));
+    if (!file) {
+      toast({ title: "Upload failed", description: "Please drop an image file.", variant: "destructive" });
+      return;
+    }
+
+    const validationError = validateOptionImageFile(file);
+    if (validationError) {
+      toast({ title: "Upload failed", description: validationError, variant: "destructive" });
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file, field);
+      handleOptionUpdate(index, { [field]: dataUrl });
+      toast({ title: "Image added", description: `${field === 'image' ? 'Icon' : 'Card'} image saved for ${variable.options[index]?.label || 'option'}.` });
+    } catch (error) {
+      console.error('Option image upload failed', error);
+      toast({ title: "Upload failed", description: "Unable to read the dropped image.", variant: "destructive" });
+    } finally {
+      setOptionDragState(null);
+    }
+  };
+
+  const readAllDirectoryEntries = async (directoryEntry: FileSystemEntryLike): Promise<File[]> => {
+    if (!directoryEntry.isDirectory || !directoryEntry.createReader) return [];
+    const reader = directoryEntry.createReader();
+    const entries: FileSystemEntryLike[] = [];
+
+    while (true) {
+      const batch = await new Promise<FileSystemEntryLike[]>((resolve, reject) => {
+        reader.readEntries(resolve, reject);
+      });
+      if (batch.length === 0) break;
+      entries.push(...batch);
+    }
+
+    const nestedFiles = await Promise.all(entries.map(extractFilesFromEntry));
+    return nestedFiles.flat();
+  };
+
+  const extractFilesFromEntry = async (entry: FileSystemEntryLike): Promise<File[]> => {
+    if (entry.isFile && entry.file) {
+      return [
+        await new Promise<File>((resolve, reject) => {
+          entry.file?.(resolve, reject);
+        }),
+      ];
+    }
+
+    if (entry.isDirectory) {
+      return readAllDirectoryEntries(entry);
+    }
+
+    return [];
+  };
+
+  const extractDroppedFiles = async (dataTransfer: DataTransfer): Promise<File[]> => {
+    const items = Array.from(dataTransfer.items || []) as DataTransferItemWithEntry[];
+    const entryItems = items.filter((item) => typeof item.webkitGetAsEntry === 'function');
+
+    if (entryItems.length > 0) {
+      const entryFiles = await Promise.all(
+        entryItems.map(async (item) => {
+          const entry = item.webkitGetAsEntry?.();
+          return entry ? extractFilesFromEntry(entry) : [];
+        })
+      );
+      const flattened = entryFiles.flat();
+      if (flattened.length > 0) {
+        return flattened;
+      }
+    }
+
+    return Array.from(dataTransfer.files || []);
   };
 
   // AI Icon Generation handlers
@@ -1359,6 +1628,73 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             </div>
           )}
 
+          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                  Default question card image
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Shows on this question by default. Choice questions can still switch to selected option card images when those are set.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {variable.questionCardDefaultImage ? (
+                  <div className="relative group">
+                    <img
+                      src={variable.questionCardDefaultImage}
+                      alt="Default question card"
+                      className="h-14 w-14 rounded-lg object-cover border border-slate-200 dark:border-slate-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onUpdate?.(variable.id, { questionCardDefaultImage: undefined })}
+                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : null}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 px-3 text-xs font-medium text-slate-600 hover:border-amber-400 hover:bg-amber-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-amber-900/20">
+                    <Upload className="mr-1 h-3 w-3" />
+                    {variable.questionCardDefaultImage ? 'Change' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => handleVariableImageUpload('questionCardDefaultImage', event)}
+                    />
+                  </label>
+                  <IconSelector
+                    onIconSelect={(_, iconUrl) => {
+                      if (!onUpdate) return;
+                      onUpdate(variable.id, { questionCardDefaultImage: iconUrl || undefined });
+                      if (iconUrl) {
+                        toast({ title: "Default image added" });
+                      }
+                    }}
+                    triggerText={variable.questionCardDefaultImage ? "Library" : "Choose from library"}
+                    size="sm"
+                    triggerVariant="outline"
+                    triggerClassName="h-9 rounded-lg px-3 text-xs"
+                  />
+                  {variable.questionCardDefaultImage ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 rounded-lg px-3 text-xs text-red-600 hover:text-red-700 dark:text-red-300 dark:hover:text-red-200"
+                      onClick={() => onUpdate?.(variable.id, { questionCardDefaultImage: undefined })}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Options Section */}
           {hasOptions && (
             <div className="space-y-2">
@@ -1380,7 +1716,55 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               {showOptions && variable.options && (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={variable.options.map((_, i) => `option-${i}`)} strategy={verticalListSortingStrategy}>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
+                      {(variable.type === 'multiple-choice' || variable.type === 'dropdown') && (
+                        <div
+                          className="rounded-xl border border-dashed border-amber-300/80 bg-amber-50/70 p-3 dark:border-amber-700/70 dark:bg-amber-950/20"
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                          }}
+                          onDrop={async (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const droppedFiles = await extractDroppedFiles(event.dataTransfer);
+                            await applyFilesToOptions(bulkDropTargetField, droppedFiles);
+                          }}
+                        >
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                                Drop a folder or multiple images to fill option media
+                              </p>
+                              <p className="text-xs text-amber-700 dark:text-amber-300">
+                                Files match option labels first. Anything unmatched fills the remaining empty slots in order.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant={bulkDropTargetField === 'image' ? 'unstyled' : 'outline'}
+                                size="sm"
+                                className={bulkDropTargetField === 'image' ? 'h-8 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white' : 'h-8 rounded-lg'}
+                                onClick={() => setBulkDropTargetField('image')}
+                              >
+                                Fill Icons
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={bulkDropTargetField === 'questionCardImage' ? 'unstyled' : 'outline'}
+                                size="sm"
+                                className={bulkDropTargetField === 'questionCardImage' ? 'h-8 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white' : 'h-8 rounded-lg'}
+                                onClick={() => setBulkDropTargetField('questionCardImage')}
+                              >
+                                Fill Cards
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
                       {variable.options.map((option, index) => (
                         <SortableOptionItem
                           key={`option-${index}`}
@@ -1389,10 +1773,14 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           showIconImage={variable.type === 'multiple-choice'}
                           showQuestionCardImage={variable.type === 'multiple-choice' || variable.type === 'dropdown'}
                           showDefaultUnselected={variable.type === 'multiple-choice' && variable.allowMultipleSelection}
+                          dragActiveField={optionDragState?.index === index ? optionDragState.field : null}
                           onUpdate={handleOptionUpdate}
                           onDelete={handleDeleteOption}
+                          onOptionFileDrop={handleOptionFileDrop}
+                          onOptionDragStateChange={setOptionDragState}
                         />
                       ))}
+                      </div>
                     </div>
                   </SortableContext>
                 </DndContext>

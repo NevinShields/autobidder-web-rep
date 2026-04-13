@@ -21,8 +21,12 @@ interface ProposalServiceLine {
     percentageOfMain?: number;
     percentage?: number;
     amount?: number;
+    pricingLabel?: string;
+    serviceName?: string;
   }>;
 }
+
+type ProposalUpsell = NonNullable<ProposalServiceLine["selectedUpsells"]>[number];
 
 interface PublicLeadData {
   businessOwnerId?: string;
@@ -57,6 +61,15 @@ interface PublicProposalData {
 
 interface PublicBusinessSettingsData {
   businessName?: string;
+}
+
+function formatUpsellLabel(upsell: ProposalUpsell) {
+  if (upsell.pricingLabel) {
+    return upsell.pricingLabel;
+  }
+
+  const percentage = upsell.percentageOfMain ?? upsell.percentage;
+  return percentage !== undefined ? `${percentage}%` : "Add-on";
 }
 
 export default function ProposalViewPage() {
@@ -262,7 +275,7 @@ export default function ProposalViewPage() {
                         <h5 className="text-sm font-medium text-green-600 mb-2">Selected Add-ons:</h5>
                         {service.selectedUpsells.map((upsell: any, upsellIndex: number) => (
                           <div key={upsellIndex} className="flex justify-between text-sm text-green-600">
-                            <span>{upsell.name} (+{upsell.percentageOfMain || upsell.percentage}%)</span>
+                            <span>{upsell.name} ({formatUpsellLabel(upsell)})</span>
                             <span>+${((upsell.amount || 0) / 100).toFixed(2)}</span>
                           </div>
                         ))}

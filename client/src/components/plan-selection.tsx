@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, ExternalLink, X } from 'lucide-react';
+import { CheckCircle, ExternalLink, Sparkles, Zap } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -68,6 +68,9 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const { toast } = useToast();
 
+  const surfaceClassName =
+    "rounded-[24px] border border-slate-200/70 bg-white/85 shadow-[0_18px_45px_-24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-all duration-200 dark:border-slate-800/80 dark:bg-slate-900/75";
+
   const checkoutMutation = useMutation({
     mutationFn: async ({ planId, billingPeriod }: { planId: string, billingPeriod: string }) => {
       const res = await apiRequest("POST", "/api/create-checkout-session", { planId, billingPeriod });
@@ -96,13 +99,13 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
     <div className={`space-y-8 ${className}`}>
       {/* Billing Period Toggle */}
       <div className="flex justify-center">
-        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl p-1.5 shadow-sm">
+        <div className="inline-flex items-center rounded-2xl border border-amber-200/70 bg-white/85 p-1.5 shadow-sm backdrop-blur-sm dark:border-amber-500/20 dark:bg-slate-900/75">
           <button
             onClick={() => setBillingPeriod('monthly')}
             className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               billingPeriod === 'monthly'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-[0_12px_24px_-16px_rgba(234,88,12,0.9)]'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             Monthly
@@ -111,12 +114,12 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
             onClick={() => setBillingPeriod('yearly')}
             className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               billingPeriod === 'yearly'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-[0_12px_24px_-16px_rgba(234,88,12,0.9)]'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             Yearly
-            <Badge variant="secondary" className="ml-2 text-xs bg-green-100 text-green-700 border-none">
+            <Badge className="ml-2 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
               Save 17%
             </Badge>
           </button>
@@ -126,35 +129,45 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
       {/* Plan Cards */}
       <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-6">
         {Object.entries(SUBSCRIPTION_PLANS).map(([planId, plan]) => (
-          <Card key={planId} className={`relative transition-all duration-300 hover:shadow-lg ${
+          <Card key={planId} className={`relative overflow-hidden ${surfaceClassName} hover:-translate-y-1 hover:shadow-[0_24px_60px_-28px_rgba(15,23,42,0.28)] ${
             plan.popular 
-              ? 'border-2 border-blue-500 shadow-md bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-gray-900' 
-              : 'hover:border-gray-300 dark:hover:border-gray-600'
+              ? 'border-amber-300/80 bg-gradient-to-b from-amber-50 via-white to-orange-50 dark:border-amber-500/30 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950' 
+              : ''
           }`}>
             {plan.popular && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                <Badge className="bg-blue-600 text-white px-3 py-1 text-xs font-medium shadow-lg">
+                <Badge className="bg-gradient-to-r from-amber-500 to-orange-600 px-3 py-1 text-xs font-medium text-white shadow-lg">
                   Most Popular
                 </Badge>
               </div>
             )}
+
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/80 to-transparent" />
             
             <CardHeader className="text-center pt-6 pb-4">
-              <CardTitle className="text-xl font-bold mb-2">{plan.name}</CardTitle>
-              <CardDescription className="space-y-1">
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-[0_16px_24px_-18px_rgba(234,88,12,0.95)]">
+                {plan.popular ? <Sparkles className="h-5 w-5" /> : <Zap className="h-5 w-5" />}
+              </div>
+              <CardTitle
+                className="mb-2 text-2xl tracking-tight text-slate-950 dark:text-white"
+                style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+              >
+                {plan.name}
+              </CardTitle>
+              <CardDescription className="space-y-2">
+                <div className="text-4xl text-slate-950 dark:text-white" style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}>
                   ${billingPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
-                  <span className="text-base font-normal text-gray-500 dark:text-gray-400">
+                  <span className="ml-1 text-base font-normal font-sans text-slate-500 dark:text-slate-400">
                     /month
                   </span>
                 </div>
                 {billingPeriod === 'yearly' && (
-                  <div className="text-sm text-green-600 dark:text-green-400 font-medium">
+                  <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                     Billed yearly (${plan.yearlyTotal}/year)
                   </div>
                 )}
                 {billingPeriod === 'monthly' && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
                     Billed monthly
                   </div>
                 )}
@@ -162,11 +175,11 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
             </CardHeader>
 
             <CardContent className="space-y-4 px-6 pb-6">
-              <ul className="space-y-4 mb-8">
+              <ul className="mb-8 space-y-3">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-[#00ff66] mr-3 flex-shrink-0" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                  <li key={feature} className="flex items-start rounded-2xl border border-slate-200/70 bg-slate-50/70 px-3 py-3 dark:border-slate-800/80 dark:bg-slate-900/60">
+                    <CheckCircle className="mr-3 mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
+                    <span className="text-sm leading-6 text-slate-700 dark:text-slate-300">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -174,12 +187,12 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
               <Button
                 onClick={() => handlePlanSelect(planId)}
                 disabled={checkoutMutation.isPending}
-                className={`w-full py-2.5 text-sm font-medium ${
+                className={`h-11 w-full rounded-xl text-sm font-medium transition-all duration-200 ${
                   plan.popular 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'border-2 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-[0_18px_32px_-18px_rgba(234,88,12,0.95)] hover:-translate-y-0.5 hover:from-amber-500 hover:to-orange-500' 
+                    : 'border border-slate-200 bg-white text-slate-800 hover:-translate-y-0.5 hover:bg-amber-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:hover:bg-slate-800'
                 }`}
-                variant={plan.popular ? 'default' : 'outline'}
+                variant={plan.popular ? 'unstyled' : 'unstyled'}
               >
                 {checkoutMutation.isPending ? 'Creating...' : `Choose ${plan.name}`}
               </Button>
@@ -188,11 +201,11 @@ export function PlanSelection({ onPlanSelect, className }: PlanSelectionProps) {
         ))}
       </div>
 
-      <div className="text-center pt-4 border-t">
-        <p className="text-gray-600 dark:text-gray-400 mb-1">
+      <div className="rounded-[20px] border border-slate-200/70 bg-white/80 px-6 py-5 text-center shadow-sm backdrop-blur-sm dark:border-slate-800/80 dark:bg-slate-900/70">
+        <p className="mb-1 text-slate-600 dark:text-slate-300">
           All plans include a 14-day free trial. Cancel anytime.
         </p>
-        <p className="text-xs text-gray-500 dark:text-gray-500">
+        <p className="text-xs uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
           Secure checkout powered by Stripe
         </p>
       </div>
@@ -256,14 +269,17 @@ export function UpgradeButton({
           Upgrade Plan
         </Button>
 
-        <Dialog open={showPlanSelection} onOpenChange={setShowPlanSelection}>
-          <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto p-0">
-            <div className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b px-6 py-4">
+          <Dialog open={showPlanSelection} onOpenChange={setShowPlanSelection}>
+          <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto rounded-[28px] border border-slate-200/70 bg-white/95 p-0 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/95">
+            <div className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 px-6 py-4 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-950/90">
               <DialogHeader>
-                <DialogTitle className="text-3xl font-bold text-center">
+                <DialogTitle
+                  className="text-center text-3xl tracking-tight text-slate-950 dark:text-white"
+                  style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+                >
                   Choose Your Plan
                 </DialogTitle>
-                <DialogDescription className="text-center text-lg mt-2">
+                <DialogDescription className="mt-2 text-center text-base text-slate-600 dark:text-slate-300">
                   Select the plan that best fits your business needs and start your 14-day free trial
                 </DialogDescription>
               </DialogHeader>

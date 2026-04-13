@@ -3559,7 +3559,7 @@ export function blogContentToHtml(
         }
         faqEntries.push(...normalizedFaqEntries);
         htmlParts.push(`
-          <section class="blog-faq" itemscope itemtype="https://schema.org/FAQPage">
+          <section class="blog-faq">
             <div class="blog-section-heading">
               <span class="blog-section-kicker">FAQ</span>
               <h2>Frequently Asked Questions</h2>
@@ -3567,8 +3567,8 @@ export function blogContentToHtml(
             </div>
             <div class="faq-accordion">
               ${normalizedFaqEntries.map((q: BlogFaqEntry, index: number) => `
-                <details class="faq-item" ${index === 0 ? "open" : ""} itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
-                  <summary itemprop="name">
+                <details class="faq-item" ${index === 0 ? "open" : ""}>
+                  <summary>
                     <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; width:100%;">
                       <div>
                         <span class="faq-question-text">${escapeHtml(q.question)}</span>
@@ -3576,8 +3576,8 @@ export function blogContentToHtml(
                       </div>
                     </div>
                   </summary>
-                  <div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
-                    <div itemprop="text" class="blog-copy">
+                  <div class="faq-answer">
+                    <div class="blog-copy">
                       ${renderParagraphs(q.answer)}
                     </div>
                   </div>

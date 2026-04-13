@@ -95,9 +95,11 @@ interface Lead {
     id: string;
     name: string;
     description?: string;
-    percentageOfMain: number;
+    percentageOfMain?: number;
     amount: number; // Upsell amount in cents
     category?: string;
+    serviceName?: string;
+    pricingLabel?: string;
   }>;
   createdAt: string;
   type: 'single' | 'multi';
@@ -117,12 +119,22 @@ interface LeadDetailsModalProps {
   onClose: () => void;
 }
 
+type LeadSelectedUpsell = NonNullable<Lead["selectedUpsells"]>[number];
+
 interface LeadBookingEvent {
   id: number;
   startsAt: string;
   endsAt: string;
   status: 'confirmed' | 'tentative' | 'cancelled';
   title?: string | null;
+}
+
+function formatUpsellDisplayLabel(upsell: LeadSelectedUpsell) {
+  if (upsell.pricingLabel) {
+    return upsell.pricingLabel;
+  }
+
+  return upsell.percentageOfMain !== undefined ? `${upsell.percentageOfMain}%` : "Add-on";
 }
 
 export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsModalProps) {
@@ -1758,7 +1770,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                       {/* Selected Upsells/Add-ons */}
                       {processedLead.selectedUpsells && processedLead.selectedUpsells.length > 0 && processedLead.selectedUpsells.map((upsell, index) => (
                         <div key={index} className="flex justify-between items-center text-sm">
-                          <span className="text-purple-700 dark:text-purple-400">{upsell.name}:</span>
+                          <span className="text-purple-700 dark:text-purple-400">{upsell.name} ({formatUpsellDisplayLabel(upsell)}):</span>
                           <span className="font-medium text-purple-600 dark:text-purple-400">
                             +${(upsell.amount / 100).toLocaleString()}
                           </span>
@@ -2166,6 +2178,7 @@ export default function LeadDetailsModal({ lead, isOpen, onClose }: LeadDetailsM
                             <div key={index} className="flex justify-between text-sm">
                               <span className="text-purple-700 dark:text-purple-400">
                                 {upsell.name}
+                                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">({formatUpsellDisplayLabel(upsell)})</span>
                                 {upsell.category && <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">({upsell.category})</span>}
                               </span>
                               <span className="font-medium text-purple-600">

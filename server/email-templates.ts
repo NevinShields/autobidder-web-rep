@@ -637,6 +637,17 @@ export async function sendAdminPlanUpgradeNotification(
   });
 }
 
+function formatUpsellEmailLabel(upsell: {
+  percentageOfMain?: number;
+  pricingLabel?: string;
+  serviceName?: string;
+}): string {
+  const baseLabel = upsell.pricingLabel?.trim()
+    || (upsell.percentageOfMain !== undefined ? `${upsell.percentageOfMain}%` : "Add-on");
+
+  return upsell.serviceName ? `${baseLabel} on ${upsell.serviceName}` : baseLabel;
+}
+
 export async function sendNewLeadNotification(
   ownerEmail: string,
   lead: {
@@ -665,9 +676,11 @@ export async function sendNewLeadNotification(
       id: string;
       name: string;
       description?: string;
-      percentageOfMain: number;
+      percentageOfMain?: number;
       amount: number;
       category?: string;
+      serviceName?: string;
+      pricingLabel?: string;
     }>;
   }
 ): Promise<boolean> {
@@ -767,7 +780,7 @@ export async function sendNewLeadNotification(
           <span style="font-weight: 600; color: #059669;">Selected Add-ons:</span>
           ${lead.selectedUpsells.map(upsell => `
             <div style="padding: 4px 0; margin-left: 16px;">
-              <span>${upsell.name} (+${upsell.percentageOfMain}%): +$${(upsell.amount / 100).toFixed(2)}</span>
+              <span>${upsell.name} (${formatUpsellEmailLabel(upsell)}): +$${(upsell.amount / 100).toFixed(2)}</span>
             </div>
           `).join('')}
         </div>
@@ -817,9 +830,11 @@ export async function sendNewMultiServiceLeadNotification(
         id: string;
         name: string;
         description?: string;
-        percentageOfMain: number;
+        percentageOfMain?: number;
         amount: number;
         category?: string;
+        serviceName?: string;
+        pricingLabel?: string;
       }>;
     }>;
     totalPrice: number;
@@ -837,9 +852,11 @@ export async function sendNewMultiServiceLeadNotification(
       id: string;
       name: string;
       description?: string;
-      percentageOfMain: number;
+      percentageOfMain?: number;
       amount: number;
       category?: string;
+      serviceName?: string;
+      pricingLabel?: string;
     }>;
     createdAt: Date;
   }
@@ -927,7 +944,7 @@ export async function sendNewMultiServiceLeadNotification(
     let upsellsHtml = '';
     if (service.selectedUpsells && service.selectedUpsells.length > 0) {
       const upsellsList = service.selectedUpsells
-        .map(upsell => `<div style="color: #059669; font-size: 13px;">• ${upsell.name} (+${upsell.percentageOfMain}%): +$${(upsell.amount / 100).toFixed(2)}</div>`)
+        .map(upsell => `<div style="color: #059669; font-size: 13px;">• ${upsell.name} (${formatUpsellEmailLabel(upsell)}): +$${(upsell.amount / 100).toFixed(2)}</div>`)
         .join('');
       upsellsHtml = `<div style="margin-top: 8px;">
         <div style="font-weight: 600; color: #059669; font-size: 13px;">Add-ons Selected:</div>
@@ -1039,7 +1056,7 @@ export async function sendNewMultiServiceLeadNotification(
               <div style="color: #059669; font-size: 14px; font-weight: 600; margin-bottom: 4px;">Add-ons Selected:</div>
               ${lead.selectedUpsells.map(upsell => `
                 <div style="display: flex; justify-content: space-between; padding: 2px 0;">
-                  <span style="color: #059669; font-size: 13px;">${upsell.name} (+${upsell.percentageOfMain}%):</span>
+                  <span style="color: #059669; font-size: 13px;">${upsell.name} (${formatUpsellEmailLabel(upsell)}):</span>
                   <span style="color: #059669; font-size: 13px; font-weight: 500;">+$${(upsell.amount / 100).toFixed(2)}</span>
                 </div>
               `).join('')}

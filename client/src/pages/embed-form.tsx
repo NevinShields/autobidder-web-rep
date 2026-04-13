@@ -1840,6 +1840,12 @@ export default function EmbedForm() {
                       <BookingCalendar
                         businessOwnerId={userId}
                         leadId={submittedLeadId || undefined}
+                        customerInfo={{
+                          name: leadForm.name,
+                          email: leadForm.email,
+                          phone: leadForm.phone,
+                          address: leadForm.address
+                        }}
                         onBookingConfirmed={(slotId) => {
                           setBookedSlotId(slotId);
                           setShowBooking(false);

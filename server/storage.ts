@@ -4,6 +4,8 @@ import {
   templateCategories,
   leads, 
   calculatorSessions,
+  chatEstimatorSessions,
+  chatEstimatorEvents,
   pageViews,
   multiServiceLeads, 
   businessSettings,
@@ -63,6 +65,10 @@ import {
   type InsertLead, 
   type CalculatorSession,
   type InsertCalculatorSession,
+  type ChatEstimatorSession,
+  type InsertChatEstimatorSession,
+  type ChatEstimatorEvent,
+  type InsertChatEstimatorEvent,
   type PageView,
   type InsertPageView,
   type MultiServiceLead, 
@@ -725,7 +731,27 @@ export interface IStorage {
   getFormulaTemplate(id: number): Promise<FormulaTemplate | undefined>;
   getAllFormulaTemplates(): Promise<FormulaTemplate[]>;
   getActiveFormulaTemplates(): Promise<FormulaTemplate[]>;
+  getActiveFormulaTemplateSummaries(): Promise<Array<{
+    id: number;
+    name: string;
+    title: string;
+    description: string | null;
+    category: string;
+    iconUrl: string | null;
+    timesUsed: number;
+    variableCount: number;
+  }>>;
   getFormulaTemplatesByCategory(category: string): Promise<FormulaTemplate[]>;
+  getFormulaTemplateSummariesByCategory(category: string): Promise<Array<{
+    id: number;
+    name: string;
+    title: string;
+    description: string | null;
+    category: string;
+    iconUrl: string | null;
+    timesUsed: number;
+    variableCount: number;
+  }>>;
   createFormulaTemplate(template: InsertFormulaTemplate): Promise<FormulaTemplate>;
   updateFormulaTemplate(id: number, template: Partial<InsertFormulaTemplate>): Promise<FormulaTemplate | undefined>;
   deleteFormulaTemplate(id: number): Promise<boolean>;
@@ -748,6 +774,12 @@ export interface IStorage {
   getCalculatorSessionsByDateRange(startDate: Date, endDate: Date): Promise<CalculatorSession[]>;
   updateCalculatorSession(sessionId: string, data: Partial<InsertCalculatorSession>): Promise<CalculatorSession | undefined>;
   getCalculatorSessionsByUserId(userId: string): Promise<CalculatorSession[]>;
+
+  // Chat Estimator session operations
+  createChatEstimatorSession(session: InsertChatEstimatorSession): Promise<ChatEstimatorSession>;
+  getChatEstimatorSession(id: string): Promise<ChatEstimatorSession | undefined>;
+  updateChatEstimatorSession(id: string, data: Partial<InsertChatEstimatorSession>): Promise<ChatEstimatorSession | undefined>;
+  createChatEstimatorEvent(event: InsertChatEstimatorEvent): Promise<ChatEstimatorEvent>;
 
   // Page view operations
   createPageView(pageView: InsertPageView): Promise<PageView>;
@@ -1341,8 +1373,60 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(formulaTemplates.timesUsed));
   }
 
+  async getActiveFormulaTemplateSummaries(): Promise<Array<{
+    id: number;
+    name: string;
+    title: string;
+    description: string | null;
+    category: string;
+    iconUrl: string | null;
+    timesUsed: number;
+    variableCount: number;
+  }>> {
+    return await db
+      .select({
+        id: formulaTemplates.id,
+        name: formulaTemplates.name,
+        title: formulaTemplates.title,
+        description: formulaTemplates.description,
+        category: formulaTemplates.category,
+        iconUrl: formulaTemplates.iconUrl,
+        timesUsed: formulaTemplates.timesUsed,
+        variableCount: sql<number>`jsonb_array_length(${formulaTemplates.variables})`,
+      })
+      .from(formulaTemplates)
+      .where(eq(formulaTemplates.isActive, true))
+      .orderBy(desc(formulaTemplates.timesUsed));
+  }
+
   async getFormulaTemplatesByCategory(category: string): Promise<FormulaTemplate[]> {
     return await db.select().from(formulaTemplates)
+      .where(and(eq(formulaTemplates.category, category), eq(formulaTemplates.isActive, true)))
+      .orderBy(desc(formulaTemplates.timesUsed));
+  }
+
+  async getFormulaTemplateSummariesByCategory(category: string): Promise<Array<{
+    id: number;
+    name: string;
+    title: string;
+    description: string | null;
+    category: string;
+    iconUrl: string | null;
+    timesUsed: number;
+    variableCount: number;
+  }>> {
+    return await db
+      .select({
+        id: formulaTemplates.id,
+        name: formulaTemplates.name,
+        title: formulaTemplates.title,
+        description: formulaTemplates.description,
+        category: formulaTemplates.category,
+        iconUrl: formulaTemplates.iconUrl,
+        timesUsed: formulaTemplates.timesUsed,
+        variableCount: sql<number>`jsonb_array_length(${formulaTemplates.variables})`,
+      })
+      .from(formulaTemplates)
       .where(and(eq(formulaTemplates.category, category), eq(formulaTemplates.isActive, true)))
       .orderBy(desc(formulaTemplates.timesUsed));
   }
@@ -1626,6 +1710,46 @@ export class DatabaseStorage implements IStorage {
       .from(calculatorSessions)
       .where(inArray(calculatorSessions.formulaId, formulaIds))
       .orderBy(desc(calculatorSessions.createdAt));
+  }
+
+  async createChatEstimatorSession(insertSession: InsertChatEstimatorSession): Promise<ChatEstimatorSession> {
+    const [session] = await db
+      .insert(chatEstimatorSessions)
+      .values(insertSession as any)
+      .returning();
+    return session;
+  }
+
+  async getChatEstimatorSession(id: string): Promise<ChatEstimatorSession | undefined> {
+    const [session] = await db
+      .select()
+      .from(chatEstimatorSessions)
+      .where(eq(chatEstimatorSessions.id, id))
+      .limit(1);
+    return session || undefined;
+  }
+
+  async updateChatEstimatorSession(
+    id: string,
+    data: Partial<InsertChatEstimatorSession>,
+  ): Promise<ChatEstimatorSession | undefined> {
+    const [session] = await db
+      .update(chatEstimatorSessions)
+      .set({
+        ...(data as any),
+        updatedAt: new Date(),
+      })
+      .where(eq(chatEstimatorSessions.id, id))
+      .returning();
+    return session || undefined;
+  }
+
+  async createChatEstimatorEvent(event: InsertChatEstimatorEvent): Promise<ChatEstimatorEvent> {
+    const [record] = await db
+      .insert(chatEstimatorEvents)
+      .values(event as any)
+      .returning();
+    return record;
   }
 
   // Page view operations

@@ -52,6 +52,125 @@ export interface AIFormulaResponse {
   iconUrl: string;
 }
 
+type AICssOperationMode = 'replace' | 'merge';
+
+type AICssContext = {
+  mode?: AICssOperationMode;
+  currentCSS?: string;
+  styling?: unknown;
+  componentStyles?: unknown;
+  targetSelector?: string | null;
+  targetLabel?: string | null;
+};
+
+const AI_CSS_MODEL = "gpt-4o";
+const AI_CSS_EDIT_MAX_TOKENS = 1400;
+const AI_CSS_GENERATE_MAX_TOKENS = 1800;
+const AI_CSS_CONTEXT_JSON_LIMIT = 3500;
+const AI_CSS_CSS_SNAPSHOT_LIMIT = 7000;
+
+const AI_CSS_SELECTOR_GUIDE = [
+  '.ab-form-container / #autobidder-form.ab-form-container: root form wrapper',
+  '.ab-question-card: question/step card container',
+  '.ab-question-label, .ab-label: field labels',
+  '.ab-input, .ab-text-input, .ab-number-input, .ab-textarea, .ab-file-input: text-like fields',
+  '.ab-select, .ab-dropdown, .ab-select-content: select fields and menus',
+  '.ab-service-card, .ab-service-card.selected, .ab-service-title: service selection cards',
+  '.ab-multiple-choice, .ab-multiple-choice-label: multiple-choice option cards',
+  '.ab-multiple-choice-content: inner wrapper inside multiple-choice cards',
+  '.ab-multiple-choice-icon, .ab-multiple-choice-icon-image, .ab-multiple-choice-icon-fallback: icon wrapper and icon states for multiple-choice cards',
+  '.ab-multiple-choice-image: uploaded/icon image inside multiple-choice cards',
+  '.ab-button, .ab-button-primary: primary buttons and actions',
+  '.ab-progress, .ab-progress-track, .ab-progress-fill, .ab-progress-label: progress UI',
+  '.ab-pricing-card, .ab-pricing-card-title, .ab-pricing-card-description, .ab-pricing-card-price: pricing result cards',
+  '.ab-pricing-card-bullet-icon, .ab-pricing-card-bullet-text: pricing bullets',
+  '.ab-discount-section, .ab-discount-card, .ab-discount-line: discount UI',
+  '.ab-upsell-section, .ab-upsell-card, .ab-upsell-card-selected: upsell UI',
+  '.ab-error: validation and inline errors',
+].join('\n- ');
+
+function stringifyAICssContextBlock(context: AICssContext = {}): string {
+  const parts: string[] = [];
+
+  if (context.targetSelector) {
+    parts.push(`Target selector: ${context.targetSelector}`);
+  }
+  if (context.targetLabel) {
+    parts.push(`Target element description: ${context.targetLabel}`);
+  }
+  if (context.styling) {
+    parts.push(`Current styling settings JSON:\n${truncateForAICssPrompt(JSON.stringify(context.styling, null, 2), AI_CSS_CONTEXT_JSON_LIMIT)}`);
+  }
+  if (context.componentStyles) {
+    parts.push(`Current component styles JSON:\n${truncateForAICssPrompt(JSON.stringify(context.componentStyles, null, 2), AI_CSS_CONTEXT_JSON_LIMIT)}`);
+  }
+
+  parts.push(`Relevant Autobidder selectors:
+- ${AI_CSS_SELECTOR_GUIDE}`);
+
+  return parts.join('\n\n');
+}
+
+function truncateForAICssPrompt(value: string, limit: number): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length <= limit) {
+    return trimmed;
+  }
+
+  return `${trimmed.slice(0, limit)}\n/* truncated for prompt size */`;
+}
+
+function sanitizeAICSSOutput(css: string): string {
+  let cleanCSS = css.trim();
+
+  if (cleanCSS.startsWith('```css')) {
+    cleanCSS = cleanCSS.replace(/```css\s*/gi, '').replace(/```\s*/g, '');
+  } else if (cleanCSS.startsWith('```')) {
+    cleanCSS = cleanCSS.replace(/```\s*/g, '');
+  }
+
+  cleanCSS = cleanCSS
+    .replace(/#autobidder-form(?=\.|\s|:|>|\+|~|,|$)/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  return cleanCSS;
+}
+
+function extractTextFromOpenAIMessage(message: any): string {
+  if (!message) {
+    return '';
+  }
+
+  if (typeof message.content === 'string') {
+    return message.content.trim();
+  }
+
+  if (Array.isArray(message.content)) {
+    const text = message.content
+      .map((part: any) => {
+        if (!part) return '';
+        if (typeof part === 'string') return part;
+        if (typeof part.text === 'string') return part.text;
+        if (typeof part?.text?.value === 'string') return part.text.value;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+
+    if (text) {
+      return text;
+    }
+  }
+
+  if (typeof message.refusal === 'string') {
+    return message.refusal.trim();
+  }
+
+  return '';
+}
+
 export async function refineObjectDescription(description: string, measurementType: string): Promise<string> {
   try {
     const client = getOpenAI();
@@ -113,16 +232,20 @@ Refine this into a precise, AI-optimized prompt for measuring ${measurementType}
   }
 }
 
-export async function editCustomCSS(currentCSS: string, editDescription: string): Promise<string> {
+export async function editCustomCSS(currentCSS: string, editDescription: string, context: AICssContext = {}): Promise<string> {
   try {
     const client = getOpenAI();
-    const targetSelector = extractTargetSelector(editDescription);
+    const targetSelector = context.targetSelector?.trim() || extractTargetSelector(editDescription);
     const isTargetedEdit = Boolean(targetSelector);
+    const contextBlock = stringifyAICssContextBlock({
+      ...context,
+      targetSelector,
+    });
 
     const systemPrompt = isTargetedEdit
-      ? `You are an expert CSS editor.
+      ? `You are an expert CSS editor for an Autobidder estimate form.
 
-You are editing ONE target selector in an existing stylesheet.
+You are editing ONE target selector in an existing stylesheet. Return a CSS PATCH only.
 
 RULES:
 1. Only edit the target selector and direct state variants of it:
@@ -132,26 +255,32 @@ RULES:
 4. Add a missing state block only when needed to satisfy the request.
 5. Do not include #autobidder-form prefix.
 6. Return ONLY CSS code. No markdown, no explanation.
-7. Keep accessible contrast when changing backgrounds.`
-      : `You are an expert CSS editor for an interactive pricing calculator stylesheet.
+7. Keep accessible contrast when changing backgrounds.
+8. If the user wants something removed, replace it with an explicit CSS value such as transparent, none, 0, initial, or unset.`
+      : `You are an expert CSS editor for an Autobidder estimate form stylesheet.
+
+Return a CSS PATCH only, not a full rewritten stylesheet.
 
 RULES:
 1. Make surgical edits only for the user's request.
-2. Keep unrelated selectors, declarations, and structure intact.
-3. Do not re-theme or rewrite the whole stylesheet.
-4. Do not add new selector blocks unless explicitly needed by the request.
-5. Return the complete updated CSS.
+2. Return only the selectors that must be added or changed.
+3. Keep unrelated selectors, declarations, and structure untouched.
+4. Do not re-theme or rewrite the whole stylesheet.
+5. Do not add new selector blocks unless explicitly needed by the request.
 6. Do not include #autobidder-form prefix.
 7. Return ONLY CSS code. No markdown, no explanation.
-8. Keep accessible contrast when changing backgrounds.`;
+8. Keep accessible contrast when changing backgrounds.
+9. If the user wants something removed, replace it with an explicit CSS value such as transparent, none, 0, initial, or unset.`;
 
     const scopedSourceCSS = targetSelector
       ? (extractRelevantTargetCSS(currentCSS, targetSelector) || `${targetSelector} {\n  /* target styles */\n}`)
-      : currentCSS;
+      : truncateForAICssPrompt(currentCSS, AI_CSS_CSS_SNAPSHOT_LIMIT);
 
     const userPrompt = targetSelector
       ? `Target selector:
 ${targetSelector}
+
+${contextBlock}
 
 Existing CSS for this selector:
 ${scopedSourceCSS}
@@ -160,36 +289,39 @@ Change requested:
 ${editDescription}
 
 Return only CSS rules for ${targetSelector} and direct state variants.`
-      : `Current CSS:
+      : `${contextBlock}
+
+Current CSS:
 ${currentCSS}
 
 Change requested:
 ${editDescription}
 
-Please update the CSS to reflect this change while preserving all other existing styles.`;
+Return only the selector blocks that should change.`;
 
     const completion = await client.chat.completions.create({
-      model: "gpt-5",
+      model: AI_CSS_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      max_completion_tokens: 2500
+      max_tokens: AI_CSS_EDIT_MAX_TOKENS
     });
 
-    const editedCSS = completion.choices[0]?.message?.content?.trim();
-    
+    const editedCSS = extractTextFromOpenAIMessage(completion.choices[0]?.message);
     if (!editedCSS) {
+      const fallbackCSS = targetSelector
+        ? applyTargetedEditHeuristics(currentCSS, editDescription, targetSelector)
+        : enforceReadableContrast(applyEditHeuristics(currentCSS, editDescription));
+
+      if (normalizeCSS(fallbackCSS) !== normalizeCSS(currentCSS)) {
+        return fallbackCSS;
+      }
+
       throw new Error('No CSS generated from OpenAI');
     }
 
-    // Remove markdown code block formatting if present
-    let cleanCSS = editedCSS;
-    if (cleanCSS.startsWith('```css')) {
-      cleanCSS = cleanCSS.replace(/```css\n?/g, '').replace(/```\n?/g, '');
-    } else if (cleanCSS.startsWith('```')) {
-      cleanCSS = cleanCSS.replace(/```\n?/g, '');
-    }
+    const cleanCSS = sanitizeAICSSOutput(editedCSS);
 
     const normalizedCurrent = normalizeCSS(currentCSS);
 
@@ -202,24 +334,39 @@ Please update the CSS to reflect this change while preserving all other existing
       return mergedTargetedCSS;
     }
 
-    const enforcedCSS = enforceReadableContrast(cleanCSS.trim());
-    if (normalizeCSS(enforcedCSS) === normalizedCurrent) {
+    const enforcedPatchCSS = enforceReadableContrast(cleanCSS.trim());
+    const mergedCSS = mergePatchIntoCSS(currentCSS, enforcedPatchCSS);
+    if (normalizeCSS(mergedCSS) === normalizedCurrent) {
       return enforceReadableContrast(applyEditHeuristics(currentCSS, editDescription));
     }
 
-    const heuristicPatched = applyEditHeuristics(enforcedCSS, editDescription);
-    return enforceReadableContrast(heuristicPatched);
+    return mergedCSS;
   } catch (error) {
     console.error('OpenAI CSS editing error:', error);
     throw new Error('Failed to edit CSS with OpenAI: ' + (error as Error).message);
   }
 }
 
-export async function generateCustomCSS(styleDescription: string): Promise<string> {
+export async function generateCustomCSS(styleDescription: string, context: AICssContext = {}): Promise<string> {
   try {
     const client = getOpenAI();
+    const mode = context.mode === 'merge' ? 'merge' : 'replace';
+    const currentCSS = typeof context.currentCSS === 'string' ? context.currentCSS : '';
+    const contextBlock = stringifyAICssContextBlock(context);
     
-    const systemPrompt = `You are an expert CSS designer specializing in modern web form styling. Generate custom CSS based on user descriptions for an interactive pricing calculator form.
+    const systemPrompt = mode === 'merge'
+      ? `You are an expert CSS designer specializing in modern Autobidder form styling.
+
+You are adding to or refining an existing stylesheet. Return a CSS PATCH only.
+
+RULES:
+1. Return only new or changed selector blocks.
+2. Do not rewrite unrelated selectors.
+3. Do not include #autobidder-form prefix.
+4. Return ONLY CSS code, no markdown or explanations.
+5. Ensure good contrast between text and backgrounds.
+6. Prefer surgical overrides instead of broad resets.`
+      : `You are an expert CSS designer specializing in modern web form styling. Generate custom CSS based on user descriptions for an interactive pricing calculator form.
 
 AVAILABLE CSS CLASSES TO TARGET:
 
@@ -291,6 +438,11 @@ BUTTON CLASSES:
 MULTIPLE CHOICE:
 - .ab-multiple-choice - Multiple choice option cards (can have .selected state)
 - .ab-multiple-choice-label - Multiple choice option text inside cards
+- .ab-multiple-choice-content - Inner wrapper inside multiple choice cards
+- .ab-multiple-choice-icon - Base wrapper for multiple choice icons
+- .ab-multiple-choice-icon-image - Icon wrapper when a multiple choice option uses an uploaded image
+- .ab-multiple-choice-icon-fallback - Fallback icon/initial block when no image is present
+- .ab-multiple-choice-image - Actual image element inside a multiple choice option card
 
 BOOKING CALENDAR CLASSES:
 - .ab-calendar-nav - Calendar navigation buttons (prev/next month)
@@ -418,31 +570,50 @@ EXAMPLE OUTPUT (for "glassmorphism"):
   transform: translateY(-2px);
 }`;
 
+    const userPrompt = mode === 'merge'
+      ? `${contextBlock}
+
+Current CSS:
+${currentCSS || 'None yet.'}
+
+User request:
+${styleDescription}
+
+Return only the selector blocks that should be added or changed.`
+      : `${contextBlock}
+
+Existing custom CSS:
+${truncateForAICssPrompt(currentCSS || 'None yet.', AI_CSS_CSS_SNAPSHOT_LIMIT)}
+
+Generate custom CSS for this design style:
+${styleDescription}`;
+
     const completion = await client.chat.completions.create({
-      model: "gpt-4o",
+      model: AI_CSS_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Generate custom CSS for this design style: ${styleDescription}` }
+        { role: "user", content: userPrompt }
       ],
-      temperature: 0.8,
-      max_tokens: 2000
+      max_tokens: AI_CSS_GENERATE_MAX_TOKENS
     });
 
-    const generatedCSS = completion.choices[0]?.message?.content?.trim();
-    
+    const generatedCSS = extractTextFromOpenAIMessage(completion.choices[0]?.message);
     if (!generatedCSS) {
-      throw new Error('No CSS generated from OpenAI');
+      return enforceReadableContrast(generateFallbackCSS(styleDescription, mode === 'merge' ? currentCSS : ''));
     }
 
-    // Remove markdown code block formatting if present
-    let cleanCSS = generatedCSS;
-    if (cleanCSS.startsWith('```css')) {
-      cleanCSS = cleanCSS.replace(/```css\n?/g, '').replace(/```\n?/g, '');
-    } else if (cleanCSS.startsWith('```')) {
-      cleanCSS = cleanCSS.replace(/```\n?/g, '');
+    const cleanCSS = sanitizeAICSSOutput(generatedCSS);
+    const enforcedCSS = enforceReadableContrast(cleanCSS.trim());
+
+    if (mode === 'merge' && currentCSS.trim()) {
+      const mergedCSS = mergePatchIntoCSS(currentCSS, enforcedCSS);
+      if (normalizeCSS(mergedCSS) === normalizeCSS(currentCSS)) {
+        return enforceReadableContrast(applyEditHeuristics(currentCSS, styleDescription));
+      }
+      return mergedCSS;
     }
 
-    return enforceReadableContrast(cleanCSS.trim());
+    return enforcedCSS;
   } catch (error) {
     console.error('OpenAI CSS generation error:', error);
     throw new Error('Failed to generate CSS with OpenAI: ' + (error as Error).message);
@@ -932,6 +1103,173 @@ function mergeTargetedPatchIntoCSS(currentCSS: string, patchCSS: string, targetS
   }
 
   return mergedCSS;
+}
+
+function mergePatchIntoCSS(currentCSS: string, patchCSS: string): string {
+  if (!patchCSS.trim()) {
+    return currentCSS;
+  }
+
+  const patchRules = parseTopLevelCSSRules(patchCSS);
+  if (!patchRules.length) {
+    return currentCSS;
+  }
+
+  let mergedCSS = currentCSS;
+  for (const rule of patchRules) {
+    mergedCSS = upsertTopLevelRule(mergedCSS, rule.selector, rule.body);
+  }
+
+  return mergedCSS;
+}
+
+function buildFallbackRule(selector: string, declarations: Array<[string, string | null | undefined]>): string {
+  const lines = declarations
+    .filter(([, value]) => typeof value === 'string' && value.trim().length > 0)
+    .map(([property, value]) => `  ${property}: ${value};`);
+
+  if (!lines.length) {
+    return '';
+  }
+
+  return `${selector} {\n${lines.join('\n')}\n}`;
+}
+
+function generateFallbackCSS(description: string, currentCSS = ''): string {
+  const lowered = description.toLowerCase();
+  const accent = extractColorFromDescription(description) || '#2563EB';
+  const accentHover = accent === '#2563EB' ? '#1D4ED8' : accent;
+  const darkMode = lowered.includes('dark');
+  const rounded = lowered.includes('round') || lowered.includes('pill');
+  const premium = lowered.includes('premium') || lowered.includes('luxury') || lowered.includes('elegant');
+  const soft = lowered.includes('soft') || lowered.includes('subtle');
+  const compact = lowered.includes('compact') || lowered.includes('tight');
+
+  const background = darkMode ? '#0F172A' : '#FFFFFF';
+  const surface = darkMode ? '#111827' : '#F8FAFC';
+  const border = darkMode ? '#334155' : '#CBD5E1';
+  const text = darkMode ? '#F8FAFC' : '#111827';
+  const muted = darkMode ? '#CBD5E1' : '#475569';
+  const radius = rounded ? '18px' : '12px';
+  const buttonRadius = rounded ? '999px' : '12px';
+  const cardShadow = premium
+    ? '0 18px 40px rgba(15, 23, 42, 0.16)'
+    : soft
+      ? '0 8px 22px rgba(15, 23, 42, 0.08)'
+      : '0 10px 24px rgba(15, 23, 42, 0.1)';
+  const spacing = compact ? '1rem' : '1.25rem';
+
+  const blocks = [
+    buildFallbackRule('.ab-form-container', [
+      ['background', background],
+      ['border', `1px solid ${border}`],
+      ['color', text],
+      ['border-radius', radius],
+      ['box-shadow', cardShadow],
+    ]),
+    buildFallbackRule('.ab-question-card', [
+      ['background', surface],
+      ['border', `1px solid ${border}`],
+      ['border-radius', radius],
+      ['padding', spacing],
+      ['box-shadow', soft ? '0 6px 18px rgba(15, 23, 42, 0.06)' : '0 8px 20px rgba(15, 23, 42, 0.08)'],
+      ['color', text],
+    ]),
+    buildFallbackRule('.ab-question-label, .ab-label', [
+      ['color', text],
+      ['font-weight', premium ? '700' : '600'],
+      ['letter-spacing', premium ? '0.01em' : null],
+    ]),
+    buildFallbackRule('.ab-input, .ab-text-input, .ab-number-input, .ab-textarea, .ab-select', [
+      ['background', darkMode ? '#0B1220' : '#FFFFFF'],
+      ['border', `1px solid ${border}`],
+      ['border-radius', rounded ? '14px' : '10px'],
+      ['color', text],
+    ]),
+    buildFallbackRule('.ab-input:focus, .ab-text-input:focus, .ab-number-input:focus, .ab-textarea:focus, .ab-select:focus', [
+      ['border-color', accent],
+      ['box-shadow', `0 0 0 3px ${darkMode ? 'rgba(37, 99, 235, 0.25)' : 'rgba(37, 99, 235, 0.18)'}`],
+      ['outline', 'none'],
+    ]),
+    buildFallbackRule('.ab-service-card, .ab-multiple-choice', [
+      ['background', surface],
+      ['border', `1px solid ${border}`],
+      ['border-radius', radius],
+      ['color', text],
+      ['transition', 'border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease'],
+    ]),
+    buildFallbackRule('.ab-service-card.selected, .ab-multiple-choice.selected', [
+      ['border-color', accent],
+      ['box-shadow', `0 0 0 2px ${darkMode ? 'rgba(37, 99, 235, 0.28)' : 'rgba(37, 99, 235, 0.18)'}`],
+    ]),
+    buildFallbackRule('.ab-button, .ab-button-primary', [
+      ['background', accent],
+      ['border', `1px solid ${accent}`],
+      ['border-radius', buttonRadius],
+      ['color', '#FFFFFF'],
+      ['transition', 'background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease'],
+    ]),
+    buildFallbackRule('.ab-button:hover, .ab-button-primary:hover', [
+      ['background', accentHover],
+      ['border-color', accentHover],
+      ['transform', 'translateY(-1px)'],
+    ]),
+    buildFallbackRule('.ab-pricing-card', [
+      ['background', surface],
+      ['border', `1px solid ${border}`],
+      ['border-radius', radius],
+      ['box-shadow', cardShadow],
+      ['color', text],
+    ]),
+    buildFallbackRule('.ab-pricing-card-price', [
+      ['background', accent],
+      ['color', '#FFFFFF'],
+      ['border-radius', rounded ? '999px' : '999px'],
+      ['padding', '0.35rem 0.8rem'],
+    ]),
+    buildFallbackRule('.ab-pricing-card-description, .ab-pricing-card-bullet-text, .ab-form-subtitle', [
+      ['color', muted],
+    ]),
+  ].filter(Boolean);
+
+  const fallbackCSS = blocks.join('\n\n');
+
+  if (!currentCSS.trim()) {
+    return fallbackCSS;
+  }
+
+  const merged = mergePatchIntoCSS(currentCSS, fallbackCSS);
+  return normalizeCSS(merged) === normalizeCSS(currentCSS) ? currentCSS : merged;
+}
+
+function applyTargetedEditHeuristics(currentCSS: string, description: string, targetSelector: string): string {
+  const lowered = description.toLowerCase();
+  const color = extractColorFromDescription(description) || '#2563EB';
+  const hoverRequested = lowered.includes('hover');
+  const rounded = lowered.includes('round') || lowered.includes('pill');
+  const bigger = lowered.includes('bigger') || lowered.includes('larger') || lowered.includes('more padding');
+  const shadow = lowered.includes('shadow') || lowered.includes('glow');
+
+  const baseRule = buildFallbackRule(targetSelector, [
+    ['background-color', color],
+    ['border-color', color],
+    ['border-radius', rounded ? '16px' : null],
+    ['padding', bigger ? '0.9rem 1.2rem' : null],
+    ['box-shadow', shadow ? '0 10px 24px rgba(37, 99, 235, 0.18)' : null],
+    ['color', '#FFFFFF'],
+  ]);
+
+  const hoverRule = hoverRequested
+    ? buildFallbackRule(`${targetSelector}:hover`, [
+        ['background-color', color],
+        ['border-color', color],
+        ['transform', 'translateY(-1px)'],
+      ])
+    : '';
+
+  const patch = [baseRule, hoverRule].filter(Boolean).join('\n\n');
+  const merged = mergeTargetedPatchIntoCSS(currentCSS, patch, targetSelector);
+  return normalizeCSS(merged) === normalizeCSS(currentCSS) ? currentCSS : merged;
 }
 
 function applyEditHeuristics(css: string, description: string): string {

@@ -1144,26 +1144,37 @@ export default function BlogPostEditorPage() {
   });
 
   const saveBusinessDefaultsMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (overrides?: {
+      businessName?: string | null;
+      businessPhone?: string | null;
+      businessEmail?: string | null;
+      businessAddress?: string | null;
+      blogCtaEnabled?: boolean;
+      blogCtaUrl?: string | null;
+      blogLogoUrl?: string | null;
+      silent?: boolean;
+    }) => {
       const response = await apiRequest("PATCH", "/api/business-settings", {
-        businessName: defaultBusinessName.trim() || "",
-        businessPhone: defaultBusinessPhone.trim() || "",
-        businessEmail: defaultBusinessEmail.trim() || "",
-        businessAddress: defaultBusinessAddress.trim() || "",
-        blogCtaEnabled: globalCtaEnabled,
-        blogCtaUrl: globalCtaUrl.trim() || null,
-        blogLogoUrl: defaultBlogLogoUrl.trim() || null,
+        businessName: overrides?.businessName ?? (defaultBusinessName.trim() || ""),
+        businessPhone: overrides?.businessPhone ?? (defaultBusinessPhone.trim() || ""),
+        businessEmail: overrides?.businessEmail ?? (defaultBusinessEmail.trim() || ""),
+        businessAddress: overrides?.businessAddress ?? (defaultBusinessAddress.trim() || ""),
+        blogCtaEnabled: overrides?.blogCtaEnabled ?? globalCtaEnabled,
+        blogCtaUrl: overrides?.blogCtaUrl ?? (globalCtaUrl.trim() || null),
+        blogLogoUrl: overrides?.blogLogoUrl ?? (defaultBlogLogoUrl.trim() || null),
       });
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      if (variables?.silent) return;
       toast({
         title: "Business Defaults Saved",
         description: "Your blog defaults will be reused for future posts and image generation.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, variables) => {
+      if (variables?.silent) return;
       toast({
         title: "Failed to Save Business Defaults",
         description: error?.message || "Could not save the default business details.",
@@ -1454,9 +1465,10 @@ export default function BlogPostEditorPage() {
       }
 
       setDefaultBlogLogoUrl(nextUrl);
+      saveBusinessDefaultsMutation.mutate({ blogLogoUrl: nextUrl, silent: true });
       toast({
         title: "Logo uploaded",
-        description: "Save business defaults to reuse this logo in future blogs and crew images.",
+        description: "The logo was uploaded and saved for future blogs and crew images.",
       });
     } catch (error) {
       toast({
@@ -2087,7 +2099,7 @@ export default function BlogPostEditorPage() {
                   <Button
                     variant="outline"
                     className="rounded-xl border-slate-200 bg-white/90 shadow-sm dark:border-slate-700 dark:bg-slate-950/60"
-                    onClick={() => saveBusinessDefaultsMutation.mutate()}
+                    onClick={() => saveBusinessDefaultsMutation.mutate(undefined)}
                     disabled={saveBusinessDefaultsMutation.isPending || businessLogoUploading}
                   >
                     {saveBusinessDefaultsMutation.isPending ? (
@@ -2157,7 +2169,10 @@ export default function BlogPostEditorPage() {
                         variant="ghost"
                         size="sm"
                         className="shrink-0 rounded-full"
-                        onClick={() => setDefaultBlogLogoUrl("")}
+                        onClick={() => {
+                          setDefaultBlogLogoUrl("");
+                          saveBusinessDefaultsMutation.mutate({ blogLogoUrl: null, silent: true });
+                        }}
                       >
                         Remove
                       </Button>
@@ -2179,6 +2194,7 @@ export default function BlogPostEditorPage() {
                     <Input
                       value={globalCtaUrl}
                       onChange={e => setGlobalCtaUrl(e.target.value)}
+                      onBlur={() => saveBusinessDefaultsMutation.mutate({ blogCtaUrl: globalCtaUrl.trim() || null, silent: true })}
                       placeholder="https://yourdomain.com/contact"
                       className="h-12 rounded-xl border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950"
                     />
@@ -3504,7 +3520,7 @@ export default function BlogPostEditorPage() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => saveBusinessDefaultsMutation.mutate()}
+                      onClick={() => saveBusinessDefaultsMutation.mutate(undefined)}
                       disabled={saveBusinessDefaultsMutation.isPending}
                     >
                       {saveBusinessDefaultsMutation.isPending ? "Saving..." : "Save Global CTA"}

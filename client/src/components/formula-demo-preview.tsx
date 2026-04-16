@@ -4,6 +4,7 @@ import {
   evaluateFormulaWithRepeatableGroups,
   FormulaValueMap,
   getFlatFormulaValues,
+  getHiddenConditionalCalculationIssues,
   getRepeatableGroupCount,
   getRepeatableGroupLabel,
   getRepeatableGroupValues,
@@ -24,6 +25,10 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
 
   const topLevelValues = getFlatFormulaValues(values);
   const repeatableValues = getRepeatableGroupValues(values);
+  const hasAnyInput = Object.keys(topLevelValues).length > 0 || Object.keys(repeatableValues).length > 0;
+  const hiddenCalculationIssues = hasAnyInput
+    ? getHiddenConditionalCalculationIssues(formula.formula || "", formula.variables, values)
+    : [];
 
   const handleVariableChange = (variableId: string, value: any) => {
     setValues((prev) => ({
@@ -153,6 +158,25 @@ export default function FormulaDemoPreview({ formula }: FormulaDemoPreviewProps)
           );
         })}
       </div>
+
+      {hiddenCalculationIssues.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-medium">Formula warning</p>
+          <p className="mt-1">
+            One or more hidden conditional questions are resolving to `0` while still being used as multipliers in the
+            formula. That can zero out pricing even though nothing technically crashed.
+          </p>
+          <div className="mt-3 space-y-1">
+            {hiddenCalculationIssues.map((issue) => (
+              <p key={issue.variableId}>{issue.message}</p>
+            ))}
+          </div>
+          <p className="mt-3 text-amber-900/80">
+            Fix this by giving hidden multiplier questions a neutral default such as `1`, or by restructuring the
+            formula so optional sections are added separately instead of multiplied together.
+          </p>
+        </div>
+      )}
 
       {formula.formula && (
         <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3">

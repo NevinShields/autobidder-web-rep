@@ -1332,13 +1332,13 @@ export default function BlogPostEditorPage() {
     if (!files) return;
     const nextFiles = Array.from(files).slice(0, MAX_BLOG_IMAGES);
     if (!ensureImageCapacity(nextFiles.length)) return;
-    for (const file of nextFiles) {
-      await uploadSingleImage(file, {
+    await Promise.all(nextFiles.map((file) =>
+      uploadSingleImage(file, {
         imageType: "hero",
         imageStyle: "default",
         caption: "",
-      });
-    }
+      })
+    ));
   };
 
   const handleBeforeAfterSetUpload = async () => {
@@ -1353,26 +1353,29 @@ export default function BlogPostEditorPage() {
     }
 
     const pairCount = Math.max(pendingBeforeSetFiles.length, pendingAfterSetFiles.length);
+    const uploads: Promise<void>[] = [];
     for (let i = 0; i < pairCount; i++) {
       const beforeFile = pendingBeforeSetFiles[i];
       const afterFile = pendingAfterSetFiles[i];
 
       if (beforeFile) {
-        await uploadSingleImage(beforeFile, {
+        uploads.push(uploadSingleImage(beforeFile, {
           imageType: "before",
           imageStyle: "default",
           caption: `Before photo set ${i + 1}`,
-        });
+        }));
       }
 
       if (afterFile) {
-        await uploadSingleImage(afterFile, {
+        uploads.push(uploadSingleImage(afterFile, {
           imageType: "after",
           imageStyle: "default",
           caption: `After photo set ${i + 1}`,
-        });
+        }));
       }
     }
+
+    await Promise.all(uploads);
 
     setPendingBeforeSetFiles([]);
     setPendingAfterSetFiles([]);

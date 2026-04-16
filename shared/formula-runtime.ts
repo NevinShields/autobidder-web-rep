@@ -9,6 +9,13 @@ export type FormulaValueMap = Record<string, any> & {
   [REPEATABLE_GROUP_VALUES_KEY]?: RepeatableGroupValuesMap;
 };
 
+export interface HiddenConditionalCalculationIssue {
+  variableId: string;
+  variableName: string;
+  resolvedValue: number;
+  message: string;
+}
+
 const toOptionId = (rawValue: unknown, fallbackIndex: number): string => {
   const base = String(rawValue ?? '').trim().toLowerCase();
   const normalized = base
@@ -309,6 +316,89 @@ export function evaluateFormulaWithRepeatableGroups(
 
   const result = Function(`"use strict"; return (${nextExpression})`)();
   return Number.isFinite(Number(result)) ? Number(result) : 0;
+}
+
+function escapeVariableIdForRegex(variableId: string): string {
+  return variableId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasMultiplicativeReference(formulaExpression: string, variableId: string): boolean {
+  const escapedVariableId = escapeVariableIdForRegex(variableId);
+  return new RegExp(
+    `(?:\\*|/)\\s*\\b${escapedVariableId}\\b|\\b${escapedVariableId}\\b\\s*(?:\\*|/)`,
+  ).test(formulaExpression);
+}
+
+function getFormulaSegments(formulaExpression: string): string[] {
+  return formulaExpression
+    .split('+')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+}
+
+function getVariablesReferencedInSegment(segment: string, variables: Variable[]): Variable[] {
+  return variables.filter((variable) => {
+    const escapedVariableId = escapeVariableIdForRegex(variable.id);
+    return new RegExp(`\\b${escapedVariableId}\\b`).test(segment);
+  });
+}
+
+export function getHiddenConditionalCalculationIssues(
+  formulaExpression: string,
+  variables: Variable[],
+  values: FormulaValueMap,
+): HiddenConditionalCalculationIssue[] {
+  if (!formulaExpression.trim()) {
+    return [];
+  }
+
+  const topLevelValues = getFlatFormulaValues(values);
+  const flatVariables = getFlatFormulaVariables(variables);
+  const formulaSegments = getFormulaSegments(formulaExpression);
+
+  return flatVariables.flatMap((variable) => {
+    if (!variable.conditionalLogic?.enabled) {
+      return [];
+    }
+
+    const shouldShow = evaluateConditionalLogic(variable, topLevelValues, flatVariables);
+    if (shouldShow) {
+      return [];
+    }
+
+    const resolvedValue = resolveVariableValueForCalculation(variable, topLevelValues, flatVariables);
+    if (resolvedValue !== 0 || !hasMultiplicativeReference(formulaExpression, variable.id)) {
+      return [];
+    }
+
+    const impactedSegments = formulaSegments.filter((segment) => {
+      if (!hasMultiplicativeReference(segment, variable.id)) {
+        return false;
+      }
+
+      const referencedVariables = getVariablesReferencedInSegment(segment, flatVariables);
+      if (referencedVariables.length <= 1) {
+        return false;
+      }
+
+      return referencedVariables
+        .filter((referencedVariable) => referencedVariable.id !== variable.id)
+        .some((referencedVariable) => (
+          resolveVariableValueForCalculation(referencedVariable, topLevelValues, flatVariables) !== 0
+        ));
+    });
+
+    if (impactedSegments.length === 0) {
+      return [];
+    }
+
+    return [{
+      variableId: variable.id,
+      variableName: variable.name,
+      resolvedValue,
+      message: `${variable.name} is hidden right now and resolves to 0, but the formula still uses it in a multiplication or division term.`,
+    }];
+  });
 }
 
 export function resolvePriceConstraintValue(

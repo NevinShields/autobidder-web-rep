@@ -3102,6 +3102,105 @@ export const whiteLabelVideoDownloads = pgTable("white_label_video_downloads", {
 
 export type WhiteLabelVideoDownload = typeof whiteLabelVideoDownloads.$inferSelect;
 
+// Ad Library items
+export const adLibraryItems = pgTable("ad_library_items", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  shortDescription: text("short_description"),
+  fullDescription: text("full_description"),
+  previewImageUrl: text("preview_image_url"),
+  assetFileUrl: text("asset_file_url"),
+  assetFileName: text("asset_file_name"),
+  category: text("category"),
+  styleTags: jsonb("style_tags").notNull().default([]).$type<string[]>(),
+  serviceTags: jsonb("service_tags").notNull().default([]).$type<string[]>(),
+  tags: jsonb("tags").notNull().default([]).$type<string[]>(),
+  featured: boolean("featured").notNull().default(false),
+  active: boolean("active").notNull().default(true),
+  downloadable: boolean("downloadable").notNull().default(false),
+  premiumOnly: boolean("premium_only").notNull().default(false),
+  customizable: boolean("customizable").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  internalNotes: text("internal_notes"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  activeIdx: index("ad_library_items_active_idx").on(table.active),
+  featuredIdx: index("ad_library_items_featured_idx").on(table.featured),
+  categoryIdx: index("ad_library_items_category_idx").on(table.category),
+}));
+
+export const insertAdLibraryItemSchema = createInsertSchema(adLibraryItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AdLibraryItem = typeof adLibraryItems.$inferSelect;
+export type InsertAdLibraryItem = z.infer<typeof insertAdLibraryItemSchema>;
+
+// Branding requests for manually customized ad packs
+export const adBrandingRequests = pgTable("ad_branding_requests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  businessName: text("business_name"),
+  logoUrl: text("logo_url"),
+  phoneNumber: text("phone_number"),
+  email: text("email"),
+  website: text("website"),
+  brandColors: jsonb("brand_colors").notNull().default([]).$type<string[]>(),
+  notes: text("notes"),
+  status: text("status").notNull().default("draft"), // draft, submitted, in_progress, completed, delivered
+  submittedAt: timestamp("submitted_at"),
+  internalNotes: text("internal_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (table) => ({
+  userIdx: index("ad_branding_requests_user_idx").on(table.userId),
+  statusIdx: index("ad_branding_requests_status_idx").on(table.status),
+}));
+
+export const insertAdBrandingRequestSchema = createInsertSchema(adBrandingRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type AdBrandingRequest = typeof adBrandingRequests.$inferSelect;
+export type InsertAdBrandingRequest = z.infer<typeof insertAdBrandingRequestSchema>;
+
+export const adBrandingRequestItems = pgTable("ad_branding_request_items", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id").notNull().references(() => adBrandingRequests.id, { onDelete: "cascade" }),
+  adLibraryItemId: integer("ad_library_item_id").notNull().references(() => adLibraryItems.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  requestIdx: index("ad_branding_request_items_request_idx").on(table.requestId),
+  itemIdx: index("ad_branding_request_items_item_idx").on(table.adLibraryItemId),
+}));
+
+export const insertAdBrandingRequestItemSchema = createInsertSchema(adBrandingRequestItems).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type AdBrandingRequestItem = typeof adBrandingRequestItems.$inferSelect;
+export type InsertAdBrandingRequestItem = z.infer<typeof insertAdBrandingRequestItemSchema>;
+
+export const adLibraryDownloads = pgTable("ad_library_downloads", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  adLibraryItemId: integer("ad_library_item_id").notNull().references(() => adLibraryItems.id, { onDelete: "cascade" }),
+  downloadedAt: timestamp("downloaded_at").notNull().defaultNow(),
+}, (table) => ({
+  userIdx: index("ad_library_downloads_user_idx").on(table.userId),
+  itemIdx: index("ad_library_downloads_item_idx").on(table.adLibraryItemId),
+}));
+
+export type AdLibraryDownload = typeof adLibraryDownloads.$inferSelect;
+
 // ==================== Support Videos System ====================
 
 // Support Videos Library - all support videos that can be assigned to pages

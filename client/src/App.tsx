@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -70,6 +70,8 @@ const IntegrationsPage = lazy(() => import("@/pages/integrations"));
 const CallScreen = lazy(() => import("@/pages/call-screen"));
 const UpgradePage = lazy(() => import("@/pages/upgrade"));
 const AdCreativeRequestPage = lazy(() => import("@/pages/ad-creative-request"));
+const AdLibraryPage = lazy(() => import("@/pages/ad-library"));
+const AdminAdLibraryPage = lazy(() => import("@/pages/admin-ad-library"));
 const SubscriptionTest = lazy(() => import("@/pages/subscription-test"));
 const PaymentConfirmation = lazy(() => import("@/pages/payment-confirmation"));
 const StyledCalculator = lazy(() => import("@/pages/styled-calculator"));
@@ -171,6 +173,13 @@ function LazyPage({ Component, ...props }: { Component: React.LazyExoticComponen
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [location] = useLocation();
+  const authEntryRoutes = new Set([
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
+    "/signup-success",
+  ]);
 
   // Debug logging
   console.log('Router render:', { isAuthenticated, isLoading, user: user?.email });
@@ -252,6 +261,12 @@ function Router() {
     );
   }
 
+  // Once authenticated, keep auth-only entry points from falling through to the
+  // authenticated 404 state while client navigation catches up.
+  if (authEntryRoutes.has(location)) {
+    return <Redirect to="/dashboard" />;
+  }
+
   return (
     <>
       {user && (user as any).isImpersonating && <ImpersonationBanner />}
@@ -277,6 +292,7 @@ function Router() {
         <Route path="/style-calculator" component={LazyStyledCalculator} />
         <Route path="/leads" component={LeadsPage} />
         <Route path="/photos" component={PhotosPage} />
+        <Route path="/ad-library" component={AdLibraryPage} />
         <Route path="/ad-creative-request" component={AdCreativeRequestPage} />
         <Route path="/proposals" component={ProposalsPage} />
         <Route path="/calendar" component={CalendarPage} />
@@ -323,6 +339,7 @@ function Router() {
         <Route path="/dfy-services" component={DfyServicesPage} />
         <Route path="/admin/dfy-services" component={AdminDfyServicesPage} />
         <Route path="/admin/support-videos" component={AdminSupportVideosPage} />
+        <Route path="/admin/ad-library" component={AdminAdLibraryPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/faq" component={FAQPage} />
@@ -364,6 +381,7 @@ function Router() {
         <Route path="/seo-tracker-test" component={SeoTrackerTest} />
         <Route path="/tutorials" component={TutorialsPage} />
         <Route path="/white-label-videos" component={WhiteLabelVideosPage} />
+        <Route path="/ad-library" component={AdLibraryPage} />
         <Route path="/navigation" component={NavigationPage} />
         <Route path="/ab-seo-plan" component={AbSeoPlan} />
         <Route path="/try" component={TryCalculator} />

@@ -195,6 +195,14 @@ import {
   whiteLabelVideoDownloads,
   type WhiteLabelVideo,
   type InsertWhiteLabelVideo,
+  adLibraryItems,
+  adBrandingRequests,
+  adBrandingRequestItems,
+  adLibraryDownloads,
+  type AdLibraryItem,
+  type InsertAdLibraryItem,
+  type AdBrandingRequest,
+  type InsertAdBrandingRequest,
   landingPages,
   type LandingPage,
   type InsertLandingPage,
@@ -1220,6 +1228,23 @@ export interface IStorage {
   // White Label Video Download tracking
   getVideoDownloadsCount(userId: string, month: number, year: number): Promise<number>;
   recordVideoDownload(userId: string, videoId: number, month: number, year: number): Promise<void>;
+
+  // Ad Library operations
+  getAdLibraryItems(includeInactive?: boolean): Promise<AdLibraryItem[]>;
+  getAdLibraryItem(id: number): Promise<AdLibraryItem | undefined>;
+  createAdLibraryItem(item: InsertAdLibraryItem): Promise<AdLibraryItem>;
+  updateAdLibraryItem(id: number, item: Partial<InsertAdLibraryItem>): Promise<AdLibraryItem | undefined>;
+  deleteAdLibraryItem(id: number): Promise<boolean>;
+  getAdBrandingRequest(id: number): Promise<AdBrandingRequest | undefined>;
+  getAdBrandingRequestsByUserId(userId: string): Promise<AdBrandingRequest[]>;
+  getAllAdBrandingRequests(): Promise<AdBrandingRequest[]>;
+  createAdBrandingRequest(
+    request: InsertAdBrandingRequest,
+    itemIds: number[],
+  ): Promise<AdBrandingRequest>;
+  updateAdBrandingRequest(id: number, request: Partial<InsertAdBrandingRequest>): Promise<AdBrandingRequest | undefined>;
+  replaceAdBrandingRequestItems(requestId: number, itemIds: number[]): Promise<void>;
+  recordAdLibraryDownload(userId: string, adLibraryItemId: number): Promise<void>;
 
   // Lead Activity operations
   getLeadActivities(leadId: number, isMultiService: boolean): Promise<LeadActivity[]>;
@@ -5921,6 +5946,207 @@ export class DatabaseStorage implements IStorage {
         videoId,
         downloadMonth: month,
         downloadYear: year
+      });
+  }
+
+  async getAdLibraryItems(includeInactive = false): Promise<AdLibraryItem[]> {
+    if (includeInactive) {
+      return await db
+        .select()
+        .from(adLibraryItems)
+        .orderBy(desc(adLibraryItems.featured), adLibraryItems.sortOrder, desc(adLibraryItems.createdAt));
+    }
+
+    return await db
+      .select()
+      .from(adLibraryItems)
+      .where(eq(adLibraryItems.active, true))
+      .orderBy(desc(adLibraryItems.featured), adLibraryItems.sortOrder, desc(adLibraryItems.createdAt));
+  }
+
+  async getAdLibraryItem(id: number): Promise<AdLibraryItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(adLibraryItems)
+      .where(eq(adLibraryItems.id, id));
+    return item || undefined;
+  }
+
+  async createAdLibraryItem(item: InsertAdLibraryItem): Promise<AdLibraryItem> {
+    const payload: typeof adLibraryItems.$inferInsert = {
+      title: item.title,
+      slug: item.slug,
+      shortDescription: item.shortDescription ?? null,
+      fullDescription: item.fullDescription ?? null,
+      previewImageUrl: item.previewImageUrl ?? null,
+      assetFileUrl: item.assetFileUrl ?? null,
+      assetFileName: item.assetFileName ?? null,
+      category: item.category ?? null,
+      styleTags: Array.isArray(item.styleTags) ? [...item.styleTags] : [],
+      serviceTags: Array.isArray(item.serviceTags) ? [...item.serviceTags] : [],
+      tags: Array.isArray(item.tags) ? [...item.tags] : [],
+      featured: item.featured ?? false,
+      active: item.active ?? true,
+      downloadable: item.downloadable ?? false,
+      premiumOnly: item.premiumOnly ?? false,
+      customizable: item.customizable ?? false,
+      sortOrder: item.sortOrder ?? 0,
+      internalNotes: item.internalNotes ?? null,
+      createdBy: item.createdBy ?? null,
+    };
+    const [created] = await db
+      .insert(adLibraryItems)
+      .values(payload)
+      .returning();
+    return created;
+  }
+
+  async updateAdLibraryItem(id: number, item: Partial<InsertAdLibraryItem>): Promise<AdLibraryItem | undefined> {
+    const payload: Partial<typeof adLibraryItems.$inferInsert> = {
+      ...(item.title !== undefined ? { title: item.title } : {}),
+      ...(item.slug !== undefined ? { slug: item.slug } : {}),
+      ...(item.shortDescription !== undefined ? { shortDescription: item.shortDescription ?? null } : {}),
+      ...(item.fullDescription !== undefined ? { fullDescription: item.fullDescription ?? null } : {}),
+      ...(item.previewImageUrl !== undefined ? { previewImageUrl: item.previewImageUrl ?? null } : {}),
+      ...(item.assetFileUrl !== undefined ? { assetFileUrl: item.assetFileUrl ?? null } : {}),
+      ...(item.assetFileName !== undefined ? { assetFileName: item.assetFileName ?? null } : {}),
+      ...(item.category !== undefined ? { category: item.category ?? null } : {}),
+      ...(item.styleTags !== undefined ? { styleTags: Array.isArray(item.styleTags) ? [...item.styleTags] : [] } : {}),
+      ...(item.serviceTags !== undefined ? { serviceTags: Array.isArray(item.serviceTags) ? [...item.serviceTags] : [] } : {}),
+      ...(item.tags !== undefined ? { tags: Array.isArray(item.tags) ? [...item.tags] : [] } : {}),
+      ...(item.featured !== undefined ? { featured: item.featured } : {}),
+      ...(item.active !== undefined ? { active: item.active } : {}),
+      ...(item.downloadable !== undefined ? { downloadable: item.downloadable } : {}),
+      ...(item.premiumOnly !== undefined ? { premiumOnly: item.premiumOnly } : {}),
+      ...(item.customizable !== undefined ? { customizable: item.customizable } : {}),
+      ...(item.sortOrder !== undefined ? { sortOrder: item.sortOrder } : {}),
+      ...(item.internalNotes !== undefined ? { internalNotes: item.internalNotes ?? null } : {}),
+      ...(item.createdBy !== undefined ? { createdBy: item.createdBy ?? null } : {}),
+    };
+    const [updated] = await db
+      .update(adLibraryItems)
+      .set({
+        ...payload,
+        updatedAt: new Date(),
+      })
+      .where(eq(adLibraryItems.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteAdLibraryItem(id: number): Promise<boolean> {
+    const result = await db
+      .delete(adLibraryItems)
+      .where(eq(adLibraryItems.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getAdBrandingRequest(id: number): Promise<AdBrandingRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(adBrandingRequests)
+      .where(eq(adBrandingRequests.id, id));
+    return request || undefined;
+  }
+
+  async getAdBrandingRequestsByUserId(userId: string): Promise<AdBrandingRequest[]> {
+    return await db
+      .select()
+      .from(adBrandingRequests)
+      .where(eq(adBrandingRequests.userId, userId))
+      .orderBy(desc(adBrandingRequests.updatedAt), desc(adBrandingRequests.createdAt));
+  }
+
+  async getAllAdBrandingRequests(): Promise<AdBrandingRequest[]> {
+    return await db
+      .select()
+      .from(adBrandingRequests)
+      .orderBy(desc(adBrandingRequests.updatedAt), desc(adBrandingRequests.createdAt));
+  }
+
+  async createAdBrandingRequest(
+    request: InsertAdBrandingRequest,
+    itemIds: number[],
+  ): Promise<AdBrandingRequest> {
+    const payload: typeof adBrandingRequests.$inferInsert = {
+      userId: request.userId,
+      businessName: request.businessName ?? null,
+      logoUrl: request.logoUrl ?? null,
+      phoneNumber: request.phoneNumber ?? null,
+      email: request.email ?? null,
+      website: request.website ?? null,
+      brandColors: Array.isArray(request.brandColors) ? [...request.brandColors] : [],
+      notes: request.notes ?? null,
+      status: request.status ?? "draft",
+      submittedAt: request.submittedAt ?? null,
+      internalNotes: request.internalNotes ?? null,
+    };
+    const [created] = await db
+      .insert(adBrandingRequests)
+      .values(payload)
+      .returning();
+
+    if (itemIds.length > 0) {
+      await db
+        .insert(adBrandingRequestItems)
+        .values(itemIds.map((itemId) => ({
+          requestId: created.id,
+          adLibraryItemId: itemId,
+        })));
+    }
+
+    return created;
+  }
+
+  async updateAdBrandingRequest(id: number, request: Partial<InsertAdBrandingRequest>): Promise<AdBrandingRequest | undefined> {
+    const payload: Partial<typeof adBrandingRequests.$inferInsert> = {
+      ...(request.userId !== undefined ? { userId: request.userId } : {}),
+      ...(request.businessName !== undefined ? { businessName: request.businessName ?? null } : {}),
+      ...(request.logoUrl !== undefined ? { logoUrl: request.logoUrl ?? null } : {}),
+      ...(request.phoneNumber !== undefined ? { phoneNumber: request.phoneNumber ?? null } : {}),
+      ...(request.email !== undefined ? { email: request.email ?? null } : {}),
+      ...(request.website !== undefined ? { website: request.website ?? null } : {}),
+      ...(request.brandColors !== undefined ? { brandColors: Array.isArray(request.brandColors) ? [...request.brandColors] : [] } : {}),
+      ...(request.notes !== undefined ? { notes: request.notes ?? null } : {}),
+      ...(request.status !== undefined ? { status: request.status } : {}),
+      ...(request.submittedAt !== undefined ? { submittedAt: request.submittedAt ?? null } : {}),
+      ...(request.internalNotes !== undefined ? { internalNotes: request.internalNotes ?? null } : {}),
+    };
+    const [updated] = await db
+      .update(adBrandingRequests)
+      .set({
+        ...payload,
+        updatedAt: new Date(),
+      })
+      .where(eq(adBrandingRequests.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async replaceAdBrandingRequestItems(requestId: number, itemIds: number[]): Promise<void> {
+    await db
+      .delete(adBrandingRequestItems)
+      .where(eq(adBrandingRequestItems.requestId, requestId));
+
+    if (itemIds.length === 0) {
+      return;
+    }
+
+    await db
+      .insert(adBrandingRequestItems)
+      .values(itemIds.map((itemId) => ({
+        requestId,
+        adLibraryItemId: itemId,
+      })));
+  }
+
+  async recordAdLibraryDownload(userId: string, adLibraryItemId: number): Promise<void> {
+    await db
+      .insert(adLibraryDownloads)
+      .values({
+        userId,
+        adLibraryItemId,
       });
   }
 

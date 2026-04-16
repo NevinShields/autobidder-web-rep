@@ -16,8 +16,9 @@ import { GooglePlacesAutocomplete } from "@/components/google-places-autocomplet
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { stylingOptionsSchema, type Formula, type ServiceCalculation, type BusinessSettings, type PropertyAttributes } from "@shared/schema";
-import { evaluateConditionalLogic, getDefaultValueForHiddenVariable } from "@shared/conditional-logic";
 import {
+  applyPriceConstraints,
+  evaluateFormulaWithRepeatableGroups,
   REPEATABLE_GROUP_VALUES_KEY,
   getFlatFormulaValues,
   getRepeatableGroupCount,
@@ -707,7 +708,6 @@ export default function ServiceSelector() {
         return;
       }
 
-      let formulaExpression = formula.formula;
       const variables = serviceVariables[formula.id] || {};
       
       console.log(`Calculating price for ${formula.name}:`, {
@@ -715,78 +715,24 @@ export default function ServiceSelector() {
         variables,
         formulaVariables: formula.variables
       });
+      const rawPrice = evaluateFormulaWithRepeatableGroups(
+        formula.formula || '',
+        formula.variables || [],
+        variables as any,
+      );
+      const calculatedPrice = Math.round(
+        applyPriceConstraints(
+          Math.round(Number(rawPrice) || 0),
+          formula,
+          variables,
+          { priceUnit: 'dollars', constraintUnit: 'cents' },
+        ),
+      );
       
-      formula.variables.forEach((variable) => {
-        const shouldShow = !variable.conditionalLogic?.enabled ||
-          evaluateConditionalLogic(variable, variables, formula.variables);
-
-        if (!shouldShow) {
-          const defaultValue = getDefaultValueForHiddenVariable(variable);
-          let hiddenValue: any = 0;
-
-          if (variable.type === 'checkbox') {
-            hiddenValue = defaultValue ? 1 : 0;
-          } else if ((variable.type === 'select' || variable.type === 'dropdown') && variable.options) {
-            const option = variable.options.find(opt => opt.value === defaultValue);
-            hiddenValue = option?.multiplier || option?.numericValue || Number(defaultValue) || 0;
-          } else if (variable.type === 'multiple-choice' && variable.options) {
-            if (Array.isArray(defaultValue)) {
-              hiddenValue = defaultValue.reduce((total: number, selectedValue: any) => {
-                const option = variable.options?.find(opt => opt.value?.toString() === selectedValue?.toString());
-                return total + (option?.numericValue || 0);
-              }, 0);
-            } else {
-              const option = variable.options.find(opt => opt.value === defaultValue);
-              hiddenValue = option?.numericValue || Number(defaultValue) || 0;
-            }
-          } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
-            hiddenValue = Number(defaultValue) || 0;
-          }
-
-          formulaExpression = formulaExpression.replace(
-            new RegExp(`\\b${variable.id}\\b`, 'g'),
-            String(hiddenValue)
-          );
-          return;
-        }
-
-        let value = variables[variable.id];
-        
-        if (variable.type === 'select' && variable.options) {
-          const option = variable.options.find(opt => opt.value === value);
-          value = option?.multiplier || option?.numericValue || 0;
-        } else if (variable.type === 'dropdown' && variable.options) {
-          const option = variable.options.find(opt => opt.value === value);
-          value = option?.numericValue || 0;
-        } else if (variable.type === 'multiple-choice' && variable.options) {
-          if (Array.isArray(value)) {
-            value = value.reduce((total: number, selectedValue: string) => {
-              const option = variable.options?.find(opt => opt.value.toString() === selectedValue);
-              return total + (option?.numericValue || 0);
-            }, 0);
-          } else {
-            value = 0;
-          }
-        } else if (variable.type === 'number' || variable.type === 'slider' || variable.type === 'stepper') {
-          value = Number(value) || 0;
-        } else if (variable.type === 'checkbox') {
-          value = value ? 1 : 0;
-        } else {
-          value = 0;
-        }
-        
-        formulaExpression = formulaExpression.replace(
-          new RegExp(`\\b${variable.id}\\b`, 'g'),
-          String(value)
-        );
+      console.log(`Calculated price for ${formula.name}:`, {
+        rawPrice,
+        calculatedPrice,
       });
-
-      console.log(`Final formula expression for ${formula.name}:`, formulaExpression);
-
-      const result = Function(`"use strict"; return (${formulaExpression})`)();
-      const calculatedPrice = Math.round(Number(result) || 0);
-      
-      console.log(`Calculated price for ${formula.name}:`, calculatedPrice);
       
       setServiceCalculations(prev => ({
         ...prev,

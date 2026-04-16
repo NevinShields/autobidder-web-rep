@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { buildFormulaEditContext } from "./formula-ai-context";
 
 let openai: OpenAI | null = null;
 
@@ -50,6 +51,22 @@ export interface AIFormulaResponse {
   formula: string;
   variables: Variable[];
   iconUrl: string;
+}
+
+export type AIFormulaEditMode = 'targeted' | 'rebuild';
+
+export interface AIFormulaEditPatch {
+  name?: string;
+  title?: string;
+  description?: string;
+  bulletPoints?: string[];
+  formula?: string;
+  iconUrl?: string;
+  variableOperations?: Array<
+    | { type: 'add'; variable: Variable; afterVariableId?: string }
+    | { type: 'replace'; variableId: string; variable: Variable }
+    | { type: 'delete'; variableId: string }
+  >;
 }
 
 type AICssOperationMode = 'replace' | 'merge';
@@ -1610,20 +1627,18 @@ Create realistic pricing that reflects actual market rates for contractors.`;
 
 export async function editFormula(
   currentFormula: AIFormulaResponse,
-  editInstructions: string
-): Promise<AIFormulaResponse> {
+  editInstructions: string,
+  mode: AIFormulaEditMode = 'rebuild'
+): Promise<AIFormulaResponse | AIFormulaEditPatch> {
   try {
     const client = getOpenAI();
-
-    const systemPrompt = `You are an expert contractor pricing consultant. Edit an existing pricing calculator based on the user's instructions.
-
-IMPORTANT RULES:
+    const baseRules = `IMPORTANT RULES:
 1. Variable IDs must be camelCase (e.g., "squareFootage", "materialType", "laborHours")
 2. Formula must use ONLY variable IDs (not variable names)
-3. Every top-level variable in "variables" must appear at least once in the main formula. Exception: childVariables inside a repeatable-group must appear in repeatableConfig.instanceFormula, while the repeatable-group variable ID itself must appear in the main formula.
+3. Every top-level variable in the main formula must appear at least once unless the user explicitly wants it removed. Exception: childVariables inside a repeatable-group must appear in repeatableConfig.instanceFormula, while the repeatable-group variable ID itself must appear in the main formula.
 4. Use realistic contractor pricing
 5. Use simple arithmetic formulas with + and * only
-6. Preserve unchanged parts of the current calculator unless user asks otherwise
+6. Preserve unchanged parts of the current calculator unless the user explicitly asks otherwise
 7. For multi-select multiple-choice variables, use:
    - "allowMultipleSelection": true
    - option-level IDs in options[].id (snake_case)
@@ -1631,6 +1646,11 @@ IMPORTANT RULES:
 8. Every dropdown/multiple-choice option must include numericValue
 9. If multi-select options are used in multiplication, include defaultUnselectedValue: 1 for those options
 10. You may use repeatable-group variables for pricing repeated items like trees, windows, fixtures, doors, rooms, fence sections, or vents
+11. Use conditionalLogic for follow-up questions and visibility rules, not formula syntax
+12. When returning conditionalLogic, prefer the modern format with "enabled", optional "operator", and a "conditions" array
+13. Every conditionalLogic.conditions item must include a unique string "id"
+14. For conditionalLogic.dependsOnVariable, use an existing variable ID exactly as it appears in the current formula
+15. For choice-based dependencies, expectedValue/expectedValues must use the dependency variable's stored option value(s), not a rewritten label
 
 REPEATABLE GROUP RULES:
 - A variable with "type": "repeatable-group" must include "repeatableConfig"
@@ -1638,7 +1658,11 @@ REPEATABLE GROUP RULES:
 - "repeatableConfig.instanceFormula" calculates ONE repeated item using those childVariables
 - The repeatable-group variable ID is a summed total across all repeated items
 - The main formula should reference the repeatable-group variable ID directly
-- Do NOT multiply the repeatable-group variable ID by its count variable again unless the user explicitly asks for that behavior
+- Do NOT multiply the repeatable-group variable ID by its count variable again unless the user explicitly asks for that behavior`;
+
+    const rebuildPrompt = `You are an expert contractor pricing consultant. Edit an existing pricing calculator based on the user's instructions.
+
+${baseRules}
 
 RESPONSE FORMAT: Return valid JSON with these fields:
 {
@@ -1686,7 +1710,141 @@ RESPONSE FORMAT: Return valid JSON with these fields:
   "iconUrl": "emoji_or_url"
 }`;
 
-    const currentFormulaJson = JSON.stringify(currentFormula, null, 2);
+    const targetedPrompt = `You are an expert contractor pricing consultant. Make surgical edits to an existing pricing calculator.
+
+${baseRules}
+
+TARGETED EDIT MODE:
+- Default to the SMALLEST possible change set.
+- Do NOT rewrite the whole calculator.
+- Do NOT rename, replace, delete, or reorder variables unless the user explicitly asks.
+- If the request can be solved by changing only the formula, return only "formula".
+- If one variable needs to change, return a single "replace" operation for that variable and leave all other variables untouched.
+- If the user asks for a conditional follow-up question, add or update only the affected variable(s) and return the conditionalLogic explicitly.
+- If the user asks to make an existing question conditional, return a single "replace" for that existing variable and include its full preserved shape plus the new conditionalLogic.
+- If the user asks to add a new conditional follow-up question, return an "add" operation for the new question and put the conditionalLogic on the new question.
+- When adding a follow-up question, place it immediately after the triggering variable unless the user says otherwise.
+- If the request targets a child variable inside a repeatable group, return a "replace" operation for the top-level repeatable-group variable with updated repeatableConfig.childVariables.
+- Only update name, title, description, bulletPoints, or iconUrl if the user explicitly asks or the requested change clearly requires it.
+- Only delete variables when the user explicitly asks to remove them.
+- Never include the full "variables" array in the response.
+
+RESPONSE FORMAT: Return valid JSON with ONLY the changed fields:
+{
+  "name": "optional changed service name",
+  "title": "optional changed title",
+  "description": "optional changed description",
+  "bulletPoints": ["optional", "changed", "bullets"],
+  "formula": "optional changed formula string",
+  "iconUrl": "optional changed emoji_or_url",
+  "variableOperations": [
+    {
+      "type": "replace",
+      "variableId": "existingVariableId",
+      "variable": {
+        "id": "existingOrNewCamelCaseId",
+        "name": "Display Name",
+        "type": "number|multiple-choice|dropdown|select|repeatable-group",
+        "unit": "optional unit",
+        "allowMultipleSelection": true,
+        "options": [
+          {
+            "id": "option_id",
+            "label": "Option",
+            "value": "option_value",
+            "numericValue": 123,
+            "defaultUnselectedValue": 0
+          }
+        ],
+        "repeatableConfig": {
+          "countSourceMode": "variable",
+          "countVariableId": "numberOfTrees",
+          "itemLabelTemplate": "Tree {index}",
+          "instanceFormula": "treeHeight * 20 + treeDiameter * 150",
+          "childVariables": [
+            {
+              "id": "treeHeight",
+              "name": "Tree Height",
+              "type": "number",
+              "unit": "ft"
+            }
+          ]
+        },
+        "defaultValue": "optional default",
+        "conditionalLogic": {
+          "enabled": true,
+          "operator": "AND",
+          "conditions": [
+            {
+              "id": "cond-1",
+              "dependsOnVariable": "existingVariableId",
+              "condition": "equals",
+              "expectedValue": "exactStoredOptionValue"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "replace",
+      "variableId": "existingQuestionId",
+      "variable": {
+        "id": "existingQuestionId",
+        "name": "Existing Question Name",
+        "type": "dropdown",
+        "options": [
+          {
+            "id": "option_id",
+            "label": "Option",
+            "value": "option_value",
+            "numericValue": 0
+          }
+        ],
+        "conditionalLogic": {
+          "enabled": true,
+          "operator": "AND",
+          "conditions": [
+            {
+              "id": "cond-1",
+              "dependsOnVariable": "triggerQuestionId",
+              "condition": "equals",
+              "expectedValue": "exactStoredOptionValue"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "add",
+      "afterVariableId": "optionalExistingVariableId",
+      "variable": {
+        "id": "newConditionalQuestionId",
+        "name": "Display Name",
+        "type": "number|multiple-choice|dropdown|select|repeatable-group",
+        "conditionalLogic": {
+          "enabled": true,
+          "operator": "AND",
+          "conditions": [
+            {
+              "id": "cond-1",
+              "dependsOnVariable": "triggerQuestionId",
+              "condition": "equals",
+              "expectedValue": "exactStoredOptionValue"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "delete",
+      "variableId": "existingVariableId"
+    }
+  ]
+}`;
+
+    const systemPrompt = mode === 'targeted' ? targetedPrompt : rebuildPrompt;
+
+    const currentFormulaJson = buildFormulaEditContext(currentFormula, mode);
     const response = await client.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -1700,7 +1858,8 @@ RESPONSE FORMAT: Return valid JSON with these fields:
         },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.25,
+      temperature: mode === 'targeted' ? 0.1 : 0.25,
+      max_tokens: mode === 'targeted' ? 900 : 2200,
     });
 
     const content = response.choices[0].message.content;
@@ -1709,6 +1868,18 @@ RESPONSE FORMAT: Return valid JSON with these fields:
     }
 
     const result = JSON.parse(content);
+    if (mode === 'targeted') {
+      const hasTopLevelChange = ['name', 'title', 'description', 'bulletPoints', 'formula', 'iconUrl']
+        .some((key) => Object.prototype.hasOwnProperty.call(result, key));
+      const hasVariableOperations = Array.isArray(result.variableOperations) && result.variableOperations.length > 0;
+
+      if (!hasTopLevelChange && !hasVariableOperations) {
+        throw new Error('Invalid targeted AI response structure');
+      }
+
+      return result as AIFormulaEditPatch;
+    }
+
     if (!result.name || !result.title || !result.formula || !Array.isArray(result.variables)) {
       throw new Error('Invalid AI response structure');
     }

@@ -536,10 +536,6 @@ export default function StyledCalculator(props: any = {}) {
   const customFormServiceFilterIds = queryServiceIds
     ? queryServiceIds.split(',').map((id) => Number(id.trim())).filter((id) => Number.isFinite(id))
     : [];
-  const isPublicAccess = !!userId;
-
-  // Determine effective business owner ID - use URL param for public access, or authenticated user ID
-  const effectiveBusinessOwnerId = isPublicAccess ? userId : authUser?.id;
   
   // Call screen specific params
   const skipLead = searchParams.get('skipLead') === 'true';
@@ -552,6 +548,12 @@ export default function StyledCalculator(props: any = {}) {
   // Single service embed mode - only show one specific service
   const singleServiceId = searchParams.get('serviceId') || searchParams.get('formulaId');
   const isSingleServiceMode = !!singleServiceId;
+
+  // Check if this is a custom form by looking at the current URL
+  const currentPath = window.location.pathname;
+  const isCustomForm = currentPath.includes('/custom-form/');
+  const embedId = isCustomForm ? currentPath.split('/custom-form/')[1] : null;
+  const hasExplicitCalculatorTarget = !!userId || !!singleServiceId || (isCustomForm && !!embedId);
   
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [cartServiceIds, setCartServiceIds] = useState<number[]>([]); // Services added to cart for checkout
@@ -641,11 +643,6 @@ export default function StyledCalculator(props: any = {}) {
     };
   }, []);
 
-  // Check if this is a custom form by looking at the current URL
-  const currentPath = window.location.pathname;
-  const isCustomForm = currentPath.includes('/custom-form/');
-  const embedId = isCustomForm ? currentPath.split('/custom-form/')[1] : null;
-
   // Override body background for iframe embedding
   useEffect(() => {
     const originalBackground = document.body.style.background;
@@ -656,23 +653,34 @@ export default function StyledCalculator(props: any = {}) {
     };
   }, []);
 
-  // Single optimized API call to fetch all calculator data (for public/embedded access)
+  // Single optimized API call to fetch all calculator data when the URL points at a specific calculator/company.
   const { data: calculatorData, isLoading: isLoadingCalculatorData } = useQuery({
-    queryKey: ['/api/public/calculator-data', userId, embedId],
-    queryFn: () => {
-      const params = new URLSearchParams({ userId: userId! });
+    queryKey: ['/api/public/calculator-data', userId, embedId, singleServiceId],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (userId) {
+        params.set('userId', userId);
+      }
+      if (singleServiceId) {
+        params.set('serviceId', singleServiceId);
+      }
       if (isCustomForm && embedId) {
         params.append('customFormId', embedId);
       }
-      return fetch(`/api/public/calculator-data?${params}`, { credentials: 'include' }).then(res => res.json());
+      const res = await fetch(`/api/public/calculator-data?${params}`, { credentials: 'include' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to fetch calculator data');
+      }
+      return data;
     },
-    enabled: !!userId || (isCustomForm && !!embedId),
+    enabled: hasExplicitCalculatorTarget,
     staleTime: 30 * 1000, // Cache for 30 seconds to avoid redundant requests
     gcTime: 60 * 1000, // Keep in garbage collection cache for 60 seconds
   });
 
   // Fetch authenticated user's data (for logged-in users viewing their own calculator)
-  const { data: authenticatedData, isLoading: isLoadingAuthData, error: authDataError } = useQuery({
+  const { data: authenticatedData, isLoading: isLoadingAuthData } = useQuery({
     queryKey: ['/api/public/calculator-data', 'authenticated', authUser?.id],
     queryFn: async () => {
       const res = await fetch('/api/public/calculator-data', { credentials: 'include' });
@@ -682,13 +690,16 @@ export default function StyledCalculator(props: any = {}) {
       }
       return data;
     },
-    enabled: !!authUser && !isPublicAccess,
+    enabled: !!authUser && !hasExplicitCalculatorTarget,
     staleTime: 30 * 1000,
     gcTime: 60 * 1000,
   });
 
-  // Use authenticated data when logged in and not in public access mode
-  const useAuthenticatedData = !!authUser && !isPublicAccess;
+  // Use authenticated data only when the URL is not explicitly targeting another calculator/company.
+  const useAuthenticatedData = !!authUser && !hasExplicitCalculatorTarget;
+  const resolvedOwnerUserId = calculatorData?.ownerUserId || userId || null;
+  const isPublicAccess = !useAuthenticatedData && !!resolvedOwnerUserId;
+  const effectiveBusinessOwnerId = useAuthenticatedData ? authUser?.id : resolvedOwnerUserId;
   
   // Extract data from combined response - prioritize authenticated data when logged in
   const allFormulas = useAuthenticatedData
@@ -766,13 +777,13 @@ export default function StyledCalculator(props: any = {}) {
   // Fetch leads for call screen mode (only when in call screen mode)
   const { data: singleLeads = [] } = useQuery<Lead[]>({
     queryKey: ['/api/leads'],
-    enabled: isCallScreenMode && !isPublicAccess,
+    enabled: isCallScreenMode && useAuthenticatedData,
   });
 
   // Fetch multi-service leads for call screen mode
   const { data: multiServiceLeads = [] } = useQuery<any[]>({
     queryKey: ['/api/multi-service-leads'],
-    enabled: isCallScreenMode && !isPublicAccess,
+    enabled: isCallScreenMode && useAuthenticatedData,
   });
 
   // Combine and normalize leads for search
@@ -814,20 +825,24 @@ export default function StyledCalculator(props: any = {}) {
   const leads = singleLeads;
 
   // Get the user ID for data fetching (from URL param or custom form)
-  const effectiveUserId = isCustomForm && customForm ? customForm.userId : userId;
-  const effectiveIsPublicAccess = !!effectiveUserId;
+  const effectiveUserId = useAuthenticatedData
+    ? authUser?.id
+    : ((customForm as any)?.accountId || resolvedOwnerUserId);
 
   // Session tracking state
   const [sessionId] = useState(() => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const [sessionTracked, setSessionTracked] = useState(false);
   const [pageViewTracked, setPageViewTracked] = useState(false);
+  const sessionTrackingStartedRef = useRef(false);
+  const pageViewTrackingStartedRef = useRef(false);
 
   // Track calculator session when calculator loads (for stats)
   useEffect(() => {
     // Only track if we have formulas and haven't tracked yet
-    if (!formulas || formulas.length === 0 || sessionTracked || isCallScreenMode) return;
+    if (!formulas || formulas.length === 0 || sessionTracked || sessionTrackingStartedRef.current || isCallScreenMode) return;
 
     const trackSession = async () => {
+      sessionTrackingStartedRef.current = true;
       try {
         // Track sessions for all active formulas in parallel
         await Promise.all(formulas.map((formula: Formula) =>
@@ -845,6 +860,7 @@ export default function StyledCalculator(props: any = {}) {
         setSessionTracked(true);
       } catch (error) {
         // Silent fail - don't disrupt user experience
+        sessionTrackingStartedRef.current = false;
       }
     };
 
@@ -854,9 +870,10 @@ export default function StyledCalculator(props: any = {}) {
   // Track page view when page loads (for stats)
   useEffect(() => {
     // Only track if we have a userId and haven't tracked yet
-    if (!effectiveUserId || pageViewTracked || isCallScreenMode) return;
+    if (!effectiveUserId || pageViewTracked || pageViewTrackingStartedRef.current || isCallScreenMode) return;
 
     const trackPageView = async () => {
+      pageViewTrackingStartedRef.current = true;
       try {
         const urlParams = new URLSearchParams(window.location.search);
         await fetch('/api/page-views', {
@@ -875,6 +892,7 @@ export default function StyledCalculator(props: any = {}) {
         setPageViewTracked(true);
       } catch (error) {
         // Silent fail
+        pageViewTrackingStartedRef.current = false;
         console.log('Page view tracking failed:', error);
       }
     };
@@ -964,7 +982,7 @@ export default function StyledCalculator(props: any = {}) {
         selectedUpsells: data.selectedUpsells,
         taxAmount: data.taxAmount,
         subtotal: data.subtotal,
-        businessOwnerId: isPublicAccess ? userId : undefined,
+        businessOwnerId: isPublicAccess ? effectiveBusinessOwnerId : undefined,
         submissionId: data.submissionId,
       };
       

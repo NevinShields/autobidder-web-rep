@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { DateTime } from "luxon";
 import { storage } from "./storage";
 import { db } from "./db";
-import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection, type Variable, knowledgeBaseCategories, knowledgeBaseTags, knowledgeBaseArticles, knowledgeBaseArticleTags, insertKbCategorySchema, insertKbTagSchema, insertKbArticleSchema } from "@shared/schema";
+import { dfyServices, dfyServicePurchases, users, photoMeasurements, blockedIps, supportVideos, pageSupportConfigs, pageSupportVideoAssignments, welcomeModalConfig, calculatorSessions, pageViews, directoryCategories, directoryProfiles, directoryServiceListings, directoryServiceAreas, directoryIndexCache, formulas, businessSettings, insertDirectoryCategorySchema, insertDirectoryProfileSchema, insertDirectoryServiceListingSchema, insertDirectoryServiceAreaSchema, blogPosts, blogImages, blogLayoutTemplates, blogSectionLocks, insertBlogPostSchema, insertBlogImageSchema, insertBlogLayoutTemplateSchema, workOrders, leads, websites, landingPages, landingPageEvents, type BlogContentSection, type Variable, knowledgeBaseCategories, knowledgeBaseTags, knowledgeBaseArticles, knowledgeBaseArticleTags, insertKbCategorySchema, insertKbTagSchema, insertKbArticleSchema, adLibraryItems, adBrandingRequests, adBrandingRequestItems, adLibraryDownloads } from "@shared/schema";
 import { eq, desc, and, gte, sql, inArray, ilike, or, asc, ne } from "drizzle-orm";
 import { setupEmailAuth, requireEmailAuth, checkIPRateLimit } from "./emailAuth";
 import { setupGoogleAuth } from "./googleAuth";
@@ -49,7 +49,9 @@ import {
   stylingOptionsSchema,
   insertCallBookingSchema,
   insertCallAvailabilitySlotSchema,
-  variableSchema
+  variableSchema,
+  insertAdLibraryItemSchema,
+  insertAdBrandingRequestSchema,
 } from "@shared/schema";
 import {
   getChatEstimatorWarnings,
@@ -1560,6 +1562,55 @@ function getPlanLimits(plan: string): PlanLimits {
   return limits[plan] || limits.free;
 }
 
+const AD_LIBRARY_CUSTOMIZATION_LIMIT = 10;
+const AD_LIBRARY_ELIGIBLE_PLANS = new Set(["standard", "plus", "plus_seo"]);
+const AD_LIBRARY_REQUEST_STATUSES = ["draft", "submitted", "in_progress", "completed", "delivered"] as const;
+
+function canAccessAdLibraryCustomization(user: any): boolean {
+  return AD_LIBRARY_ELIGIBLE_PLANS.has(user?.plan || "");
+}
+
+function canAccessAdLibraryPremiumItems(user: any): boolean {
+  return AD_LIBRARY_ELIGIBLE_PLANS.has(user?.plan || "");
+}
+
+function getAdLibraryAvailability(
+  item: { downloadable: boolean; customizable: boolean; premiumOnly: boolean },
+  user: any,
+) {
+  const canAccessPremium = canAccessAdLibraryPremiumItems(user);
+  const canCustomize = canAccessAdLibraryCustomization(user);
+  const canDownload = item.downloadable && (!item.premiumOnly || canAccessPremium);
+  const canSelectForBranding = item.customizable && canCustomize;
+
+  return {
+    canDownload,
+    canSelectForBranding,
+    lockedReason: item.premiumOnly && !canAccessPremium ? "premium_only" : null,
+  };
+}
+
+function normalizeStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => String(entry || "").trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function buildAdLibrarySlug(title: string): string {
+  return slugifyLandingPage(title).slice(0, 80) || `ad-${Date.now()}`;
+}
+
 // Helper function to check if user has reached monthly lead limit
 async function checkMonthlyLeadLimit(userId: string): Promise<{ allowed: boolean; currentCount: number; limit: number; plan: string }> {
   const user = await storage.getUser(userId);
@@ -1633,35 +1684,53 @@ const uploadLeadImage = multer({
   }
 });
 
+function ensureFormImageUploadDir(): string {
+  const uploadDir = path.join(process.cwd(), "uploads/form-images");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  return uploadDir;
+}
+
+function generateFormImageFilename(originalname: string): string {
+  const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+  const fileExtension = path.extname(originalname);
+  return `form-image-${uniqueSuffix}${fileExtension}`;
+}
+
+function formImageFileFilter(req: express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) {
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+    return;
+  }
+  cb(new Error("Only JPEG, PNG, and WebP images are allowed!") as any, false);
+}
+
+const formImageUploadLimits = {
+  fileSize: 50 * 1024 * 1024,
+};
+
 // Configure multer for form image uploads
 const formImageStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'uploads/form-images');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
+  destination: (_req, _file, cb) => {
+    cb(null, ensureFormImageUploadDir());
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const fileExtension = path.extname(file.originalname);
-    cb(null, `form-image-${uniqueSuffix}${fileExtension}`);
+  filename: (_req, file, cb) => {
+    cb(null, generateFormImageFilename(file.originalname));
   }
 });
 
-const uploadFormImage = multer({ 
+const uploadFormImage = multer({
   storage: formImageStorage,
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only JPEG, PNG, and WebP images are allowed!') as any, false);
-    }
-  },
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB limit (configurable via form settings)
-  }
+  fileFilter: formImageFileFilter,
+  limits: formImageUploadLimits,
+});
+
+const uploadBlogImage = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: formImageFileFilter,
+  limits: formImageUploadLimits,
 });
 
 const upload = multer({
@@ -2178,7 +2247,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Read fresh user state from DB to keep flags like welcomeModalShown in sync
       const dbUser = await storage.getUser(sessionUser.id);
-      res.json(sanitizeUser(dbUser || req.session.user));
+      const sanitizedUser = sanitizeUser(dbUser || req.session.user);
+      const isImpersonating = Boolean((req.session as any).isImpersonating);
+
+      res.json({
+        ...sanitizedUser,
+        isImpersonating,
+      });
     } catch (error) {
       console.error("Get user error:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -3114,35 +3189,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Combined calculator data endpoint for better performance
   app.get("/api/public/calculator-data", async (req, res) => {
-    const { userId: queryUserId, customFormId } = req.query;
+    const { userId: queryUserId, customFormId, serviceId, formulaId } = req.query;
 
     // Set cache headers based on request type
     // Public requests (with userId param) can be cached, authenticated requests should not
-    if (queryUserId) {
+    if (queryUserId || customFormId || serviceId || formulaId) {
       res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
     } else {
       res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
     }
 
     try {
-      // Support both authenticated and public access
-      // If no userId param, check if user is authenticated and use their ID
-      let userId: string;
+      const customFormIdNumber = customFormId ? Number(customFormId) : NaN;
+      const requestedFormulaId = Number(serviceId ?? formulaId);
+
+      // Support both authenticated and public access.
+      // Public routes can identify the owner directly, via a custom form, or via a specific service/formula.
+      let userId: string | undefined;
+      let resolvedCustomForm = null;
+
       if (queryUserId && typeof queryUserId === 'string') {
         userId = queryUserId;
+      } else if (Number.isFinite(customFormIdNumber)) {
+        resolvedCustomForm = await storage.getCustomFormById(customFormIdNumber);
+        if (!resolvedCustomForm) {
+          return res.status(404).json({ message: "Custom form not found" });
+        }
+        userId = resolvedCustomForm.accountId;
+      } else if (Number.isFinite(requestedFormulaId)) {
+        const requestedFormula = await storage.getFormula(requestedFormulaId);
+        if (!requestedFormula) {
+          return res.status(404).json({ message: "Calculator not found" });
+        }
+        if (!requestedFormula.userId) {
+          return res.status(400).json({ message: "Calculator owner not found" });
+        }
+        userId = requestedFormula.userId;
       } else if (req.session?.user) {
         userId = req.session.user.id;
-      } else {
-        return res.status(400).json({ message: "userId parameter is required or user must be authenticated" });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ message: "userId, customFormId, or serviceId is required unless the user is authenticated" });
       }
 
       // Fetch all data in parallel for faster response times
-      const customFormIdNumber = customFormId ? Number(customFormId) : NaN;
       const [allFormulasResult, businessSettingsResult, designSettingsResult, customFormResult, userResult] = await Promise.allSettled([
         storage.getFormulasByUserId(userId),
         storage.getBusinessSettingsByUserId(userId),
         storage.getDesignSettingsByUserId(userId),
-        Number.isFinite(customFormIdNumber) ? storage.getCustomFormById(customFormIdNumber) : Promise.resolve(null),
+        Number.isFinite(customFormIdNumber)
+          ? Promise.resolve(resolvedCustomForm ?? storage.getCustomFormById(customFormIdNumber))
+          : Promise.resolve(null),
         storage.getUser(userId),
       ]);
 
@@ -3234,6 +3332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Return all data in one response
       res.json({
+        ownerUserId: userId,
         formulas: activeFormulas,
         businessSettings: publicBusinessSettings,
         designSettings: publicDesignSettings,
@@ -4330,7 +4429,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log('Received formula data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormulaSchema.parse(req.body);
-      const validatedVariables = variableSchema.array().parse(validatedData.variables || []);
+      const normalizedVariables = normalizeVariableList(
+        validatedData.variables || [],
+        typeof validatedData.formula === "string" ? validatedData.formula : "",
+      );
+      const validatedVariables = variableSchema.array().parse(normalizedVariables);
       const embedId = `formula_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const formulaWithUser = { ...validatedData, variables: validatedVariables, userId: effectiveUserId, embedId };
       const formula = await storage.createFormula(formulaWithUser);
@@ -4377,9 +4480,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const validatedData = insertFormulaSchema.partial().parse(req.body);
+      const normalizedVariables = validatedData.variables
+        ? normalizeVariableList(
+            validatedData.variables,
+            typeof validatedData.formula === "string"
+              ? validatedData.formula
+              : typeof existingFormula.formula === "string"
+                ? existingFormula.formula
+                : "",
+          )
+        : undefined;
       const validatedPayload = {
         ...validatedData,
-        ...(validatedData.variables ? { variables: variableSchema.array().parse(validatedData.variables) } : {}),
+        ...(normalizedVariables ? { variables: variableSchema.array().parse(normalizedVariables) } : {}),
       };
       const formula = await storage.updateFormula(id, validatedPayload);
       if (!formula) {
@@ -4502,27 +4615,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   };
 
+  const isChoiceVariableType = (type: unknown): boolean => (
+    type === "select" || type === "dropdown" || type === "multiple-choice"
+  );
+
+  const resolveCanonicalOptionValue = (options: Array<any>, rawValue: unknown) => {
+    if (!Array.isArray(options) || rawValue === undefined || rawValue === null || typeof rawValue === "boolean") {
+      return rawValue;
+    }
+
+    const rawString = String(rawValue).trim();
+    const loweredRawString = rawString.toLowerCase();
+    const match = options.find((option) => {
+      const optionValue = option?.value;
+      const optionId = option?.id;
+      const optionLabel = option?.label;
+
+      if (optionValue === rawValue || optionId === rawValue || optionLabel === rawValue) {
+        return true;
+      }
+
+      return [
+        optionValue === undefined || optionValue === null ? "" : String(optionValue).trim(),
+        optionId === undefined || optionId === null ? "" : String(optionId).trim(),
+        optionLabel === undefined || optionLabel === null ? "" : String(optionLabel).trim(),
+      ].some((candidate) => candidate.toLowerCase() === loweredRawString);
+    });
+
+    return match ? match.value : rawValue;
+  };
+
+  const normalizeConditionalLogic = (
+    conditionalLogic: any,
+    variableMap: Map<string, any>,
+  ) => {
+    if (!conditionalLogic || typeof conditionalLogic !== "object") {
+      return conditionalLogic;
+    }
+
+    const normalizeConditionValue = (condition: any) => {
+      if (!condition || typeof condition !== "object") {
+        return condition;
+      }
+
+      const dependencyVariable = variableMap.get(condition.dependsOnVariable);
+      if (!dependencyVariable || !isChoiceVariableType(dependencyVariable.type) || !Array.isArray(dependencyVariable.options)) {
+        return condition;
+      }
+
+      return {
+        ...condition,
+        expectedValue: resolveCanonicalOptionValue(dependencyVariable.options, condition.expectedValue),
+        expectedValues: Array.isArray(condition.expectedValues)
+          ? condition.expectedValues.map((value: unknown) => resolveCanonicalOptionValue(dependencyVariable.options, value))
+          : condition.expectedValues,
+      };
+    };
+
+    return {
+      ...conditionalLogic,
+      expectedValue: conditionalLogic.dependsOnVariable
+        ? resolveCanonicalOptionValue(
+            variableMap.get(conditionalLogic.dependsOnVariable)?.options,
+            conditionalLogic.expectedValue,
+          )
+        : conditionalLogic.expectedValue,
+      expectedValues: conditionalLogic.dependsOnVariable && Array.isArray(conditionalLogic.expectedValues)
+        ? conditionalLogic.expectedValues.map((value: unknown) => resolveCanonicalOptionValue(
+            variableMap.get(conditionalLogic.dependsOnVariable)?.options,
+            value,
+          ))
+        : conditionalLogic.expectedValues,
+      conditions: Array.isArray(conditionalLogic.conditions)
+        ? conditionalLogic.conditions.map((condition: any, index: number) => {
+            const normalizedCondition = normalizeConditionValue(condition);
+            if (!normalizedCondition || typeof normalizedCondition !== "object") {
+              return normalizedCondition;
+            }
+
+            return {
+              ...normalizedCondition,
+              id: typeof normalizedCondition.id === "string" && normalizedCondition.id.trim()
+                ? normalizedCondition.id
+                : `cond-${crypto.randomUUID()}-${index}`,
+            };
+          })
+        : conditionalLogic.conditions,
+    };
+  };
+
+  const normalizeVariableList = (variables: any[], formulaText: string): any[] => {
+    const normalizedVariables: any[] = variables.map((variable: any): any => {
+      if (!variable || typeof variable !== "object") {
+        return variable;
+      }
+
+      const normalizedOptions = isChoiceVariableType(variable.type) && Array.isArray(variable.options)
+        ? ensureUniqueOptionIds(variable.options)
+        : variable.options;
+
+      const formulaUsesOptionRefs = variable.type === "multiple-choice" && Array.isArray(normalizedOptions)
+        ? normalizedOptions.some((option: any) => formulaText.includes(`${variable.id}_${option.id}`))
+        : false;
+
+      const normalizedRepeatableConfig: any = variable.type === "repeatable-group" && variable.repeatableConfig
+        ? {
+            ...variable.repeatableConfig,
+            childVariables: Array.isArray(variable.repeatableConfig.childVariables)
+              ? normalizeVariableList(variable.repeatableConfig.childVariables, formulaText)
+              : variable.repeatableConfig.childVariables,
+          }
+        : variable.repeatableConfig;
+
+      return {
+        ...variable,
+        allowMultipleSelection: variable.type === "multiple-choice"
+          ? variable.allowMultipleSelection ?? formulaUsesOptionRefs
+          : variable.allowMultipleSelection,
+        options: normalizedOptions,
+        repeatableConfig: normalizedRepeatableConfig,
+      };
+    });
+
+    const variableMap = new Map<string, any>(
+      normalizedVariables
+        .filter((variable: any) => variable && typeof variable === "object" && typeof variable.id === "string")
+        .map((variable: any) => [variable.id, variable] as [string, any]),
+    );
+
+    return normalizedVariables.map((variable: any): any => {
+      if (!variable || typeof variable !== "object") {
+        return variable;
+      }
+
+      const normalizedChildVariables = variable.type === "repeatable-group" && Array.isArray(variable.repeatableConfig?.childVariables)
+        ? (() => {
+            const childVariableMap = new Map<string, any>(
+              variable.repeatableConfig.childVariables
+                .filter((childVariable: any) => childVariable && typeof childVariable === "object" && typeof childVariable.id === "string")
+                .map((childVariable: any) => [childVariable.id, childVariable] as [string, any]),
+            );
+
+            return variable.repeatableConfig.childVariables.map((childVariable: any) => {
+              if (!childVariable || typeof childVariable !== "object") {
+                return childVariable;
+              }
+
+              return {
+                ...childVariable,
+                conditionalLogic: normalizeConditionalLogic(childVariable.conditionalLogic, childVariableMap),
+              };
+            });
+          })()
+        : variable.repeatableConfig?.childVariables;
+
+      return {
+        ...variable,
+        conditionalLogic: normalizeConditionalLogic(variable.conditionalLogic, variableMap),
+        repeatableConfig: variable.type === "repeatable-group" && variable.repeatableConfig
+          ? {
+              ...variable.repeatableConfig,
+              childVariables: normalizedChildVariables,
+            }
+          : variable.repeatableConfig,
+      };
+    });
+  };
+
   const normalizeAiFormula = (formulaPayload: any) => {
     if (!formulaPayload || !Array.isArray(formulaPayload.variables)) return formulaPayload;
 
     const formulaText = typeof formulaPayload.formula === 'string' ? formulaPayload.formula : '';
-    const variables = formulaPayload.variables.map((variable: any) => {
-      if (!variable || variable.type !== 'multiple-choice') return variable;
-
-      const normalizedOptions = Array.isArray(variable.options)
-        ? ensureUniqueOptionIds(variable.options)
-        : variable.options;
-
-      const formulaUsesOptionRefs = Array.isArray(normalizedOptions)
-        ? normalizedOptions.some((option: any) => formulaText.includes(`${variable.id}_${option.id}`))
-        : false;
-
-      return {
-        ...variable,
-        allowMultipleSelection: variable.allowMultipleSelection ?? formulaUsesOptionRefs,
-        options: normalizedOptions,
-      };
-    });
+    const variables = normalizeVariableList(formulaPayload.variables, formulaText);
 
     return {
       ...formulaPayload,
@@ -4530,7 +4794,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   };
 
+  type FormulaAiEditMode = "targeted" | "rebuild";
   type FormulaAiProvider = "openai" | "claude" | "gemini";
+  type FormulaAiVariableOperation =
+    | { type: "add"; variable: any; afterVariableId?: string }
+    | { type: "replace"; variableId: string; variable: any }
+    | { type: "delete"; variableId: string };
+
+  const normalizeFormulaAiEditMode = (mode: unknown): FormulaAiEditMode | null => {
+    if (typeof mode !== "string") {
+      return null;
+    }
+
+    switch (mode.trim().toLowerCase()) {
+      case "targeted":
+      case "patch":
+      case "partial":
+        return "targeted";
+      case "rebuild":
+      case "full":
+      case "replace":
+        return "rebuild";
+      default:
+        return null;
+    }
+  };
+
+  const mergeVariableDefinition = (existingVariable: any, incomingVariable: any): any => {
+    if (!existingVariable || typeof existingVariable !== "object") {
+      return incomingVariable;
+    }
+
+    if (!incomingVariable || typeof incomingVariable !== "object") {
+      return existingVariable;
+    }
+
+    const mergeVariableArray = (existingVariables: any[], incomingVariables: any[]) => {
+      const mergedVariables = [...existingVariables];
+
+      incomingVariables.forEach((incomingChild, index) => {
+        if (!incomingChild || typeof incomingChild !== "object") {
+          return;
+        }
+
+        const matchIndex = typeof incomingChild.id === "string"
+          ? mergedVariables.findIndex((existingChild) => existingChild?.id === incomingChild.id)
+          : index < mergedVariables.length
+            ? index
+            : -1;
+
+        if (matchIndex >= 0) {
+          mergedVariables[matchIndex] = mergeVariableDefinition(mergedVariables[matchIndex], incomingChild);
+          return;
+        }
+
+        mergedVariables.push(incomingChild);
+      });
+
+      return mergedVariables;
+    };
+
+    const mergedRepeatableConfig = (() => {
+      const existingRepeatableConfig = existingVariable.repeatableConfig;
+      const incomingRepeatableConfig = incomingVariable.repeatableConfig;
+
+      if (!existingRepeatableConfig || typeof existingRepeatableConfig !== "object") {
+        return incomingRepeatableConfig;
+      }
+
+      if (!incomingRepeatableConfig || typeof incomingRepeatableConfig !== "object") {
+        return existingRepeatableConfig;
+      }
+
+      return {
+        ...existingRepeatableConfig,
+        ...incomingRepeatableConfig,
+        childVariables: Array.isArray(incomingRepeatableConfig.childVariables)
+          ? mergeVariableArray(
+              Array.isArray(existingRepeatableConfig.childVariables) ? existingRepeatableConfig.childVariables : [],
+              incomingRepeatableConfig.childVariables,
+            )
+          : existingRepeatableConfig.childVariables,
+      };
+    })();
+
+    return {
+      ...existingVariable,
+      ...incomingVariable,
+      repeatableConfig: mergedRepeatableConfig,
+    };
+  };
+
+  const applyAiFormulaEditPatch = (currentFormula: any, patchPayload: any) => {
+    if (!currentFormula || typeof currentFormula !== "object") {
+      throw new Error("Current formula is required for targeted AI edits");
+    }
+
+    if (!patchPayload || typeof patchPayload !== "object" || Array.isArray(patchPayload)) {
+      throw new Error("Invalid targeted AI response");
+    }
+
+    const hasOwn = (key: string) => Object.prototype.hasOwnProperty.call(patchPayload, key);
+    let nextVariables = Array.isArray(currentFormula.variables) ? [...currentFormula.variables] : [];
+    const variableOperations = Array.isArray(patchPayload.variableOperations)
+      ? patchPayload.variableOperations as FormulaAiVariableOperation[]
+      : [];
+
+    for (const operation of variableOperations) {
+      if (!operation || typeof operation !== "object") {
+        throw new Error("Invalid targeted AI variable operation");
+      }
+
+      if (operation.type === "add") {
+        if (!operation.variable || typeof operation.variable !== "object") {
+          throw new Error("Invalid add operation returned by AI");
+        }
+
+        if (typeof operation.afterVariableId === "string" && operation.afterVariableId.trim()) {
+          const insertAfterIndex = nextVariables.findIndex((variable) => variable?.id === operation.afterVariableId);
+          if (insertAfterIndex >= 0) {
+            nextVariables.splice(insertAfterIndex + 1, 0, operation.variable);
+            continue;
+          }
+        }
+
+        nextVariables.push(operation.variable);
+        continue;
+      }
+
+      if (operation.type === "replace") {
+        if (typeof operation.variableId !== "string" || !operation.variable || typeof operation.variable !== "object") {
+          throw new Error("Invalid replace operation returned by AI");
+        }
+
+        const replaceIndex = nextVariables.findIndex((variable) => variable?.id === operation.variableId);
+        if (replaceIndex < 0) {
+          throw new Error(`AI attempted to replace unknown variable "${operation.variableId}"`);
+        }
+
+        nextVariables[replaceIndex] = mergeVariableDefinition(nextVariables[replaceIndex], operation.variable);
+        continue;
+      }
+
+      if (operation.type === "delete") {
+        if (typeof operation.variableId !== "string") {
+          throw new Error("Invalid delete operation returned by AI");
+        }
+
+        const filteredVariables = nextVariables.filter((variable) => variable?.id !== operation.variableId);
+        if (filteredVariables.length === nextVariables.length) {
+          throw new Error(`AI attempted to delete unknown variable "${operation.variableId}"`);
+        }
+
+        nextVariables = filteredVariables;
+        continue;
+      }
+
+      throw new Error(`Unsupported AI variable operation "${(operation as any).type}"`);
+    }
+
+    const nextFormula = {
+      ...currentFormula,
+      variables: nextVariables,
+    };
+
+    if (hasOwn("name") && typeof patchPayload.name === "string") {
+      nextFormula.name = patchPayload.name;
+    }
+    if (hasOwn("title") && typeof patchPayload.title === "string") {
+      nextFormula.title = patchPayload.title;
+    }
+    if (hasOwn("description") && typeof patchPayload.description === "string") {
+      nextFormula.description = patchPayload.description;
+    }
+    if (hasOwn("bulletPoints") && Array.isArray(patchPayload.bulletPoints)) {
+      nextFormula.bulletPoints = patchPayload.bulletPoints;
+    }
+    if (hasOwn("formula") && typeof patchPayload.formula === "string") {
+      nextFormula.formula = patchPayload.formula;
+    }
+    if (hasOwn("iconUrl") && typeof patchPayload.iconUrl === "string") {
+      nextFormula.iconUrl = patchPayload.iconUrl;
+    }
+
+    const touchedTopLevelField = ["name", "title", "description", "bulletPoints", "formula", "iconUrl"].some(hasOwn);
+    if (!touchedTopLevelField && variableOperations.length === 0) {
+      throw new Error("AI did not return any supported targeted changes");
+    }
+
+    const normalizedFormula = normalizeAiFormula(nextFormula);
+    const variableValidation = variableSchema.array().safeParse(normalizedFormula.variables || []);
+    if (!variableValidation.success) {
+      throw new Error(`AI returned an invalid targeted variable update: ${variableValidation.error.errors[0]?.message || "Variable validation failed"}`);
+    }
+
+    return {
+      ...normalizedFormula,
+      variables: variableValidation.data,
+    };
+  };
 
   const normalizeFormulaAiProvider = (provider: unknown): FormulaAiProvider | null => {
     if (typeof provider !== "string") {
@@ -4665,17 +5127,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Formula Editing - Support for OpenAI, Gemini, and Claude
   app.post("/api/formulas/edit", async (req, res) => {
     try {
-      const { currentFormula, editInstructions, provider } = req.body;
+      const { currentFormula, editInstructions, provider, editMode } = req.body;
       if (!currentFormula || !editInstructions || typeof editInstructions !== 'string') {
         return res.status(400).json({ message: "Current formula and edit instructions are required" });
       }
 
+      const normalizedCurrentFormula = normalizeAiFormula(currentFormula);
       const requestedProvider = normalizeFormulaAiProvider(provider);
+      const requestedEditMode = normalizeFormulaAiEditMode(editMode) || "rebuild";
       const providerOrder = buildFormulaAiProviderOrder(requestedProvider, ["gemini", "openai", "claude"]);
       const providerFns: Record<FormulaAiProvider, () => Promise<any>> = {
-        openai: () => editFormulaOpenAI(currentFormula, editInstructions),
-        claude: () => editFormulaClaude(currentFormula, editInstructions),
-        gemini: () => editFormulaGemini(currentFormula, editInstructions),
+        openai: () => editFormulaOpenAI(normalizedCurrentFormula, editInstructions, requestedEditMode),
+        claude: () => editFormulaClaude(normalizedCurrentFormula, editInstructions, requestedEditMode),
+        gemini: () => editFormulaGemini(normalizedCurrentFormula, editInstructions, requestedEditMode),
       };
       const failures: string[] = [];
       let editedFormula;
@@ -4692,7 +5156,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         try {
           console.log(`Attempting formula editing with ${providerLabel}...`);
-          editedFormula = await providerFns[providerKey]();
+          const providerResult = await providerFns[providerKey]();
+          editedFormula = requestedEditMode === "targeted"
+            ? applyAiFormulaEditPatch(normalizedCurrentFormula, providerResult)
+            : normalizeAiFormula(providerResult);
           console.log(`${providerLabel} formula editing successful`);
           break;
         } catch (providerError) {
@@ -4712,7 +5179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      res.json(normalizeAiFormula(editedFormula));
+      res.json(editedFormula);
     } catch (error) {
       console.error('AI formula edit error (all providers failed):', error);
       const message = getFormulaAiErrorMessage(error);
@@ -21044,6 +21511,619 @@ This booking was created on ${new Date().toLocaleString()}.
     }
   });
 
+  // =============== AD LIBRARY ROUTES ===============
+
+  const adLibraryUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 50 * 1024 * 1024,
+    },
+  });
+
+  const adLibraryRequestSchema = z.object({
+    requestId: z.number().int().positive().optional(),
+    adIds: z.array(z.number().int().positive()).max(AD_LIBRARY_CUSTOMIZATION_LIMIT),
+    businessName: z.string().trim().optional().nullable(),
+    logoUrl: z.string().trim().optional().nullable(),
+    phoneNumber: z.string().trim().optional().nullable(),
+    email: z.string().trim().email().optional().nullable(),
+    website: z.string().trim().optional().nullable(),
+    brandColors: z.array(z.string().trim()).optional().default([]),
+    notes: z.string().trim().optional().nullable(),
+    status: z.enum(["draft", "submitted"]).default("submitted"),
+  });
+
+  const adLibraryRequestAdminUpdateSchema = z.object({
+    status: z.enum(AD_LIBRARY_REQUEST_STATUSES).optional(),
+    internalNotes: z.string().trim().optional().nullable(),
+  });
+
+  const adLibraryItemAdminSchema = insertAdLibraryItemSchema.extend({
+    styleTags: z.array(z.string()).optional().default([]),
+    serviceTags: z.array(z.string()).optional().default([]),
+    tags: z.array(z.string()).optional().default([]),
+  });
+
+  async function getAdLibraryDownloadCounts(itemIds: number[]) {
+    if (itemIds.length === 0) {
+      return new Map<number, number>();
+    }
+
+    const rows = await db
+      .select({
+        itemId: adLibraryDownloads.adLibraryItemId,
+        count: sql<number>`count(*)`,
+      })
+      .from(adLibraryDownloads)
+      .where(inArray(adLibraryDownloads.adLibraryItemId, itemIds))
+      .groupBy(adLibraryDownloads.adLibraryItemId);
+
+    return new Map(rows.map((row) => [Number(row.itemId), Number(row.count)]));
+  }
+
+  async function getAdBrandingRequestItemsMap(requestIds: number[]) {
+    if (requestIds.length === 0) {
+      return new Map<number, number[]>();
+    }
+
+    const rows = await db
+      .select({
+        requestId: adBrandingRequestItems.requestId,
+        itemId: adBrandingRequestItems.adLibraryItemId,
+      })
+      .from(adBrandingRequestItems)
+      .where(inArray(adBrandingRequestItems.requestId, requestIds));
+
+    const map = new Map<number, number[]>();
+    for (const row of rows) {
+      const requestId = Number(row.requestId);
+      const current = map.get(requestId) || [];
+      current.push(Number(row.itemId));
+      map.set(requestId, current);
+    }
+    return map;
+  }
+
+  async function hydrateAdBrandingRequests(
+    requests: Array<any>,
+    options?: { includeUsers?: boolean },
+  ) {
+    if (requests.length === 0) {
+      return [];
+    }
+
+    const requestIds = requests.map((request) => Number(request.id));
+    const itemIdsByRequest = await getAdBrandingRequestItemsMap(requestIds);
+    const itemIds = Array.from(new Set(Array.from(itemIdsByRequest.values()).flat()));
+    const items = itemIds.length > 0
+      ? await db
+          .select()
+          .from(adLibraryItems)
+          .where(inArray(adLibraryItems.id, itemIds))
+      : [];
+    const itemsById = new Map(items.map((item) => [Number(item.id), item]));
+
+    let usersById = new Map<string, any>();
+    if (options?.includeUsers) {
+      const userIds = Array.from(new Set(requests.map((request) => String(request.userId))));
+      const requestUsers = userIds.length > 0
+        ? await db
+            .select({
+              id: users.id,
+              email: users.email,
+              firstName: users.firstName,
+              lastName: users.lastName,
+              organizationName: users.organizationName,
+              plan: users.plan,
+            })
+            .from(users)
+            .where(inArray(users.id, userIds))
+        : [];
+      usersById = new Map(requestUsers.map((user) => [String(user.id), user]));
+    }
+
+    return requests.map((request) => {
+      const selectedItems = (itemIdsByRequest.get(Number(request.id)) || [])
+        .map((itemId) => itemsById.get(itemId))
+        .filter(Boolean);
+
+      return {
+        ...request,
+        selectedItems,
+        selectedCount: selectedItems.length,
+        user: options?.includeUsers ? usersById.get(String(request.userId)) || null : undefined,
+      };
+    });
+  }
+
+  async function serializeAdLibraryItemsForUser(items: Array<any>, user: any) {
+    const counts = await getAdLibraryDownloadCounts(items.map((item) => Number(item.id)));
+    return items.map((item) => ({
+      ...item,
+      downloadCount: counts.get(Number(item.id)) || 0,
+      access: getAdLibraryAvailability(item, user),
+    }));
+  }
+
+  app.get("/api/ad-library", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const dbUser = await storage.getUser(currentUser.id);
+      if (!dbUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const search = typeof req.query.search === "string" ? req.query.search.trim().toLowerCase() : "";
+      const category = typeof req.query.category === "string" ? req.query.category.trim().toLowerCase() : "";
+      const styleTag = typeof req.query.styleTag === "string" ? req.query.styleTag.trim().toLowerCase() : "";
+      const serviceTag = typeof req.query.serviceTag === "string" ? req.query.serviceTag.trim().toLowerCase() : "";
+      const availability = typeof req.query.availability === "string" ? req.query.availability.trim().toLowerCase() : "";
+      const sort = typeof req.query.sort === "string" ? req.query.sort.trim().toLowerCase() : "featured";
+
+      let items = await storage.getAdLibraryItems(false);
+      let serialized = await serializeAdLibraryItemsForUser(items, dbUser);
+
+      serialized = serialized.filter((item) => {
+        const matchesSearch = !search || [
+          item.title,
+          item.shortDescription,
+          item.fullDescription,
+          item.category,
+          ...(item.styleTags || []),
+          ...(item.serviceTags || []),
+          ...(item.tags || []),
+        ]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(search));
+
+        const matchesCategory = !category || String(item.category || "").toLowerCase() === category;
+        const matchesStyle = !styleTag || (item.styleTags || []).some((tag: string) => tag.toLowerCase() === styleTag);
+        const matchesService = !serviceTag || (item.serviceTags || []).some((tag: string) => tag.toLowerCase() === serviceTag);
+        const matchesAvailability =
+          !availability ||
+          (availability === "downloadable" && item.downloadable) ||
+          (availability === "customizable" && item.customizable) ||
+          (availability === "premium" && item.premiumOnly) ||
+          (availability === "free" && !item.premiumOnly);
+
+        return matchesSearch && matchesCategory && matchesStyle && matchesService && matchesAvailability;
+      });
+
+      const sorters: Record<string, (a: any, b: any) => number> = {
+        newest: (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        featured: (a, b) => Number(b.featured) - Number(a.featured) || (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+        most_popular: (a, b) => (b.downloadCount || 0) - (a.downloadCount || 0) || Number(b.featured) - Number(a.featured),
+      };
+      serialized.sort(sorters[sort] || sorters.featured);
+
+      res.json({
+        items: serialized,
+        filters: {
+          categories: Array.from(new Set(items.map((item) => item.category).filter(Boolean))).sort(),
+          styleTags: Array.from(new Set(items.flatMap((item) => item.styleTags || []))).sort(),
+          serviceTags: Array.from(new Set(items.flatMap((item) => item.serviceTags || []))).sort(),
+        },
+        access: {
+          canCustomize: canAccessAdLibraryCustomization(dbUser),
+          canAccessPremium: canAccessAdLibraryPremiumItems(dbUser),
+          maxSelections: AD_LIBRARY_CUSTOMIZATION_LIMIT,
+          plan: dbUser.plan,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching ad library:", error);
+      res.status(500).json({ message: "Failed to fetch ad library" });
+    }
+  });
+
+  app.get("/api/ad-library/requests", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const requests = await storage.getAdBrandingRequestsByUserId(currentUser.id);
+      const hydrated = await hydrateAdBrandingRequests(requests);
+      res.json(hydrated);
+    } catch (error) {
+      console.error("Error fetching ad branding requests:", error);
+      res.status(500).json({ message: "Failed to fetch branding requests" });
+    }
+  });
+
+  app.post("/api/ad-library/requests", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const dbUser = await storage.getUser(currentUser.id);
+      if (!dbUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (!canAccessAdLibraryCustomization(dbUser)) {
+        return res.status(403).json({ message: "Upgrade to a paid plan to request branded ad customization." });
+      }
+
+      const payload = adLibraryRequestSchema.parse({
+        ...req.body,
+        brandColors: normalizeStringArray(req.body?.brandColors),
+      });
+      const uniqueAdIds = Array.from(new Set(payload.adIds));
+
+      if (payload.status === "submitted" && uniqueAdIds.length === 0) {
+        return res.status(400).json({ message: "Select at least one ad before submitting a branding request." });
+      }
+
+      if (uniqueAdIds.length > AD_LIBRARY_CUSTOMIZATION_LIMIT) {
+        return res.status(400).json({ message: `You can select up to ${AD_LIBRARY_CUSTOMIZATION_LIMIT} ads per branding request.` });
+      }
+
+      const selectedItems = uniqueAdIds.length > 0
+        ? await db
+            .select()
+            .from(adLibraryItems)
+            .where(and(
+              inArray(adLibraryItems.id, uniqueAdIds),
+              eq(adLibraryItems.active, true),
+              eq(adLibraryItems.customizable, true),
+            ))
+        : [];
+
+      if (selectedItems.length !== uniqueAdIds.length) {
+        return res.status(400).json({ message: "One or more selected ads are unavailable for branding." });
+      }
+
+      const requestData = {
+        userId: currentUser.id,
+        businessName: payload.businessName || null,
+        logoUrl: payload.logoUrl || null,
+        phoneNumber: payload.phoneNumber || null,
+        email: payload.email || null,
+        website: payload.website || null,
+        brandColors: payload.brandColors,
+        notes: payload.notes || null,
+        status: payload.status,
+        submittedAt: payload.status === "submitted" ? new Date() : null,
+      } as const;
+
+      let requestRecord;
+      if (payload.requestId) {
+        const existing = await storage.getAdBrandingRequest(payload.requestId);
+        if (!existing || existing.userId !== currentUser.id) {
+          return res.status(404).json({ message: "Branding request not found." });
+        }
+        if (existing.status !== "draft") {
+          return res.status(400).json({ message: "Only draft requests can be edited." });
+        }
+
+        requestRecord = await storage.updateAdBrandingRequest(existing.id, requestData);
+        await storage.replaceAdBrandingRequestItems(existing.id, uniqueAdIds);
+      } else {
+        requestRecord = await storage.createAdBrandingRequest(requestData, uniqueAdIds);
+      }
+
+      const hydrated = await hydrateAdBrandingRequests(requestRecord ? [requestRecord] : []);
+      res.json(hydrated[0]);
+    } catch (error) {
+      console.error("Error saving ad branding request:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid branding request payload", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to save branding request" });
+    }
+  });
+
+  app.get("/api/ad-library/:id", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const dbUser = await storage.getUser(currentUser.id);
+      if (!dbUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid ad ID" });
+      }
+
+      const item = await storage.getAdLibraryItem(id);
+      if (!item || !item.active) {
+        return res.status(404).json({ message: "Ad not found" });
+      }
+
+      const [serialized] = await serializeAdLibraryItemsForUser([item], dbUser);
+      res.json(serialized);
+    } catch (error) {
+      console.error("Error fetching ad library item:", error);
+      res.status(500).json({ message: "Failed to fetch ad details" });
+    }
+  });
+
+  app.post("/api/ad-library/:id/download", requireAuth, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const dbUser = await storage.getUser(currentUser.id);
+      if (!dbUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid ad ID" });
+      }
+
+      const item = await storage.getAdLibraryItem(id);
+      if (!item || !item.active) {
+        return res.status(404).json({ message: "Ad not found" });
+      }
+      if (!item.assetFileUrl || !item.downloadable) {
+        return res.status(400).json({ message: "This ad is not available for direct download." });
+      }
+
+      const availability = getAdLibraryAvailability(item, dbUser);
+      if (!availability.canDownload) {
+        return res.status(403).json({
+          message: "Upgrade to access this download.",
+          upgradeRequired: true,
+        });
+      }
+
+      await storage.recordAdLibraryDownload(currentUser.id, item.id);
+      res.json({
+        success: true,
+        fileUrl: item.assetFileUrl,
+        fileName: item.assetFileName || `${item.slug}.zip`,
+      });
+    } catch (error) {
+      console.error("Error processing ad library download:", error);
+      res.status(500).json({ message: "Failed to process ad download" });
+    }
+  });
+
+  app.get("/api/admin/ad-library", requireSuperAdmin, async (req, res) => {
+    try {
+      const items = await storage.getAdLibraryItems(true);
+      const counts = await getAdLibraryDownloadCounts(items.map((item) => Number(item.id)));
+      res.json(items.map((item) => ({
+        ...item,
+        downloadCount: counts.get(Number(item.id)) || 0,
+      })));
+    } catch (error) {
+      console.error("Error fetching admin ad library:", error);
+      res.status(500).json({ message: "Failed to fetch ad library items" });
+    }
+  });
+
+  app.post("/api/admin/ad-library", requireSuperAdmin, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const payload = adLibraryItemAdminSchema.parse({
+        ...req.body,
+        slug: buildAdLibrarySlug(req.body?.slug || req.body?.title || ""),
+        styleTags: normalizeStringArray(req.body?.styleTags),
+        serviceTags: normalizeStringArray(req.body?.serviceTags),
+        tags: normalizeStringArray(req.body?.tags),
+        createdBy: currentUser.id,
+      });
+      const item = await storage.createAdLibraryItem(payload);
+      res.json(item);
+    } catch (error) {
+      console.error("Error creating ad library item:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid ad item payload", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create ad library item" });
+    }
+  });
+
+  app.patch("/api/admin/ad-library/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid ad ID" });
+      }
+
+      const payload = adLibraryItemAdminSchema.partial().parse({
+        ...req.body,
+        slug: req.body?.slug ? buildAdLibrarySlug(req.body.slug) : undefined,
+        styleTags: req.body?.styleTags === undefined ? undefined : normalizeStringArray(req.body.styleTags),
+        serviceTags: req.body?.serviceTags === undefined ? undefined : normalizeStringArray(req.body.serviceTags),
+        tags: req.body?.tags === undefined ? undefined : normalizeStringArray(req.body.tags),
+      });
+      const item = await storage.updateAdLibraryItem(id, payload);
+      if (!item) {
+        return res.status(404).json({ message: "Ad not found" });
+      }
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating ad library item:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid ad item payload", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update ad library item" });
+    }
+  });
+
+  app.delete("/api/admin/ad-library/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid ad ID" });
+      }
+      const deleted = await storage.deleteAdLibraryItem(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Ad not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting ad library item:", error);
+      res.status(500).json({ message: "Failed to delete ad library item" });
+    }
+  });
+
+  app.post("/api/admin/ad-library/upload-asset", requireSuperAdmin, (req, res) => {
+    adLibraryUpload.single("file")(req, res, async (err: any) => {
+      if (err) {
+        return res.status(400).json({ message: err.message || "Invalid upload request." });
+      }
+
+      try {
+        const currentUser = (req as any).currentUser;
+        if (!req.file) {
+          return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const url = await uploadImageBufferToObjectStorage({
+          file: req.file,
+          ownerId: currentUser.id,
+        });
+
+        res.json({
+          url,
+          originalName: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+        });
+      } catch (error: any) {
+        console.error("Error uploading ad library asset:", error);
+        res.status(500).json({ message: error?.message || "Failed to upload asset" });
+      }
+    });
+  });
+
+  app.post("/api/admin/ad-library/seed-sample", requireSuperAdmin, async (req, res) => {
+    try {
+      const currentUser = (req as any).currentUser;
+      const existing = await storage.getAdLibraryItems(true);
+      if (existing.length > 0) {
+        return res.status(400).json({ message: "Ad library already has items." });
+      }
+
+      const sampleItems = [
+        {
+          title: "Instant Quote Pressure Washing Promo",
+          shortDescription: "Bold offer graphic built to send homeowners straight into your instant pricing flow.",
+          fullDescription: "A direct-response ad concept for exterior cleaning companies that want a fast, high-contrast graphic for local campaigns.",
+          category: "Lead Generation",
+          styleTags: ["Bold", "Modern"],
+          serviceTags: ["Pressure Washing", "Local Service"],
+          tags: ["Free Download", "Starter"],
+          featured: true,
+          active: true,
+          downloadable: true,
+          premiumOnly: false,
+          customizable: true,
+          sortOrder: 0,
+        },
+        {
+          title: "Before and After House Wash Carousel",
+          shortDescription: "Social-proof creative for dramatic transformations and neighborhood visibility.",
+          fullDescription: "A before-and-after concept optimized for service brands that lean on visible transformation and trust-building.",
+          category: "Proof Ad",
+          styleTags: ["Glassmorphism", "Clean"],
+          serviceTags: ["House Washing", "Before and After"],
+          tags: ["Featured"],
+          featured: true,
+          active: true,
+          downloadable: false,
+          premiumOnly: true,
+          customizable: true,
+          sortOrder: 1,
+        },
+        {
+          title: "Roof Cleaning Seasonal Push",
+          shortDescription: "Seasonal promotion layout with premium spacing and local-service positioning.",
+          fullDescription: "A polished seasonal concept for roof cleaning promotions, designed for spring and early-summer demand pushes.",
+          category: "Seasonal",
+          styleTags: ["Premium", "Editorial"],
+          serviceTags: ["Roof Cleaning", "Local Service"],
+          tags: ["Paid Plan"],
+          featured: false,
+          active: true,
+          downloadable: true,
+          premiumOnly: true,
+          customizable: true,
+          sortOrder: 2,
+        },
+        {
+          title: "Commercial Exterior Cleaning Offer",
+          shortDescription: "Commercial-focused layout for larger property outreach and credibility.",
+          fullDescription: "A cleaner, more professional ad concept built for shopping centers, HOAs, and commercial property managers.",
+          category: "Commercial",
+          styleTags: ["Corporate", "Modern"],
+          serviceTags: ["Commercial", "Pressure Washing"],
+          tags: ["Customizable"],
+          featured: false,
+          active: true,
+          downloadable: false,
+          premiumOnly: true,
+          customizable: true,
+          sortOrder: 3,
+        },
+        {
+          title: "Driveway Cleaning Offer Card",
+          shortDescription: "Quick-hit downloadable graphic for promoting driveway cleaning specials.",
+          fullDescription: "A simple but polished white-label ad card for driveway-focused promotions and retargeting campaigns.",
+          category: "Offer Ad",
+          styleTags: ["Minimal", "Bold"],
+          serviceTags: ["Driveway Cleaning"],
+          tags: ["Free Download"],
+          featured: false,
+          active: true,
+          downloadable: true,
+          premiumOnly: false,
+          customizable: false,
+          sortOrder: 4,
+        },
+      ];
+
+      const created = [];
+      for (const item of sampleItems) {
+        created.push(await storage.createAdLibraryItem({
+          ...item,
+          slug: buildAdLibrarySlug(item.title),
+          createdBy: currentUser.id,
+        }));
+      }
+
+      res.json({ success: true, createdCount: created.length, items: created });
+    } catch (error) {
+      console.error("Error seeding ad library sample items:", error);
+      res.status(500).json({ message: "Failed to seed sample ad library items" });
+    }
+  });
+
+  app.get("/api/admin/ad-library/requests", requireSuperAdmin, async (req, res) => {
+    try {
+      const requests = await storage.getAllAdBrandingRequests();
+      const hydrated = await hydrateAdBrandingRequests(requests, { includeUsers: true });
+      res.json(hydrated);
+    } catch (error) {
+      console.error("Error fetching admin branding requests:", error);
+      res.status(500).json({ message: "Failed to fetch branding requests" });
+    }
+  });
+
+  app.patch("/api/admin/ad-library/requests/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!Number.isFinite(id)) {
+        return res.status(400).json({ message: "Invalid request ID" });
+      }
+
+      const payload = adLibraryRequestAdminUpdateSchema.parse(req.body || {});
+      const updated = await storage.updateAdBrandingRequest(id, payload);
+      if (!updated) {
+        return res.status(404).json({ message: "Branding request not found" });
+      }
+
+      const hydrated = await hydrateAdBrandingRequests([updated], { includeUsers: true });
+      res.json(hydrated[0]);
+    } catch (error) {
+      console.error("Error updating branding request:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid branding request update", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update branding request" });
+    }
+  });
+
   // ==================== PUSH NOTIFICATION ROUTES ====================
   
   // Get VAPID public key for push subscription
@@ -24290,7 +25370,7 @@ This booking was created on ${new Date().toLocaleString()}.
 
   // Upload blog image (file upload with metadata, blogPostId optional)
   app.post("/api/blog-images/upload", requireAuth, (req, res) => {
-    uploadFormImage.single('image')(req, res, async (err: any) => {
+    uploadBlogImage.single('image')(req, res, async (err: any) => {
       if (err) {
         console.error('[Blog] Image upload error:', err);
         return res.status(400).json({ message: err.message || 'Upload failed' });
@@ -24332,32 +25412,21 @@ This booking was created on ${new Date().toLocaleString()}.
           }
         }
 
-        let originalUrl = `/uploads/form-images/${file.filename}`;
+        const fallbackFilename = generateFormImageFilename(file.originalname);
+        let originalUrl = `/uploads/form-images/${fallbackFilename}`;
         let processedUrl: string | null = null;
 
         // Prefer persistent object storage for blog media so the website platform can always fetch stable URLs.
-        if (file.path && fs.existsSync(file.path)) {
-          try {
-            const buffer = fs.readFileSync(file.path);
-            const objectPath = await uploadImageBufferToObjectStorage({
-              file: {
-                ...file,
-                buffer,
-                size: buffer.length,
-              } as Express.Multer.File,
-              ownerId: effectiveOwnerId,
-            });
-            originalUrl = objectPath;
-            processedUrl = objectPath;
-
-            fs.unlink(file.path, (unlinkErr) => {
-              if (unlinkErr) {
-                console.warn("[Blog] Uploaded image to object storage but failed to delete local temp file:", unlinkErr);
-              }
-            });
-          } catch (objectStorageErr) {
-            console.warn("[Blog] Object storage upload failed for blog image; falling back to local upload path:", objectStorageErr);
-          }
+        try {
+          const objectPath = await uploadImageBufferToObjectStorage({
+            file,
+            ownerId: effectiveOwnerId,
+          });
+          originalUrl = objectPath;
+          processedUrl = objectPath;
+        } catch (objectStorageErr) {
+          console.warn("[Blog] Object storage upload failed for blog image; falling back to local upload path:", objectStorageErr);
+          await fs.promises.writeFile(path.join(ensureFormImageUploadDir(), fallbackFilename), file.buffer);
         }
 
         const [image] = await db

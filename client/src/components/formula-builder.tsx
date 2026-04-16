@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload, ChevronDown, ChevronUp, Settings2, Pencil, ImageIcon, Zap } from "lucide-react";
+import { Eye, Save, Plus, Video, Image, Sparkles, Wand2, Loader2, Map, GripVertical, BookOpen, X, Camera, Trash2, Upload, ChevronDown, ChevronUp, Settings2, Pencil, ImageIcon, Zap, Copy } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import VariableCard from "./variable-card";
@@ -60,12 +60,54 @@ const AI_GENERATION_STEPS = [
   "Packaging the builder setup",
 ];
 
+function buildOptimizedFormulaPrompt(serviceContext: string, existingDraft: string): string {
+  const trimmedContext = serviceContext.trim();
+  const trimmedDraft = existingDraft.trim();
+
+  return [
+    "I am using the Autobidder AI Formula Builder to create a pricing calculator.",
+    "Help me write the best possible service description to paste into that tool.",
+    "",
+    "Your job:",
+    "Write one detailed prompt that the Autobidder AI Formula Builder can use directly.",
+    "The prompt should describe the calculator clearly enough that it can generate the service title, description, variables, pricing logic, optional add-ons, and any useful follow-up questions.",
+    "",
+    "What to include in the prompt you write:",
+    "- The exact service being sold",
+    "- The main pricing drivers",
+    "- Any size, quantity, square footage, room count, linear footage, or time-based inputs if relevant",
+    "- Material, package, or quality tiers if relevant",
+    "- Optional add-ons or upsells if relevant",
+    "- Complexity, accessibility, condition, or labor factors if relevant",
+    "- Any minimum price, starting price, or pricing rules if known",
+    "- Any useful conditional follow-up questions if some answers should reveal more questions",
+    "",
+    "Output requirements:",
+    "- Return only the final prompt text I should paste into Autobidder",
+    "- Do not explain your reasoning",
+    "- Do not use bullet points in the final prompt unless they make the request clearer",
+    "- Make the final prompt specific, practical, and structured for a pricing calculator",
+    "",
+    trimmedContext
+      ? `Service-specific context to use:\n${trimmedContext}`
+      : "Service-specific context to use:\n[Replace this with the service details, pricing factors, and business rules you want included.]",
+    trimmedDraft
+      ? `Current rough draft to improve:\n${trimmedDraft}`
+      : "",
+  ].filter(Boolean).join("\n");
+}
+
 // Sortable Variable Card Component
-function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
+function SortableVariableCard({ variable, index, totalVariables, onDelete, onUpdate, allVariables, onAIAssistVariable, activeAIAssistTargetId, onMoveVariable }: {
   variable: Variable;
+  index: number;
+  totalVariables: number;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Variable>) => void;
   allVariables: Variable[];
+  onAIAssistVariable?: (variable: Variable, prompt: string, parentVariable?: Variable) => Promise<void>;
+  activeAIAssistTargetId?: string | null;
+  onMoveVariable: (variableId: string, direction: "up" | "down") => void;
 }) {
   const {
     attributes,
@@ -88,20 +130,26 @@ function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
       <div
         {...attributes}
         {...listeners}
-        className="absolute top-2 left-2 z-10 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 transition-colors"
+        className="absolute left-2 top-2 z-10 hidden cursor-grab text-gray-400 transition-colors hover:text-gray-600 active:cursor-grabbing sm:block"
         title="Drag to reorder"
       >
         <GripVertical className="w-4 h-4" />
       </div>
       
       {/* Variable Card with left padding for drag handle */}
-      <div className="pl-8">
+      <div className="pl-0 sm:pl-8">
         {variable.type === "repeatable-group" ? (
           <RepeatableGroupCard
             variable={variable}
             onDelete={onDelete}
             onUpdate={onUpdate}
             allVariables={allVariables}
+            onAIAssistVariable={onAIAssistVariable}
+            activeAIAssistTargetId={activeAIAssistTargetId}
+            onMoveUp={() => onMoveVariable(variable.id, "up")}
+            onMoveDown={() => onMoveVariable(variable.id, "down")}
+            canMoveUp={index > 0}
+            canMoveDown={index < totalVariables - 1}
           />
         ) : (
           <VariableCard
@@ -109,6 +157,12 @@ function SortableVariableCard({ variable, onDelete, onUpdate, allVariables }: {
             onDelete={onDelete}
             onUpdate={onUpdate}
             allVariables={allVariables}
+            onAIAssistVariable={onAIAssistVariable}
+            activeAIAssistTargetId={activeAIAssistTargetId}
+            onMoveUp={() => onMoveVariable(variable.id, "up")}
+            onMoveDown={() => onMoveVariable(variable.id, "down")}
+            canMoveUp={index > 0}
+            canMoveDown={index < totalVariables - 1}
           />
         )}
 	      </div>
@@ -233,6 +287,8 @@ interface FormulaBuilderProps {
   allFormulas?: Formula[];
 }
 
+type AIEditMode = "targeted" | "rebuild";
+
 export default function FormulaBuilderComponent({
   formula,
   onUpdate,
@@ -347,6 +403,7 @@ export default function FormulaBuilderComponent({
 
   const formulaVariables = Array.isArray(formula.variables) ? formula.variables : [];
   const formulaExpressionValue = typeof formula.formula === "string" ? formula.formula : "";
+  const hasExistingFormula = formulaVariables.length > 0 || Boolean(formulaExpressionValue.trim());
   const repeatableGroupWarnings = formulaVariables
     .filter((variable) => variable.type === "repeatable-group" && variable.repeatableConfig?.countVariableId)
     .map((variable) => ({
@@ -367,9 +424,13 @@ export default function FormulaBuilderComponent({
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [aiDescription, setAiDescription] = useState("");
+  const [aiPromptContext, setAiPromptContext] = useState("");
+  const [showOptimizedPromptHelper, setShowOptimizedPromptHelper] = useState(false);
   const [selectedAIProvider, setSelectedAIProvider] = useState("openai");
   const [showAIEditor, setShowAIEditor] = useState(false);
   const [aiEditInstructions, setAiEditInstructions] = useState("");
+  const [aiEditMode, setAiEditMode] = useState<AIEditMode>("targeted");
+  const [activeAIAssistTargetId, setActiveAIAssistTargetId] = useState<string | null>(null);
   const [showSaveAsTemplateModal, setShowSaveAsTemplateModal] = useState(false);
   const [showIconGenerator, setShowIconGenerator] = useState(false);
   const [templateCategory, setTemplateCategory] = useState("");
@@ -381,6 +442,7 @@ export default function FormulaBuilderComponent({
   const { toast } = useToast();
   const { user } = useAuth();
   const isTemplateAdmin = user?.email?.toLowerCase() === "admin@autobidder.org";
+  const canSaveAsTemplate = isTemplateAdmin || Boolean((user as any)?.isImpersonating);
 
   // Sync local formulaExpression state when formula.formula changes (e.g., after AI generation)
   useEffect(() => {
@@ -473,6 +535,60 @@ export default function FormulaBuilderComponent({
     }
   }
 
+  const applyAIFormulaResult = (data: any) => {
+    onUpdate({
+      name: data.name,
+      title: data.title,
+      description: data.description,
+      bulletPoints: data.bulletPoints,
+      formula: data.formula,
+      variables: data.variables,
+      iconUrl: data.iconUrl
+    });
+  };
+
+  const getVariableAssistTargetId = (variable: Variable, parentVariable?: Variable) => (
+    parentVariable ? `${parentVariable.id}::${variable.id}` : variable.id
+  );
+
+  const buildScopedVariableAIPrompt = (
+    variable: Variable,
+    prompt: string,
+    parentVariable?: Variable,
+  ) => {
+    const baseInstruction = [
+      `Focus on the selected variable "${variable.name}" with id "${variable.id}" and type "${variable.type}".`,
+      "Keep every unrelated variable, title, description, and pricing rule unchanged unless I explicitly ask otherwise.",
+      "Use the smallest possible targeted change.",
+      "If I ask for a conditional follow-up question, implement it with conditionalLogic on the new or updated question instead of changing the formula.",
+      "If I ask to make an existing question conditional, update that existing question's conditionalLogic and keep its current name, type, options, images, and other settings intact.",
+      "If I ask to add a new follow-up question, create the new question and put the conditionalLogic on the new question so it only appears when the triggering answer matches.",
+      "Use the modern conditionalLogic format with enabled, operator, and a conditions array containing unique condition IDs.",
+      "When a condition depends on an existing choice question, use the exact existing variable id for dependsOnVariable and the exact stored option value(s) for expectedValue or expectedValues.",
+    ];
+
+    if (['dropdown', 'multiple-choice', 'select'].includes(variable.type)) {
+      baseInstruction.push(
+        "If I ask to add or revise answer choices, update only the selected variable's options and preserve existing option IDs when possible.",
+      );
+    }
+
+    if (parentVariable) {
+      baseInstruction.push(
+        `The selected variable is a child question inside the repeatable group "${parentVariable.name}" with id "${parentVariable.id}".`,
+        `Return the change by replacing that top-level repeatable-group variable so its childVariables reflect the requested update.`,
+        `If I ask to add a follow-up child question, insert it directly after child variable "${variable.id}" inside "${parentVariable.id}".`,
+      );
+    } else {
+      baseInstruction.push(
+        `If I ask to add a follow-up question, insert a new variable directly after "${variable.id}".`,
+        `If I ask to make a new follow-up question depend on the selected question, set that new variable's conditionalLogic to depend on "${variable.id}" unless I explicitly name another dependency.`,
+      );
+    }
+
+    return `${baseInstruction.join("\n")}\n\nRequested change:\n${prompt.trim()}`;
+  };
+
   const generateAIFormulaMutation = useMutation({
     mutationFn: async (description: string) => {
       const response = await apiRequest("POST", "/api/formulas/generate", { 
@@ -482,15 +598,7 @@ export default function FormulaBuilderComponent({
       return response.json();
     },
     onSuccess: (data) => {
-      onUpdate({
-        name: data.name,
-        title: data.title,
-        description: data.description,
-        bulletPoints: data.bulletPoints,
-        formula: data.formula,
-        variables: data.variables,
-        iconUrl: data.iconUrl
-      });
+      applyAIFormulaResult(data);
       setShowAIBuilder(false);
       setAiDescription("");
       toast({
@@ -535,25 +643,20 @@ export default function FormulaBuilderComponent({
       const response = await apiRequest("POST", "/api/formulas/edit", { 
         currentFormula, 
         editInstructions,
+        editMode: aiEditMode,
         provider: selectedAIProvider 
       });
       return response.json();
     },
     onSuccess: (data) => {
-      onUpdate({
-        name: data.name,
-        title: data.title,
-        description: data.description,
-        bulletPoints: data.bulletPoints,
-        formula: data.formula,
-        variables: data.variables,
-        iconUrl: data.iconUrl
-      });
+      applyAIFormulaResult(data);
       setShowAIEditor(false);
       setAiEditInstructions("");
       toast({
         title: "AI Edit Complete!",
-        description: "Formula has been updated with your requested changes.",
+        description: aiEditMode === "targeted"
+          ? "Only the requested formula changes were applied."
+          : "The formula was rebuilt with your requested changes.",
       });
     },
     onError: (error) => {
@@ -566,6 +669,64 @@ export default function FormulaBuilderComponent({
     },
   });
 
+  const variableAIAssistMutation = useMutation({
+    mutationFn: async ({
+      variable,
+      prompt,
+      parentVariable,
+    }: {
+      variable: Variable;
+      prompt: string;
+      parentVariable?: Variable;
+    }) => {
+      const currentFormula = {
+        name: formula.name,
+        title: formula.title,
+        description: formula.description || '',
+        bulletPoints: formula.bulletPoints || [],
+        formula: formulaExpressionValue,
+        variables: formulaVariables,
+        iconUrl: formula.iconUrl || '🔧'
+      };
+      const response = await apiRequest("POST", "/api/formulas/edit", {
+        currentFormula,
+        editInstructions: buildScopedVariableAIPrompt(variable, prompt, parentVariable),
+        editMode: "targeted",
+        provider: selectedAIProvider,
+      });
+      return response.json();
+    },
+    onMutate: ({ variable, parentVariable }) => {
+      setActiveAIAssistTargetId(getVariableAssistTargetId(variable, parentVariable));
+    },
+    onSuccess: (data, variables) => {
+      applyAIFormulaResult(data);
+      toast({
+        title: "Variable updated with AI",
+        description: `Applied a targeted AI update to ${variables.variable.name}.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Variable AI assist error:', error);
+      toast({
+        title: "Variable AI update failed",
+        description: error instanceof Error ? error.message : "Please try again with a more specific prompt.",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setActiveAIAssistTargetId(null);
+    },
+  });
+
+  const handleVariableAIAssist = async (
+    variable: Variable,
+    prompt: string,
+    parentVariable?: Variable,
+  ) => {
+    await variableAIAssistMutation.mutateAsync({ variable, prompt, parentVariable });
+  };
+
   const handleAddVariable = (variable: Variable) => {
     const updatedVariables = [...formulaVariables, variable];
     onUpdate({ variables: updatedVariables });
@@ -574,6 +735,22 @@ export default function FormulaBuilderComponent({
   const handleDeleteVariable = (variableId: string) => {
     const updatedVariables = formulaVariables.filter(v => v.id !== variableId);
     onUpdate({ variables: updatedVariables });
+  };
+
+  const handleMoveVariable = (variableId: string, direction: "up" | "down") => {
+    const currentIndex = formulaVariables.findIndex((variable) => variable.id === variableId);
+    if (currentIndex < 0) {
+      return;
+    }
+
+    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (nextIndex < 0 || nextIndex >= formulaVariables.length) {
+      return;
+    }
+
+    onUpdate({
+      variables: arrayMove(formulaVariables, currentIndex, nextIndex),
+    });
   };
 
   const handleUpdateVariable = (oldId: string, updates: Partial<Variable>) => {
@@ -1161,7 +1338,9 @@ export default function FormulaBuilderComponent({
   };
 
   const isGeneratingAIFormula = generateAIFormulaMutation.isPending;
+  const isEditingAIFormula = editAIFormulaMutation.isPending;
   const currentAIGenerationStep = AI_GENERATION_STEPS[aiGenerationStep] ?? AI_GENERATION_STEPS[0];
+  const optimizedFormulaPrompt = buildOptimizedFormulaPrompt(aiPromptContext, aiDescription);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -1176,7 +1355,7 @@ export default function FormulaBuilderComponent({
               </div>
               <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
                 <TemplateLibraryButton />
-                {isTemplateAdmin && (
+                {canSaveAsTemplate && (
                   <Button 
                     variant="outline" 
                     onClick={() => setShowSaveAsTemplateModal(true)}
@@ -1185,6 +1364,19 @@ export default function FormulaBuilderComponent({
                     <BookOpen className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                     <span className="hidden sm:inline">Save as Template</span>
                     <span className="sm:hidden">Save</span>
+                  </Button>
+                )}
+                {hasExistingFormula && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowAIEditor((current) => !current);
+                      setShowAIBuilder(false);
+                    }}
+                    className="text-xs sm:text-sm px-3 sm:px-4 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                  >
+                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    {showAIEditor ? "Hide AI Edit" : "AI Edit"}
                   </Button>
                 )}
                 <Button 
@@ -1293,10 +1485,10 @@ export default function FormulaBuilderComponent({
                           </Select>
                         </div>
 
-                        <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-slate-700/70 dark:bg-slate-900/70">
-                          <div className="flex items-center justify-between gap-3">
-                            <Label htmlFor="ai-description" className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                              Describe your service
+	                        <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-slate-700/70 dark:bg-slate-900/70">
+	                          <div className="flex items-center justify-between gap-3">
+	                            <Label htmlFor="ai-description" className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+	                              Describe your service
                             </Label>
                             <span className="text-xs text-slate-400 dark:text-slate-500">
                               Include size, materials, complexity, and add-ons
@@ -1309,23 +1501,105 @@ export default function FormulaBuilderComponent({
                             placeholder="Create a bathroom renovation calculator that includes square footage, fixtures, tile tier, demo work, and labor complexity."
                             className="mt-3 min-h-[160px] rounded-xl border-slate-200 bg-white/90 text-sm leading-6 text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500"
                           />
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {AI_FORMULA_EXAMPLES.map((example, index) => (
-                              <button
+	                          <div className="mt-4 flex flex-wrap gap-2">
+	                            {AI_FORMULA_EXAMPLES.map((example, index) => (
+	                              <button
                                 key={example}
                                 type="button"
                                 onClick={() => setAiDescription(example)}
                                 disabled={isGeneratingAIFormula}
                                 className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-400/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
-                              >
-                                Prompt {index + 1}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+	                              >
+	                                Prompt {index + 1}
+	                              </button>
+	                            ))}
+	                          </div>
+	                        </div>
 
-                        <div className="flex flex-col gap-3 sm:flex-row">
-                          <Button
+	                        <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 via-white to-cyan-50/70 p-4 dark:border-blue-500/20 dark:from-blue-950/20 dark:via-slate-900/80 dark:to-cyan-950/20">
+	                          <button
+	                            type="button"
+	                            onClick={() => setShowOptimizedPromptHelper((current) => !current)}
+	                            className="flex w-full items-start justify-between gap-3 text-left"
+	                          >
+	                            <div className="space-y-1">
+	                              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700 dark:text-blue-200">
+	                                Optimized Prompt for ChatGPT / Claude / Gemini
+	                              </p>
+	                              <p className="text-sm text-slate-600 dark:text-slate-300">
+	                                Use this when you want another AI tool to help write a stronger Formula Builder prompt before you paste it back here.
+	                              </p>
+	                            </div>
+	                            <div className="flex items-center gap-2 text-xs font-medium text-blue-700 dark:text-blue-200">
+	                              <span>{showOptimizedPromptHelper ? "Hide" : "Show"}</span>
+	                              {showOptimizedPromptHelper ? (
+	                                <ChevronUp className="h-4 w-4" />
+	                              ) : (
+	                                <ChevronDown className="h-4 w-4" />
+	                              )}
+	                            </div>
+	                          </button>
+	                          {showOptimizedPromptHelper && (
+	                            <div className="mt-4 space-y-4">
+	                              <div className="flex justify-end">
+	                                <Button
+	                                  type="button"
+	                                  variant="outline"
+	                                  size="sm"
+	                                  onClick={async () => {
+	                                    try {
+	                                      await navigator.clipboard.writeText(optimizedFormulaPrompt);
+	                                      toast({
+	                                        title: "Prompt copied",
+	                                        description: "Paste it into your AI tool of choice, then bring the improved result back here.",
+	                                      });
+	                                    } catch (error) {
+	                                      console.error("Failed to copy optimized formula prompt:", error);
+	                                      toast({
+	                                        title: "Copy failed",
+	                                        description: "Select the prompt manually and copy it.",
+	                                        variant: "destructive",
+	                                      });
+	                                    }
+	                                  }}
+	                                  className="shrink-0 border-blue-200 bg-white/80 text-blue-700 hover:bg-blue-50 dark:border-blue-400/20 dark:bg-slate-950/50 dark:text-blue-200 dark:hover:bg-blue-500/10"
+	                                >
+	                                  <Copy className="mr-2 h-3.5 w-3.5" />
+	                                  Copy Prompt
+	                                </Button>
+	                              </div>
+	                              <div>
+	                                <Label htmlFor="ai-prompt-context" className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+	                                  Add service-specific context
+	                                </Label>
+	                                <Textarea
+	                                  id="ai-prompt-context"
+	                                  value={aiPromptContext}
+	                                  onChange={(e) => setAiPromptContext(e.target.value)}
+	                                  placeholder="Example: Residential pressure washing in Florida. We price by square footage, surface type, and stain severity. Minimum charge is 199. We offer driveway sealing, gutter brightening, and rush scheduling as add-ons."
+	                                  className="mt-3 min-h-[120px] rounded-xl border-blue-100 bg-white/90 text-sm leading-6 text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:ring-blue-500/20 dark:border-blue-400/20 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500"
+	                                />
+	                                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+	                                  Add the service, pricing drivers, minimums, upsells, complexity factors, and anything unique to the type of jobs you want this calculator to target.
+	                                </p>
+	                              </div>
+	                              <div>
+	                                <Label htmlFor="optimized-formula-prompt" className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+	                                  Copy this into your AI tool
+	                                </Label>
+	                                <Textarea
+	                                  id="optimized-formula-prompt"
+	                                  readOnly
+	                                  value={optimizedFormulaPrompt}
+	                                  className="mt-3 min-h-[260px] rounded-xl border-slate-200 bg-white/95 font-mono text-xs leading-6 text-slate-700 dark:border-slate-700 dark:bg-slate-950/80 dark:text-slate-100"
+	                                />
+	                              </div>
+	                            </div>
+	                          )}
+	                        </div>
+
+	                        <div className="flex flex-col gap-3 sm:flex-row">
+	                          <Button
                             onClick={() => generateAIFormulaMutation.mutate(aiDescription)}
                             disabled={!aiDescription.trim() || isGeneratingAIFormula}
                             className="h-11 rounded-xl bg-slate-900 px-5 text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-800 disabled:hover:translate-y-0 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white"
@@ -1454,71 +1728,160 @@ export default function FormulaBuilderComponent({
 
           {/* AI Formula Editor - Show when user wants to edit existing formula */}
           {showAIEditor && (
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 dark:from-slate-900 dark:to-slate-800 dark:border-slate-700">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-purple-900 dark:text-purple-100">
-                    <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-300" />
-                    Edit Formula with AI
-                  </CardTitle>
-                  <p className="text-sm text-purple-700 dark:text-purple-300">
-                    Tell AI how to modify your formula. It can add/remove variables, update descriptions, adjust pricing logic, and create conditional questions that show/hide based on previous answers.
-                  </p>
+            <div className="p-6 border-b border-slate-200/80 dark:border-slate-700/70" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+              <Card className="relative overflow-hidden rounded-2xl border-amber-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.97),rgba(255,247,237,0.96),rgba(248,250,252,0.94))] shadow-[0_30px_90px_-48px_rgba(234,88,12,0.45)] dark:border-amber-500/15 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.94),rgba(15,23,42,0.96))]">
+                <div className="pointer-events-none absolute right-0 top-0 h-44 w-44 translate-x-1/4 -translate-y-1/3 rounded-full bg-gradient-to-br from-amber-200/60 to-transparent blur-3xl dark:from-amber-500/10" />
+                <CardHeader className="relative pb-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25">
+                          <Sparkles className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600/80 dark:text-amber-300/80">
+                            AI Formula Edit
+                          </p>
+                          <CardTitle
+                            className="text-2xl text-slate-900 dark:text-white"
+                            style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+                          >
+                            Edit this calculator with AI
+                          </CardTitle>
+                        </div>
+                      </div>
+                      <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+                        Use targeted edits for fast, precise changes. Ask AI to add pricing tweaks, insert follow-up questions, expand options, or rewrite the whole calculator only when you explicitly want a bigger rebuild.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          "Add options",
+                          "Add follow-up question",
+                          "Tweak pricing logic",
+                          "Rebuild larger flow",
+                        ].map((label) => (
+                          <Badge
+                            key={label}
+                            variant="secondary"
+                            className="rounded-full border border-amber-200/70 bg-white/80 px-3 py-1 text-[11px] font-medium text-slate-600 dark:border-amber-500/20 dark:bg-slate-900/70 dark:text-slate-300"
+                          >
+                            {label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="ai-provider-edit" className="text-purple-900 dark:text-purple-100 font-medium">
-                      AI Provider
-                    </Label>
-                    <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
-                      <SelectTrigger className="mt-2 border-purple-200 focus:border-purple-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
-                        <SelectValue placeholder="Choose AI provider" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="openai">OpenAI (GPT-5) - Most Powerful</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <CardContent className="relative grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-slate-700 dark:bg-slate-900/75">
+                      <Label htmlFor="ai-provider-edit" className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        AI Provider
+                      </Label>
+                      <Select value={selectedAIProvider} onValueChange={setSelectedAIProvider}>
+                        <SelectTrigger className="mt-3 h-11 rounded-xl border-slate-200 bg-white/90 text-slate-900 focus:border-amber-400 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100">
+                          <SelectValue placeholder="Choose AI provider" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="openai">OpenAI (GPT-5)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200/80 bg-white/85 p-4 dark:border-slate-700 dark:bg-slate-900/75">
+                      <Label htmlFor="ai-edit-mode" className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        Edit Mode
+                      </Label>
+                      <Select value={aiEditMode} onValueChange={(value) => setAiEditMode(value as AIEditMode)}>
+                        <SelectTrigger
+                          id="ai-edit-mode"
+                          className="mt-3 h-11 rounded-xl border-slate-200 bg-white/90 text-slate-900 focus:border-amber-400 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100"
+                        >
+                          <SelectValue placeholder="Choose edit mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="targeted">Targeted edit - keep everything else</SelectItem>
+                          <SelectItem value="rebuild">Rebuild formula - larger rewrite</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        {aiEditMode === "targeted"
+                          ? "Use this for small exact changes. AI only patches the part you mention."
+                          : "Use rebuild when you want AI to broadly restructure variables, copy, and pricing flow."}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="ai-edit-instructions" className="text-purple-900 dark:text-purple-100 font-medium">
-                      What changes would you like to make?
-                    </Label>
-                    <Textarea
-                      id="ai-edit-instructions"
-                      value={aiEditInstructions}
-                      onChange={(e) => setAiEditInstructions(e.target.value)}
-                      placeholder="e.g., 'Add a checkbox asking if the house has a detached garage, and if yes, show a follow-up question asking for the garage size with options: 1-car, 2-car, 3-car'"
-                      className="mt-2 min-h-[100px] border-purple-200 focus:border-purple-500 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                    />
-                    <p className="text-xs text-purple-600 dark:text-purple-300 mt-1">
-                      You can add variables, conditional questions (that show based on previous answers), update pricing, or modify descriptions.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => editAIFormulaMutation.mutate(aiEditInstructions)}
-                      disabled={!aiEditInstructions.trim() || editAIFormulaMutation.isPending}
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      {editAIFormulaMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Editing...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Apply Changes
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowAIEditor(false)}
-                      disabled={editAIFormulaMutation.isPending}
-                    >
-                      Cancel
-                    </Button>
+
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900/80">
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="ai-edit-instructions" className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                          What should AI change?
+                        </Label>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
+                          {aiEditMode === "targeted" ? "Best for one exact change at a time" : "Best for broader rewrites"}
+                        </span>
+                      </div>
+                      <Textarea
+                        id="ai-edit-instructions"
+                        value={aiEditInstructions}
+                        onChange={(e) => setAiEditInstructions(e.target.value)}
+                        placeholder={aiEditMode === "targeted"
+                          ? "e.g., 'Only update the formula so rush service adds 75. Do not rename or rewrite my other variables.'"
+                          : "e.g., 'Rebuild this calculator for commercial window cleaning with better pricing tiers and clearer question wording.'"}
+                        className="mt-3 min-h-[148px] rounded-2xl border-slate-200 bg-white/95 text-sm leading-6 text-slate-700 focus:border-amber-400 focus:ring-amber-500/20 dark:border-slate-700 dark:bg-slate-950/80 dark:text-slate-100"
+                      />
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {(aiEditMode === "targeted"
+                          ? [
+                              "Add a rush fee option and only update the formula.",
+                              "Add Premium and Luxury choices to my main service tier variable.",
+                              "Add a follow-up question after property type when Commercial is selected.",
+                            ]
+                          : [
+                              "Rebuild this calculator to better handle commercial jobs and larger projects.",
+                              "Rewrite the pricing flow with clearer variables and stronger package tiers.",
+                              "Restructure this formula to support more upsells and conditional follow-up questions.",
+                            ]).map((example) => (
+                          <button
+                            key={example}
+                            type="button"
+                            onClick={() => setAiEditInstructions(example)}
+                            className="rounded-full border border-amber-200/70 bg-amber-50/80 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/15"
+                          >
+                            {example}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => editAIFormulaMutation.mutate(aiEditInstructions)}
+                        disabled={!aiEditInstructions.trim() || isEditingAIFormula}
+                        className="rounded-xl border-0 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:from-amber-600 hover:to-orange-700"
+                      >
+                        {isEditingAIFormula ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            {aiEditMode === "targeted" ? "Applying Edit..." : "Rebuilding..."}
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            {aiEditMode === "targeted" ? "Apply Targeted Edit" : "Rebuild with AI"}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAIEditor(false)}
+                        disabled={isEditingAIFormula}
+                        className="rounded-xl border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1527,114 +1890,123 @@ export default function FormulaBuilderComponent({
 
           {/* Basic Details Section */}
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                <Pencil className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 shadow-sm dark:border-amber-800 dark:bg-amber-950/30">
+                <Pencil className="h-4 w-4 text-amber-700 dark:text-amber-300" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-tight">Service Identity</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">How this service appears to your customers</p>
+                <h3 className="text-sm font-semibold leading-tight text-slate-900 dark:text-slate-100">Service Identity</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">How this service appears to your customers</p>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {/* Icon */}
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex-shrink-0">
-                  {formula.iconUrl ? (
-                    <div className="relative group">
-                      <img src={formula.iconUrl} alt="Icon" className="w-12 h-12 object-cover rounded-lg border-2 border-gray-200 dark:border-gray-600" />
+            <div className="rounded-[20px] border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-[0_18px_50px_-36px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-900/95">
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.2fr)]">
+                {/* Icon */}
+                <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <Label className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Icon</Label>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Shown in selectors and previews</p>
+                    </div>
+                    {formula.iconUrl ? (
                       <button
                         onClick={() => onUpdate({ iconUrl: null, iconId: null })}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-rose-500 transition-colors hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-300"
+                        aria-label="Remove icon"
                       >
                         ×
                       </button>
+                    ) : null}
+                  </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950/70">
+                      {formula.iconUrl ? (
+                        <img src={formula.iconUrl} alt="Icon" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-3xl">🔧</span>
+                      )}
                     </div>
-                  ) : (
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                      <span className="text-2xl">🔧</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  <Label className="text-[10px] uppercase tracking-wider text-gray-400 font-bold ml-1">Icon Source</Label>
-                  <div className="flex items-center p-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-                    <IconSelector
-                      selectedIconId={formula.iconId || undefined}
-                      onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
-                      triggerText="Library"
-                      size="sm"
-                      triggerVariant="outline"
-                      triggerClassName="h-8 text-xs font-medium rounded-lg px-2 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      className="flex-1 bg-transparent border-none shadow-none hover:bg-gray-100 dark:hover:bg-gray-800 h-8 text-xs font-medium rounded-lg px-2"
-                    />
-                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5 shrink-0" />
-                    <label className="flex-1 flex items-center justify-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 h-8 px-1.5 rounded-lg cursor-pointer transition-colors whitespace-nowrap">
-                      <Upload className="w-3 h-3" />
-                      <span>Upload</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const formData = new FormData();
-                            formData.append('icon', file);
-                            try {
-                              const response = await fetch('/api/upload/icon', { method: 'POST', body: formData });
-                              const data = await response.json();
-                              if (response.ok) {
-                                onUpdate({ iconUrl: data.iconUrl, iconId: null });
-                                toast({ title: "Icon uploaded" });
+
+                    <div className="min-w-0 flex-1">
+                      <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Icon Source</Label>
+                      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 p-2 shadow-sm dark:border-slate-700 dark:bg-slate-950/70">
+                        <IconSelector
+                          selectedIconId={formula.iconId || undefined}
+                          onIconSelect={(iconId, iconUrl) => onUpdate({ iconId, iconUrl })}
+                          triggerText="Library"
+                          size="sm"
+                          triggerVariant="outline"
+                          triggerClassName="h-8 rounded-xl border-slate-200 px-3 text-xs font-medium hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+                          className="bg-transparent border-none shadow-none"
+                        />
+                        <label className="inline-flex h-8 cursor-pointer items-center justify-center gap-1 rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+                          <Upload className="h-3 w-3" />
+                          <span>Upload</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const formData = new FormData();
+                                formData.append('icon', file);
+                                try {
+                                  const response = await fetch('/api/upload/icon', { method: 'POST', body: formData });
+                                  const data = await response.json();
+                                  if (response.ok) {
+                                    onUpdate({ iconUrl: data.iconUrl, iconId: null });
+                                    toast({ title: "Icon uploaded" });
+                                  }
+                                } catch (error) {
+                                  toast({ title: "Upload failed", variant: "destructive" });
+                                }
                               }
-                            } catch (error) {
-                              toast({ title: "Upload failed", variant: "destructive" });
-                            }
-                          }
-                        }}
-                      />
-                    </label>
-                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-0.5 shrink-0" />
-                    <a
-                      href="/icon-generator"
-                      className="flex-1 flex items-center justify-center gap-1 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 h-8 px-1.5 rounded-lg transition-colors whitespace-nowrap"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                      <span>AI</span>
-                    </a>
+                            }}
+                          />
+                        </label>
+                        <a
+                          href="/icon-generator"
+                          className="inline-flex h-8 items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-3 text-xs font-medium text-white shadow-sm transition-all hover:from-amber-600 hover:to-orange-700"
+                        >
+                          <Sparkles className="h-3 w-3" />
+                          <span>AI</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Service Name */}
-              <div className="sm:col-span-1 lg:col-span-1 min-w-0">
-                <Label htmlFor="formula-name" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                  Service Name <span className="text-blue-500">*</span>
-                </Label>
-                <Input
-                  id="formula-name"
-                  value={formula.name}
-                  onChange={(e) => onUpdate({ name: e.target.value })}
-                  placeholder="e.g. Kitchen Remodel"
-                  className="h-9 w-full"
-                />
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Used in navigation &amp; reports</p>
-              </div>
+                {/* Service Name */}
+                <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <Label htmlFor="formula-name" className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    Service Name <span className="text-amber-600">*</span>
+                  </Label>
+                  <Input
+                    id="formula-name"
+                    value={formula.name}
+                    onChange={(e) => onUpdate({ name: e.target.value })}
+                    placeholder="e.g. Kitchen Remodel"
+                    className="h-10 w-full rounded-xl border-slate-200 bg-white/95 dark:border-slate-700 dark:bg-slate-950/80"
+                  />
+                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Used in navigation and reports</p>
+                </div>
 
-              {/* Calculator Title */}
-              <div className="sm:col-span-2 lg:col-span-2 min-w-0">
-                <Label htmlFor="formula-title" className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                  Calculator Title
-                </Label>
-                <Input
-                  id="formula-title"
-                  value={formula.title}
-                  onChange={(e) => onUpdate({ title: e.target.value })}
-                  placeholder="e.g. Get Your Kitchen Remodel Quote"
-                  className="h-9 w-full"
-                />
-                <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Headline shown at the top of your embed</p>
+                {/* Calculator Title */}
+                <div className="min-w-0 rounded-2xl border border-slate-200/80 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                  <Label htmlFor="formula-title" className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    Calculator Title
+                  </Label>
+                  <Input
+                    id="formula-title"
+                    value={formula.title}
+                    onChange={(e) => onUpdate({ title: e.target.value })}
+                    placeholder="e.g. Get Your Kitchen Remodel Quote"
+                    className="h-10 w-full rounded-xl border-slate-200 bg-white/95 dark:border-slate-700 dark:bg-slate-950/80"
+                  />
+                  <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">Headline shown at the top of your embed</p>
+                </div>
               </div>
             </div>
 
@@ -2228,13 +2600,18 @@ export default function FormulaBuilderComponent({
                 strategy={verticalListSortingStrategy}
               >
                 <div className="grid grid-cols-1 gap-4">
-                  {formulaVariables.map((variable) => (
+                  {formulaVariables.map((variable, index) => (
                     <SortableVariableCard
                       key={variable.id}
                       variable={variable}
+                      index={index}
+                      totalVariables={formulaVariables.length}
                       onDelete={handleDeleteVariable}
                       onUpdate={handleUpdateVariable}
                       allVariables={formulaVariables}
+                      onAIAssistVariable={handleVariableAIAssist}
+                      activeAIAssistTargetId={activeAIAssistTargetId}
+                      onMoveVariable={handleMoveVariable}
                     />
                   ))}
                   <div

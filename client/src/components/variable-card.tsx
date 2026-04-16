@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Variable, PROPERTY_ATTRIBUTE_LABELS, PROPERTY_ATTRIBUTE_GROUPS } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +9,11 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   X, Edit3, Check, DollarSign, Settings, Plus, Trash2, GripVertical, Upload,
   Zap, HelpCircle, ChevronDown, ChevronUp, Hash, Type, CheckSquare,
-  SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2, Link2, Home
+  SlidersHorizontal, List, Image, Copy, Video, ImageIcon, Sparkles, Loader2, Link2, Home, GalleryVerticalEnd, ArrowUp, ArrowDown
 } from "lucide-react";
 import AIIconGeneratorModal from "./ai-icon-generator-modal";
 import IconSelector from "./icon-selector";
@@ -62,6 +64,13 @@ interface VariableCardProps {
   onDelete: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Variable>) => void;
   allVariables?: Variable[];
+  parentVariable?: Variable;
+  onAIAssistVariable?: (variable: Variable, prompt: string, parentVariable?: Variable) => Promise<void>;
+  activeAIAssistTargetId?: string | null;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
 interface SortableOptionItemProps {
@@ -89,6 +98,53 @@ const typeConfig: Record<string, { icon: any; label: string; color: string }> = 
   select: { icon: List, label: "Select", color: "bg-orange-100 text-orange-700 border-orange-200" },
 };
 
+const variableAIPromptExamples: Record<string, string[]> = {
+  number: [
+    "Add a follow-up question after this one asking if there is a rush fee.",
+    "Update this question so it works better for square footage pricing.",
+  ],
+  stepper: [
+    "Change this into a clearer quantity picker and add a follow-up for oversized items.",
+    "Make this better for counting rooms and add a premium quantity threshold.",
+  ],
+  text: [
+    "Add a follow-up question after this one asking for more project details only when needed.",
+    "Improve this question wording so customers know exactly what to enter.",
+  ],
+  checkbox: [
+    "Turn this into a cleaner yes or no setup and add a follow-up question when yes is selected.",
+    "Make this checkbox increase the price and show a follow-up detail question.",
+  ],
+  slider: [
+    "Make this slider work better for project size and add a follow-up above a high value.",
+    "Add clearer size ranges around this slider and a premium threshold follow-up question.",
+  ],
+  dropdown: [
+    "Add options for Basic, Standard, Premium, and Luxury with realistic price values.",
+    "Add a follow-up question after this dropdown when Premium or Luxury is selected.",
+  ],
+  select: [
+    "Add a few more size options with realistic price values.",
+    "Add a follow-up question after this field when the customer picks the highest tier.",
+  ],
+  "multiple-choice": [
+    "Add three premium material options with realistic prices.",
+    "Add a follow-up question after this variable when the customer picks the luxury option.",
+  ],
+};
+
+const getVariableAIAssistDescription = (variable: Variable, parentVariable?: Variable) => {
+  if (parentVariable) {
+    return `Use AI to update this child question inside ${parentVariable.name} without rewriting the rest of the calculator.`;
+  }
+
+  if (['dropdown', 'multiple-choice', 'select'].includes(variable.type)) {
+    return "Use AI to add options, refine labels, or insert a follow-up question after this variable.";
+  }
+
+  return "Use AI to refine this variable, adjust pricing behavior, or add a follow-up question right after it.";
+};
+
 function SortableOptionItem({
   option,
   index,
@@ -102,6 +158,7 @@ function SortableOptionItem({
   onOptionFileDrop,
   onOptionDragStateChange,
 }: SortableOptionItemProps) {
+  const hasMediaOptions = showIconImage || showQuestionCardImage;
   const {
     attributes,
     listeners,
@@ -116,6 +173,7 @@ function SortableOptionItem({
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+  const [showMediaControls, setShowMediaControls] = useState(false);
 
   const handleImageUpload = (field: OptionImageField, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -123,6 +181,9 @@ function SortableOptionItem({
       onOptionFileDrop?.(index, field, [file]);
     }
   };
+
+  const fieldShellClass =
+    "rounded-2xl border border-slate-200/80 bg-white/90 p-3 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.45)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80";
 
   const renderDropTarget = (field: OptionImageField, title: string) => {
     const value = field === 'image' ? option.image : option.questionCardImage;
@@ -195,16 +256,28 @@ function SortableOptionItem({
     const value = field === 'image' ? option.image : option.questionCardImage;
 
     return (
-      <div className="space-y-1">
-        <div className="text-[10px] text-gray-500 text-center">{label}</div>
-        {renderDropTarget(field, title)}
+      <div className="space-y-2 rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-amber-50/60 p-3 shadow-[0_10px_30px_-24px_rgba(245,158,11,0.65)] dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-amber-950/30">
+        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+          {label}
+        </div>
+        <div className="flex items-center gap-3">
+          {renderDropTarget(field, title)}
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-slate-900 dark:text-slate-100">
+              {value ? "Media attached" : title}
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Drop an image or open the library
+            </p>
+          </div>
+        </div>
         <IconSelector
           onIconSelect={(_, iconUrl) => onUpdate(index, { [field]: iconUrl || '' })}
-          triggerText={value ? "Change" : "Library"}
+          triggerText={value ? "Change Media" : "Open Library"}
           size="sm"
           triggerVariant="outline"
-          className="w-10"
-          triggerClassName="h-6 w-10 rounded-md px-0 text-[10px]"
+          className="w-full"
+          triggerClassName="h-8 w-full rounded-xl border-slate-200 bg-white/90 px-3 text-[11px] font-medium text-slate-700 hover:border-amber-300 hover:bg-amber-50 dark:border-slate-700 dark:bg-slate-950/80 dark:text-slate-200"
         />
       </div>
     );
@@ -214,96 +287,179 @@ function SortableOptionItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex flex-col gap-3 xl:flex-row xl:items-center"
+      className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50 p-4 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.35)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-[0_22px_60px_-34px_rgba(234,88,12,0.28)] dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-900"
     >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing flex-shrink-0 text-gray-400 hover:text-gray-600 self-start xl:self-auto"
-      >
-        <GripVertical className="w-4 h-4" />
-      </div>
-
-      <div className="flex-1 min-w-0 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="min-w-0">
-          <Input
-            placeholder="Option label"
-            value={option.label}
-            onChange={(e) => {
-              const label = e.target.value;
-              const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-              const optionId = baseValue || `option_${index}`;
-              onUpdate(index, { label, value: optionId });
-            }}
-            className="h-9 text-sm w-full"
-          />
-        </div>
-        <div className="min-w-0">
-          <Input
-            type="number"
-            placeholder="Price value"
-            value={option.numericValue ?? ''}
-            onChange={(e) => {
-              const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
-              onUpdate(index, { numericValue: value });
-            }}
-            className="h-9 text-sm w-full"
-          />
-        </div>
-        {showDefaultUnselected ? (
-          <div className="min-w-0">
-            <Select
-              value={String(option.defaultUnselectedValue ?? 0)}
-              onValueChange={(val) => onUpdate(index, { defaultUnselectedValue: Number(val) })}
-            >
-              <SelectTrigger className="h-9 text-sm w-full">
-                <SelectValue placeholder="Default when not selected" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Default: 0 (addition)</SelectItem>
-                <SelectItem value="1">Default: 1 (multiply)</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex h-9 w-9 cursor-grab items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 transition-colors hover:bg-amber-100 active:cursor-grabbing dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+            title="Reorder option"
+          >
+            <GripVertical className="h-4 w-4" />
           </div>
-        ) : (
-          <div className="hidden xl:block" />
-        )}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              Option {index + 1}
+            </p>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+              Configure answer, value, and media
+            </p>
+          </div>
+        </div>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDelete(index)}
+          className="h-9 w-9 flex-shrink-0 rounded-full p-0 text-slate-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/40 self-start xl:self-auto"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
       </div>
 
-      {(showIconImage || showQuestionCardImage) && (
-        <div className="flex flex-row xl:flex-col gap-2 flex-shrink-0">
-          {showIconImage && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOptionDragStateChange?.(null)}
-              className="h-9 px-3 text-xs whitespace-nowrap"
-            >
-              Icon Upload
-            </Button>
-          )}
-          {showQuestionCardImage && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 px-3 text-xs whitespace-nowrap"
-            >
-              Card Upload
-            </Button>
-          )}
-        </div>
-      )}
+      <div className="grid gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.8fr)]">
+          <div className={`${fieldShellClass} min-w-0`}>
+            <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              Answer
+            </Label>
+            <Input
+              placeholder="Option label"
+              value={option.label}
+              onChange={(e) => {
+                const label = e.target.value;
+                const baseValue = label.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                const optionId = baseValue || `option_${index}`;
+                onUpdate(index, { label, value: optionId });
+              }}
+              className="h-10 w-full rounded-xl border-slate-200 bg-white/95 text-sm shadow-none focus-visible:border-amber-400 focus-visible:ring-amber-200 dark:border-slate-700 dark:bg-slate-950/80"
+            />
+            <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+              Customer-facing option text.
+            </p>
+          </div>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onDelete(index)}
-        className="flex-shrink-0 h-9 w-9 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 self-start xl:self-auto"
-      >
-        <Trash2 className="w-4 h-4" />
-      </Button>
+          <div className={`${fieldShellClass} min-w-0`}>
+            <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+              Value
+            </Label>
+            <Input
+              type="number"
+              placeholder="Price value"
+              value={option.numericValue ?? ''}
+              onChange={(e) => {
+                const value = e.target.value === '' ? undefined : parseFloat(e.target.value);
+                onUpdate(index, { numericValue: value });
+              }}
+              className="h-10 w-full rounded-xl border-slate-200 bg-white/95 text-sm shadow-none focus-visible:border-amber-400 focus-visible:ring-amber-200 dark:border-slate-700 dark:bg-slate-950/80"
+            />
+            <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+              Numeric amount used in the formula.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3">
+          {showDefaultUnselected ? (
+            <div className={fieldShellClass}>
+              <Label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Unselected State
+              </Label>
+              <Select
+                value={String(option.defaultUnselectedValue ?? 0)}
+                onValueChange={(val) => onUpdate(index, { defaultUnselectedValue: Number(val) })}
+              >
+                <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white/95 text-sm shadow-none focus:ring-amber-200 dark:border-slate-700 dark:bg-slate-950/80">
+                  <SelectValue placeholder="Default when not selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Default: 0 (addition)</SelectItem>
+                  <SelectItem value="1">Default: 1 (multiply)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                Controls the fallback formula value before selection.
+              </p>
+            </div>
+          ) : null}
+
+          {hasMediaOptions ? (
+            showMediaControls ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowMediaControls(false)}
+                  className="text-[11px] font-medium text-slate-500 transition-colors hover:text-amber-700 dark:text-slate-400 dark:hover:text-amber-300"
+                >
+                  Hide media options
+                </button>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {showIconImage ? renderMediaPicker('image', 'Option Icon', 'Upload icon image') : null}
+                  {showQuestionCardImage ? renderMediaPicker('questionCardImage', 'Question Card', 'Upload card image') : null}
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowMediaControls(true)}
+                className="inline-flex items-center gap-1 self-start rounded-full px-1 py-0.5 text-[11px] font-medium text-slate-500 transition-colors hover:text-amber-700 dark:text-slate-400 dark:hover:text-amber-300"
+              >
+                <ImageIcon className="h-3 w-3" />
+                {showIconImage && showQuestionCardImage
+                  ? "Add icon or card media"
+                  : showIconImage
+                    ? "Add icon media"
+                    : "Add card media"}
+              </button>
+            )
+          ) : null}
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+function CompactSectionHeader({
+  icon: Icon,
+  title,
+  tooltip,
+  action,
+}: {
+  icon: any;
+  title: string;
+  tooltip?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">{title}</p>
+          {tooltip ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="rounded-full p-0.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs text-xs leading-relaxed">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
+      </div>
+      {action ? <div className="flex flex-shrink-0 items-center gap-1">{action}</div> : null}
     </div>
   );
 }
@@ -344,7 +500,19 @@ function getDefaultValueDescription(variableType: string): string {
   }
 }
 
-export default function VariableCard({ variable, onDelete, onUpdate, allVariables = [] }: VariableCardProps) {
+export default function VariableCard({
+  variable,
+  onDelete,
+  onUpdate,
+  allVariables = [],
+  parentVariable,
+  onAIAssistVariable,
+  activeAIAssistTargetId,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
+}: VariableCardProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(variable.name);
@@ -354,8 +522,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editUnit, setEditUnit] = useState(variable.unit || '');
   const [isEditingType, setIsEditingType] = useState(false);
   const [editType, setEditType] = useState(variable.type);
-  const [showOptions, setShowOptions] = useState(false);
+  const [showOptions, setShowOptions] = useState(['select', 'dropdown', 'multiple-choice'].includes(variable.type));
   const [showConditionalLogic, setShowConditionalLogic] = useState(false);
+  const [showVariableUtilities, setShowVariableUtilities] = useState(false);
   const [isEditingTooltip, setIsEditingTooltip] = useState(false);
   const [editTooltip, setEditTooltip] = useState(variable.tooltip || '');
   const [editTooltipVideoUrl, setEditTooltipVideoUrl] = useState(variable.tooltipVideoUrl || '');
@@ -370,6 +539,8 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
   const [editUncheckedValue, setEditUncheckedValue] = useState(variable.uncheckedValue?.toString() || "0");
   const [isEditingConnectionKey, setIsEditingConnectionKey] = useState(false);
   const [editConnectionKey, setEditConnectionKey] = useState(variable.connectionKey || '');
+  const [showVariableAIDialog, setShowVariableAIDialog] = useState(false);
+  const [variableAIPrompt, setVariableAIPrompt] = useState("");
 
   // AI Icon Generation state
   const [showSingleIconGenerator, setShowSingleIconGenerator] = useState(false);
@@ -393,8 +564,18 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
 
   const TypeIcon = typeConfig[variable.type]?.icon || Hash;
   const typeColorClass = typeConfig[variable.type]?.color || "bg-gray-100 text-gray-700";
+  const variableAssistTargetId = parentVariable ? `${parentVariable.id}::${variable.id}` : variable.id;
+  const isVariableAIAssistPending = activeAIAssistTargetId === variableAssistTargetId;
+  const currentVariableAIPromptExamples = variableAIPromptExamples[variable.type] || variableAIPromptExamples.number;
   const hasOptions = ['select', 'dropdown', 'multiple-choice'].includes(variable.type);
   const hasConditionalLogic = variable.conditionalLogic?.enabled;
+  const sectionShellClass =
+    "rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_14px_40px_-32px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80";
+  const sectionLabelClass =
+    "text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400";
+  const utilityTileClass =
+    "w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 dark:border-slate-700 dark:bg-slate-800/60 sm:p-3";
+  const hasMoveControls = Boolean(onMoveUp || onMoveDown);
 
   // Handler functions
   const handleSaveName = () => {
@@ -988,15 +1169,88 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
     });
   };
 
+  const resolveConditionOptionValue = (
+    depVar: Variable | undefined,
+    rawValue: unknown,
+    rawValues?: unknown,
+  ) => {
+    const resolvedRawValue = Array.isArray(rawValues) && rawValues.length > 0
+      ? rawValues[0]
+      : rawValue;
+
+    if (!depVar?.options || resolvedRawValue === undefined || resolvedRawValue === null) {
+      return String(resolvedRawValue ?? '');
+    }
+
+    const rawString = String(resolvedRawValue).trim();
+    const loweredRawString = rawString.toLowerCase();
+    const match = depVar.options.find((option) => {
+      if (option.value === resolvedRawValue || option.id === resolvedRawValue || option.label === resolvedRawValue) {
+        return true;
+      }
+
+      return [
+        String(option.value ?? '').trim(),
+        String(option.id ?? '').trim(),
+        String(option.label ?? '').trim(),
+      ].some((candidate) => candidate.toLowerCase() === loweredRawString);
+    });
+
+    return String(match?.value ?? resolvedRawValue);
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
 
+  const handleVariableAIAssist = async () => {
+    if (!onAIAssistVariable || !variableAIPrompt.trim()) {
+      return;
+    }
+
+    await onAIAssistVariable(variable, variableAIPrompt, parentVariable);
+    setShowVariableAIDialog(false);
+    setVariableAIPrompt("");
+  };
+
+  const moveControls = hasMoveControls ? (
+    <div className="flex items-center gap-0.5 rounded-full border border-slate-200/80 bg-white/70 p-0.5 dark:border-slate-700 dark:bg-slate-900/60">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          onMoveUp?.();
+        }}
+        disabled={!canMoveUp}
+        className="h-7 w-7 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-35 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        aria-label={`Move ${variable.name} up`}
+      >
+        <ArrowUp className="h-3.5 w-3.5" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          onMoveDown?.();
+        }}
+        disabled={!canMoveDown}
+        className="h-7 w-7 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-35 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        aria-label={`Move ${variable.name} down`}
+      >
+        <ArrowDown className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  ) : null;
+
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
+    <div className="overflow-hidden rounded-[20px] border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.38)] transition-all duration-200 dark:border-slate-700 dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-900/95">
       {/* Header */}
       <div
-        className="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="cursor-pointer bg-gradient-to-r from-white via-white to-amber-50/45 px-5 py-4 transition-colors hover:from-amber-50/70 hover:to-orange-50/70 dark:from-slate-900/95 dark:via-slate-900/95 dark:to-amber-950/20"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         {/* Mobile: Show variable name on its own line above */}
@@ -1006,7 +1260,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="h-8 text-sm font-medium flex-1"
+                className="h-9 flex-1 rounded-xl border-slate-200 bg-white/95 text-sm font-medium dark:border-slate-700 dark:bg-slate-950/80"
                 autoFocus
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); }}
               />
@@ -1018,24 +1272,31 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               </Button>
             </div>
           ) : (
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">{variable.name}</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
-                className="text-gray-400 hover:text-blue-500 p-1"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-              </button>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <span className="block break-words pr-1 text-base font-semibold leading-tight text-slate-900 dark:text-white">
+                  {variable.name}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {moveControls}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
+                  className="rounded-full p-1 text-slate-400 hover:bg-white/80 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-300"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-0.5" onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}>
+          <button className="hidden rounded-full border border-amber-200 bg-amber-50 p-1 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 sm:inline-flex" onClick={(e) => { e.stopPropagation(); setIsCollapsed(!isCollapsed); }}>
             {isCollapsed ? <ChevronDown className="w-5 h-5" /> : <ChevronUp className="w-5 h-5" />}
           </button>
 
-          <Badge variant="outline" className={`${typeColorClass} border text-xs font-medium px-2 py-0.5 flex items-center gap-1`}>
+          <Badge variant="outline" className={`${typeColorClass} border text-[11px] font-medium px-2.5 py-1 flex items-center gap-1 rounded-full shadow-sm`}>
             <TypeIcon className="w-3 h-3" />
             {typeConfig[variable.type]?.label || variable.type}
           </Badge>
@@ -1046,7 +1307,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="h-8 text-sm font-medium flex-1"
+                className="h-9 flex-1 rounded-xl border-slate-200 bg-white/95 text-sm font-medium dark:border-slate-700 dark:bg-slate-950/80"
                 autoFocus
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false); }}
               />
@@ -1059,10 +1320,13 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             </div>
           ) : (
             <div className="hidden sm:flex flex-1 items-center gap-2 min-w-0">
-              <span className="text-sm font-semibold text-gray-900 dark:text-white truncate">{variable.name}</span>
+              <span className="min-w-0 flex-1 text-base font-semibold text-slate-900 dark:text-white">
+                {variable.name}
+              </span>
+              {moveControls}
               <button
                 onClick={(e) => { e.stopPropagation(); setIsEditingName(true); setEditName(variable.name); }}
-                className="text-gray-400 hover:text-blue-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="rounded-full p-1 text-slate-400 transition-colors hover:bg-white/80 hover:text-amber-600 dark:hover:bg-slate-800 dark:hover:text-amber-300"
               >
                 <Edit3 className="w-3.5 h-3.5" />
               </button>
@@ -1075,42 +1339,66 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           {/* Status badges */}
           <div className="hidden sm:flex items-center gap-2">
             {hasOptions && variable.options?.length && (
-              <Badge variant="secondary" className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+              <Badge variant="secondary" className="rounded-full border border-slate-200 bg-white/80 text-[11px] text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 {variable.options.length} options
               </Badge>
             )}
             {hasConditionalLogic && (
-              <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+              <Badge variant="secondary" className="rounded-full border border-amber-200 bg-amber-50 text-[11px] text-amber-700 shadow-sm dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
                 <Zap className="w-3 h-3 mr-1" />
                 Conditional
               </Badge>
             )}
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); onDelete(variable.id); }}
-            className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {onAIAssistVariable && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowVariableAIDialog(true);
+                    }}
+                    className="h-9 w-9 rounded-full p-0 text-slate-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/20 dark:hover:text-amber-300"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[240px] text-xs">
+                  {getVariableAIAssistDescription(variable, parentVariable)}
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => { e.stopPropagation(); onDelete(variable.id); }}
+              className="h-9 w-9 rounded-full p-0 text-slate-400 hover:bg-rose-50 hover:text-rose-500 dark:hover:bg-rose-950/30"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Expanded Content */}
       {!isCollapsed && (
-        <div className="px-4 pb-4 pt-2 border-t border-gray-100 space-y-4">
+        <div className="space-y-4 border-t border-slate-200/80 bg-gradient-to-b from-slate-50/70 to-white px-5 pb-5 pt-4 dark:border-slate-800 dark:from-slate-900 dark:to-slate-900/95">
           {/* Variable ID */}
-          <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
+          <div className={`${sectionShellClass} flex items-center justify-between`}>
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-xs text-gray-500 flex-shrink-0">ID:</span>
+              <span className={`${sectionLabelClass} flex-shrink-0`}>ID</span>
               {isEditingId ? (
                 <div className="flex items-center gap-1 flex-1">
                   <Input
                     value={editId}
                     onChange={(e) => setEditId(e.target.value)}
-                    className="h-7 text-xs font-mono flex-1"
+                    className="h-8 flex-1 rounded-xl border-slate-200 bg-white/95 text-xs font-mono dark:border-slate-700 dark:bg-slate-950/80"
                     autoFocus
                   />
                   <Button variant="ghost" size="sm" onClick={handleSaveId} className="h-7 w-7 p-0 text-green-600">
@@ -1121,17 +1409,17 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   </Button>
                 </div>
               ) : (
-                <code className="text-xs font-mono text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded truncate">
+                <code className="truncate rounded-full bg-amber-50 px-3 py-1 text-xs font-mono text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                   {variable.id}
                 </code>
               )}
             </div>
             {!isEditingId && (
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={() => copyToClipboard(variable.id)} className="h-7 w-7 p-0 text-gray-400 hover:text-gray-600">
+                <Button variant="ghost" size="sm" onClick={() => copyToClipboard(variable.id)} className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800">
                   <Copy className="w-3 h-3" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setIsEditingId(true)} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                <Button variant="ghost" size="sm" onClick={() => setIsEditingId(true)} className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30">
                   <Edit3 className="w-3 h-3" />
                 </Button>
               </div>
@@ -1139,14 +1427,14 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
           </div>
 
           {/* Type & Configuration Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className={`${sectionShellClass} grid grid-cols-1 gap-3 sm:grid-cols-2`}>
             {/* Type Selector */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-gray-500 font-medium">Type</Label>
+              <Label className={sectionLabelClass}>Type</Label>
               {isEditingType ? (
                 <div className="space-y-2">
                   <Select value={editType} onValueChange={(value: typeof editType) => setEditType(value)}>
-                    <SelectTrigger className="h-9 text-sm">
+                    <SelectTrigger className="h-10 rounded-xl border-slate-200 bg-white/95 text-sm dark:border-slate-700 dark:bg-slate-950/80">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1165,9 +1453,9 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between h-9 bg-gray-50 dark:bg-gray-700 rounded-lg px-3">
-                  <span className="text-sm text-gray-900 dark:text-gray-200 capitalize">{typeConfig[variable.type]?.label || variable.type}</span>
-                  <Button variant="ghost" size="sm" onClick={() => setIsEditingType(true)} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
+                <div className="flex h-10 items-center justify-between rounded-xl border border-slate-200 bg-white/90 px-3 dark:border-slate-700 dark:bg-slate-950/70">
+                  <span className="text-sm text-slate-900 dark:text-slate-200 capitalize">{typeConfig[variable.type]?.label || variable.type}</span>
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditingType(true)} className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30">
                     <Edit3 className="w-3 h-3" />
                   </Button>
                 </div>
@@ -1363,357 +1651,373 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             )}
           </div>
 
-          {/* Help Text & Media */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                <HelpCircle className="w-3 h-3" />
-                Help Content
-              </Label>
-              {!isEditingTooltip && (
-                <Button variant="ghost" size="sm" onClick={() => {
-                  setIsEditingTooltip(true);
-                  setEditTooltip(variable.tooltip || '');
-                  setEditTooltipVideoUrl(variable.tooltipVideoUrl || '');
-                  setEditTooltipImageUrl(variable.tooltipImageUrl || '');
-                }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
-                  <Edit3 className="w-3 h-3" />
+          <div className={sectionShellClass}>
+            <CompactSectionHeader
+              icon={Sparkles}
+              title="Variable Utilities"
+              tooltip="Keep supporting settings in one place. Tiles expand only when they need more room."
+              action={(
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowVariableUtilities((current) => !current)}
+                  className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                >
+                  {showVariableUtilities ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </Button>
               )}
-            </div>
-            {isEditingTooltip ? (
-              <div className="space-y-3 bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                <div>
-                  <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">Help Text</Label>
-                  <Textarea
-                    value={editTooltip}
-                    onChange={(e) => setEditTooltip(e.target.value)}
-                    placeholder="Add a description to help users understand this question..."
-                    className="text-sm min-h-[60px]"
-                    maxLength={200}
-                  />
-                  <span className="text-xs text-gray-400 dark:text-gray-500">{editTooltip.length}/200</span>
+            />
+            {showVariableUtilities ? (
+            <div className="mt-3 grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2">
+              <div className={`${isEditingTooltip ? "lg:col-span-2" : ""} ${utilityTileClass}`}>
+                <CompactSectionHeader
+                  icon={HelpCircle}
+                  title="Help"
+                  tooltip="Optional guidance content shown to users for this variable. Add supporting text, a video URL, or an image."
+                  action={!isEditingTooltip ? (
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      setIsEditingTooltip(true);
+                      setEditTooltip(variable.tooltip || '');
+                      setEditTooltipVideoUrl(variable.tooltipVideoUrl || '');
+                      setEditTooltipImageUrl(variable.tooltipImageUrl || '');
+                    }} className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30">
+                      <Edit3 className="w-3 h-3" />
+                    </Button>
+                  ) : null}
+                />
+                {isEditingTooltip ? (
+                  <div className="mt-3 space-y-3">
+                    <div>
+                      <Label className={`${sectionLabelClass} mb-1 block`}>Help Text</Label>
+                      <Textarea
+                        value={editTooltip}
+                        onChange={(e) => setEditTooltip(e.target.value)}
+                        placeholder="Add a description to help users understand this question..."
+                        className="min-h-[60px] rounded-xl border-slate-200 bg-white/95 text-sm dark:border-slate-700 dark:bg-slate-950/80"
+                        maxLength={200}
+                      />
+                      <span className="text-xs text-slate-400 dark:text-slate-500">{editTooltip.length}/200</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label className={`${sectionLabelClass} mb-1 flex items-center gap-1`}>
+                          <Video className="w-3 h-3" />
+                          Video URL
+                        </Label>
+                        <Input
+                          value={editTooltipVideoUrl}
+                          onChange={(e) => setEditTooltipVideoUrl(e.target.value)}
+                          placeholder="https://youtube.com/watch?v=..."
+                          className="h-9 rounded-xl border-slate-200 bg-white/95 text-xs dark:border-slate-700 dark:bg-slate-950/80"
+                        />
+                      </div>
+                      <div>
+                        <Label className={`${sectionLabelClass} mb-1 flex items-center gap-1`}>
+                          <ImageIcon className="w-3 h-3" />
+                          Image
+                        </Label>
+                        <input
+                          ref={tooltipImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleTooltipImageUpload}
+                          className="hidden"
+                        />
+                        {editTooltipImageUrl ? (
+                          <div className="flex items-center gap-2">
+                            <div className="relative group">
+                              <img
+                                src={editTooltipImageUrl}
+                                alt="Tooltip preview"
+                                className="h-10 w-10 rounded-lg border border-slate-200 object-cover dark:border-slate-600"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setEditTooltipImageUrl('')}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => tooltipImageInputRef.current?.click()}
+                              disabled={isUploadingTooltipImage}
+                              className="h-8 rounded-xl text-xs"
+                            >
+                              {isUploadingTooltipImage ? <Loader2 className="w-3 h-3 animate-spin" /> : "Change"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => tooltipImageInputRef.current?.click()}
+                            disabled={isUploadingTooltipImage}
+                            className="h-9 w-full rounded-xl text-xs"
+                          >
+                            {isUploadingTooltipImage ? (
+                              <>
+                                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-3 h-3 mr-1" />
+                                Upload Image
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={handleSaveTooltip} className="h-8 rounded-xl text-xs">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        setIsEditingTooltip(false);
+                        setEditTooltip(variable.tooltip || '');
+                        setEditTooltipVideoUrl(variable.tooltipVideoUrl || '');
+                        setEditTooltipImageUrl(variable.tooltipImageUrl || '');
+                      }} className="h-8 rounded-xl text-xs">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    <div className="line-clamp-3 text-sm text-slate-600 dark:text-slate-300">
+                      {variable.tooltip || <span className="italic text-slate-400 dark:text-slate-500">No help text</span>}
+                    </div>
+                    {(variable.tooltipVideoUrl || variable.tooltipImageUrl) && (
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        {variable.tooltipVideoUrl ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+                            <Video className="w-3 h-3" />
+                            Video
+                          </span>
+                        ) : null}
+                        {variable.tooltipImageUrl ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                            <ImageIcon className="w-3 h-3" />
+                            Image
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className={`${isEditingConnectionKey ? "lg:col-span-2" : ""} ${utilityTileClass}`}>
+                <CompactSectionHeader
+                  icon={Link2}
+                  title="Link"
+                  tooltip="Variables with the same connection key sync their values across services."
+                  action={!isEditingConnectionKey ? (
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      setIsEditingConnectionKey(true);
+                      setEditConnectionKey(variable.connectionKey || '');
+                    }} className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30">
+                      <Edit3 className="w-3 h-3" />
+                    </Button>
+                  ) : null}
+                />
+                {isEditingConnectionKey ? (
+                  <div className="mt-3 space-y-2 rounded-xl border border-blue-200 bg-blue-50/80 p-3 dark:border-blue-800 dark:bg-blue-900/20">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      Variables with the same connection key sync their values across services. <strong>Note:</strong> To auto-fill from property data, use Prefill below instead.
+                    </p>
+                    <div>
+                      <Label className={`${sectionLabelClass} mb-1 block text-blue-600 dark:text-blue-400`}>Connection Key</Label>
+                      <Input
+                        value={editConnectionKey}
+                        onChange={(e) => setEditConnectionKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
+                        placeholder="e.g., house_sqft, stories"
+                        className="h-9 rounded-xl border-blue-200 bg-white/95 text-xs font-mono dark:border-blue-800 dark:bg-slate-950/80"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={handleSaveConnectionKey} className="h-8 rounded-xl text-xs">Save</Button>
+                      <Button variant="ghost" size="sm" onClick={() => {
+                        setIsEditingConnectionKey(false);
+                        setEditConnectionKey(variable.connectionKey || '');
+                      }} className="h-8 rounded-xl text-xs">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    {variable.connectionKey ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <code className="rounded-full bg-blue-50 px-3 py-1 text-xs font-mono text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                          {variable.connectionKey}
+                        </code>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">Syncs across services</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm italic text-slate-400 dark:text-slate-500">Not linked</span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className={utilityTileClass}>
+                <CompactSectionHeader
+                  icon={Home}
+                  title="Prefill"
+                  tooltip="Use address lookup data to auto-fill this variable when a customer enters a property."
+                />
+                <div className="mt-3">
+                  {variable.prefillSourceKey ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="rounded-full text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800">
+                        {PROPERTY_ATTRIBUTE_LABELS[variable.prefillSourceKey] || variable.prefillSourceKey}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onUpdate?.(variable.id, { prefillSourceKey: null })}
+                        className="h-6 w-6 rounded-full p-0 text-slate-400 hover:bg-rose-50 hover:text-rose-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select onValueChange={(value) => onUpdate?.(variable.id, { prefillSourceKey: value })}>
+                      <SelectTrigger className="h-9 rounded-xl border-slate-200 bg-white/95 text-xs dark:border-slate-700 dark:bg-slate-950/80">
+                        <SelectValue placeholder="Select property attribute..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(PROPERTY_ATTRIBUTE_GROUPS).map(([group, keys]) => (
+                          <SelectGroup key={group}>
+                            <SelectLabel className="text-xs font-semibold text-gray-500 dark:text-gray-400">{group}</SelectLabel>
+                            {keys.map((key) => (
+                              <SelectItem key={key} value={key} className="text-xs">
+                                {PROPERTY_ATTRIBUTE_LABELS[key]}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                      <Video className="w-3 h-3" />
-                      Video URL
-                    </Label>
-                    <Input
-                      value={editTooltipVideoUrl}
-                      onChange={(e) => setEditTooltipVideoUrl(e.target.value)}
-                      placeholder="https://youtube.com/watch?v=..."
-                      className="h-8 text-xs"
+              </div>
+
+              {variable.type === 'multiple-choice' ? (
+                <div className={utilityTileClass}>
+                  <CompactSectionHeader
+                    icon={CheckSquare}
+                    title="Multi-Select"
+                    tooltip="Allow users to pick more than one option at a time."
+                  />
+                  <div className="mt-3 flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-3 dark:border-blue-800 dark:bg-blue-900/20">
+                    <div>
+                      <span className="text-sm font-medium text-blue-900 dark:text-blue-100">Allow multiple</span>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">Each option can be selected independently</p>
+                    </div>
+                    <Switch
+                      checked={variable.allowMultipleSelection || false}
+                      onCheckedChange={(checked) => onUpdate?.(variable.id, { allowMultipleSelection: checked })}
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
-                      <ImageIcon className="w-3 h-3" />
-                      Image
-                    </Label>
-                    <input
-                      ref={tooltipImageInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleTooltipImageUpload}
-                      className="hidden"
-                    />
-                    {editTooltipImageUrl ? (
-                      <div className="flex items-center gap-2">
-                        <div className="relative group">
-                          <img
-                            src={editTooltipImageUrl}
-                            alt="Tooltip preview"
-                            className="w-10 h-10 object-cover rounded border border-gray-200 dark:border-gray-600"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setEditTooltipImageUrl('')}
-                            className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
+                </div>
+              ) : null}
+
+              <div className={`lg:col-span-2 ${utilityTileClass}`}>
+                <CompactSectionHeader
+                  icon={GalleryVerticalEnd}
+                  title="Default Card Image"
+                  tooltip="Fallback media shown on the question before a specific option card image takes over."
+                />
+                <div className="mt-3 flex flex-col gap-3">
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Shows on this question by default until an option-specific card image is available.
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {variable.questionCardDefaultImage ? (
+                      <div className="relative group">
+                        <img
+                          src={variable.questionCardDefaultImage}
+                          alt="Default question card"
+                          className="h-14 w-14 rounded-lg border border-slate-200 object-cover dark:border-slate-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onUpdate?.(variable.id, { questionCardDefaultImage: undefined })}
+                          className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 px-3 text-xs font-medium text-slate-600 hover:border-amber-400 hover:bg-amber-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-amber-900/20">
+                        <Upload className="mr-1 h-3 w-3" />
+                        {variable.questionCardDefaultImage ? 'Change' : 'Upload'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(event) => handleVariableImageUpload('questionCardDefaultImage', event)}
+                        />
+                      </label>
+                      <IconSelector
+                        onIconSelect={(_, iconUrl) => {
+                          if (!onUpdate) return;
+                          onUpdate(variable.id, { questionCardDefaultImage: iconUrl || undefined });
+                          if (iconUrl) {
+                            toast({ title: "Default image added" });
+                          }
+                        }}
+                        triggerText={variable.questionCardDefaultImage ? "Library" : "Choose from library"}
+                        size="sm"
+                        triggerVariant="outline"
+                        triggerClassName="h-9 rounded-lg px-3 text-xs"
+                      />
+                      {variable.questionCardDefaultImage ? (
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => tooltipImageInputRef.current?.click()}
-                          disabled={isUploadingTooltipImage}
-                          className="h-7 text-xs"
+                          className="h-9 rounded-lg px-3 text-xs text-red-600 hover:text-red-700 dark:text-red-300 dark:hover:text-red-200"
+                          onClick={() => onUpdate?.(variable.id, { questionCardDefaultImage: undefined })}
                         >
-                          {isUploadingTooltipImage ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            "Change"
-                          )}
+                          Remove
                         </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => tooltipImageInputRef.current?.click()}
-                        disabled={isUploadingTooltipImage}
-                        className="h-8 text-xs w-full"
-                      >
-                        {isUploadingTooltipImage ? (
-                          <>
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            Uploading...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="w-3 h-3 mr-1" />
-                            Upload Image
-                          </>
-                        )}
-                      </Button>
-                    )}
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                <div className="flex justify-end gap-1">
-                  <Button variant="outline" size="sm" onClick={handleSaveTooltip} className="h-7 text-xs">Save</Button>
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    setIsEditingTooltip(false);
-                    setEditTooltip(variable.tooltip || '');
-                    setEditTooltipVideoUrl(variable.tooltipVideoUrl || '');
-                    setEditTooltipImageUrl(variable.tooltipImageUrl || '');
-                  }} className="h-7 text-xs">Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 space-y-2">
-                <div className="text-sm text-gray-600 dark:text-gray-300">
-                  {variable.tooltip || <span className="text-gray-400 dark:text-gray-500 italic">No help text</span>}
-                </div>
-                {(variable.tooltipVideoUrl || variable.tooltipImageUrl) && (
-                  <div className="flex items-center gap-3 text-xs text-gray-500">
-                    {variable.tooltipVideoUrl && (
-                      <span className="flex items-center gap-1 text-blue-600">
-                        <Video className="w-3 h-3" />
-                        Video
-                      </span>
-                    )}
-                    {variable.tooltipImageUrl && (
-                      <span className="flex items-center gap-1 text-green-600">
-                        <ImageIcon className="w-3 h-3" />
-                        Image
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Connection Key (Link Variable) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                <Link2 className="w-3 h-3" />
-                Link Variable
-              </Label>
-              {!isEditingConnectionKey && (
-                <Button variant="ghost" size="sm" onClick={() => {
-                  setIsEditingConnectionKey(true);
-                  setEditConnectionKey(variable.connectionKey || '');
-                }} className="h-7 w-7 p-0 text-gray-400 hover:text-blue-500">
-                  <Edit3 className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
-            {isEditingConnectionKey ? (
-              <div className="space-y-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                <p className="text-xs text-blue-700 dark:text-blue-300">
-                  Variables with the same connection key sync their values across services. <strong>Note:</strong> To auto-fill from property data (address lookup), use "Prefill from Property Data" below instead.
-                </p>
-                <div>
-                  <Label className="text-xs text-blue-600 dark:text-blue-400 mb-1 block">Connection Key</Label>
-                  <Input
-                    value={editConnectionKey}
-                    onChange={(e) => setEditConnectionKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
-                    placeholder="e.g., house_sqft, stories"
-                    className="h-8 text-xs font-mono"
-                    autoFocus
-                  />
-                </div>
-                <div className="flex justify-end gap-1">
-                  <Button variant="outline" size="sm" onClick={handleSaveConnectionKey} className="h-7 text-xs">Save</Button>
-                  <Button variant="ghost" size="sm" onClick={() => {
-                    setIsEditingConnectionKey(false);
-                    setEditConnectionKey(variable.connectionKey || '');
-                  }} className="h-7 text-xs">Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-                {variable.connectionKey ? (
-                  <div className="flex items-center gap-2">
-                    <code className="text-xs font-mono text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded">
-                      {variable.connectionKey}
-                    </code>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      (syncs across services)
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-400 dark:text-gray-500 italic">Not linked</span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Prefill from Property Data */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-gray-500 font-medium flex items-center gap-1">
-              <Home className="w-3 h-3" />
-              Prefill from Property Data
-            </Label>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 -mt-0.5">
-              Auto-fill this field when a customer enters their address
-            </p>
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-              {variable.prefillSourceKey ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800">
-                    {PROPERTY_ATTRIBUTE_LABELS[variable.prefillSourceKey] || variable.prefillSourceKey}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onUpdate?.(variable.id, { prefillSourceKey: null })}
-                    className="h-5 w-5 p-0 text-gray-400 hover:text-red-500"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              ) : (
-                <Select
-                  onValueChange={(value) => onUpdate?.(variable.id, { prefillSourceKey: value })}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Select property attribute..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(PROPERTY_ATTRIBUTE_GROUPS).map(([group, keys]) => (
-                      <SelectGroup key={group}>
-                        <SelectLabel className="text-xs font-semibold text-gray-500 dark:text-gray-400">{group}</SelectLabel>
-                        {keys.map((key) => (
-                          <SelectItem key={key} value={key} className="text-xs">
-                            {PROPERTY_ATTRIBUTE_LABELS[key]}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </div>
-
-          {/* Multiple Selection Toggle */}
-          {variable.type === 'multiple-choice' && (
-            <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
-              <div>
-                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">Allow multiple selections</span>
-                <p className="text-xs text-blue-700 dark:text-blue-300">Each option can be selected independently</p>
-              </div>
-              <Switch
-                checked={variable.allowMultipleSelection || false}
-                onCheckedChange={(checked) => onUpdate?.(variable.id, { allowMultipleSelection: checked })}
-              />
-            </div>
-          )}
-
-          <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/60">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  Default question card image
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Shows on this question by default. Choice questions can still switch to selected option card images when those are set.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                {variable.questionCardDefaultImage ? (
-                  <div className="relative group">
-                    <img
-                      src={variable.questionCardDefaultImage}
-                      alt="Default question card"
-                      className="h-14 w-14 rounded-lg object-cover border border-slate-200 dark:border-slate-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => onUpdate?.(variable.id, { questionCardDefaultImage: undefined })}
-                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-dashed border-slate-300 px-3 text-xs font-medium text-slate-600 hover:border-amber-400 hover:bg-amber-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-amber-900/20">
-                    <Upload className="mr-1 h-3 w-3" />
-                    {variable.questionCardDefaultImage ? 'Change' : 'Upload'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => handleVariableImageUpload('questionCardDefaultImage', event)}
-                    />
-                  </label>
-                  <IconSelector
-                    onIconSelect={(_, iconUrl) => {
-                      if (!onUpdate) return;
-                      onUpdate(variable.id, { questionCardDefaultImage: iconUrl || undefined });
-                      if (iconUrl) {
-                        toast({ title: "Default image added" });
-                      }
-                    }}
-                    triggerText={variable.questionCardDefaultImage ? "Library" : "Choose from library"}
-                    size="sm"
-                    triggerVariant="outline"
-                    triggerClassName="h-9 rounded-lg px-3 text-xs"
-                  />
-                  {variable.questionCardDefaultImage ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-9 rounded-lg px-3 text-xs text-red-600 hover:text-red-700 dark:text-red-300 dark:hover:text-red-200"
-                      onClick={() => onUpdate?.(variable.id, { questionCardDefaultImage: undefined })}
-                    >
-                      Remove
-                    </Button>
-                  ) : null}
                 </div>
               </div>
             </div>
+            ) : null}
           </div>
 
           {/* Options Section */}
           {hasOptions && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => setShowOptions(!showOptions)}
-                  className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
-                >
-                  {showOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  <Settings className="w-4 h-4" />
-                  Options ({variable.options?.length || 0})
-                </button>
-                <Button variant="outline" size="sm" onClick={handleAddOption} className="h-8 text-xs dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
-                  <Plus className="w-3 h-3 mr-1" />
-                  Add
-                </Button>
-              </div>
+            <div className={sectionShellClass}>
+              <CompactSectionHeader
+                icon={Settings}
+                title={`Options (${variable.options?.length || 0})`}
+                tooltip="Manage selectable answers, formula values, and optional media for this variable."
+                action={(
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowOptions(!showOptions)}
+                    className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                  >
+                    {showOptions ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                )}
+              />
 
               {showOptions && variable.options && (
+                <div className="mt-3">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                   <SortableContext items={variable.options.map((_, i) => `option-${i}`)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-3">
@@ -1764,7 +2068,7 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                         </div>
                       )}
 
-                      <div className="space-y-2">
+                    <div className="space-y-2">
                       {variable.options.map((option, index) => (
                         <SortableOptionItem
                           key={`option-${index}`}
@@ -1780,34 +2084,53 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           onOptionDragStateChange={setOptionDragState}
                         />
                       ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleAddOption}
+                        className="mt-1 h-10 w-full rounded-xl border-dashed text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                      >
+                        <Plus className="mr-1.5 h-3.5 w-3.5" />
+                        Add Option
+                      </Button>
                       </div>
                     </div>
                   </SortableContext>
                 </DndContext>
+                </div>
               )}
             </div>
           )}
 
           {/* Conditional Logic Section */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <button
-                onClick={() => setShowConditionalLogic(!showConditionalLogic)}
-                className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white"
-              >
-                {showConditionalLogic ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                <Zap className="w-4 h-4" />
-                Conditional Display
-                {hasConditionalLogic && <Badge variant="secondary" className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 ml-1">Active</Badge>}
-              </button>
-              <Switch
-                checked={variable.conditionalLogic?.enabled || false}
-                onCheckedChange={toggleConditionalLogic}
-              />
-            </div>
+          <div className={sectionShellClass}>
+            <CompactSectionHeader
+              icon={Zap}
+              title="Conditional Display"
+              tooltip="Control when this variable appears, based on values from other variables."
+              action={(
+                <>
+                  {hasConditionalLogic ? <Badge variant="secondary" className="rounded-full border border-amber-200 bg-amber-50 text-[11px] text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Active</Badge> : null}
+                  <Switch
+                    checked={variable.conditionalLogic?.enabled || false}
+                    onCheckedChange={toggleConditionalLogic}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowConditionalLogic(!showConditionalLogic)}
+                    className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                  >
+                    {showConditionalLogic ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </Button>
+                </>
+              )}
+            />
 
             {showConditionalLogic && variable.conditionalLogic?.enabled && (
-              <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 space-y-3">
+              <div className="mt-3 space-y-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3 dark:border-amber-800 dark:bg-amber-900/20">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Show this variable when:</p>
                   {(variable.conditionalLogic.conditions?.length || 0) > 1 && (
@@ -1871,7 +2194,15 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
                           const isNumericDep = ['number', 'slider', 'stepper'].includes(depVar?.type || '');
                           if (depVar && ['select', 'dropdown', 'multiple-choice'].includes(depVar.type) && depVar.options) {
                             return (
-                              <Select value={String(cond.expectedValue || '')} onValueChange={(value) => updateCondition(cond.id, { expectedValue: value })}>
+                              <Select
+                                value={resolveConditionOptionValue(depVar, cond.expectedValue, cond.expectedValues)}
+                                onValueChange={(value) => updateCondition(
+                                  cond.id,
+                                  cond.condition === 'contains'
+                                    ? { expectedValue: value, expectedValues: [value] }
+                                    : { expectedValue: value, expectedValues: undefined },
+                                )}
+                              >
                                 <SelectTrigger className="h-9 text-sm">
                                   <SelectValue placeholder="Select value..." />
                                 </SelectTrigger>
@@ -1975,6 +2306,139 @@ export default function VariableCard({ variable, onDelete, onUpdate, allVariable
             )}
           </div>
         </div>
+      )}
+
+      {showVariableAIDialog && typeof document !== "undefined" && createPortal(
+        <div className="pointer-events-none fixed inset-0 z-[70] flex items-end justify-end p-3 sm:p-4">
+          <div
+            className="pointer-events-auto relative w-full max-w-[420px] overflow-hidden rounded-[28px] border border-amber-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(255,247,237,0.96),rgba(248,250,252,0.96))] shadow-[0_40px_90px_-48px_rgba(234,88,12,0.45)] dark:border-amber-500/15 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.96),rgba(15,23,42,0.98))]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            <div className="absolute right-0 top-0 h-40 w-40 translate-x-1/4 -translate-y-1/3 rounded-full bg-gradient-to-br from-amber-200/55 to-transparent blur-3xl dark:from-amber-500/10" />
+            <div className="relative flex max-h-[min(78vh,720px)] flex-col">
+              <div className="flex items-start justify-between gap-3 border-b border-amber-100/70 px-5 pb-4 pt-5 dark:border-amber-500/10">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600/80 dark:text-amber-300/80">
+                        Variable Assist
+                      </p>
+                      <h3
+                        className="truncate text-xl text-slate-900 dark:text-white"
+                        style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+                      >
+                        Edit {variable.name}
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="mt-3 pr-4 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Keep this open while you scroll. Use it as a quick AI bubble for scoped edits.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowVariableAIDialog(false);
+                    setVariableAIPrompt("");
+                  }}
+                  disabled={isVariableAIAssistPending}
+                  className="h-9 w-9 shrink-0 rounded-full p-0 text-slate-500 hover:bg-white/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/80 dark:hover:text-slate-200"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-4 overflow-y-auto px-5 py-4">
+                <div className="rounded-2xl border border-amber-200/70 bg-white/80 p-4 backdrop-blur-sm dark:border-amber-500/20 dark:bg-slate-900/70">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                        Selected Variable
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">
+                        {variable.name}
+                      </p>
+                    </div>
+                    <Badge className="rounded-full border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                      <TypeIcon className="mr-1 h-3 w-3" />
+                      {typeConfig[variable.type]?.label || variable.type}
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                    {parentVariable
+                      ? `This question lives inside the repeatable group ${parentVariable.name}.`
+                      : "AI can update this variable's options or insert a follow-up question after it."}
+                  </p>
+                  <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                    Reference the builder while typing. This panel stays pinned to the corner.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900/80">
+                  <Label htmlFor={`variable-ai-prompt-${variableAssistTargetId}`} className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    What should AI change?
+                  </Label>
+                  <Textarea
+                    id={`variable-ai-prompt-${variableAssistTargetId}`}
+                    value={variableAIPrompt}
+                    onChange={(event) => setVariableAIPrompt(event.target.value)}
+                    placeholder="Describe the exact options or follow-up question you want AI to add."
+                    className="mt-3 min-h-[132px] rounded-2xl border-slate-200 bg-white/95 text-sm leading-6 text-slate-700 focus-visible:border-amber-400 focus-visible:ring-amber-200 dark:border-slate-700 dark:bg-slate-950/80 dark:text-slate-100"
+                  />
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {currentVariableAIPromptExamples.map((example) => (
+                      <button
+                        key={example}
+                        type="button"
+                        onClick={() => setVariableAIPrompt(example)}
+                        className="rounded-full border border-amber-200/70 bg-amber-50/80 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/15"
+                      >
+                        {example}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 border-t border-amber-100/70 px-5 pb-5 pt-4 dark:border-amber-500/10">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowVariableAIDialog(false);
+                    setVariableAIPrompt("");
+                  }}
+                  disabled={isVariableAIAssistPending}
+                  className="rounded-xl border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={handleVariableAIAssist}
+                  disabled={!variableAIPrompt.trim() || isVariableAIAssistPending}
+                  className="flex-1 rounded-xl border-0 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:from-amber-600 hover:to-orange-700"
+                >
+                  {isVariableAIAssistPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Applying...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Apply Variable Update
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* AI Icon Generator Modal for single option */}

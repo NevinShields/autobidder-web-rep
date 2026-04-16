@@ -732,6 +732,49 @@
   color: #6b7280;
 }
 
+/* Formula CodeMirror */
+.formula-codemirror .cm-editor {
+  background: transparent;
+}
+
+.formula-codemirror .cm-scroller {
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+.formula-codemirror .cm-content,
+.formula-codemirror .cm-line {
+  white-space: pre-wrap !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.formula-codemirror .cm-placeholder {
+  color: #a8a29e;
+}
+
+.formula-codemirror .cm-focused {
+  outline: none !important;
+}
+
+.formula-codemirror .cm-selectionBackground,
+.formula-codemirror .cm-content ::selection {
+  background: rgba(251, 191, 36, 0.28) !important;
+}
+
+.formula-codemirror .formula-cm-variable {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.dark .formula-codemirror .cm-placeholder {
+  color: #78716c;
+}
+
+.dark .formula-codemirror .formula-cm-variable {
+  color: #60a5fa;
+}
+
 .dark .css-token-comment { color: #94a3b8; }
 .dark .css-token-string { color: #34d399; }
 .dark .css-token-color { color: #c084fc; }

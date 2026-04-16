@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { RepeatableChildVariable, Variable } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Copy, Plus, ChevronDown, ChevronUp, Sparkles, Loader2, X, ArrowUp, ArrowDown } from "lucide-react";
 import FormulaExpressionInput from "./formula-expression-input";
 import VariableCard from "./variable-card";
 import AddVariableModal from "./add-variable-modal";
@@ -16,6 +17,12 @@ interface RepeatableGroupCardProps {
   onDelete: (id: string) => void;
   onUpdate?: (id: string, updates: Partial<Variable>) => void;
   allVariables?: Variable[];
+  onAIAssistVariable?: (variable: Variable, prompt: string, parentVariable?: Variable) => Promise<void>;
+  activeAIAssistTargetId?: string | null;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }
 
 const defaultRepeatableConfig = {
@@ -31,15 +38,24 @@ export default function RepeatableGroupCard({
   onDelete,
   onUpdate,
   allVariables = [],
+  onAIAssistVariable,
+  activeAIAssistTargetId,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = false,
+  canMoveDown = false,
 }: RepeatableGroupCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [showGroupAIDialog, setShowGroupAIDialog] = useState(false);
+  const [groupAIPrompt, setGroupAIPrompt] = useState("");
 
   const config = {
     ...defaultRepeatableConfig,
     ...(variable.repeatableConfig || {}),
     childVariables: variable.repeatableConfig?.childVariables || [],
   };
+  const isGroupAIAssistPending = activeAIAssistTargetId === variable.id;
 
   const availableCountVariables = useMemo(() => {
     const currentIndex = allVariables.findIndex((item) => item.id === variable.id);
@@ -97,6 +113,29 @@ export default function RepeatableGroupCard({
     });
   };
 
+  const moveChildVariable = (childVariableId: string, direction: "up" | "down") => {
+    const currentIndex = config.childVariables.findIndex((child) => child.id === childVariableId);
+    if (currentIndex < 0) return;
+
+    const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (nextIndex < 0 || nextIndex >= config.childVariables.length) return;
+
+    const nextChildVariables = [...config.childVariables];
+    const [movedChild] = nextChildVariables.splice(currentIndex, 1);
+    nextChildVariables.splice(nextIndex, 0, movedChild);
+    updateConfig({ childVariables: nextChildVariables });
+  };
+
+  const handleGroupAIAssist = async () => {
+    if (!onAIAssistVariable || !groupAIPrompt.trim()) {
+      return;
+    }
+
+    await onAIAssistVariable(variable, groupAIPrompt);
+    setShowGroupAIDialog(false);
+    setGroupAIPrompt("");
+  };
+
   return (
     <div className="rounded-xl border border-amber-200 bg-white shadow-sm dark:border-amber-900/60 dark:bg-slate-900 dark:shadow-none">
       <div className="flex items-start justify-between gap-4 border-b border-amber-100 px-4 py-4 dark:border-amber-900/50">
@@ -119,6 +158,44 @@ export default function RepeatableGroupCard({
         </div>
 
         <div className="flex items-center gap-2">
+          {(onMoveUp || onMoveDown) && (
+            <div className="flex items-center gap-0.5 rounded-full border border-slate-200/80 bg-white/70 p-0.5 dark:border-slate-700 dark:bg-slate-900/60">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onMoveUp?.()}
+                disabled={!canMoveUp}
+                className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-35 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                aria-label={`Move ${variable.name} up`}
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onMoveDown?.()}
+                disabled={!canMoveDown}
+                className="h-8 w-8 rounded-full p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-35 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                aria-label={`Move ${variable.name} down`}
+              >
+                <ArrowDown className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+          {onAIAssistVariable && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGroupAIDialog(true)}
+              className="rounded-full border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/60"
+            >
+              <Sparkles className="mr-1 h-4 w-4" />
+              AI
+            </Button>
+          )}
           <Button type="button" variant="outline" size="sm" onClick={() => setIsExpanded((value) => !value)}>
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
@@ -263,13 +340,20 @@ export default function RepeatableGroupCard({
 
             <div className="space-y-3">
               {config.childVariables.length > 0 ? (
-                config.childVariables.map((childVariable) => (
+                config.childVariables.map((childVariable, childIndex) => (
                   <VariableCard
                     key={childVariable.id}
                     variable={childVariable}
                     onDelete={handleDeleteChildVariable}
                     onUpdate={handleUpdateChildVariable}
                     allVariables={config.childVariables}
+                    parentVariable={variable}
+                    onAIAssistVariable={onAIAssistVariable}
+                    activeAIAssistTargetId={activeAIAssistTargetId}
+                    onMoveUp={() => moveChildVariable(childVariable.id, "up")}
+                    onMoveDown={() => moveChildVariable(childVariable.id, "down")}
+                    canMoveUp={childIndex > 0}
+                    canMoveDown={childIndex < config.childVariables.length - 1}
                   />
                 ))
               ) : (
@@ -293,6 +377,127 @@ export default function RepeatableGroupCard({
             </p>
           </div>
         </div>
+      )}
+
+      {showGroupAIDialog && typeof document !== "undefined" && createPortal(
+        <div className="pointer-events-none fixed inset-0 z-[70] flex items-end justify-end p-3 sm:p-4">
+          <div
+            className="pointer-events-auto relative w-full max-w-[420px] overflow-hidden rounded-[28px] border border-amber-100/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(255,247,237,0.96),rgba(248,250,252,0.96))] shadow-[0_40px_90px_-48px_rgba(234,88,12,0.45)] dark:border-amber-500/15 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.96),rgba(15,23,42,0.98))]"
+            style={{ fontFamily: "'DM Sans', sans-serif" }}
+          >
+            <div className="absolute right-0 top-0 h-40 w-40 translate-x-1/4 -translate-y-1/3 rounded-full bg-gradient-to-br from-amber-200/55 to-transparent blur-3xl dark:from-amber-500/10" />
+            <div className="relative flex max-h-[min(78vh,720px)] flex-col">
+              <div className="flex items-start justify-between gap-3 border-b border-amber-100/70 px-5 pb-4 pt-5 dark:border-amber-500/10">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-600/80 dark:text-amber-300/80">
+                        Repeatable Group Assist
+                      </p>
+                      <h3
+                        className="truncate text-xl text-slate-900 dark:text-white"
+                        style={{ fontFamily: "'Instrument Serif', Georgia, serif" }}
+                      >
+                        Edit {variable.name}
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="mt-3 pr-4 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Keep this open while you inspect the group. Use it as a pinned AI bubble for child-variable updates.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowGroupAIDialog(false);
+                    setGroupAIPrompt("");
+                  }}
+                  disabled={isGroupAIAssistPending}
+                  className="h-9 w-9 shrink-0 rounded-full p-0 text-slate-500 hover:bg-white/80 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800/80 dark:hover:text-slate-200"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="space-y-4 overflow-y-auto px-5 py-4">
+                <div className="rounded-2xl border border-amber-200/70 bg-white/80 p-4 backdrop-blur-sm dark:border-amber-500/20 dark:bg-slate-900/70">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    Prompt ideas
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {[
+                      "Add a child question for material type and update the per-item formula to include it.",
+                      "Add a follow-up child question after the count to ask if haul-away is needed.",
+                      "Improve this repeatable group so each item can capture size and condition more clearly.",
+                    ].map((example) => (
+                      <button
+                        key={example}
+                        type="button"
+                        onClick={() => setGroupAIPrompt(example)}
+                        className="rounded-full border border-amber-200/70 bg-amber-50/80 px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-100 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/15"
+                      >
+                        {example}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+                    The builder stays interactive while this panel is open.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)] dark:border-slate-700 dark:bg-slate-900/80">
+                  <Label htmlFor={`group-ai-prompt-${variable.id}`} className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                    What should AI change?
+                  </Label>
+                  <Textarea
+                    id={`group-ai-prompt-${variable.id}`}
+                    value={groupAIPrompt}
+                    onChange={(event) => setGroupAIPrompt(event.target.value)}
+                    placeholder="Describe the child question, options, or repeated-item change you want AI to add."
+                    className="mt-3 min-h-[132px] rounded-2xl border-slate-200 bg-white/95 text-sm leading-6 text-slate-700 focus-visible:border-amber-400 focus-visible:ring-amber-200 dark:border-slate-700 dark:bg-slate-950/80 dark:text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 border-t border-amber-100/70 px-5 pb-5 pt-4 dark:border-amber-500/10">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowGroupAIDialog(false);
+                    setGroupAIPrompt("");
+                  }}
+                  disabled={isGroupAIAssistPending}
+                  className="rounded-xl border-slate-200 bg-white/80 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200"
+                >
+                  Close
+                </Button>
+                <Button
+                  onClick={handleGroupAIAssist}
+                  disabled={!groupAIPrompt.trim() || isGroupAIAssistPending}
+                  className="flex-1 rounded-xl border-0 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/25 hover:from-amber-600 hover:to-orange-700"
+                >
+                  {isGroupAIAssistPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Applying...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Apply Group Update
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       <AddVariableModal

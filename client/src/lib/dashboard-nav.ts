@@ -37,10 +37,19 @@ export type DashboardNavGroup = {
   items: DashboardNavItem[];
 };
 
-export function getDashboardNav(user: unknown, isSuperAdmin: boolean): {
+type DashboardNavOptions = {
+  includeHiddenItems?: boolean;
+};
+
+export function getDashboardNav(
+  user: unknown,
+  isSuperAdmin: boolean,
+  options?: DashboardNavOptions,
+): {
   navGroups: Record<string, DashboardNavGroup>;
   settingsGroup: Record<string, DashboardNavGroup>;
 } {
+  const includeHiddenItems = options?.includeHiddenItems ?? false;
   const showLandingPageNav = Boolean(
     (user as any)?.showLandingPageNav ?? (user as any)?.businessInfo?.showLandingPageNav
   );
@@ -73,7 +82,12 @@ export function getDashboardNav(user: unknown, isSuperAdmin: boolean): {
         { name: "Customers", href: "/leads", icon: ClipboardList },
         { name: "Call Screen", href: "/call-screen", icon: Phone },
         { name: "Photos", href: "/photos", icon: Image },
-        { name: "Ad Creative Request", href: "/ad-creative-request", icon: Image },
+        ...(includeHiddenItems
+          ? [
+              { name: "Ad Library", href: "/ad-library", icon: Image },
+              { name: "Ad Creative Request", href: "/ad-creative-request", icon: Image },
+            ]
+          : []),
         { name: "Automations", href: "/crm/automations", icon: Workflow },
         { name: "Email Settings", href: "/email-settings", icon: Mail },
         { name: "Estimate Page Editor", href: "/estimate-page-settings", icon: FileText },
@@ -95,6 +109,9 @@ export function getDashboardNav(user: unknown, isSuperAdmin: boolean): {
         ...(isSuperAdmin
           ? [
               { name: "Admin Dashboard", href: "/admin", icon: Shield },
+              ...(includeHiddenItems
+                ? [{ name: "Ad Library Admin", href: "/admin/ad-library", icon: Image }]
+                : []),
               { name: "Support Videos", href: "/admin/support-videos", icon: Video },
               { name: "KB Admin", href: "/admin/knowledge-base", icon: BookOpen },
             ]

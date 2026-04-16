@@ -50,6 +50,14 @@ const PAGE_COPY: Record<string, { eyebrow: string; description: string }> = {
     eyebrow: "Manage",
     description: "Review uploaded job photos, reference assets, and image-based context.",
   },
+  "/ad-library": {
+    eyebrow: "Manage",
+    description: "Browse premium-ready ad graphics, downloads, and branding-request options.",
+  },
+  "/ad-creative-request": {
+    eyebrow: "Manage",
+    description: "Request branded ad creative support for your business and campaign needs.",
+  },
   "/crm/automations": {
     eyebrow: "Manage",
     description: "Configure CRM automations, triggers, and workflow rules for follow-up.",
@@ -85,6 +93,10 @@ const PAGE_COPY: Record<string, { eyebrow: string; description: string }> = {
   "/admin": {
     eyebrow: "Admin",
     description: "Access platform administration, testing tools, and internal controls.",
+  },
+  "/admin/ad-library": {
+    eyebrow: "Admin",
+    description: "Manage Ad Library inventory, assets, and customer branding requests.",
   },
   "/admin/support-videos": {
     eyebrow: "Admin",
@@ -150,7 +162,9 @@ function buildSectionItems(items: DashboardNavItem[]): DashboardNavItem[] {
 export default function NavigationPage() {
   const { user, isSuperAdmin } = useAuth();
   const [location] = useLocation();
-  const { navGroups, settingsGroup } = getDashboardNav(user, isSuperAdmin);
+  const { navGroups, settingsGroup } = getDashboardNav(user, isSuperAdmin, {
+    includeHiddenItems: true,
+  });
 
   const buildItems = buildSectionItems(navGroups.build.items);
   const manageItems = buildSectionItems(navGroups.manage.items);

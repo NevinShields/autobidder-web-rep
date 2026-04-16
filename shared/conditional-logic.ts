@@ -143,8 +143,10 @@ export function getAvailableDependencies(currentVariable: Variable, allVariables
   
   // Only return variables that appear before the current variable
   return allVariables.slice(0, currentIndex).filter(v => 
-    // Exclude the current variable itself, repeatable groups, and variables that depend on others to avoid circular dependencies
-    v.id !== currentVariable.id && v.type !== 'repeatable-group' && !v.conditionalLogic?.enabled
+    // Exclude the current variable itself and repeatable-group containers.
+    // Variables earlier in the list are safe dependency targets, even if they
+    // also have their own conditional logic.
+    v.id !== currentVariable.id && v.type !== 'repeatable-group'
   );
 }
 
